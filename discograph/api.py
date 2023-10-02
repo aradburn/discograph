@@ -3,18 +3,18 @@ from flask import Blueprint
 from flask import request
 from flask import jsonify
 
-from discograph import decorators
+from discograph import decorators, SqliteRelation
 from discograph import exceptions
 from discograph import helpers
-
+from discograph.helpers import entity_name_types
 
 blueprint = Blueprint('api', __name__, template_folder='templates')
 
 
 @blueprint.route('/<entity_type>/relations/<int:entity_id>')
-@decorators.limit(max_requests=60, period=60)
+# TODO AJR @decorators.limit(max_requests=60, period=60)
 def route__api__entity_type__relations__entity_id(entity_type, entity_id):
-    if entity_type not in ('artist', 'label'):
+    if entity_type not in (SqliteRelation.EntityType.ARTIST, SqliteRelation.EntityType.LABEL):
         raise exceptions.APIError(message='Bad Entity Type', status_code=404)
     data = helpers.get_relations(
         entity_id,
@@ -26,17 +26,19 @@ def route__api__entity_type__relations__entity_id(entity_type, entity_id):
 
 
 @blueprint.route('/<entity_type>/network/<int:entity_id>')
-@decorators.limit(max_requests=60, period=60)
+# TODO AJR @decorators.limit(max_requests=60, period=60)
 def route__api__entity_type__network__entity_id(entity_type, entity_id):
-    if entity_type not in ('artist', 'label'):
+    print(f"entityType: {entity_type}")
+    entity_type = entity_name_types[entity_type]
+    if entity_type not in (SqliteRelation.EntityType.ARTIST, SqliteRelation.EntityType.LABEL):
         raise exceptions.APIError(message='Bad Entity Type', status_code=404)
     parsed_args = helpers.parse_request_args(request.args)
     original_roles, original_year = parsed_args
-    on_mobile = request.MOBILE
+    # TODO AJR on_mobile = request.MOBILE
     data = helpers.get_network(
         entity_id,
         entity_type,
-        on_mobile=on_mobile,
+        # TODO AJR on_mobile=on_mobile,
         cache=True,
         roles=original_roles,
         )
@@ -46,14 +48,14 @@ def route__api__entity_type__network__entity_id(entity_type, entity_id):
 
 
 @blueprint.route('/search/<search_string>')
-@decorators.limit(max_requests=120, period=60)
+# TODO AJR @decorators.limit(max_requests=120, period=60)
 def route__api__search(search_string):
     data = helpers.search_entities(search_string)
     return jsonify(data)
 
 
 @blueprint.route('/random')
-@decorators.limit(max_requests=60, period=60)
+# TODO AJR @decorators.limit(max_requests=60, period=60)
 def route__api__random():
     parsed_args = helpers.parse_request_args(request.args)
     original_roles, original_year = parsed_args
@@ -65,6 +67,6 @@ def route__api__random():
     entity_type = {
         1: 'artist',
         2: 'label',
-        }[entity_type]
+        }[entity_type.value]
     data = {'center': '{}-{}'.format(entity_type, entity_id)}
     return jsonify(data)

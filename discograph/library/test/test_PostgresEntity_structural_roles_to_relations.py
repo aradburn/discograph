@@ -1,5 +1,6 @@
+from abjad import string
+
 import discograph
-from abjad.tools import stringtools
 
 
 class Test(discograph.DiscographTestCase):
@@ -10,7 +11,7 @@ class Test(discograph.DiscographTestCase):
         relations = entity.structural_roles_to_relations(roles)
         relations = [v for k, v in sorted(relations.items())]
         actual = '\n'.join(repr(_) for _ in relations)
-        expected = stringtools.normalize('''
+        expected = string.normalize('''
             PostgresRelation(
                 entity_one_id=100600,
                 entity_one_type=1,

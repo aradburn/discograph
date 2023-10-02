@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
+from abjad import string
+
 import discograph
 import json
-from abjad import stringtools
-from playhouse import test_utils
 
 
 class Test(discograph.DiscographTestCase):
@@ -36,7 +36,7 @@ class Test(discograph.DiscographTestCase):
             )
         network = grapher.__call__()
         actual = json.dumps(network, **self.json_kwargs)
-        expected = stringtools.normalize('''
+        expected = string.normalize('''
             {
                 "center": {
                     "key": "artist-152882", 
@@ -139,7 +139,7 @@ class Test(discograph.DiscographTestCase):
             )
         network = grapher.__call__()
         actual = json.dumps(network, **self.json_kwargs)
-        expected = stringtools.normalize('''
+        expected = string.normalize('''
             {
                 "center": {
                     "key": "artist-152882",
@@ -582,7 +582,7 @@ class Test(discograph.DiscographTestCase):
             )
         network = grapher.__call__()
         actual = json.dumps(network, **self.json_kwargs)
-        expected = stringtools.normalize('''
+        expected = string.normalize('''
             {
                 "center": {
                     "key": "artist-152882",
@@ -993,9 +993,10 @@ class Test(discograph.DiscographTestCase):
         assert actual == expected
 
     def test___call___04(self):
-        r'''Missing count takes into account structural roles: members,
+        """
+        Missing count takes into account structural roles: members,
         aliases, groups, sublabels, parent labels, etc.
-        '''
+        """
         artist = discograph.PostgresEntity.get(
             entity_type=1, 
             entity_id=1362698,
@@ -1008,7 +1009,7 @@ class Test(discograph.DiscographTestCase):
             )
         network = grapher.__call__()
         actual = json.dumps(network, **self.json_kwargs)
-        expected = stringtools.normalize('''
+        expected = string.normalize('''
             {
                 "center": {
                     "key": "artist-1362698",

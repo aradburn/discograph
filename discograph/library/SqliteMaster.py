@@ -1,20 +1,20 @@
 # -*- encoding: utf-8 -*-
 import peewee
-from playhouse import postgres_ext
+from playhouse import sqlite_ext
 from discograph.library.Bootstrapper import Bootstrapper
-from discograph.library.PostgresModel import PostgresModel
-from discograph.library.PostgresRelease import PostgresRelease
+from discograph.library.SqliteModel import SqliteModel
+from discograph.library.SqliteRelease import SqliteRelease
 
 
-class PostgresMaster(PostgresModel):
+class SqliteMaster(SqliteModel):
 
     # PEEWEE FIELDS
 
     id = peewee.IntegerField(primary_key=True)
-    artists = postgres_ext.BinaryJSONField(null=True)
-    genres = postgres_ext.ArrayField(peewee.TextField, null=True)
+    artists = sqlite_ext.JSONField(null=True)
+    genres = sqlite_ext.JSONField(peewee.TextField, null=True)
     main_release_id = peewee.IntegerField(null=True)
-    styles = postgres_ext.ArrayField(peewee.TextField, null=True)
+    styles = sqlite_ext.JSONField(peewee.TextField, null=True)
     title = peewee.TextField()
     year = peewee.IntegerField(null=True)
 
@@ -38,7 +38,7 @@ class PostgresMaster(PostgresModel):
 
     @classmethod
     def bootstrap_pass_one(cls, **kwargs):
-        PostgresModel.bootstrap_pass_one(
+        SqliteModel.bootstrap_pass_one(
             model_class=cls,
             xml_tag='master',
             name_attr='title',
@@ -46,8 +46,8 @@ class PostgresMaster(PostgresModel):
             )
 
 
-PostgresMaster._tags_to_fields_mapping = {
-    'artists': ('artists', PostgresRelease.element_to_artist_credits),
+SqliteMaster._tags_to_fields_mapping = {
+    'artists': ('artists', SqliteRelease.element_to_artist_credits),
     'genres': ('genres', Bootstrapper.element_to_strings),
     'main_release': ('main_release_id', Bootstrapper.element_to_integer),
     'styles': ('styles', Bootstrapper.element_to_strings),

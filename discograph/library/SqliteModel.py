@@ -1,12 +1,13 @@
 # -*- encoding: utf-8 -*-
 import gzip
+import json
 
-import abjad
 from peewee import *
 import pprint
 import random
 import traceback
 
+from playhouse.shortcuts import model_to_dict
 from playhouse.sqlite_ext import SqliteExtDatabase
 
 from discograph.library.Bootstrapper import Bootstrapper
@@ -27,7 +28,7 @@ DATABASE = 'discograph.db'
 database = SqliteExtDatabase(DATABASE)
 
 
-class PostgresModel(Model):
+class SqliteModel(Model):
 
     # PEEWEE FIELDS
 
@@ -41,27 +42,19 @@ class PostgresModel(Model):
     # SPECIAL METHODS
 
     def __format__(self, format_specification=''):
+        return json.dumps(model_to_dict(self), indent=4, sort_keys=True, default=str)
         # if format_specification in ('', 'storage'):
         #     return abjad.format.get_storage(self)
-        return str(self)
+        # return str(self)
 
     def __repr__(self):
         # return abjad.format.get_repr(self)
+        print(f"__repr__: {str(self)}", flush=True)
         return str(self)
-
-    def __format__(self, format_specification=''):
-        from abjad.tools import systemtools
-        if format_specification in ('', 'storage'):
-            return systemtools.StorageFormatManager.get_storage_format(self)
-        return str(self)
-
-    def __repr__(self):
-        from abjad.tools import systemtools
-        return systemtools.StorageFormatManager.get_repr_format(self)
 
     # PRIVATE PROPERTIES
 
-    # @property
+    # TODO AJR @property
     # def _storage_format_specification(self):
     #     keyword_argument_names = sorted(self._meta.fields)
     #     # if 'id' in keyword_argument_names:
@@ -84,20 +77,21 @@ class PostgresModel(Model):
     # PUBLIC METHODS
 
     @classmethod
-    def bootstrap_postgres_models(cls, pessimistic=False):
+    def bootstrap_sqlite_models(cls, pessimistic=False):
         import discograph
-        discograph.PostgresEntity.drop_table(True)
-        discograph.PostgresRelease.drop_table(True)
-        discograph.PostgresRelation.drop_table(True)
-        discograph.PostgresEntity.create_table(True)
-        discograph.PostgresRelease.create_table(True)
-        discograph.PostgresRelation.create_table(True)
-        discograph.PostgresEntity.bootstrap_pass_one()
-        discograph.PostgresEntity.bootstrap_pass_two(pessimistic=pessimistic)
-        discograph.PostgresRelease.bootstrap_pass_one()
-        discograph.PostgresRelease.bootstrap_pass_two(pessimistic=pessimistic)
-        discograph.PostgresRelation.bootstrap_pass_one(pessimistic=pessimistic)
-        discograph.PostgresEntity.bootstrap_pass_three(pessimistic=pessimistic)
+        print("bootstrap_sqlite_models")
+        discograph.SqliteEntity.drop_table(True)
+        discograph.SqliteRelease.drop_table(True)
+        discograph.SqliteRelation.drop_table(True)
+        discograph.SqliteEntity.create_table(True)
+        discograph.SqliteRelease.create_table(True)
+        discograph.SqliteRelation.create_table(True)
+        discograph.SqliteEntity.bootstrap_pass_one()
+        discograph.SqliteEntity.bootstrap_pass_two(pessimistic=pessimistic)
+        discograph.SqliteRelease.bootstrap_pass_one()
+        discograph.SqliteRelease.bootstrap_pass_two(pessimistic=pessimistic)
+        discograph.SqliteRelation.bootstrap_pass_one(pessimistic=pessimistic)
+        discograph.SqliteEntity.bootstrap_pass_three(pessimistic=pessimistic)
 
     @classmethod
     def bootstrap_pass_one(cls, model_class, xml_tag, id_attr='id', name_attr='name', skip_without=None):
@@ -109,9 +103,8 @@ class PostgresModel(Model):
             iterator = Bootstrapper.iterparse(file_pointer, xml_tag)
             for i, element in enumerate(iterator):
                 data = None
-                print("bootstrap")
                 try:
-                    with Timer(verbose=True) as timer:
+                    with Timer(verbose=False) as timer:
                         data = model_class.tags_to_fields(element)
                         if skip_without:
                             if any(not data.get(_) for _ in skip_without):
@@ -129,6 +122,7 @@ class PostgresModel(Model):
                         )
                     print(f"message: {message}")
                 except DataError as e:
+                    print("Error in SqliteModel bootstrap_pass_one")
                     pprint.pprint(data)
                     traceback.print_exc()
                     raise e

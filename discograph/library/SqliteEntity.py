@@ -4,13 +4,13 @@ import peewee
 import re
 import traceback
 from playhouse import sqlite_ext
-# from playhouse import postgres_ext
 from discograph.library.Bootstrapper import Bootstrapper
-from discograph.library.PostgresModel import PostgresModel
+from discograph.library.SqliteModel import SqliteModel
 from abjad import sequence, Timer
+from unidecode import unidecode
 
 
-class PostgresEntity(PostgresModel):
+class SqliteEntity(SqliteModel):
 
     # CLASS VARIABLES
 
@@ -28,10 +28,10 @@ class PostgresEntity(PostgresModel):
             corpus = {}
             total = len(self.indices)
             for i, entity_id in enumerate(self.indices):
-                with PostgresEntity._meta.database.execution_context():
+                with SqliteEntity._meta.database.connection_context():
                     progress = float(i) / total
                     try:
-                        PostgresEntity.bootstrap_pass_two_single(
+                        SqliteEntity.bootstrap_pass_two_single(
                             entity_type=self.entity_type,
                             entity_id=entity_id,
                             annotation=proc_number,
@@ -58,10 +58,10 @@ class PostgresEntity(PostgresModel):
             proc_name = self.name
             total = len(self.indices)
             for i, entity_id in enumerate(self.indices):
-                with PostgresEntity._meta.database.execution_context():
+                with SqliteEntity._meta.database.connection_context():
                     progress = float(i) / total
                     try:
-                        PostgresEntity.bootstrap_pass_three_single(
+                        SqliteEntity.bootstrap_pass_three_single(
                             entity_type=self.entity_type,
                             entity_id=entity_id,
                             annotation=proc_name,
@@ -79,7 +79,7 @@ class PostgresEntity(PostgresModel):
     relation_counts = sqlite_ext.JSONField(null=True, index=False)
     metadata = sqlite_ext.JSONField(null=True, index=False)
     entities = sqlite_ext.JSONField(null=True, index=False)
-    search_content = sqlite_ext.JSONField(index=True)
+    search_content = sqlite_ext.SearchField()
     # relation_counts = postgres_ext.BinaryJSONField(null=True, index=False)
     # metadata = postgres_ext.BinaryJSONField(null=True, index=False)
     # entities = postgres_ext.BinaryJSONField(null=True, index=False)
@@ -95,22 +95,24 @@ class PostgresEntity(PostgresModel):
 
     @classmethod
     def bootstrap(cls):
-        print(f"bootstrap entity")
+        print("entity drop_table")
         cls.drop_table(True)
+        print("entity create_table")
         cls.create_table()
         cls.bootstrap_pass_one()
         cls.bootstrap_pass_two()
 
     @classmethod
     def bootstrap_pass_one(cls, **kwargs):
-        PostgresModel.bootstrap_pass_one(
+        print("entity bootstrap_pass_one")
+        SqliteModel.bootstrap_pass_one(
             cls,
             'artist',
             id_attr='entity_id',
             name_attr='name',
             skip_without=['name'],
             )
-        PostgresModel.bootstrap_pass_one(
+        SqliteModel.bootstrap_pass_one(
             cls,
             'label',
             id_attr='entity_id',
@@ -163,12 +165,13 @@ class PostgresEntity(PostgresModel):
             query = query.tuples()
             all_ids = tuple(_[0] for _ in query)
             ratio = [1] * multiprocessing.cpu_count()
-            for chunk in sequence.partition_by_ratio_of_lengths(all_ids, ratio):
+            for chunk in sequence.partition_by_ratio_of_lengths(all_ids, tuple(ratio)):
                 indices.append(chunk)
         return indices
 
     @classmethod
     def bootstrap_pass_two(cls, pessimistic=False, **kwargs):
+        print("entity bootstrap_pass_two")
         entity_type = 1
         indices = cls.get_indices(entity_type, pessimistic=pessimistic)
         workers = [cls.BootstrapPassTwoWorker(entity_type, x) for x in indices]
@@ -243,7 +246,6 @@ class PostgresEntity(PostgresModel):
             timer.elapsed_time,
             document.name,
             )
-        print(message)
 
     @classmethod
     def bootstrap_pass_three_single(cls, entity_type, entity_id, annotation='', progress=None):
@@ -262,14 +264,14 @@ class PostgresEntity(PostgresModel):
         document = query.get()
         entity_id = document.entity_id
         where_clause = (
-            (discograph.PostgresRelation.entity_one_id == entity_id) &
-            (discograph.PostgresRelation.entity_one_type == entity_type)
+            (discograph.SqliteRelation.entity_one_id == entity_id) &
+            (discograph.SqliteRelation.entity_one_type == entity_type)
             )
         where_clause |= (
-            (discograph.PostgresRelation.entity_two_id == entity_id) &
-            (discograph.PostgresRelation.entity_two_type == entity_type)
+            (discograph.SqliteRelation.entity_two_id == entity_id) &
+            (discograph.SqliteRelation.entity_two_type == entity_type)
             )
-        query = discograph.PostgresRelation.select().where(where_clause)
+        query = discograph.SqliteRelation.select().where(where_clause)
         relation_counts = {}
         for relation in query:
             if relation.role not in relation_counts:
@@ -297,7 +299,6 @@ class PostgresEntity(PostgresModel):
             ]
         template = u'{} (Pass 3) {:.3%} [{}]\t(id:{}) {}: {}'
         message = template.format(*message_pieces)
-        print(message)
 
     @classmethod
     def element_to_names(cls, names):
@@ -360,7 +361,6 @@ class PostgresEntity(PostgresModel):
                 document.name,
                 document.search_content,
                 )
-            print(message)
         for document in cls.get_entity_iterator(entity_type=2):
             document.search_content = cls.string_to_tsvector(document.name)
             document.save()
@@ -370,7 +370,6 @@ class PostgresEntity(PostgresModel):
                 document.name,
                 document.search_content,
                 )
-            print(message)
 
     @classmethod
     def from_element(cls, element):
@@ -400,10 +399,13 @@ class PostgresEntity(PostgresModel):
             if key in data:
                 data['metadata'][key] = data.pop(key)
         if 'name' in data and data.get('name'):
-            search_content = data.get('name')
+            search_content: str = data.get('name')
             search_content = search_content.lower()
-            # TODO AJR search_content = string.strip_diacritics(search_content)
-            data['search_content'] = peewee.fn.to_tsvector(search_content)
+            search_content = unidecode(search_content, "utf-8")
+            search_content = unidecode(search_content)
+            # was search_content = search_content.strip_diacritics(search_content)
+            # TODO was peewee.fn.to_tsvector(search_content)
+            data['search_content'] = search_content
         if element.tag == 'artist':
             data['entity_type'] = 1
         elif element.tag == 'label':
@@ -487,9 +489,11 @@ class PostgresEntity(PostgresModel):
     @classmethod
     def search_text(cls, search_string):
         search_string = search_string.lower()
-        search_string = search_string.strip_diacritics(search_string)
+        search_string = unidecode(search_string, "utf-8")
+        search_string = unidecode(search_string)
+        # was search_string = search_string.strip_diacritics(search_string)
         search_string = ','.join(search_string.split())
-        query = PostgresEntity.raw("""
+        query = SqliteEntity.raw("""
             SELECT entity_type,
                 entity_id,
                 name,
@@ -505,9 +509,12 @@ class PostgresEntity(PostgresModel):
     @classmethod
     def string_to_tsvector(cls, string):
         string = string.lower()
-        string = string.strip_diacritics(string)
+        string = unidecode(string, "utf-8")
+        string = unidecode(string)
+        # was string = string.strip_diacritics(string)
         string = cls._strip_pattern.sub('', string)
-        tsvector = peewee.fn.to_tsvector(string)
+        tsvector = string
+        # TODO  was tsvector = peewee.fn.to_tsvector(string)
         return tsvector
 
     def structural_roles_to_entity_keys(self, roles):
@@ -543,7 +550,7 @@ class PostgresEntity(PostgresModel):
         return entity_keys
 
     def structural_roles_to_relations(self, roles):
-        from discograph import PostgresRelation
+        from discograph import SqliteRelation
         relations = {}
         if self.entity_type == 1:
             entity_type = 1
@@ -553,7 +560,7 @@ class PostgresEntity(PostgresModel):
                     if not entity_id:
                         continue
                     ids = sorted((entity_id, self.entity_id))
-                    relation = PostgresRelation(
+                    relation = SqliteRelation(
                         entity_one_type=entity_type,
                         entity_one_id=ids[0],
                         entity_two_type=entity_type,
@@ -567,7 +574,7 @@ class PostgresEntity(PostgresModel):
                     for entity_id in self.entities['groups'].values():
                         if not entity_id:
                             continue
-                        relation = PostgresRelation(
+                        relation = SqliteRelation(
                             entity_one_type=entity_type,
                             entity_one_id=self.entity_id,
                             entity_two_type=entity_type,
@@ -579,7 +586,7 @@ class PostgresEntity(PostgresModel):
                     for entity_id in self.entities['members'].values():
                         if not entity_id:
                             continue
-                        relation = PostgresRelation(
+                        relation = SqliteRelation(
                             entity_one_type=entity_type,
                             entity_one_id=entity_id,
                             entity_two_type=entity_type,
@@ -594,7 +601,7 @@ class PostgresEntity(PostgresModel):
                 for entity_id in self.entities['parent_label'].values():
                     if not entity_id:
                         continue
-                    relation = PostgresRelation(
+                    relation = SqliteRelation(
                         entity_one_type=entity_type,
                         entity_one_id=self.entity_id,
                         entity_two_type=entity_type,
@@ -606,7 +613,7 @@ class PostgresEntity(PostgresModel):
                 for entity_id in self.entities['sublabels'].values():
                     if not entity_id:
                         continue
-                    relation = PostgresRelation(
+                    relation = SqliteRelation(
                         entity_one_type=entity_type,
                         entity_one_id=entity_id,
                         entity_two_type=entity_type,
@@ -652,17 +659,17 @@ class PostgresEntity(PostgresModel):
         return len(members)
 
 
-PostgresEntity._tags_to_fields_mapping = {
-    'aliases': ('aliases', PostgresEntity.element_to_names),
+SqliteEntity._tags_to_fields_mapping = {
+    'aliases': ('aliases', SqliteEntity.element_to_names),
     'contact_info': ('contact_info', Bootstrapper.element_to_string),
-    'groups': ('groups', PostgresEntity.element_to_names),
+    'groups': ('groups', SqliteEntity.element_to_names),
     'id': ('entity_id', Bootstrapper.element_to_integer),
-    'members': ('members', PostgresEntity.element_to_names_and_ids),
+    'members': ('members', SqliteEntity.element_to_names_and_ids),
     'name': ('name', Bootstrapper.element_to_string),
     'namevariations': ('name_variations', Bootstrapper.element_to_strings),
-    'parentLabel': ('parent_label', PostgresEntity.element_to_parent_label),
+    'parentLabel': ('parent_label', SqliteEntity.element_to_parent_label),
     'profile': ('profile', Bootstrapper.element_to_string),
     'realname': ('real_name', Bootstrapper.element_to_string),
-    'sublabels': ('sublabels', PostgresEntity.element_to_sublabels),
+    'sublabels': ('sublabels', SqliteEntity.element_to_sublabels),
     'urls': ('urls', Bootstrapper.element_to_strings),
     }

@@ -3,14 +3,13 @@ import collections
 import itertools
 import math
 import re
-import six
 from discograph.library.CreditRole import CreditRole
 from discograph.library.TrellisNode import TrellisNode
-from discograph.library.PostgresEntity import PostgresEntity
-from discograph.library.PostgresRelation import PostgresRelation
+from discograph.library.SqliteEntity import SqliteEntity
+from discograph.library.SqliteRelation import SqliteRelation
 
 
-class RelationGrapher(object):
+class SqliteRelationGrapher(object):
 
     # CLASS VARIABLES
 
@@ -41,7 +40,7 @@ class RelationGrapher(object):
     # INITIALIZER
 
     def __init__(self, center_entity, degree=3, link_ratio=None, max_nodes=None, roles=None):
-        assert isinstance(center_entity, PostgresEntity)
+        assert isinstance(center_entity, SqliteEntity)
         self._center_entity = center_entity
         degree = int(degree)
         assert 0 < degree
@@ -61,9 +60,9 @@ class RelationGrapher(object):
         roles = roles or ()
         structural_roles, relational_roles = [], []
         if roles:
-            if isinstance(roles, six.string_types):
+            if isinstance(roles, str):
                 roles = (roles,)
-            elif not isinstance(roles, collections.Iterable):
+            elif not isinstance(roles, collections.abc.Iterable):
                 roles = (roles,)
             roles = tuple(roles)
             assert all(_ in CreditRole.all_credit_roles for _ in roles)
@@ -368,7 +367,7 @@ class RelationGrapher(object):
         iterator = itertools.product(entity_key_slices, entity_key_slices)
         for lh_entities, rh_entities in iterator:
             print('        {} & {}'.format(len(lh_entities), len(rh_entities)))
-            found = PostgresRelation.search_bimulti(
+            found = SqliteRelation.search_bimulti(
                 lh_entities,
                 rh_entities,
                 roles=self.relational_roles,
@@ -453,7 +452,7 @@ class RelationGrapher(object):
         step = 1000
         for start in range(0, stop, step):
             entity_key_slice = entity_keys_to_visit[start:start + step]
-            found = PostgresEntity.search_multi(entity_key_slice)
+            found = SqliteEntity.search_multi(entity_key_slice)
             entities.extend(found)
             message = '            {}-{} of {}'
             message = message.format(
@@ -500,7 +499,7 @@ class RelationGrapher(object):
                     stop,
                     ))
                 relations.update(
-                    PostgresRelation.search_multi(
+                    SqliteRelation.search_multi(
                         key_slice,
                         roles=provisional_roles,
                         )
@@ -527,8 +526,8 @@ class RelationGrapher(object):
 
     @classmethod
     def make_cache_key(cls, template, entity_type, entity_id, roles=None, year=None):
-        if isinstance(entity_type, int):
-            entity_type = cls.entity_type_names[entity_type]
+        # if isinstance(entity_type, int):
+        #     entity_type = cls.entity_type_names[entity_type]
         key = template.format(entity_type=entity_type, entity_id=entity_id)
         if roles or year:
             parts = []

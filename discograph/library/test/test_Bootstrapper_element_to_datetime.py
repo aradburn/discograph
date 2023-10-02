@@ -3,7 +3,7 @@ import datetime
 import discograph
 
 
-class Test(discograph.DiscographTestCase):
+class Test(discograph.DiscographSqliteTestCase):
 
     def test_1(self):
         date_string = '1989-06-23'

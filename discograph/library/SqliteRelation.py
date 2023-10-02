@@ -6,17 +6,36 @@ import random
 import multiprocessing
 import re
 import traceback
-from discograph.library.PostgresModel import PostgresModel
-from playhouse import postgres_ext
+from discograph.library.SqliteModel import SqliteModel
+from playhouse import sqlite_ext
 
 
-class PostgresRelation(PostgresModel):
+class SqliteRelation(SqliteModel):
 
     # CLASS VARIABLES
 
     class EntityType(enum.Enum):
         ARTIST = 1
         LABEL = 2
+
+        def __lt__(self, other):
+            if self.__class__ is other.__class__:
+                return self.value < other.value
+            return NotImplemented
+
+    class EnumField(peewee.IntegerField):
+        def __init__(self, choices, *args, **kwargs):
+            super(peewee.IntegerField, self).__init__(*args, **kwargs)
+            self.choices = choices
+
+        def db_value(self, value: enum.Enum):
+            if type(value) is int:
+                return value
+            else:
+                return value.value
+
+        def python_value(self, value):
+            return self.choices(type(list(self.choices)[0].value)(value))
 
     class BootstrapWorker(multiprocessing.Process):
 
@@ -30,12 +49,13 @@ class PostgresRelation(PostgresModel):
             proc_name = self.name
             for release_id in self.indices:
                 try:
-                    PostgresRelation.bootstrap_pass_one_inner(
+                    SqliteRelation.bootstrap_pass_one_inner(
                         release_id,
                         self.corpus,
                         annotation=proc_name,
                         )
                 except peewee.PeeweeException as e:
+                    print("Error in SqliteRelation BootstrapWorker")
                     traceback.print_exc()
 
     aggregate_roles = (
@@ -50,12 +70,12 @@ class PostgresRelation(PostgresModel):
 
     # PEEWEE FIELDS
 
-    entity_one_type = peewee.IntegerField(index=False)
+    entity_one_type = EnumField(index=False, choices=EntityType)
     entity_one_id = peewee.IntegerField(index=False)
-    entity_two_type = peewee.IntegerField(index=False)
+    entity_two_type = EnumField(index=False, choices=EntityType)
     entity_two_id = peewee.IntegerField(index=False)
     role = peewee.CharField(index=False)
-    releases = postgres_ext.BinaryJSONField(null=True, index=False)
+    releases = sqlite_ext.JSONField(null=True, index=False)
 
     # PEEWEE META
 
@@ -117,7 +137,7 @@ class PostgresRelation(PostgresModel):
     @classmethod
     def bootstrap_pass_one(cls, pessimistic=False, **kwargs):
         import discograph
-        indices = discograph.PostgresRelease.get_indices(pessimistic)
+        indices = discograph.SqliteRelease.get_indices(pessimistic)
         workers = [cls.BootstrapWorker(_) for _ in indices]
         for worker in workers:
             worker.start()
@@ -130,12 +150,14 @@ class PostgresRelation(PostgresModel):
     def bootstrap_pass_one_inner(cls, release_id, corpus, annotation=''):
         import discograph
         database = cls._meta.database
-        with database.execution_context(with_transaction=False):
-            release_cls = discograph.PostgresRelease
+        # TODO AJR was with_transaction=False
+        with database.connection_context():
+            release_cls = discograph.SqliteRelease
             query = release_cls.select().where(release_cls.id == release_id)
             if not query.count():
                 return
             document = query.get()
+
             relations = cls.from_release(document)
             print('{} (Pass 1) [{}]\t(id:{})\t[{}] {}'.format(
                 cls.__name__.upper(),
@@ -145,7 +167,7 @@ class PostgresRelation(PostgresModel):
                 document.title,
                 ))
             for relation in relations:
-                instance, created = cls.create_or_get(
+                instance, created = cls.get_or_create(
                     entity_one_type=relation['entity_one_type'],
                     entity_one_id=relation['entity_one_id'],
                     entity_two_type=relation['entity_two_type'],
@@ -313,7 +335,7 @@ class PostgresRelation(PostgresModel):
         return relations
 
     @classmethod
-    def search(cls, entity_id, entity_type=1, roles=None, year=None, query_only=False):
+    def search(cls, entity_id, entity_type=EntityType.ARTIST, roles=None, year=None, query_only=False):
         where_clause = (
             (cls.entity_one_id == entity_id) &
             (cls.entity_one_type == entity_type)
@@ -341,22 +363,22 @@ class PostgresRelation(PostgresModel):
         assert entity_keys
         artist_ids, label_ids = [], []
         for entity_type, entity_id in entity_keys:
-            if entity_type == 1:
+            if entity_type == cls.EntityType.ARTIST:
                 artist_ids.append(entity_id)
-            elif entity_type == 2:
+            elif entity_type == cls.EntityType.LABEL:
                 label_ids.append(entity_id)
         if artist_ids:
             artist_where_clause = (
-                ((cls.entity_one_type == 1) &
+                ((cls.entity_one_type == cls.EntityType.ARTIST) &
                     (cls.entity_one_id.in_(artist_ids))) |
-                ((cls.entity_two_type == 1) &
+                ((cls.entity_two_type == cls.EntityType.ARTIST) &
                     (cls.entity_two_id.in_(artist_ids)))
                 )
         if label_ids:
             label_where_clause = (
-                ((cls.entity_one_type == 2) &
+                ((cls.entity_one_type == cls.EntityType.LABEL) &
                     (cls.entity_one_id.in_(label_ids))) |
-                ((cls.entity_two_type == 2) &
+                ((cls.entity_two_type == cls.EntityType.LABEL) &
                     (cls.entity_two_id.in_(label_ids)))
                 )
         if artist_ids and label_ids:
@@ -365,6 +387,8 @@ class PostgresRelation(PostgresModel):
             where_clause = artist_where_clause
         elif label_ids:
             where_clause = label_where_clause
+        else:
+            where_clause = ''
         if roles:
             where_clause &= (cls.role.in_(roles))
         query = cls.select().where(where_clause)
@@ -448,17 +472,17 @@ class PostgresRelation(PostgresModel):
 
     @property
     def json_entity_one_key(self):
-        if self.entity_one_type == 1:
+        if self.entity_one_type == self.EntityType.ARTIST or self.entity_one_type == self.EntityType.ARTIST.value:
             return 'artist-{}'.format(self.entity_one_id)
-        elif self.entity_one_type == 2:
+        elif self.entity_one_type == self.EntityType.LABEL or self.entity_one_type == self.EntityType.LABEL.value:
             return 'label-{}'.format(self.entity_one_id)
         raise ValueError(self.entity_one_key)
 
     @property
     def json_entity_two_key(self):
-        if self.entity_two_type == 1:
+        if self.entity_two_type == self.EntityType.ARTIST or self.entity_two_type == self.EntityType.ARTIST.value:
             return 'artist-{}'.format(self.entity_two_id)
-        elif self.entity_two_type == 2:
+        elif self.entity_two_type == self.EntityType.LABEL or self.entity_two_type == self.EntityType.LABEL.value:
             return 'label-{}'.format(self.entity_two_id)
         raise ValueError(self.entity_two_key)
 

@@ -33,7 +33,7 @@ class TrellisNode(object):
         self._siblings = set()
         self._subgraph_size = None
 
-    ### SPECIAL METHODS ###
+    # SPECIAL METHODS
 
     def __eq__(self, expr):
         if type(self) != type(expr):
@@ -43,7 +43,7 @@ class TrellisNode(object):
     def __hash__(self):
         return hash((type(self), self.entity_key))
 
-    ### PUBLIC METHODS ###
+    # PUBLIC METHODS
 
     def as_json(self):
         data = {
@@ -87,7 +87,7 @@ class TrellisNode(object):
         self._parentage = parentage
         return parentage
 
-    ### PUBLIC PROPERTIES ###
+    # PUBLIC PROPERTIES
 
     @property
     def children(self):

@@ -4,12 +4,12 @@ import peewee
 import traceback
 
 from abjad import sequence, Timer
-from playhouse import postgres_ext
+from playhouse import sqlite_ext
 from discograph.library.Bootstrapper import Bootstrapper
-from discograph.library.PostgresModel import PostgresModel
+from discograph.library.SqliteModel import SqliteModel
 
 
-class PostgresRelease(PostgresModel):
+class SqliteRelease(SqliteModel):
     # CLASS VARIABLES
 
     _artists_mapping = {}
@@ -29,36 +29,36 @@ class PostgresRelease(PostgresModel):
             corpus = {}
             total = len(self.indices)
             for i, release_id in enumerate(self.indices):
-                with PostgresRelease._meta.database.execution_context():
+                with SqliteRelease._meta.database.connection_context():
                     progress = float(i) / total
                     try:
-                        PostgresRelease.bootstrap_pass_two_single(
+                        SqliteRelease.bootstrap_pass_two_single(
                             release_id=release_id,
                             annotation=proc_name,
                             corpus=corpus,
                             progress=progress,
                         )
                     except peewee.PeeweeException as e:
-                        print('ERROR:', release_id, proc_name)
+                        print('ERROR in SqliteRelease BootstrapPassTwoWorker:', release_id, proc_name)
                         traceback.print_exc()
 
     # PEEWEE FIELDS
 
     id = peewee.IntegerField(primary_key=True)
-    artists = postgres_ext.BinaryJSONField(null=True, index=False)
-    companies = postgres_ext.BinaryJSONField(null=True, index=False)
+    artists = sqlite_ext.JSONField(null=True, index=False)
+    companies = sqlite_ext.JSONField(null=True, index=False)
     country = peewee.TextField(null=True, index=False)
-    extra_artists = postgres_ext.BinaryJSONField(null=True, index=False)
-    formats = postgres_ext.BinaryJSONField(null=True, index=False)
-    genres = postgres_ext.ArrayField(peewee.TextField, null=True, index=False)
-    identifiers = postgres_ext.BinaryJSONField(null=True, index=False)
-    labels = postgres_ext.BinaryJSONField(null=True, index=False)
+    extra_artists = sqlite_ext.JSONField(null=True, index=False)
+    formats = sqlite_ext.JSONField(null=True, index=False)
+    genres = sqlite_ext.JSONField(null=True, index=False)
+    identifiers = sqlite_ext.JSONField(null=True, index=False)
+    labels = sqlite_ext.JSONField(null=True, index=False)
     master_id = peewee.IntegerField(null=True, index=False)
     notes = peewee.TextField(null=True, index=False)
     release_date = peewee.DateTimeField(null=True, index=False)
-    styles = postgres_ext.ArrayField(peewee.TextField, null=True, index=False)
+    styles = sqlite_ext.JSONField(null=True, index=False)
     title = peewee.TextField(index=False)
-    tracklist = postgres_ext.BinaryJSONField(null=True, index=False)
+    tracklist = sqlite_ext.JSONField(null=True, index=False)
 
     # PEEWEE META
 
@@ -76,11 +76,12 @@ class PostgresRelease(PostgresModel):
 
     @classmethod
     def bootstrap_pass_one(cls, **kwargs):
-        PostgresModel.bootstrap_pass_one(
+        SqliteModel.bootstrap_pass_one(
             model_class=cls,
             xml_tag='release',
             name_attr='title',
             skip_without=['title'],
+            **kwargs
         )
 
     @classmethod
@@ -99,7 +100,7 @@ class PostgresRelease(PostgresModel):
             query = query.tuples()
             all_ids = tuple(_[0] for _ in query)
             ratio = [1] * (multiprocessing.cpu_count() * 2)
-            for chunk in sequence.partition_by_ratio_of_lengths(all_ids, ratio):
+            for chunk in sequence.partition_by_ratio_of_lengths(all_ids, tuple(ratio)):
                 indices.append(chunk)
         return indices
 
@@ -328,7 +329,7 @@ class PostgresRelease(PostgresModel):
             name = entry['name']
             entity_key = (2, name)
             if not spuriously:
-                discograph.PostgresEntity.update_corpus(corpus, entity_key)
+                discograph.SqliteEntity.update_corpus(corpus, entity_key)
             if entity_key in corpus:
                 entry['id'] = corpus[entity_key]
                 changed = True
@@ -340,33 +341,32 @@ class PostgresRelease(PostgresModel):
         return changed
 
 
-PostgresRelease._tags_to_fields_mapping = {
-    'artists': ('artists', PostgresRelease.element_to_artist_credits),
-    'companies': ('companies', PostgresRelease.element_to_company_credits),
+SqliteRelease._tags_to_fields_mapping = {
+    'artists': ('artists', SqliteRelease.element_to_artist_credits),
+    'companies': ('companies', SqliteRelease.element_to_company_credits),
     'country': ('country', Bootstrapper.element_to_string),
-    'extraartists': ('extra_artists',
-                     PostgresRelease.element_to_artist_credits),
-    'formats': ('formats', PostgresRelease.element_to_formats),
+    'extraartists': ('extra_artists', SqliteRelease.element_to_artist_credits),
+    'formats': ('formats', SqliteRelease.element_to_formats),
     'genres': ('genres', Bootstrapper.element_to_strings),
-    'identifiers': ('identifiers', PostgresRelease.element_to_identifiers),
-    'labels': ('labels', PostgresRelease.element_to_label_credits),
+    'identifiers': ('identifiers', SqliteRelease.element_to_identifiers),
+    'labels': ('labels', SqliteRelease.element_to_label_credits),
     'master_id': ('master_id', Bootstrapper.element_to_integer),
     'released': ('release_date', Bootstrapper.element_to_datetime),
     'styles': ('styles', Bootstrapper.element_to_strings),
     'title': ('title', Bootstrapper.element_to_string),
-    'tracklist': ('tracklist', PostgresRelease.element_to_tracks),
+    'tracklist': ('tracklist', SqliteRelease.element_to_tracks),
 }
 
-PostgresRelease._artists_mapping = {
+SqliteRelease._artists_mapping = {
     'id': ('id', Bootstrapper.element_to_integer),
     'name': ('name', Bootstrapper.element_to_string),
     'anv': ('anv', Bootstrapper.element_to_string),
     'join': ('join', Bootstrapper.element_to_string),
-    'role': ('roles', PostgresRelease.element_to_roles),
+    'role': ('roles', SqliteRelease.element_to_roles),
     'tracks': ('tracks', Bootstrapper.element_to_string),
 }
 
-PostgresRelease._companies_mapping = {
+SqliteRelease._companies_mapping = {
     'id': ('id', Bootstrapper.element_to_integer),
     'name': ('name', Bootstrapper.element_to_string),
     'catno': ('catalog_number', Bootstrapper.element_to_string),
@@ -374,11 +374,10 @@ PostgresRelease._companies_mapping = {
     'entity_type_name': ('entity_type_name', Bootstrapper.element_to_string),
 }
 
-PostgresRelease._tracks_mapping = {
+SqliteRelease._tracks_mapping = {
     'position': ('position', Bootstrapper.element_to_string),
     'title': ('title', Bootstrapper.element_to_string),
     'duration': ('duration', Bootstrapper.element_to_string),
-    'artists': ('artists', PostgresRelease.element_to_artist_credits),
-    'extraartists': ('extra_artists',
-                     PostgresRelease.element_to_artist_credits),
+    'artists': ('artists', SqliteRelease.element_to_artist_credits),
+    'extraartists': ('extra_artists', SqliteRelease.element_to_artist_credits),
 }

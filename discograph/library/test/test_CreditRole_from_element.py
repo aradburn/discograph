@@ -1,11 +1,8 @@
 import discograph
-try:
-    from xml.etree import cElementTree as ElementTree
-except ImportError:
-    from xml.etree import ElementTree
+from xml.etree import ElementTree
 
 
-class Test(discograph.DiscographTestCase):
+class Test(discograph.DiscographSqliteTestCase):
 
     def test_1(self):
         element = ElementTree.fromstring('<test></test>')
@@ -14,14 +11,13 @@ class Test(discograph.DiscographTestCase):
             'Claves [Original Musician]'
             )
         roles = discograph.CreditRole.from_element(element)
-        assert roles == [
-            discograph.CreditRole(
-                name='Shekere',
-                detail='Xequere, Original Musician',
-                ),
-            discograph.CreditRole(name='Guiro', detail='Original Musician'),
-            discograph.CreditRole(name='Claves', detail='Original Musician'),
+        self.assertListEqual(
+            roles, [
+                discograph.CreditRole(name='Shekere', detail='Xequere, Original Musician'),
+                discograph.CreditRole(name='Guiro', detail='Original Musician'),
+                discograph.CreditRole(name='Claves', detail='Original Musician'),
             ]
+        )
 
     def test_2(self):
         element = ElementTree.fromstring('<test></test>')

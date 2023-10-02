@@ -9,20 +9,19 @@ from flask import jsonify
 from flask import make_response
 from flask import render_template
 from flask import request
-from flask.ext.compress import Compress
-from flask.ext.mobility import Mobility
-from werkzeug.contrib.cache import FileSystemCache
-from werkzeug.contrib.cache import RedisCache
-from werkzeug.contrib.fixers import ProxyFix
+from flask_caching.backends.filesystemcache import FileSystemCache
+from flask_caching.backends.rediscache import RedisCache
+from flask_compress import Compress
 
-from discograph import api
+import discograph
+from discograph import api, SqliteModel
 from discograph import ui
 from discograph import exceptions
 
 
 app = Flask(__name__)
 app.config.from_object('discograph.config.DevelopmentConfiguration')
-app.config.from_object('discograph.locals')
+# TODO AJR app.config.from_object('discograph.locals')
 app.fcache = FileSystemCache(
     app.config['FILE_CACHE_PATH'],
     default_timeout=app.config['FILE_CACHE_TIMEOUT'],
@@ -33,8 +32,8 @@ if not os.path.exists(app.config['FILE_CACHE_PATH']):
 app.rcache = RedisCache()
 app.register_blueprint(api.blueprint, url_prefix='/api')
 app.register_blueprint(ui.blueprint)
-app.wsgi_app = ProxyFix(app.wsgi_app)
-Mobility(app)
+# TODO AJR app.wsgi_app = ProxyFix(app.wsgi_app)
+# TODO AJR Mobility(app)
 Compress(app)
 
 
@@ -97,4 +96,6 @@ def handle_error_500(error):
 
 
 if __name__ == '__main__':
+    # discograph.Bootstrapper.is_test = True
+    # SqliteModel.bootstrap_sqlite_models(pessimistic=True)
     app.run(debug=True)

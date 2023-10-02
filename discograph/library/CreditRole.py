@@ -1,15 +1,13 @@
 # -*- encoding: utf-8 -*-
 import collections
+import enum
 import re
-from abjad.tools import abctools
-from abjad.tools import datastructuretools
 
 
-class CreditRole(abctools.AbjadValueObject):
+class CreditRole(object):
+    # CLASS VARIABLES
 
-    ### CLASS VARIABLES ###
-
-    class Category(datastructuretools.Enumeration):
+    class Category(enum.Enum):
         ACTING_LITERARY_AND_SPOKEN = 1
         COMPANIES = 2
         CONDUCTING_AND_LEADING = 3
@@ -25,7 +23,7 @@ class CreditRole(abctools.AbjadValueObject):
         VOCAL = 13
         WRITING_AND_ARRANGEMENT = 14
 
-    class Subcategory(datastructuretools.Enumeration):
+    class Subcategory(enum.Enum):
         DRUMS_AND_PERCUSSION = 1
         KEYBOARD = 2
         OTHER_MUSICAL = 3
@@ -34,7 +32,7 @@ class CreditRole(abctools.AbjadValueObject):
         TUNED_PERCUSSION = 6
         WIND_INSTRUMENTS = 7
 
-    _bracket_pattern = re.compile('\[(.+?)\]')
+    _bracket_pattern = re.compile(r'\[(.+?)]')
 
     category_names = {
         Category.ACTING_LITERARY_AND_SPOKEN: 'Acting, Literary & Spoken',
@@ -50,7 +48,7 @@ class CreditRole(abctools.AbjadValueObject):
         Category.VISUAL: 'Visual',
         Category.VOCAL: 'Vocal',
         Category.WRITING_AND_ARRANGEMENT: 'Writing & Arrangement',
-        }
+    }
 
     subcategory_names = {
         Subcategory.DRUMS_AND_PERCUSSION: 'Drums & Percussion',
@@ -60,7 +58,7 @@ class CreditRole(abctools.AbjadValueObject):
         Subcategory.TECHNICAL_MUSICAL: 'Technical Musical',
         Subcategory.TUNED_PERCUSSION: 'Tuned Percussion',
         Subcategory.WIND_INSTRUMENTS: 'Wind Instruments',
-        }
+    }
 
     all_credit_roles = collections.OrderedDict([
         ("Alias", (Category.RELATION,)),
@@ -68,8 +66,8 @@ class CreditRole(abctools.AbjadValueObject):
         ("Compiled On", (Category.RELATION,)),
         ("Released On", (Category.RELATION,)),
         ("Sublabel Of", (Category.RELATION,)),
-        #"Split With": (Category.RELATION,)),
-        #"Collaborated With": (Category.RELATION,)),
+        # "Split With": (Category.RELATION,)),
+        # "Collaborated With": (Category.RELATION,)),
         ("Artwork By", None),
         ("Executive Producer", None),
         ("Other", None),
@@ -759,15 +757,19 @@ class CreditRole(abctools.AbjadValueObject):
         ("Recorded By", (Category.COMPANIES,)),
         ("Remastered At", (Category.COMPANIES,)),
         ("Remixed At", (Category.COMPANIES,)),
-        ])
+    ])
 
-    ### INITIALIZER ###
+    # INITIALIZER
 
     def __init__(self, name=None, detail=None):
         self._name = name
         self._detail = detail
 
-    ### PUBLIC METHODS ###
+    def __eq__(self, other):
+        return self._name == other.name and \
+            self._detail == other.detail
+
+    # PUBLIC METHODS
 
     @classmethod
     def from_element(cls, element):
@@ -827,7 +829,7 @@ class CreditRole(abctools.AbjadValueObject):
 
     @classmethod
     def get_multiselect_mapping(cls):
-        #excluded_roles = [
+        # excluded_roles = [
         #    'Alias',
         #    'Member Of',
         #    ]
@@ -835,7 +837,7 @@ class CreditRole(abctools.AbjadValueObject):
         for role, categories in sorted(cls.all_credit_roles.items()):
             if categories is None:
                 continue
-            #if categories is None or role in excluded_roles:
+            # if categories is None or role in excluded_roles:
             #    continue
             if len(categories) == 1:
                 category_name = cls.category_names[categories[0]]
@@ -846,7 +848,7 @@ class CreditRole(abctools.AbjadValueObject):
             mapping[category_name].append(role)
         return mapping
 
-    ### PUBLIC PROPERTIES ###
+    # PUBLIC PROPERTIES
 
     @property
     def detail(self):

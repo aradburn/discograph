@@ -28,11 +28,12 @@ def route__index():
     app = current_app._get_current_object()
     is_a_return_visitor = request.cookies.get('is_a_return_visitor')
     initial_json = 'var dgData = null;'
-    on_mobile = request.MOBILE
+    # TODO AJR on_mobile = request.MOBILE
     parsed_args = helpers.parse_request_args(request.args)
     original_roles, original_year = parsed_args
     if not original_roles:
         original_roles = default_roles
+    # TODO AJR sort out below
     multiselect_mapping = discograph.CreditRole.get_multiselect_mapping()
     url = url_for(
         request.endpoint,
@@ -46,7 +47,7 @@ def route__index():
         multiselect_mapping=multiselect_mapping,
         og_title='Disco/graph: visualizing music as a social graph',
         og_url=url,
-        on_mobile=on_mobile,
+        # TODO AJR on_mobile=on_mobile,
         original_roles=original_roles,
         original_year=original_year,
         title='Disco/graph: Visualizing music as a social graph',
@@ -86,7 +87,7 @@ def route__entity_type__entity_id(entity_type, entity_id):
     entity_name = data['center']['name']
     is_a_return_visitor = request.cookies.get('is_a_return_visitor')
     key = '{}-{}'.format(entity_type, entity_id)
-    #url = '/{}/{}'.format(entity_type, entity_id)
+    # url = '/{}/{}'.format(entity_type, entity_id)
     url = url_for(
         request.endpoint,
         entity_type=entity_type,

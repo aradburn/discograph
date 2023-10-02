@@ -1,7 +1,6 @@
 # disco/graph
 
-[Disco/graph](http://discograph.mbrsi.org/) - Social Graphing for the Discogs
-Database
+Social Graphing for the Discogs Database
 
 ## What is this?
 
@@ -14,7 +13,7 @@ releases creating a network of nearly 70 million different relationships.
 
 ## How do I use this?
 
-Visit the live site at http://discograph.mbrsi.org/.
+Visit the live site at TBD.
 
 Type an artist name into the search box and go!
 
@@ -32,5 +31,3 @@ containing a plus-sign to reveal more connections.
 
 As mentioned, the data used is straight from Discogs, so if there are any
 omissions or errors, please add or correct the artist on their website.
-
-![The "Morris Day" Network](/discograph.png)

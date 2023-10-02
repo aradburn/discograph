@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
+from abjad import string
+
 import discograph
-from abjad import stringtools
 from discograph.library.Bootstrapper import Bootstrapper
 
 
@@ -11,7 +12,7 @@ class Test(discograph.DiscographTestCase):
         release_element = next(iterator)
         release = discograph.PostgresRelease.from_element(release_element)
         actual = format(release)
-        expected = stringtools.normalize(u"""
+        expected = string.normalize(u"""
             discograph.library.PostgresRelease(
                 artists=[
                     {
@@ -130,7 +131,7 @@ class Test(discograph.DiscographTestCase):
         release_element = next(iterator)
         release = discograph.PostgresRelease.from_element(release_element)
         actual = format(release)
-        expected = stringtools.normalize(r'''
+        expected = string.normalize(r'''
             discograph.library.PostgresRelease(
                 artists=[
                     {

@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
+from abjad import string
+
 import discograph
-from abjad import stringtools
 
 
 class Test(discograph.DiscographTestCase):
@@ -9,8 +10,9 @@ class Test(discograph.DiscographTestCase):
         iterator = discograph.Bootstrapper.get_iterator('artist')
         element = next(iterator)
         entity = discograph.PostgresEntity.from_element(element)
-        actual = stringtools.normalize(format(entity))
-        expected = stringtools.normalize(u"""
+        actual = string.normalize(format(entity))
+        # noinspection PyPep8
+        expected = string.normalize(u"""
             discograph.library.PostgresEntity(
                 entities={
                     'aliases': {
@@ -68,8 +70,9 @@ class Test(discograph.DiscographTestCase):
         while element.find('name').text != 'Seefeel':
             element = next(iterator)
         entity = discograph.PostgresEntity.from_element(element)
-        actual = stringtools.normalize(format(entity))
-        expected = stringtools.normalize(u"""
+        actual = string.normalize(format(entity))
+        # noinspection PyPep8
+        expected = string.normalize(u"""
             discograph.library.PostgresEntity(
                 entities={
                     'members': {
@@ -102,8 +105,8 @@ class Test(discograph.DiscographTestCase):
         iterator = discograph.Bootstrapper.get_iterator('label')
         element = next(iterator)
         entity = discograph.PostgresEntity.from_element(element)
-        actual = stringtools.normalize(format(entity))
-        expected = stringtools.normalize(r"""
+        actual = string.normalize(format(entity))
+        expected = string.normalize(r"""
             discograph.library.PostgresEntity(
                 entities={
                     },

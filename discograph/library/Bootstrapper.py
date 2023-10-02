@@ -5,8 +5,8 @@ import gzip
 import os
 import re
 import traceback
+from abjad import contextmanagers
 from xml.dom import minidom
-from abjad.tools import systemtools
 try:
     from xml.etree import cElementTree as ElementTree
 except ImportError:
@@ -15,14 +15,14 @@ except ImportError:
 
 class Bootstrapper(object):
 
-    ### CLASS VARIABLES ###
+    # CLASS VARIABLES
 
-    date_regex = re.compile('^(\d{4})-(\d{2})-(\d{2})$')
-    date_no_dashes_regex = re.compile('^(\d{4})(\d{2})(\d{2})$')
-    year_regex = re.compile('^\d\d\d\d$')
+    date_regex = re.compile(r'^(\d{4})-(\d{2})-(\d{2})$')
+    date_no_dashes_regex = re.compile(r'^(\d{4})(\d{2})(\d{2})$')
+    year_regex = re.compile(r'^\d\d\d\d$')
     is_test = False
 
-    ### PUBLIC METHODS ###
+    # PUBLIC METHODS
 
     @staticmethod
     def get_xml_path(tag, test=False):
@@ -35,7 +35,7 @@ class Bootstrapper(object):
             glob_pattern = 'discogs_test_{}s.xml.gz'.format(tag)
         else:
             glob_pattern = 'discogs_2*_{}s.xml.gz'.format(tag)
-        with systemtools.TemporaryDirectoryChange(data_directory):
+        with contextmanagers.TemporaryDirectoryChange(data_directory):
             files = sorted(glob.glob(glob_pattern))
         return os.path.join(data_directory, files[-1])
 
@@ -45,8 +45,8 @@ class Bootstrapper(object):
             image_tags = element.findall('images')
             if image_tags:
                 element.remove(*image_tags)
-            #url_tags = element.findall('urls')
-            #if url_tags:
+            # url_tags = element.findall('urls')
+            # if url_tags:
             #    element.remove(*url_tags)
             yield element
 
@@ -132,7 +132,7 @@ class Bootstrapper(object):
         return reparsed.toprettyxml(indent='    ')
 
     @staticmethod
-    def validate_release_date(year, month, day):
+    def validate_release_date(year: str, month: str, day: str):
         try:
             year = int(year)
             if month.isdigit():
