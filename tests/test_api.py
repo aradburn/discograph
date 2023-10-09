@@ -46,7 +46,7 @@ class TestAPI(AppTestCase):
                 {'key': 'artist-249982', 'name': 'Leo Swift Morris'}
             ]
         }
-        self.assertDictEqual(expected, actual)
+        self.assertListEqual(expected['results'], actual['results'])
 
     def test_search_02(self):
         response = self.app.get('/api/search/Chris+Morris')

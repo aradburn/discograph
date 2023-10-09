@@ -27,14 +27,15 @@ class SqliteHelper(DatabaseHelper):
         print(f"entity_type: {entity_type}")
         assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
         template = 'discograph:/api/{entity_type}/network/{entity_id}'
+        if on_mobile:
+            template = '{}/mobile'.format(template)
+
         cache_key_formatter = SqliteRelationGrapher.make_cache_key(
             template,
             entity_type,
             entity_id,
             roles=roles,
             )
-        if on_mobile:
-            template = '{}/mobile'.format(template)
         cache_key = cache_key_formatter.format(entity_type, entity_id)
         print(f"cache_key: {cache_key}")
         cache = False
@@ -115,7 +116,6 @@ class SqliteHelper(DatabaseHelper):
             category = CreditRole.all_credit_roles[relation.role]
             if category is None:
                 continue
-            category = category[0]
             datum = {
                 'role': relation.role,
                 }

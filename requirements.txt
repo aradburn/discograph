@@ -1,11 +1,12 @@
 -e git://github.com/Abjad/abjad.git#egg=abjad [development]
-# Flask-Mobility
+Flask-Mobility
 Flask-Compress
 Flask-Caching
 flask~=2.3.3
 gunicorn
 peewee~=3.16.3
 pg_temp~=0.9.1
+fakeredis
 psycopg2
 pytest
 redis-py~=5.0.1

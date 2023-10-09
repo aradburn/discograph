@@ -25,12 +25,12 @@ default_roles = (
 def route__index():
     is_a_return_visitor = request.cookies.get('is_a_return_visitor')
     initial_json = 'var dgData = null;'
-    # TODO AJR on_mobile = request.MOBILE
+    # noinspection PyUnresolvedReferences
+    on_mobile = request.MOBILE
     parsed_args = helpers.parse_request_args(request.args)
     original_roles, original_year = parsed_args
     if not original_roles:
         original_roles = default_roles
-    # TODO AJR sort out below
     multiselect_mapping = CreditRole.get_multiselect_mapping()
     url = url_for(
         request.endpoint,
@@ -44,7 +44,7 @@ def route__index():
         multiselect_mapping=multiselect_mapping,
         og_title='Disco/graph: visualizing music as a social graph',
         og_url=url,
-        # TODO AJR on_mobile=on_mobile,
+        on_mobile=on_mobile,
         original_roles=original_roles,
         original_year=original_year,
         title='Disco/graph: Visualizing music as a social graph',

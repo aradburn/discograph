@@ -120,6 +120,7 @@ class TestPostgresRelease(PostgresTestCase):
         """)
         assert actual == expected
 
+    # noinspection PyUnusedLocal
     def test_02(self):
         iterator = Bootstrapper.get_iterator('release')
         release_element = next(iterator)

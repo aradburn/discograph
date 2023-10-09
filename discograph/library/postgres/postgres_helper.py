@@ -25,14 +25,15 @@ class PostgresHelper(DatabaseHelper):
     def get_network(entity_id: int, entity_type: EntityType, on_mobile=False, cache=True, roles=None):
         assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
         template = 'discograph:/api/{entity_type}/network/{entity_id}'
+        if on_mobile:
+            template = '{}/mobile'.format(template)
+
         cache_key = PostgresRelationGrapher.make_cache_key(
             template,
             entity_type,
             entity_id,
             roles=roles,
             )
-        if on_mobile:
-            template = '{}/mobile'.format(template)
         cache_key = cache_key.format(entity_type, entity_id)
         cache = False
         if cache:
@@ -108,7 +109,6 @@ class PostgresHelper(DatabaseHelper):
             category = CreditRole.all_credit_roles[relation.role]
             if category is None:
                 continue
-            category = category[0]
             datum = {
                 'role': relation.role,
                 }

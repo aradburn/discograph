@@ -39,7 +39,7 @@ class SqliteRelease(DiscogsModel):
                             corpus=corpus,
                             progress=progress,
                         )
-                    except peewee.PeeweeException as e:
+                    except peewee.PeeweeException:
                         print('ERROR in SqliteRelease BootstrapPassTwoWorker:', release_id, proc_name)
                         traceback.print_exc()
 
@@ -252,25 +252,25 @@ class SqliteRelease(DiscogsModel):
             current_buffer = ''
             details = []
             had_detail = False
-            bracket_depth = 0
-            for character in text:
-                if character == '[':
-                    bracket_depth += 1
-                    if bracket_depth == 1 and not had_detail:
+            _bracket_depth = 0
+            for _character in text:
+                if _character == '[':
+                    _bracket_depth += 1
+                    if _bracket_depth == 1 and not had_detail:
                         name = current_buffer
                         current_buffer = ''
                         had_detail = True
-                    elif 1 < bracket_depth:
-                        current_buffer += character
-                elif character == ']':
-                    bracket_depth -= 1
-                    if not bracket_depth:
+                    elif 1 < _bracket_depth:
+                        current_buffer += _character
+                elif _character == ']':
+                    _bracket_depth -= 1
+                    if not _bracket_depth:
                         details.append(current_buffer)
                         current_buffer = ''
                     else:
-                        current_buffer += character
+                        current_buffer += _character
                 else:
-                    current_buffer += character
+                    current_buffer += _character
             if current_buffer and not had_detail:
                 name = current_buffer
             name = name.strip()

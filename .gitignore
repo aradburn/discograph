@@ -62,3 +62,6 @@ src/
 logs/
 discograph.cfg
 discograph.conf
+
+# PyCharm
+.idea/

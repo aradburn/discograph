@@ -57,7 +57,7 @@ class SqliteEntity(DiscogsModel):
                             corpus=corpus,
                             progress=progress,
                             )
-                    except peewee.PeeweeException as e:
+                    except peewee.PeeweeException:
                         print(
                             'ERROR:',
                             self.entity_type,
@@ -86,7 +86,7 @@ class SqliteEntity(DiscogsModel):
                             annotation=proc_name,
                             progress=progress,
                             )
-                    except peewee.PeeweeException as e:
+                    except peewee.PeeweeException:
                         print('ERROR:', self.entity_type, entity_id, proc_name)
                         traceback.print_exc()
 
@@ -288,22 +288,22 @@ class SqliteEntity(DiscogsModel):
             (SqliteRelation.entity_two_type == entity_type)
             )
         query = SqliteRelation.select().where(where_clause)
-        relation_counts = {}
+        _relation_counts = {}
         for relation in query:
-            if relation.role not in relation_counts:
-                relation_counts[relation.role] = set()
+            if relation.role not in _relation_counts:
+                _relation_counts[relation.role] = set()
             key = (
                 relation.entity_one_type,
                 relation.entity_one_id,
                 relation.entity_two_type,
                 relation.entity_two_id,
                 )
-            relation_counts[relation.role].add(key)
-        for role, keys in relation_counts.items():
-            relation_counts[role] = len(keys)
-        if not relation_counts:
+            _relation_counts[relation.role].add(key)
+        for role, keys in _relation_counts.items():
+            _relation_counts[role] = len(keys)
+        if not _relation_counts:
             return
-        document.relation_counts = relation_counts
+        document.relation_counts = _relation_counts
         document.save()
         message_pieces = [
             cls.__name__.upper(),
@@ -311,10 +311,11 @@ class SqliteEntity(DiscogsModel):
             annotation,
             (document.entity_type, document.entity_id),
             document.name,
-            len(relation_counts),
+            len(_relation_counts),
             ]
         template = u'{} (Pass 3) {:.3%} [{}]\t(id:{}) {}: {}'
         message = template.format(*message_pieces)
+        print(message)
 
     @classmethod
     def element_to_names(cls, names):
@@ -377,6 +378,7 @@ class SqliteEntity(DiscogsModel):
                 document.name,
                 document.search_content,
                 )
+            print(message)
         for document in cls.get_entity_iterator(entity_type=EntityType.LABEL):
             document.search_content = cls.string_to_tsvector(document.name)
             document.save()
@@ -386,6 +388,7 @@ class SqliteEntity(DiscogsModel):
                 document.name,
                 document.search_content,
                 )
+            print(message)
 
     @classmethod
     def from_element(cls, element):

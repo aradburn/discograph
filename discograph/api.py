@@ -2,14 +2,14 @@ from flask import Blueprint
 from flask import jsonify
 from flask import request
 
-from discograph import exceptions, helpers
+from discograph import exceptions, helpers, decorators
 from discograph.library import EntityType
 
 blueprint = Blueprint('api', __name__, template_folder='templates')
 
 
 @blueprint.route('/<entity_type>/relations/<entity_id>')
-# TODO AJR @decorators.limit(max_requests=60, period=60)
+@decorators.limit(max_requests=60, period=60)
 def route__api__entity_type__relations__entity_id(entity_type, entity_id):
     print(f"entityType: {entity_type}")
     entity_type = EntityType[entity_type.upper()]
@@ -28,7 +28,7 @@ def route__api__entity_type__relations__entity_id(entity_type, entity_id):
 
 
 @blueprint.route('/<entity_type>/network/<entity_id>')
-# TODO AJR @decorators.limit(max_requests=60, period=60)
+@decorators.limit(max_requests=60, period=60)
 def route__api__entity_type__network__entity_id(entity_type, entity_id):
     print(f"entityType: {entity_type}")
     entity_type = EntityType[entity_type.upper()]
@@ -39,11 +39,12 @@ def route__api__entity_type__network__entity_id(entity_type, entity_id):
     entity_id = int(entity_id)
     parsed_args = helpers.parse_request_args(request.args)
     original_roles, original_year = parsed_args
-    # TODO AJR on_mobile = request.MOBILE
+    # noinspection PyUnresolvedReferences
+    on_mobile = request.MOBILE
     data = helpers.db_helper.get_network(
         entity_id,
         entity_type,
-        # TODO AJR on_mobile=on_mobile,
+        on_mobile=on_mobile,
         cache=True,
         roles=original_roles,
         )
@@ -53,7 +54,7 @@ def route__api__entity_type__network__entity_id(entity_type, entity_id):
 
 
 @blueprint.route('/search/<search_string>')
-# TODO AJR @decorators.limit(max_requests=120, period=60)
+@decorators.limit(max_requests=120, period=60)
 def route__api__search(search_string):
     print(f"search_string: {search_string}")
     data = helpers.db_helper.search_entities(search_string)
@@ -61,7 +62,7 @@ def route__api__search(search_string):
 
 
 @blueprint.route('/random')
-# TODO AJR @decorators.limit(max_requests=60, period=60)
+@decorators.limit(max_requests=60, period=60)
 def route__api__random():
     parsed_args = helpers.parse_request_args(request.args)
     original_roles, original_year = parsed_args

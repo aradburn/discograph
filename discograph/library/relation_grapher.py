@@ -142,7 +142,6 @@ class RelationGrapher(ABC):
             key=lambda x: len(x.entity.entities.get('aliases', {})),
             reverse=True,
         ):
-            cluster = None
             entity = node.entity
             aliases = entity.entities.get('aliases', {})
             if not aliases:
@@ -277,6 +276,7 @@ class RelationGrapher(ABC):
                 )
             pages[0].update(parentage)
 
+    # noinspection PyUnusedLocal
     def _page_by_local_neighborhood(self, pages, trellis_nodes_by_distance, verbose=True):
         local_neighborhood = []
         neighborhood_threshold = (len(self.nodes) / len(pages))
@@ -425,6 +425,7 @@ class RelationGrapher(ABC):
         message = message.format(self.all_roles)
         print(message)
 
+    # noinspection PyUnusedLocal
     def _search_via_structural_roles(self, distance, provisional_roles, relations):
         if not self.structural_roles:
             return

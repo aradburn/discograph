@@ -34,7 +34,7 @@ class SqliteRelation(DiscogsModel):
                         self.corpus,
                         annotation=proc_name,
                         )
-                except peewee.PeeweeException as e:
+                except peewee.PeeweeException:
                     print("Error in SqliteRelation BootstrapWorker")
                     traceback.print_exc()
 
@@ -125,10 +125,9 @@ class SqliteRelation(DiscogsModel):
         # for worker in workers:
         #     worker.terminate()
 
+    # noinspection PyUnusedLocal
     @classmethod
     def bootstrap_pass_one_inner(cls, release_id, corpus, annotation=''):
-        # database = cls._meta.database
-        # TODO AJR was with_transaction=False
         with DiscogsModel.connection_context():
             release_cls = SqliteRelease
             query = release_cls.select().where(release_cls.id == release_id)
@@ -379,13 +378,14 @@ class SqliteRelation(DiscogsModel):
             relations[relation.link_key] = relation
         return relations
 
+    # noinspection PyUnusedLocal
     @classmethod
     def search_bimulti(cls, lh_entities, rh_entities, roles=None, year=None, verbose=True):
-        def build_query(lh_type, lh_ids, rh_type, rh_ids):
-            where_clause = cls.entity_one_type == lh_type
-            where_clause &= cls.entity_two_type == rh_type
-            where_clause &= cls.entity_one_id.in_(lh_ids)
-            where_clause &= cls.entity_two_id.in_(rh_ids)
+        def build_query(_lh_type, _lh_ids, _rh_type, _rh_ids):
+            where_clause = cls.entity_one_type == _lh_type
+            where_clause &= cls.entity_two_type == _rh_type
+            where_clause &= cls.entity_one_id.in_(_lh_ids)
+            where_clause &= cls.entity_two_id.in_(_rh_ids)
             if roles:
                 where_clause &= cls.role.in_(roles)
             if year is not None:
@@ -395,8 +395,8 @@ class SqliteRelation(DiscogsModel):
                 else:
                     year_clause |= cls.year.between(year[0], year[1])
                 where_clause &= year_clause
-            query = cls.select().where(where_clause)
-            return query
+            _query = cls.select().where(where_clause)
+            return _query
         lh_artist_ids = []
         lh_label_ids = []
         rh_artist_ids = []

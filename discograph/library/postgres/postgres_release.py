@@ -39,7 +39,7 @@ class PostgresRelease(DiscogsModel):
                             corpus=corpus,
                             progress=progress,
                         )
-                    except peewee.PeeweeException as e:
+                    except peewee.PeeweeException:
                         print('ERROR:', release_id, proc_name)
                         traceback.print_exc()
 
@@ -203,16 +203,16 @@ class PostgresRelease(DiscogsModel):
         result = []
         if element is None or not len(element):
             return result
-        for subelement in element:
+        for sub_element in element:
             document = {
-                'name': subelement.get('name'),
-                'quantity': subelement.get('qty'),
+                'name': sub_element.get('name'),
+                'quantity': sub_element.get('qty'),
             }
-            if subelement.get('text'):
-                document['text'] = subelement.get('text')
-            if len(subelement):
-                subelement = subelement[0]
-                descriptions = Bootstrapper.element_to_strings(subelement)
+            if sub_element.get('text'):
+                document['text'] = sub_element.get('text')
+            if len(sub_element):
+                sub_element = sub_element[0]
+                descriptions = Bootstrapper.element_to_strings(sub_element)
                 document['descriptions'] = descriptions
             result.append(document)
         return result
@@ -251,25 +251,25 @@ class PostgresRelease(DiscogsModel):
             current_buffer = ''
             details = []
             had_detail = False
-            bracket_depth = 0
-            for character in text:
-                if character == '[':
-                    bracket_depth += 1
-                    if bracket_depth == 1 and not had_detail:
+            _bracket_depth = 0
+            for _character in text:
+                if _character == '[':
+                    _bracket_depth += 1
+                    if _bracket_depth == 1 and not had_detail:
                         name = current_buffer
                         current_buffer = ''
                         had_detail = True
-                    elif 1 < bracket_depth:
-                        current_buffer += character
-                elif character == ']':
-                    bracket_depth -= 1
-                    if not bracket_depth:
+                    elif 1 < _bracket_depth:
+                        current_buffer += _character
+                elif _character == ']':
+                    _bracket_depth -= 1
+                    if not _bracket_depth:
                         details.append(current_buffer)
                         current_buffer = ''
                     else:
-                        current_buffer += character
+                        current_buffer += _character
                 else:
-                    current_buffer += character
+                    current_buffer += _character
             if current_buffer and not had_detail:
                 name = current_buffer
             name = name.strip()

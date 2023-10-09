@@ -3,6 +3,7 @@ import atexit
 import os
 import traceback
 
+import fakeredis
 from flask import Flask
 from flask import g
 from flask import jsonify
@@ -12,6 +13,8 @@ from flask import request
 from flask_caching.backends.filesystemcache import FileSystemCache
 from flask_caching.backends.rediscache import RedisCache
 from flask_compress import Compress
+from flask_mobility import Mobility
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from discograph import api
 from discograph import exceptions
@@ -37,11 +40,12 @@ def setup_application():
     )
     if not os.path.exists(app.config['FILE_CACHE_PATH']):
         os.makedirs(app.config['FILE_CACHE_PATH'])
-    app_redis_cache = RedisCache()
+    app_redis_cache = fakeredis.FakeRedis()
+    # app_redis_cache = RedisCache()
     app.register_blueprint(api.blueprint, url_prefix='/api')
     app.register_blueprint(ui.blueprint)
-    # TODO AJR app.wsgi_app = ProxyFix(app.wsgi_app)
-    # TODO AJR Mobility(app)
+    app.wsgi_app = ProxyFix(app.wsgi_app)
+    Mobility(app)
     Compress(app)
 
 
@@ -84,6 +88,7 @@ def handle_error(error):
     return response
 
 
+# noinspection PyUnusedLocal
 @app.errorhandler(404)
 def handle_error_404(error):
     status_code = 404
@@ -97,6 +102,7 @@ def handle_error_404(error):
     return response
 
 
+# noinspection PyUnusedLocal
 @app.errorhandler(500)
 def handle_error_500(error):
     status_code = 500

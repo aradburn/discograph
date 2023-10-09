@@ -833,3 +833,4 @@ class TestSqliteRelationGrapher(SqliteTestCase):
             roles=roles,
             )
         network = grapher.__call__()  # Should not error.
+        assert network is not None
