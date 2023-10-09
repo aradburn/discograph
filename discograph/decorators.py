@@ -1,13 +1,13 @@
-# -*- encoding: utf-8 -*-
-import flask
 import functools
-import redis
 import time
+
+import fakeredis
+import flask
 
 from discograph import exceptions
 
-
-redis_client = redis.StrictRedis()
+redis_client = fakeredis.FakeStrictRedis()
+# redis_client = redis.StrictRedis()
 
 
 def limit(max_requests=10, period=60):

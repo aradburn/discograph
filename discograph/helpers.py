@@ -1,135 +1,25 @@
-# -*- encoding: utf-8 -*-
-import random
+import pathlib
 import re
-from abjad.tools import systemtools
 
+from pg_temp import TempDB
+from playhouse import pool
+from playhouse.sqlite_ext import SqliteExtDatabase
+
+from discograph.config import DatabaseType
+from discograph.library.bootstrapper import Bootstrapper
+from discograph.library.database_helper import DatabaseHelper
+from discograph.library.discogs_model import database_proxy
+from discograph.library.postgres.postgres_bootstrapper import PostgresBootstrapper
+from discograph.library.postgres.postgres_helper import PostgresHelper
+from discograph.library.sqlite.sqlite_bootstrapper import SqliteBootstrapper
+from discograph.library.sqlite.sqlite_helper import SqliteHelper
+
+db_helper: DatabaseHelper
+postgres_db: TempDB
 
 urlify_pattern = re.compile(r"\s+", re.MULTILINE)
 
-
-entity_type_names = {
-    1: 'artist',
-    2: 'label',
-    }
-
-
-entity_name_types = {
-    'artist': 1,
-    'label': 2,
-    }
-
-
 args_roles_pattern = re.compile(r'^roles(\[\d*\])?$')
-
-
-def get_entity(entity_type, entity_id):
-    import discograph
-    where_clause = discograph.PostgresEntity.entity_id == entity_id
-    where_clause &= discograph.PostgresEntity.entity_type == entity_type
-    with discograph.PostgresModel._meta.database.execution_context():
-        query = discograph.PostgresEntity.select().where(where_clause)
-        if not query.count():
-            return None
-        return query.get()
-
-
-def get_network(entity_id, entity_type, on_mobile=False, cache=True, roles=None):
-    import discograph
-    assert entity_type in ('artist', 'label')
-    template = 'discograph:/api/{entity_type}/network/{entity_id}'
-    cache_key = discograph.RelationGrapher.make_cache_key(
-        template,
-        entity_type,
-        entity_id,
-        roles=roles,
-        )
-    if on_mobile:
-        template = '{}/mobile'.format(template)
-    cache_key = cache_key.format(entity_type, entity_id)
-    cache = False
-    if cache:
-        data = discograph.RelationGrapher.cache_get(cache_key)
-        if data is not None:
-            return data
-    entity_type = entity_name_types[entity_type]
-    entity = get_entity(entity_type, entity_id)
-    if entity is None:
-        return None
-    if not on_mobile:
-        max_nodes = 75
-        degree = 12
-    else:
-        max_nodes = 25
-        degree = 6
-    relation_grapher = discograph.RelationGrapher(
-        center_entity=entity,
-        degree=degree,
-        max_nodes=max_nodes,
-        roles=roles,
-        )
-    with systemtools.Timer(exit_message='Network query time:'):
-        with discograph.PostgresModel._meta.database.execution_context():
-            data = relation_grapher()
-    if cache:
-        discograph.RelationGrapher.cache_set(cache_key, data)
-    return data
-
-
-def get_random_entity(roles=None):
-    import discograph
-    structural_roles = [
-        'Alias',
-        'Member Of',
-        'Sublabel Of',
-        ]
-    with discograph.PostgresModel._meta.database.execution_context():
-        if roles and any(_ not in structural_roles for _ in roles):
-            relation = discograph.PostgresRelation.get_random(roles=roles)
-            entity_choice = random.randint(1, 2)
-            if entity_choice == 1:
-                entity_type = relation.entity_one_type
-                entity_id = relation.entity_one_id
-            else:
-                entity_type = relation.entity_two_type
-                entity_id = relation.entity_two_id
-        else:
-            entity = discograph.PostgresEntity.get_random()
-            entity_type, entity_id = entity.entity_type, entity.entity_id
-    return entity_type, entity_id
-
-
-def get_relations(entity_id, entity_type):
-    import discograph
-    if isinstance(entity_type, str):
-        entity_type = entity_name_types[entity_type]
-    entity = get_entity(entity_type, entity_id)
-    if entity is None:
-        return None
-    with discograph.PostgresModel._meta.database.execution_context():
-        query = discograph.PostgresRelation.search(
-            entity_id=entity.entity_id,
-            entity_type=entity.entity_type,
-            query_only=True
-            )
-    query = query.order_by(
-        discograph.PostgresRelation.role,
-        discograph.PostgresRelation.entity_one_id,
-        discograph.PostgresRelation.entity_one_type,
-        discograph.PostgresRelation.entity_two_id,
-        discograph.PostgresRelation.entity_two_type,
-        )
-    data = []
-    for relation in query:
-        category = discograph.CreditRole.all_credit_roles[relation.role]
-        if category is None:
-            continue
-        category = category[0]
-        datum = {
-            'role': relation.role,
-            }
-        data.append(datum)
-    data = {'results': tuple(data)}
-    return data
 
 
 def parse_request_args(args):
@@ -138,14 +28,14 @@ def parse_request_args(args):
     roles = set()
     for key in args:
         if key == 'year':
-            value = args[key]
+            year = args[key]
             try:
                 if '-' in year:
                     start, _, stop = year.partition('-')
                     year = tuple(sorted((int(start), int(stop))))
                 else:
                     year = int(year)
-            except:
+            finally:
                 pass
         elif args_roles_pattern.match(key):
             value = args.getlist(key)
@@ -156,33 +46,56 @@ def parse_request_args(args):
     return roles, year
 
 
-def search_entities(search_string, cache=True):
-    import discograph
-    cache_key = 'discograph:/api/search/{}'.format(
-        urlify_pattern.sub('+', search_string))
-    cache = False
-    if cache:
-        data = discograph.RelationGrapher.cache_get(cache_key)
-        if data is not None:
-            print('{}: CACHED'.format(cache_key))
-            for datum in data['results']:
-                print('    {}'.format(datum))
-            return data
-    with discograph.PostgresModel._meta.database.execution_context():
-        query = discograph.PostgresEntity.search_text(search_string)
-        print('{}: NOT CACHED'.format(cache_key))
-        data = []
-        for entity in query:
-            datum = dict(
-                key='{}-{}'.format(
-                    entity_type_names[entity.entity_type],
-                    entity.entity_id,
-                    ),
-                name=entity.name,
-                )
-            data.append(datum)
-            print('    {}'.format(datum))
-    data = {'results': tuple(data)}
-    if cache:
-        discograph.RelationGrapher.cache_set(cache_key, data)
-    return data
+def setup_database(config):
+    global db_helper
+    global postgres_db
+
+    # Based on configuration, use a different database.
+    if config['DATABASE'] == DatabaseType.POSTGRES:
+        print("Using Postgres Database")
+        db_helper = PostgresHelper
+        postgres_db = TempDB(
+            verbosity=0,
+            databases=[config['POSTGRES_DATABASE_NAME']],
+            initdb=config['POSTGRES_ROOT'] + '/bin/initdb',
+            postgres=config['POSTGRES_ROOT'] + '/bin/postgres',
+            psql=config['POSTGRES_ROOT'] + '/bin/psql',
+            createuser=config['POSTGRES_ROOT'] + '/bin/createuser',
+        )
+
+        # Create a database instance that will manage the connection and execute queries
+        database = pool.PooledPostgresqlExtDatabase(
+            config['POSTGRES_DATABASE_NAME'],
+            host=postgres_db.pg_socket_dir,
+            user=postgres_db.current_user,
+        )
+        # Configure the proxy database to use the database specified in config.
+        database_proxy.initialize(database)
+        if config['TESTING']:
+            Bootstrapper.is_test = True
+        PostgresBootstrapper.bootstrap_models(pessimistic=True)
+    elif config['DATABASE'] == DatabaseType.SQLITE:
+        print("Using Sqlite Database")
+        db_helper = SqliteHelper
+        database = SqliteExtDatabase(config['SQLITE_DATABASE_NAME'], pragmas={
+            'journal_mode': 'off',
+            'synchronous': 0,
+            'cache_size': 1000000,
+            # 'locking_mode': 'exclusive',
+            'temp_store': 'memory',
+        })
+        # Configure the proxy database to use the database specified in config.
+        database_proxy.initialize(database)
+        if config['TESTING']:
+            Bootstrapper.is_test = True
+        if not pathlib.Path(config['SQLITE_DATABASE_NAME']).is_file():
+            SqliteBootstrapper.bootstrap_models(pessimistic=True)
+
+
+def shutdown_database():
+    global postgres_db
+
+    print("Shutting down database")
+    if postgres_db:
+        postgres_db.cleanup()
+        postgres_db = None

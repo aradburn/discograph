@@ -19,7 +19,6 @@ if __name__ == '__main__':
             'psycopg2',
             'pytest',
             'redis',
-            'six',
             ],
         license='MIT',
         name='discograph',

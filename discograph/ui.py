@@ -1,15 +1,14 @@
-# -*- encoding: utf-8 -*-
 import json
+
 from flask import Blueprint
-from flask import current_app
+from flask import current_app as app
 from flask import make_response
-from flask import request
 from flask import render_template
+from flask import request
 from flask import url_for
 
-from discograph import exceptions
-from discograph import helpers
-
+from discograph import helpers, exceptions
+from discograph.library import CreditRole, EntityType
 
 blueprint = Blueprint('ui', __name__, template_folder='templates')
 
@@ -24,16 +23,15 @@ default_roles = (
 
 @blueprint.route('/')
 def route__index():
-    import discograph
-    app = current_app._get_current_object()
     is_a_return_visitor = request.cookies.get('is_a_return_visitor')
     initial_json = 'var dgData = null;'
+    # noinspection PyUnresolvedReferences
     on_mobile = request.MOBILE
     parsed_args = helpers.parse_request_args(request.args)
     original_roles, original_year = parsed_args
     if not original_roles:
         original_roles = default_roles
-    multiselect_mapping = discograph.CreditRole.get_multiselect_mapping()
+    multiselect_mapping = CreditRole.get_multiselect_mapping()
     url = url_for(
         request.endpoint,
         roles=original_roles,
@@ -56,26 +54,29 @@ def route__index():
     return response
 
 
-@blueprint.route('/<entity_type>/<int:entity_id>')
+@blueprint.route('/<entity_type>/<entity_id>')
 def route__entity_type__entity_id(entity_type, entity_id):
-    import discograph
-    app = current_app._get_current_object()
     parsed_args = helpers.parse_request_args(request.args)
     original_roles, original_year = parsed_args
     if not original_roles:
         original_roles = default_roles
-    if entity_type not in ('artist', 'label'):
-        raise exceptions.APIError(message='Bad Entity Type', status_code=404)
-    on_mobile = request.MOBILE
-    data = helpers.get_network(
+    entity_type = EntityType[entity_type.upper()]
+    if entity_type not in (EntityType.ARTIST, EntityType.LABEL):
+        raise exceptions.APIError(message='Bad Entity Type', status_code=400)
+    if not entity_id.isnumeric():
+        raise exceptions.APIError(message='Bad Entity Id', status_code=400)
+    entity_id = int(entity_id)
+
+    # on_mobile = request.MOBILE
+    data = helpers.db_helper.get_network(
         entity_id,
         entity_type,
-        on_mobile=on_mobile,
+        # on_mobile=on_mobile,
         cache=True,
         roles=original_roles,
         )
     if data is None:
-        raise exceptions.APIError(message='No Data', status_code=500)
+        raise exceptions.APIError(message='No Data', status_code=404)
     initial_json = json.dumps(
         data,
         sort_keys=True,
@@ -85,16 +86,16 @@ def route__entity_type__entity_id(entity_type, entity_id):
     initial_json = 'var dgData = {};'.format(initial_json)
     entity_name = data['center']['name']
     is_a_return_visitor = request.cookies.get('is_a_return_visitor')
-    key = '{}-{}'.format(entity_type, entity_id)
-    #url = '/{}/{}'.format(entity_type, entity_id)
+    key = '{}-{}'.format(entity_type.name.lower(), entity_id)
+    # url = '/{}/{}'.format(entity_type, entity_id)
     url = url_for(
         request.endpoint,
-        entity_type=entity_type,
+        entity_type=entity_type.name.lower(),
         entity_id=entity_id,
         roles=original_roles,
         )
     title = 'Disco/graph: {}'.format(entity_name)
-    multiselect_mapping = discograph.CreditRole.get_multiselect_mapping()
+    multiselect_mapping = CreditRole.get_multiselect_mapping()
     rendered_template = render_template(
         'index.html',
         application_url=app.config['APPLICATION_ROOT'],
@@ -104,7 +105,7 @@ def route__entity_type__entity_id(entity_type, entity_id):
         multiselect_mapping=multiselect_mapping,
         og_title='Disco/graph: The "{}" network'.format(entity_name),
         og_url=url,
-        on_mobile=on_mobile,
+        # on_mobile=on_mobile,
         original_roles=original_roles,
         original_year=original_year,
         title=title,
