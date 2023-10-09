@@ -1,5 +1,5 @@
-from discograph.library import *
-from discograph.app import app
+# from discograph.library import *
+# from discograph.app import app
 
-if __name__ == '__main__':
-    app.run(debug=False)
+# if __name__ == '__main__':
+#     app.run(debug=False)

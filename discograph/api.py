@@ -1,41 +1,46 @@
-# -*- encoding: utf-8 -*-
 from flask import Blueprint
-from flask import request
 from flask import jsonify
+from flask import request
 
-from discograph import decorators, SqliteRelation
-from discograph import exceptions
-from discograph import helpers
-from discograph.helpers import entity_name_types
+from discograph import exceptions, helpers
+from discograph.library import EntityType
 
 blueprint = Blueprint('api', __name__, template_folder='templates')
 
 
-@blueprint.route('/<entity_type>/relations/<int:entity_id>')
+@blueprint.route('/<entity_type>/relations/<entity_id>')
 # TODO AJR @decorators.limit(max_requests=60, period=60)
 def route__api__entity_type__relations__entity_id(entity_type, entity_id):
-    if entity_type not in (SqliteRelation.EntityType.ARTIST, SqliteRelation.EntityType.LABEL):
-        raise exceptions.APIError(message='Bad Entity Type', status_code=404)
-    data = helpers.get_relations(
+    print(f"entityType: {entity_type}")
+    entity_type = EntityType[entity_type.upper()]
+    if entity_type not in (EntityType.ARTIST, EntityType.LABEL):
+        raise exceptions.APIError(message='Bad Entity Type', status_code=400)
+    if not entity_id.isnumeric():
+        raise exceptions.APIError(message='Bad Entity Id', status_code=400)
+    entity_id = int(entity_id)
+    data = helpers.db_helper.get_relations(
         entity_id,
         entity_type,
         )
     if data is None:
-        raise exceptions.APIError(message='No Data', status_code=400)
+        raise exceptions.APIError(message='No Data', status_code=404)
     return jsonify(data)
 
 
-@blueprint.route('/<entity_type>/network/<int:entity_id>')
+@blueprint.route('/<entity_type>/network/<entity_id>')
 # TODO AJR @decorators.limit(max_requests=60, period=60)
 def route__api__entity_type__network__entity_id(entity_type, entity_id):
     print(f"entityType: {entity_type}")
-    entity_type = entity_name_types[entity_type]
-    if entity_type not in (SqliteRelation.EntityType.ARTIST, SqliteRelation.EntityType.LABEL):
-        raise exceptions.APIError(message='Bad Entity Type', status_code=404)
+    entity_type = EntityType[entity_type.upper()]
+    if entity_type not in (EntityType.ARTIST, EntityType.LABEL):
+        raise exceptions.APIError(message='Bad Entity Type', status_code=400)
+    if not entity_id.isnumeric():
+        raise exceptions.APIError(message='Bad Entity Id', status_code=400)
+    entity_id = int(entity_id)
     parsed_args = helpers.parse_request_args(request.args)
     original_roles, original_year = parsed_args
     # TODO AJR on_mobile = request.MOBILE
-    data = helpers.get_network(
+    data = helpers.db_helper.get_network(
         entity_id,
         entity_type,
         # TODO AJR on_mobile=on_mobile,
@@ -43,14 +48,15 @@ def route__api__entity_type__network__entity_id(entity_type, entity_id):
         roles=original_roles,
         )
     if data is None:
-        raise exceptions.APIError(message='No Data', status_code=400)
+        raise exceptions.APIError(message='No Data', status_code=404)
     return jsonify(data)
 
 
 @blueprint.route('/search/<search_string>')
 # TODO AJR @decorators.limit(max_requests=120, period=60)
 def route__api__search(search_string):
-    data = helpers.search_entities(search_string)
+    print(f"search_string: {search_string}")
+    data = helpers.db_helper.search_entities(search_string)
     return jsonify(data)
 
 
@@ -60,13 +66,13 @@ def route__api__random():
     parsed_args = helpers.parse_request_args(request.args)
     original_roles, original_year = parsed_args
     print('Roles:', original_roles)
-    entity_type, entity_id = helpers.get_random_entity(
+    entity_type, entity_id = helpers.db_helper.get_random_entity(
         roles=original_roles,
-        )
+    )
     print('    Found: {}-{}'.format(entity_type, entity_id))
-    entity_type = {
-        1: 'artist',
-        2: 'label',
-        }[entity_type.value]
-    data = {'center': '{}-{}'.format(entity_type, entity_id)}
+    # entity_type = {
+    #     1: 'artist',
+    #     2: 'label',
+    #     }[entity_type.value]
+    data = {'center': '{}-{}'.format(entity_type.name.lower(), entity_id)}
     return jsonify(data)

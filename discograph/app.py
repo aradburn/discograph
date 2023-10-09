@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# -*- encoding: utf-8 -*-
+import atexit
 import os
 import traceback
 
@@ -13,28 +13,43 @@ from flask_caching.backends.filesystemcache import FileSystemCache
 from flask_caching.backends.rediscache import RedisCache
 from flask_compress import Compress
 
-import discograph
-from discograph import api, SqliteModel
-from discograph import ui
+from discograph import api
 from discograph import exceptions
+from discograph import ui
+from discograph.helpers import setup_database, shutdown_database
+
+app: Flask = Flask(__name__)
+app_file_cache: FileSystemCache
+app_redis_cache: RedisCache
 
 
-app = Flask(__name__)
-app.config.from_object('discograph.config.DevelopmentConfiguration')
-# TODO AJR app.config.from_object('discograph.locals')
-app.fcache = FileSystemCache(
-    app.config['FILE_CACHE_PATH'],
-    default_timeout=app.config['FILE_CACHE_TIMEOUT'],
-    threshold=app.config['FILE_CACHE_THRESHOLD'],
+def setup_application():
+    global app, app_file_cache, app_redis_cache
+
+    app.config.from_object('discograph.config.PostgresDevelopmentConfiguration')
+    # app.config.from_object('discograph.config.SqliteDevelopmentConfiguration')
+    # TODO AJR app.config.from_object('discograph.locals')
+
+    app_file_cache = FileSystemCache(
+        app.config['FILE_CACHE_PATH'],
+        default_timeout=app.config['FILE_CACHE_TIMEOUT'],
+        threshold=app.config['FILE_CACHE_THRESHOLD'],
     )
-if not os.path.exists(app.config['FILE_CACHE_PATH']):
-    os.makedirs(app.config['FILE_CACHE_PATH'])
-app.rcache = RedisCache()
-app.register_blueprint(api.blueprint, url_prefix='/api')
-app.register_blueprint(ui.blueprint)
-# TODO AJR app.wsgi_app = ProxyFix(app.wsgi_app)
-# TODO AJR Mobility(app)
-Compress(app)
+    if not os.path.exists(app.config['FILE_CACHE_PATH']):
+        os.makedirs(app.config['FILE_CACHE_PATH'])
+    app_redis_cache = RedisCache()
+    app.register_blueprint(api.blueprint, url_prefix='/api')
+    app.register_blueprint(ui.blueprint)
+    # TODO AJR app.wsgi_app = ProxyFix(app.wsgi_app)
+    # TODO AJR Mobility(app)
+    Compress(app)
+
+
+def shutdown_application():
+    global app, app_file_cache, app_redis_cache
+    app = Flask(__name__)
+    app_file_cache = None
+    app_redis_cache = None
 
 
 @app.after_request
@@ -96,6 +111,7 @@ def handle_error_500(error):
 
 
 if __name__ == '__main__':
-    # discograph.Bootstrapper.is_test = True
-    # SqliteModel.bootstrap_sqlite_models(pessimistic=True)
+    setup_application()
+    setup_database(app.config)
+    atexit.register(shutdown_database)
     app.run(debug=True)

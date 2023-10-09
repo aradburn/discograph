@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 
 # systemtools.ImportManager.import_structured_package(
 #     __path__[0],
@@ -7,15 +6,9 @@
 
 
 from . import (
-    Bootstrapper,
-    TrellisNode,
+    bootstrapper,
+    trellis_node,
 )
 
-from .CreditRole import CreditRole
-from .SqliteModel import *
-from .SqliteMaster import *
-from .SqliteEntity import *
-from .SqliteRelation import *
-from .SqliteRelease import *
-from .SqliteRelationGrapher import *
-from .DiscographSqliteTestCase import *
+from .credit_role import CreditRole
+from .entity_type import EntityType

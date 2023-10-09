@@ -5,6 +5,7 @@ Flask-Caching
 flask~=2.3.3
 gunicorn
 peewee~=3.16.3
+pg_temp~=0.9.1
 psycopg2
 pytest
 redis-py~=5.0.1

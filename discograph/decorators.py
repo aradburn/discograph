@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 import flask
 import functools
 import redis
