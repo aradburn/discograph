@@ -9,6 +9,7 @@ from playhouse import sqlite_ext
 
 from discograph.library import EntityType, CreditRole
 from discograph.library.EnumField import EnumField
+from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.discogs_model import DiscogsModel
 from discograph.library.sqlite.sqlite_release import SqliteRelease
 
@@ -136,12 +137,13 @@ class SqliteRelation(DiscogsModel):
             document = query.get()
 
             relations = cls.from_release(document)
-            print('{} (Pass 1) [{}]\t(id:{})\t[{}] {}'.format(
-                cls.__name__.upper(),
-                annotation,
-                document.id,
-                len(relations),
-                document.title,
+            if Bootstrapper.is_test:
+                print('{} (Pass 1) [{}]\t(id:{})\t[{}] {}'.format(
+                    cls.__name__.upper(),
+                    annotation,
+                    document.id,
+                    len(relations),
+                    document.title,
                 ))
             for relation in relations:
                 instance, created = cls.get_or_create(

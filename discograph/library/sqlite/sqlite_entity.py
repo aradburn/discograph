@@ -251,7 +251,8 @@ class SqliteEntity(DiscogsModel):
                 timer.elapsed_time,
                 document.name,
                 )
-            print(message)
+            if Bootstrapper.is_test:
+                print(message)
             return
         message = changed_template.format(
             cls.__name__.upper(),
@@ -261,7 +262,8 @@ class SqliteEntity(DiscogsModel):
             timer.elapsed_time,
             document.name,
             )
-        print(message)
+        if Bootstrapper.is_test:
+            print(message)
         document.save()
 
     @classmethod
@@ -315,7 +317,8 @@ class SqliteEntity(DiscogsModel):
             ]
         template = u'{} (Pass 3) {:.3%} [{}]\t(id:{}) {}: {}'
         message = template.format(*message_pieces)
-        print(message)
+        if Bootstrapper.is_test:
+            print(message)
 
     @classmethod
     def element_to_names(cls, names):
@@ -378,7 +381,8 @@ class SqliteEntity(DiscogsModel):
                 document.name,
                 document.search_content,
                 )
-            print(message)
+            if Bootstrapper.is_test:
+                print(message)
         for document in cls.get_entity_iterator(entity_type=EntityType.LABEL):
             document.search_content = cls.string_to_tsvector(document.name)
             document.save()
@@ -388,7 +392,8 @@ class SqliteEntity(DiscogsModel):
                 document.name,
                 document.search_content,
                 )
-            print(message)
+            if Bootstrapper.is_test:
+                print(message)
 
     @classmethod
     def from_element(cls, element):
@@ -420,12 +425,7 @@ class SqliteEntity(DiscogsModel):
                 data['metadata'][key] = data.pop(key)
         if 'name' in data and data.get('name'):
             search_content: str = data.get('name')
-            search_content = search_content.lower()
-            search_content = unidecode(search_content, "utf-8")
-            search_content = unidecode(search_content)
-            # was search_content = search_content.strip_diacritics(search_content)
-            # TODO was peewee.fn.to_tsvector(search_content)
-            data['search_content'] = search_content
+            data['search_content'] = cls.string_to_tsvector(search_content)
         if element.tag == 'artist':
             data['entity_type'] = EntityType.ARTIST
         elif element.tag == 'label':
@@ -512,36 +512,22 @@ class SqliteEntity(DiscogsModel):
     @classmethod
     def search_text(cls, search_string):
         search_string = search_string.lower()
-        search_string = unidecode(search_string, "utf-8")
-        search_string = unidecode(search_string)
-        # was search_string = search_string.strip_diacritics(search_string)
+        # Transliterate the unicode string into a plain ASCII string
+        search_string = unidecode(search_string, "preserve")
         search_string = ','.join(search_string.split())
         query = (SqliteEntity
                  .select(SqliteEntity, SqliteEntity.bm25().alias('score'))
                  .where(SqliteEntity.search_content.match(search_string))
                  .order_by(SqliteEntity.bm25()))
-        # query = SqliteEntity.raw("""
-        #     SELECT entity_type,
-        #         entity_id,
-        #         name,
-        #         ts_rank_cd(search_content, query, 63) AS rank
-        #     FROM entities,
-        #         to_tsquery(%s) query
-        #     WHERE query @@ search_content
-        #     ORDER BY rank DESC
-        #     LIMIT 100
-        #     """, search_string)
         return query
 
     @classmethod
     def string_to_tsvector(cls, string):
         string = string.lower()
-        string = unidecode(string, "utf-8")
-        string = unidecode(string)
-        # was string = string.strip_diacritics(string)
+        # Transliterate the unicode string into a plain ASCII string
+        string = unidecode(string, "preserve")
         string = cls._strip_pattern.sub('', string)
         tsvector = string
-        # TODO  was tsvector = peewee.fn.to_tsvector(string)
         return tsvector
 
     def structural_roles_to_entity_keys(self, roles):

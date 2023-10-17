@@ -120,4 +120,4 @@ if __name__ == '__main__':
     setup_application()
     setup_database(app.config)
     atexit.register(shutdown_database)
-    app.run(debug=True)
+    app.run(debug=False)

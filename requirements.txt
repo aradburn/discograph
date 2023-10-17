@@ -4,7 +4,7 @@ Flask-Compress
 Flask-Caching
 flask~=2.3.3
 gunicorn
-peewee~=3.16.3
+peewee~=3.17.0
 pg_temp~=0.9.1
 fakeredis
 psycopg2

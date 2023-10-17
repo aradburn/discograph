@@ -1,7 +1,6 @@
 import json
 import multiprocessing
 import re
-import threading
 import traceback
 
 import peewee
@@ -13,14 +12,8 @@ from unidecode import unidecode
 from discograph.library import EntityType
 from discograph.library.EnumField import EnumField
 from discograph.library.bootstrapper import Bootstrapper
-from discograph.library.discogs_model import DiscogsModel
+from discograph.library.discogs_model import DiscogsModel, database_proxy
 from discograph.library.postgres.postgres_relation import PostgresRelation
-
-# Print all queries to stderr.
-# import logging
-# logger = logging.getLogger('peewee')
-# logger.addHandler(logging.StreamHandler())
-# logger.setLevel(logging.DEBUG)
 
 
 class PostgresEntity(DiscogsModel):
@@ -41,10 +34,10 @@ class PostgresEntity(DiscogsModel):
 
     _strip_pattern = re.compile(r'(\(\d+\)|[^(\w\s)]+)')
 
-    class BootstrapPassTwoWorker(threading.Thread):
+    class BootstrapPassTwoWorker(multiprocessing.Process):
 
         def __init__(self, entity_type: EntityType, indices):
-            threading.Thread.__init__(self)
+            multiprocessing.Process.__init__(self)
             self.entity_type = entity_type
             self.indices = indices
 
@@ -52,49 +45,50 @@ class PostgresEntity(DiscogsModel):
             proc_number = self.name.split('-')[-1]
             corpus = {}
             total = len(self.indices)
-            for i, entity_id in enumerate(self.indices):
-                with DiscogsModel.connection_context():
-                    progress = float(i) / total
-                    try:
-                        PostgresEntity.bootstrap_pass_two_single(
-                            entity_type=self.entity_type,
-                            entity_id=entity_id,
-                            annotation=proc_number,
-                            corpus=corpus,
-                            progress=progress,
+            from discograph.helpers import bootstrap_database
+            database_proxy.initialize(bootstrap_database)
+            with DiscogsModel.connection_context():
+                for i, entity_id in enumerate(self.indices):
+                    with DiscogsModel.atomic():
+                        progress = float(i) / total
+                        try:
+                            PostgresEntity.bootstrap_pass_two_single(
+                                entity_type=self.entity_type,
+                                entity_id=entity_id,
+                                annotation=proc_number,
+                                corpus=corpus,
+                                progress=progress,
                             )
-                    except peewee.PeeweeException:
-                        print(
-                            'ERROR:',
-                            self.entity_type,
-                            entity_id,
-                            proc_number,
-                            )
-                        traceback.print_exc()
+                        except peewee.PeeweeException:
+                            print('ERROR:', self.entity_type, entity_id, proc_number)
+                            traceback.print_exc()
 
-    class BootstrapPassThreeWorker(threading.Thread):
+    class BootstrapPassThreeWorker(multiprocessing.Process):
 
         def __init__(self, entity_type: EntityType, indices):
-            threading.Thread.__init__(self)
+            multiprocessing.Process.__init__(self)
             self.entity_type = entity_type
             self.indices = indices
 
         def run(self):
             proc_name = self.name
             total = len(self.indices)
-            for i, entity_id in enumerate(self.indices):
-                with DiscogsModel.connection_context():
-                    progress = float(i) / total
-                    try:
-                        PostgresEntity.bootstrap_pass_three_single(
-                            entity_type=self.entity_type,
-                            entity_id=entity_id,
-                            annotation=proc_name,
-                            progress=progress,
+            from discograph.helpers import bootstrap_database
+            database_proxy.initialize(bootstrap_database)
+            with DiscogsModel.connection_context():
+                for i, entity_id in enumerate(self.indices):
+                    with DiscogsModel.atomic():
+                        progress = float(i) / total
+                        try:
+                            PostgresEntity.bootstrap_pass_three_single(
+                                entity_type=self.entity_type,
+                                entity_id=entity_id,
+                                annotation=proc_name,
+                                progress=progress,
                             )
-                    except peewee.PeeweeException:
-                        print('ERROR:', self.entity_type, entity_id, proc_name)
-                        traceback.print_exc()
+                        except peewee.PeeweeException:
+                            print('ERROR:', self.entity_type, entity_id, proc_name)
+                            traceback.print_exc()
 
     # PEEWEE FIELDS
 
@@ -111,12 +105,14 @@ class PostgresEntity(DiscogsModel):
     class Meta:
         db_table = 'entities'
         primary_key = peewee.CompositeKey('entity_type', 'entity_id')
+        indexes = (
+            (('entity_type', 'name'), False),
+        )
 
     # PUBLIC METHODS
 
     @classmethod
     def bootstrap(cls):
-        print(f"bootstrap entity")
         cls.drop_table(True)
         cls.create_table()
         cls.bootstrap_pass_one()
@@ -124,22 +120,20 @@ class PostgresEntity(DiscogsModel):
 
     @classmethod
     def bootstrap_pass_one(cls, **kwargs):
-        print(f"bootstrap entity pass one", flush=True)
-
         DiscogsModel.bootstrap_pass_one(
             cls,
             'artist',
             id_attr='entity_id',
             name_attr='name',
             skip_without=['name'],
-            )
+        )
         DiscogsModel.bootstrap_pass_one(
             cls,
             'label',
             id_attr='entity_id',
             name_attr='name',
             skip_without=['name'],
-            )
+        )
 
     @classmethod
     def get_entity_iterator(cls, entity_type: EntityType, pessimistic=False):
@@ -185,6 +179,7 @@ class PostgresEntity(DiscogsModel):
             query = query.order_by(cls.entity_id)
             query = query.tuples()
             all_ids = tuple(_[0] for _ in query)
+            # ratio = [1] * 2
             ratio = [1] * multiprocessing.cpu_count()
             for chunk in sequence.partition_by_ratio_of_lengths(all_ids, tuple(ratio)):
                 indices.append(chunk)
@@ -192,24 +187,37 @@ class PostgresEntity(DiscogsModel):
 
     @classmethod
     def bootstrap_pass_two(cls, pessimistic=False, **kwargs):
-        print(f"bootstrap entity pass two", flush=True)
+        print("entity bootstrap pass two - artist")
         entity_type: EntityType = EntityType.ARTIST
         indices = cls.get_indices(entity_type, pessimistic=pessimistic)
+
         workers = [cls.BootstrapPassTwoWorker(entity_type, x) for x in indices]
+        print("entity bootstrap pass two - artist start workers")
         for worker in workers:
             worker.start()
         for worker in workers:
             worker.join()
+        for worker in workers:
+            worker.terminate()
+
+        print("entity bootstrap pass two - label")
         entity_type: EntityType = EntityType.LABEL
         indices = cls.get_indices(entity_type, pessimistic=pessimistic)
+
         workers = [cls.BootstrapPassTwoWorker(entity_type, x) for x in indices]
+        print("entity bootstrap pass two - label start workers")
         for worker in workers:
             worker.start()
         for worker in workers:
             worker.join()
+        for worker in workers:
+            worker.terminate()
+        print("entity bootstrap pass two - done")
 
     @classmethod
     def bootstrap_pass_three(cls, pessimistic=False):
+        print("entity bootstrap pass three")
+
         entity_type: EntityType = EntityType.ARTIST
         indices = cls.get_indices(entity_type, pessimistic=pessimistic)
         workers = [cls.BootstrapPassThreeWorker(entity_type, x) for x in indices]
@@ -217,6 +225,8 @@ class PostgresEntity(DiscogsModel):
             worker.start()
         for worker in workers:
             worker.join()
+        for worker in workers:
+            worker.terminate()
         entity_type: EntityType = EntityType.LABEL
         indices = cls.get_indices(entity_type, pessimistic=pessimistic)
         workers = [cls.BootstrapPassThreeWorker(entity_type, _) for _ in indices]
@@ -224,6 +234,8 @@ class PostgresEntity(DiscogsModel):
             worker.start()
         for worker in workers:
             worker.join()
+        for worker in workers:
+            worker.terminate()
 
     @classmethod
     def bootstrap_pass_two_single(cls, entity_type: EntityType, entity_id: int,
@@ -248,8 +260,9 @@ class PostgresEntity(DiscogsModel):
                 (document.entity_type, document.entity_id),
                 timer.elapsed_time,
                 document.name,
-                )
-            print(message)
+            )
+            if Bootstrapper.is_test:
+                print(message)
             return
         document.save()
         message = changed_template.format(
@@ -259,8 +272,9 @@ class PostgresEntity(DiscogsModel):
             (document.entity_type, document.entity_id),
             timer.elapsed_time,
             document.name,
-            )
-        print(message)
+        )
+        if Bootstrapper.is_test:
+            print(message)
 
     @classmethod
     def bootstrap_pass_three_single(cls, entity_type: EntityType, entity_id: int, annotation='', progress=None):
@@ -313,7 +327,8 @@ class PostgresEntity(DiscogsModel):
             ]
         template = u'{} (Pass 3) {:.3%} [{}]\t(id:{}) {}: {}'
         message = template.format(*message_pieces)
-        print(message)
+        if Bootstrapper.is_test:
+            print(message)
 
     @classmethod
     def element_to_names(cls, names):
@@ -375,8 +390,9 @@ class PostgresEntity(DiscogsModel):
                 document.entity_id,
                 document.name,
                 document.search_content,
-                )
-            print(message)
+            )
+            if Bootstrapper.is_test:
+                print(message)
         for document in cls.get_entity_iterator(entity_type=EntityType.LABEL):
             document.search_content = cls.string_to_tsvector(document.name)
             document.save()
@@ -385,8 +401,9 @@ class PostgresEntity(DiscogsModel):
                 document.entity_id,
                 document.name,
                 document.search_content,
-                )
-            print(message)
+            )
+            if Bootstrapper.is_test:
+                print(message)
 
     @classmethod
     def from_element(cls, element):
@@ -418,11 +435,7 @@ class PostgresEntity(DiscogsModel):
                 data['metadata'][key] = data.pop(key)
         if 'name' in data and data.get('name'):
             search_content = data.get('name')
-            search_content = search_content.lower()
-            search_content = unidecode(search_content, "utf-8")
-            search_content = unidecode(search_content)
-            # was search_content = search_content.strip_diacritics(search_content)
-            data['search_content'] = peewee.fn.to_tsvector(search_content)
+            data['search_content'] = cls.string_to_tsvector(search_content)
         if element.tag == 'artist':
             data['entity_type'] = EntityType.ARTIST
         elif element.tag == 'label':
@@ -509,9 +522,8 @@ class PostgresEntity(DiscogsModel):
     @classmethod
     def search_text(cls, search_string):
         search_string = search_string.lower()
-        search_string = unidecode(search_string, "utf-8")
-        search_string = unidecode(search_string)
-        # was search_string = search_content.strip_diacritics(search_content)
+        # Transliterate the unicode string into a plain ASCII string
+        search_string = unidecode(search_string, "preserve")
         search_string = ','.join(search_string.split())
         query = PostgresEntity.raw("""
             SELECT entity_type,
@@ -529,9 +541,8 @@ class PostgresEntity(DiscogsModel):
     @classmethod
     def string_to_tsvector(cls, string):
         string = string.lower()
-        string = unidecode(string, "utf-8")
-        string = unidecode(string)
-        # was string = string.strip_diacritics(string)
+        # Transliterate the unicode string into a plain ASCII string
+        string = unidecode(string, "preserve")
         string = cls._strip_pattern.sub('', string)
         tsvector = peewee.fn.to_tsvector(string)
         return tsvector

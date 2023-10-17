@@ -158,7 +158,8 @@ class SqliteRelease(DiscogsModel):
                 timer.elapsed_time,
                 document.title,
             )
-            print(message)
+            if Bootstrapper.is_test:
+                print(message)
             return
         message = changed_template.format(
             cls.__name__.upper(),
@@ -168,7 +169,8 @@ class SqliteRelease(DiscogsModel):
             timer.elapsed_time,
             document.title,
         )
-        print(message)
+        if Bootstrapper.is_test:
+            print(message)
         document.save()
 
     @classmethod

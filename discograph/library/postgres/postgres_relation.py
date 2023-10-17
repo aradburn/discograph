@@ -1,7 +1,7 @@
 import itertools
+import multiprocessing
 import random
 import re
-import threading
 import traceback
 
 import peewee
@@ -9,7 +9,8 @@ from playhouse import postgres_ext
 
 from discograph.library import EntityType, CreditRole
 from discograph.library.EnumField import EnumField
-from discograph.library.discogs_model import DiscogsModel
+from discograph.library.bootstrapper import Bootstrapper
+from discograph.library.discogs_model import DiscogsModel, database_proxy
 from discograph.library.postgres.postgres_release import PostgresRelease
 
 
@@ -17,25 +18,33 @@ class PostgresRelation(DiscogsModel):
 
     # CLASS VARIABLES
 
-    class BootstrapWorker(threading.Thread):
+    class BootstrapWorker(multiprocessing.Process):
 
         corpus = {}
 
         def __init__(self, indices):
-            threading.Thread.__init__(self)
+            multiprocessing.Process.__init__(self)
+            # threading.Thread.__init__(self)
             self.indices = indices
 
         def run(self):
             proc_name = self.name
-            for release_id in self.indices:
-                try:
-                    PostgresRelation.bootstrap_pass_one_inner(
-                        release_id,
-                        self.corpus,
-                        annotation=proc_name,
+            from discograph.helpers import bootstrap_database
+            database_proxy.initialize(bootstrap_database)
+            with DiscogsModel.connection_context():
+                count = 0
+                for release_id in self.indices:
+                    try:
+                        PostgresRelation.bootstrap_pass_one_inner(
+                            release_id,
+                            self.corpus,
+                            annotation=proc_name,
                         )
-                except peewee.PeeweeException:
-                    traceback.print_exc()
+                        count += 1
+                        if count % 10000 == 0:
+                            print(f"processed {count}")
+                    except peewee.PeeweeException:
+                        traceback.print_exc()
 
     aggregate_roles = (
         'Compiled By',
@@ -67,16 +76,21 @@ class PostgresRelation(DiscogsModel):
             'entity_two_id',
             'role',
             )
+        # indexes = (
+        #     (('entity_one_type', 'entity_one_id'), False),
+        #     (('entity_two_type', 'entity_two_id'), False),
+        # )
         indexes = (
             ((
                 'entity_one_type', 'entity_one_id',
                 'entity_two_type', 'entity_two_id',
                 'role'), True),
-            ((
-                'entity_two_type', 'entity_two_id',
-                'entity_one_type', 'entity_one_id',
-                'role'), True),
-            )
+        )
+        #     ((
+        #         'entity_two_type', 'entity_two_id',
+        #         'entity_one_type', 'entity_one_id',
+        #         'role'), True),
+        #     )
 
     # PRIVATE METHODS
 
@@ -115,32 +129,35 @@ class PostgresRelation(DiscogsModel):
 
     @classmethod
     def bootstrap_pass_one(cls, pessimistic=False, **kwargs):
+        print("relation bootstrap pass one")
         indices = PostgresRelease.get_indices(pessimistic)
         workers = [cls.BootstrapWorker(_) for _ in indices]
         for worker in workers:
             worker.start()
         for worker in workers:
             worker.join()
-        # for worker in workers:
-        #     worker.terminate()
+        for worker in workers:
+            worker.terminate()
 
     # noinspection PyUnusedLocal
     @classmethod
     def bootstrap_pass_one_inner(cls, release_id, corpus, annotation=''):
-        with DiscogsModel.connection_context():
+        with DiscogsModel.atomic():
             release_cls = PostgresRelease
             query = release_cls.select().where(release_cls.id == release_id)
             if not query.count():
                 return
             document = query.get()
             relations = cls.from_release(document)
-            print('{} (Pass 1) [{}]\t(id:{})\t[{}] {}'.format(
-                cls.__name__.upper(),
-                annotation,
-                document.id,
-                len(relations),
-                document.title,
-                ))
+            if Bootstrapper.is_test:
+                print('{} (Pass 1) [{}]\t(id:{})\t[{}] {}'.format(
+                    cls.__name__.upper(),
+                    annotation,
+                    document.id,
+                    len(relations),
+                    document.title,
+                    )
+                )
             for relation in relations:
                 instance, created = cls.get_or_create(
                     entity_one_type=relation['entity_one_type'],

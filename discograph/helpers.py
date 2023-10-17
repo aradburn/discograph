@@ -1,8 +1,10 @@
+import atexit
 import pathlib
 import re
 
 from pg_temp import TempDB
 from playhouse import pool
+from playhouse.postgres_ext import PostgresqlExtDatabase
 from playhouse.sqlite_ext import SqliteExtDatabase
 
 from discograph.config import DatabaseType
@@ -15,7 +17,10 @@ from discograph.library.sqlite.sqlite_bootstrapper import SqliteBootstrapper
 from discograph.library.sqlite.sqlite_helper import SqliteHelper
 
 db_helper: DatabaseHelper
-postgres_db: TempDB
+
+bootstrap_database: None
+
+postgres_db: TempDB = None
 
 urlify_pattern = re.compile(r"\s+", re.MULTILINE)
 
@@ -49,11 +54,21 @@ def parse_request_args(args):
 def setup_database(config):
     global db_helper
     global postgres_db
+    global bootstrap_database
 
     # Based on configuration, use a different database.
     if config['DATABASE'] == DatabaseType.POSTGRES:
         print("Using Postgres Database")
         db_helper = PostgresHelper
+        options = {
+            # "work_mem": "1000MB",
+            # "effective_cache_size": "1000MB",
+            "max_connections": 20,
+            "shared_buffers": "4000MB",
+            "log_min_duration_statement": 5000,
+            "shared_preload_libraries": 'pg_stat_statements',
+            "session_preload_libraries": 'auto_explain',
+        }
         postgres_db = TempDB(
             verbosity=0,
             databases=[config['POSTGRES_DATABASE_NAME']],
@@ -61,18 +76,33 @@ def setup_database(config):
             postgres=config['POSTGRES_ROOT'] + '/bin/postgres',
             psql=config['POSTGRES_ROOT'] + '/bin/psql',
             createuser=config['POSTGRES_ROOT'] + '/bin/createuser',
+            options=options
         )
+        atexit.register(shutdown_database)
 
         # Create a database instance that will manage the connection and execute queries
         database = pool.PooledPostgresqlExtDatabase(
             config['POSTGRES_DATABASE_NAME'],
             host=postgres_db.pg_socket_dir,
             user=postgres_db.current_user,
+            max_connections=20,
         )
         # Configure the proxy database to use the database specified in config.
         database_proxy.initialize(database)
         if config['TESTING']:
             Bootstrapper.is_test = True
+        with database.connection_context():
+            database.execute_sql("SET auto_explain.log_analyze TO on;")
+            database.execute_sql("SET auto_explain.log_min_duration TO 500;")
+            database.execute_sql("CREATE EXTENSION pg_stat_statements;")
+
+        bootstrap_database = PostgresqlExtDatabase(
+            config['POSTGRES_DATABASE_NAME'],
+            host=postgres_db.pg_socket_dir,
+            user=postgres_db.current_user,
+            autoconnect=False,
+        )
+
         PostgresBootstrapper.bootstrap_models(pessimistic=True)
     elif config['DATABASE'] == DatabaseType.SQLITE:
         print("Using Sqlite Database")
@@ -96,6 +126,7 @@ def shutdown_database():
     global postgres_db
 
     print("Shutting down database")
-    if postgres_db:
+    if postgres_db is not None:
+        print("Cleaning up Postgres Database")
         postgres_db.cleanup()
         postgres_db = None

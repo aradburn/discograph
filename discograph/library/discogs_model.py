@@ -1,9 +1,11 @@
 import gzip
 import json
+import multiprocessing
 import pprint
 import random
 import traceback
 
+import peewee
 from abjad import Timer
 from peewee import Model, FloatField, DatabaseProxy, DataError, fn
 from playhouse.shortcuts import model_to_dict
@@ -14,6 +16,29 @@ database_proxy = DatabaseProxy()  # Create a proxy for the database.
 
 
 class DiscogsModel(Model):
+
+    class BootstrapPassOneWorker(multiprocessing.Process):
+
+        def __init__(self, model_class, bulk_inserts, inserted_count):
+            multiprocessing.Process.__init__(self)
+            self.model_class = model_class
+            self.bulk_inserts = bulk_inserts
+            self.inserted_count = inserted_count
+
+        def run(self):
+            proc_number = self.name.split('-')[-1]
+            corpus = {}
+            total = len(self.bulk_inserts)
+            from discograph.helpers import bootstrap_database
+            database_proxy.initialize(bootstrap_database)
+            with DiscogsModel.connection_context():
+                try:
+                    with DiscogsModel.atomic():
+                        self.model_class.bulk_create(self.bulk_inserts)
+                except peewee.PeeweeException:
+                    print("Error in bootstrap_pass_one worker")
+                    traceback.print_exc()
+            print(f"inserted_count: {self.inserted_count}")
 
     # PEEWEE FIELDS
 
@@ -42,6 +67,8 @@ class DiscogsModel(Model):
         print(f"Loading data from {xml_path}", flush=True)
         with gzip.GzipFile(xml_path, 'r') as file_pointer:
             iterator = Bootstrapper.iterparse(file_pointer, xml_tag)
+            bulk_inserts = []
+            workers = []
             for i, element in enumerate(iterator):
                 data = None
                 try:
@@ -53,26 +80,61 @@ class DiscogsModel(Model):
                         if element.get('id'):
                             data['id'] = element.get('id')
                         data['random'] = random.random()
-                        document = model_class.create(**data)
+                        # print(**data)
+                        new_instance = model_class(model_class, **data)
+                        # print(f"new_instance: {new_instance}", flush=True)
+                        bulk_inserts.append(new_instance)
+                        # document = model_class.create(**data)
                         inserted_count += 1
-                    message = template.format(
-                        model_class.__name__.upper(),
-                        i,
-                        getattr(document, id_attr),
-                        timer.elapsed_time,
-                        getattr(document, name_attr),
-                        )
-                    print(f"message: {message}")
+                        if len(bulk_inserts) >= 50000:
+                            worker = cls.insert_bulk(model_class, bulk_inserts, inserted_count)
+                            worker.start()
+                            workers.append(worker)
+                            bulk_inserts.clear()
+                        if len(workers) > multiprocessing.cpu_count():
+                            worker = workers.pop(0)
+                            # print(f"wait for worker {len(workers)} in list", flush=True)
+                            worker.join()
+                            worker.terminate()
+                        if inserted_count > 2000000:
+                            break
+                    # message = template.format(
+                    #     model_class.__name__.upper(),
+                    #     i,
+                    #     getattr(document, id_attr),
+                    #     timer.elapsed_time,
+                    #     getattr(document, name_attr),
+                    #     )
+                    # if Bootstrapper.is_test:
+                    #     print(message)
                 except DataError as e:
                     print("Error in bootstrap_pass_one")
                     pprint.pprint(data)
                     traceback.print_exc()
                     raise e
+            while len(workers) > 0:
+                worker = workers.pop(0)
+                # print(f"wait for worker {len(workers)} in list", flush=True)
+                worker.join()
+                worker.terminate()
+            if len(bulk_inserts) > 0:
+                with DiscogsModel.atomic():
+                    try:
+                        model_class.bulk_create(bulk_inserts)
+                    except peewee.PeeweeException:
+                        print("Error in bootstrap_pass_one")
+                        traceback.print_exc()
             updated_count = len(model_class) - initial_count
             print(f"inserted_count: {inserted_count}", flush=True)
             print(f"updated_count: {updated_count}", flush=True)
             print(f"i+1: {i+1}", flush=True)
             assert inserted_count == updated_count
+
+    @classmethod
+    def insert_bulk(cls, model_class, bulk_inserts, inserted_count):
+        worker = cls.BootstrapPassOneWorker(model_class, bulk_inserts, inserted_count)
+        # print("bootstrap pass one - start worker")
+        return worker
 
     @classmethod
     def bootstrap_pass_two(cls, model_class, name_attr='name'):
@@ -94,7 +156,8 @@ class DiscogsModel(Model):
                     timer.elapsed_time,
                     getattr(document, name_attr),
                     )
-                print(message)
+                if Bootstrapper.is_test:
+                    print(message)
                 continue
             message = changed_template.format(
                 model_class.__name__.upper(),
@@ -102,7 +165,8 @@ class DiscogsModel(Model):
                 timer.elapsed_time,
                 getattr(document, name_attr),
                 )
-            print(message)
+            if Bootstrapper.is_test:
+                print(message)
             document.save()
 
     @staticmethod
@@ -110,10 +174,16 @@ class DiscogsModel(Model):
         database_proxy.connect()
 
     @staticmethod
+    def close():
+        database_proxy.close()
+
+    @staticmethod
     def connection_context():
-        # return database_proxy.atomic()
-        # return database_proxy.__enter__()
         return database_proxy.connection_context()
+
+    @staticmethod
+    def atomic():
+        return database_proxy.atomic()
 
     @classmethod
     def get_random(cls):

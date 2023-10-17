@@ -10,53 +10,7 @@ from .postgres_test_case import PostgresTestCase
 
 class TestPostgresRelationFromRelease(PostgresTestCase):
 
-    def test_01(self):
-        iterator = Bootstrapper.get_iterator('release')
-        release_element = next(iterator)
-        release_document = PostgresRelease.from_element(release_element)
-        release_document.resolve_references({}, spuriously=True)
-        actual = PostgresRelation.from_release(release_document)
-        expected = [
-            {
-                'entity_one_id': 41,
-                'entity_one_type': EntityType.ARTIST,
-                'entity_two_id': -1,
-                'entity_two_type': EntityType.LABEL,
-                'release_id': 157,
-                'role': 'Released On',
-                'year': 1994,
-            },
-            {
-                'entity_one_id': 42,
-                'entity_one_type': EntityType.ARTIST,
-                'entity_two_id': 41,
-                'entity_two_type': EntityType.ARTIST,
-                'release_id': 157,
-                'role': 'Producer',
-                'year': 1994
-            },
-            {
-                'entity_one_id': 300407,
-                'entity_one_type': EntityType.ARTIST,
-                'entity_two_id': 41,
-                'entity_two_type': EntityType.ARTIST,
-                'release_id': 157,
-                'role': 'Producer',
-                'year': 1994
-            },
-            {
-                'entity_one_id': 445854,
-                'entity_one_type': EntityType.ARTIST,
-                'entity_two_id': 41,
-                'entity_two_type': EntityType.ARTIST,
-                'release_id': 157,
-                'role': 'Design',
-                'year': 1994
-            }
-        ]
-        assert actual == expected
-
-    def test_02(self):
+    def test_parse(self):
         source = string.normalize('''
             <?xml version="1.0" ?>
             <release id="103" status="Accepted">

@@ -106,10 +106,7 @@ class Bootstrapper(object):
 
     @staticmethod
     def iterparse(source, tag):
-        context = ElementTree.iterparse(
-            source,
-            events=('start', 'end',),
-            )
+        context = ElementTree.iterparse(source, events=('start', 'end'))
         context = iter(context)
         _, root = next(context)
         depth = 0

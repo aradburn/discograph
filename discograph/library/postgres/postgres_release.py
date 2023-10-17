@@ -1,5 +1,4 @@
 import multiprocessing
-import threading
 import traceback
 
 import peewee
@@ -7,7 +6,7 @@ from abjad import sequence, Timer
 from playhouse import postgres_ext
 
 from discograph.library.bootstrapper import Bootstrapper
-from discograph.library.discogs_model import DiscogsModel
+from discograph.library.discogs_model import DiscogsModel, database_proxy
 
 
 class PostgresRelease(DiscogsModel):
@@ -19,29 +18,33 @@ class PostgresRelease(DiscogsModel):
 
     _tracks_mapping = {}
 
-    class BootstrapPassTwoWorker(threading.Thread):
+    class BootstrapPassTwoWorker(multiprocessing.Process):
 
         def __init__(self, indices):
-            threading.Thread.__init__(self)
+            multiprocessing.Process.__init__(self)
+            # threading.Thread.__init__(self)
             self.indices = indices
 
         def run(self):
             proc_name = self.name
             corpus = {}
             total = len(self.indices)
-            for i, release_id in enumerate(self.indices):
-                with DiscogsModel.connection_context():
-                    progress = float(i) / total
-                    try:
-                        PostgresRelease.bootstrap_pass_two_single(
-                            release_id=release_id,
-                            annotation=proc_name,
-                            corpus=corpus,
-                            progress=progress,
-                        )
-                    except peewee.PeeweeException:
-                        print('ERROR:', release_id, proc_name)
-                        traceback.print_exc()
+            from discograph.helpers import bootstrap_database
+            database_proxy.initialize(bootstrap_database)
+            with DiscogsModel.connection_context():
+                for i, release_id in enumerate(self.indices):
+                    with DiscogsModel.atomic():
+                        progress = float(i) / total
+                        try:
+                            PostgresRelease.bootstrap_pass_two_single(
+                                release_id=release_id,
+                                annotation=proc_name,
+                                corpus=corpus,
+                                progress=progress,
+                            )
+                        except peewee.PeeweeException:
+                            print('ERROR:', release_id, proc_name)
+                            traceback.print_exc()
 
     # PEEWEE FIELDS
 
@@ -77,6 +80,7 @@ class PostgresRelease(DiscogsModel):
 
     @classmethod
     def bootstrap_pass_one(cls, **kwargs):
+        print("release bootstrap pass one")
         DiscogsModel.bootstrap_pass_one(
             model_class=cls,
             xml_tag='release',
@@ -99,7 +103,7 @@ class PostgresRelease(DiscogsModel):
             query = query.order_by(cls.id)
             query = query.tuples()
             all_ids = tuple(_[0] for _ in query)
-            ratio = [1] * (multiprocessing.cpu_count() * 2)
+            ratio = [1] * multiprocessing.cpu_count()
             for chunk in sequence.partition_by_ratio_of_lengths(all_ids, tuple(ratio)):
                 indices.append(chunk)
         return indices
@@ -123,14 +127,18 @@ class PostgresRelease(DiscogsModel):
 
     @classmethod
     def bootstrap_pass_two(cls, pessimistic=False, **kwargs):
+        print("release bootstrap pass two")
         indices = cls.get_indices(pessimistic=pessimistic)
+
         workers = [cls.BootstrapPassTwoWorker(x) for x in indices]
+        print("release bootstrap pass two - start workers")
         for worker in workers:
             worker.start()
         for worker in workers:
             worker.join()
-        # for worker in workers:
-        #     worker.terminate()
+        for worker in workers:
+            worker.terminate()
+        print("release bootstrap pass two - done")
 
     @classmethod
     def bootstrap_pass_two_single(
@@ -157,7 +165,8 @@ class PostgresRelease(DiscogsModel):
                 timer.elapsed_time,
                 document.title,
             )
-            print(message)
+            if Bootstrapper.is_test:
+                print(message)
             return
         document.save()
         message = changed_template.format(
@@ -168,7 +177,8 @@ class PostgresRelease(DiscogsModel):
             timer.elapsed_time,
             document.title,
         )
-        print(message)
+        if Bootstrapper.is_test:
+            print(message)
 
     @classmethod
     def element_to_artist_credits(cls, element):
