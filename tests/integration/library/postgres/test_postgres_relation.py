@@ -1,8 +1,8 @@
-from abjad import string
 from xml.etree import ElementTree
 
+from abjad import string
+
 from discograph.library import EntityType
-from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.postgres.postgres_relation import PostgresRelation
 from discograph.library.postgres.postgres_release import PostgresRelease
 from .postgres_test_case import PostgresTestCase

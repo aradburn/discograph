@@ -1,4 +1,3 @@
-from discograph.library.discogs_model import DiscogsModel
 from discograph.library.postgres.postgres_entity import PostgresEntity
 from discograph.library.postgres.postgres_relation import PostgresRelation
 from discograph.library.postgres.postgres_release import PostgresRelease

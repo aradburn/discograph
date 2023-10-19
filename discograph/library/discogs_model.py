@@ -20,7 +20,7 @@ class DiscogsModel(Model):
     class BootstrapPassOneWorker(multiprocessing.Process):
 
         def __init__(self, model_class, bulk_inserts, inserted_count):
-            multiprocessing.Process.__init__(self)
+            super().__init__()
             self.model_class = model_class
             self.bulk_inserts = bulk_inserts
             self.inserted_count = inserted_count
@@ -95,6 +95,9 @@ class DiscogsModel(Model):
                             worker = workers.pop(0)
                             # print(f"wait for worker {len(workers)} in list", flush=True)
                             worker.join()
+                            if worker.exitcode > 0:
+                                print(f"worker.exitcode: {worker.exitcode}")
+                                raise Exception("Error in worker process")
                             worker.terminate()
                         if inserted_count > 2000000:
                             break
@@ -116,6 +119,9 @@ class DiscogsModel(Model):
                 worker = workers.pop(0)
                 # print(f"wait for worker {len(workers)} in list", flush=True)
                 worker.join()
+                if worker.exitcode > 0:
+                    print(f"worker.exitcode: {worker.exitcode}")
+                    raise Exception("Error in worker process")
                 worker.terminate()
             if len(bulk_inserts) > 0:
                 with DiscogsModel.atomic():
@@ -184,6 +190,9 @@ class DiscogsModel(Model):
     @staticmethod
     def atomic():
         return database_proxy.atomic()
+        # from discograph.app import app
+        # from discograph.config import ThreadingModel
+        # return database_proxy.atomic() if app.config['THREADING_MODEL'] == ThreadingModel.PROCESS else nullcontext()
 
     @classmethod
     def get_random(cls):

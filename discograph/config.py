@@ -4,10 +4,14 @@ import tempfile
 
 
 class DatabaseType(enum.Enum):
-
     POSTGRES = 1
     SQLITE = 2
     COCKROACH = 3
+
+
+class ThreadingModel(enum.Enum):
+    PROCESS = 1
+    THREAD = 2
 
 
 class Configuration(object):
@@ -23,6 +27,7 @@ class PostgresProductionConfiguration(Configuration):
     POSTGRES_DATABASE_NAME = 'discograph'
     POSTGRES_ROOT = '/usr/lib/postgresql/14'
     APPLICATION_ROOT = 'http://discograph.org'
+    THREADING_MODEL = ThreadingModel.PROCESS
 
 
 class PostgresDevelopmentConfiguration(Configuration):
@@ -32,6 +37,7 @@ class PostgresDevelopmentConfiguration(Configuration):
     POSTGRES_DATABASE_NAME = 'dev_discograph'
     POSTGRES_ROOT = '/usr/lib/postgresql/14'
     APPLICATION_ROOT = 'http://localhost'
+    THREADING_MODEL = ThreadingModel.PROCESS
 
 
 class SqliteDevelopmentConfiguration(Configuration):
@@ -40,6 +46,7 @@ class SqliteDevelopmentConfiguration(Configuration):
     DATABASE = DatabaseType.SQLITE
     SQLITE_DATABASE_NAME = os.path.join(tempfile.gettempdir(), 'discograph', 'discograph.db')
     APPLICATION_ROOT = 'http://localhost'
+    THREADING_MODEL = ThreadingModel.THREAD
 
 
 class PostgresTestConfiguration(Configuration):
@@ -49,6 +56,7 @@ class PostgresTestConfiguration(Configuration):
     POSTGRES_DATABASE_NAME = 'test_discograph'
     POSTGRES_ROOT = '/usr/lib/postgresql/14'
     APPLICATION_ROOT = 'http://localhost'
+    THREADING_MODEL = ThreadingModel.PROCESS
 
 
 class SqliteTestConfiguration(Configuration):
@@ -57,10 +65,12 @@ class SqliteTestConfiguration(Configuration):
     DATABASE = DatabaseType.SQLITE
     SQLITE_DATABASE_NAME = os.path.join(tempfile.gettempdir(), 'discograph', 'test_discograph.db')
     APPLICATION_ROOT = 'http://localhost'
+    THREADING_MODEL = ThreadingModel.THREAD
 
 
 __all__ = [
     'DatabaseType',
+    'ThreadingModel',
     'PostgresProductionConfiguration',
     'PostgresDevelopmentConfiguration',
     'PostgresTestConfiguration',

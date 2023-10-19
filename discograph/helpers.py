@@ -1,4 +1,5 @@
 import atexit
+import multiprocessing
 import pathlib
 import re
 
@@ -7,7 +8,7 @@ from playhouse import pool
 from playhouse.postgres_ext import PostgresqlExtDatabase
 from playhouse.sqlite_ext import SqliteExtDatabase
 
-from discograph.config import DatabaseType
+from discograph.config import DatabaseType, ThreadingModel
 from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.database_helper import DatabaseHelper
 from discograph.library.discogs_model import database_proxy
@@ -18,9 +19,13 @@ from discograph.library.sqlite.sqlite_helper import SqliteHelper
 
 db_helper: DatabaseHelper
 
-bootstrap_database: None
+bootstrap_database = None
 
+# noinspection PyTypeChecker
 postgres_db: TempDB = None
+
+# noinspection PyTypeChecker
+threading_model: ThreadingModel = None
 
 urlify_pattern = re.compile(r"\s+", re.MULTILINE)
 
@@ -55,11 +60,14 @@ def setup_database(config):
     global db_helper
     global postgres_db
     global bootstrap_database
+    global threading_model
 
     # Based on configuration, use a different database.
     if config['DATABASE'] == DatabaseType.POSTGRES:
         print("Using Postgres Database")
         db_helper = PostgresHelper
+        threading_model = config["THREADING_MODEL"]
+
         options = {
             # "work_mem": "1000MB",
             # "effective_cache_size": "1000MB",
@@ -89,6 +97,7 @@ def setup_database(config):
         )
         # Configure the proxy database to use the database specified in config.
         database_proxy.initialize(database)
+
         if config['TESTING']:
             Bootstrapper.is_test = True
         with database.connection_context():
@@ -107,15 +116,20 @@ def setup_database(config):
     elif config['DATABASE'] == DatabaseType.SQLITE:
         print("Using Sqlite Database")
         db_helper = SqliteHelper
+        threading_model = config["THREADING_MODEL"]
+
         database = SqliteExtDatabase(config['SQLITE_DATABASE_NAME'], pragmas={
-            'journal_mode': 'off',
+            'journal_mode': 'wal',
+            # 'check_same_thread': False,
+            # 'journal_mode': 'off',
             'synchronous': 0,
             'cache_size': 1000000,
             # 'locking_mode': 'exclusive',
             'temp_store': 'memory',
-        })
+        }, timeout=20)
         # Configure the proxy database to use the database specified in config.
         database_proxy.initialize(database)
+
         if config['TESTING']:
             Bootstrapper.is_test = True
         if not pathlib.Path(config['SQLITE_DATABASE_NAME']).is_file():
@@ -130,3 +144,27 @@ def shutdown_database():
         print("Cleaning up Postgres Database")
         postgres_db.cleanup()
         postgres_db = None
+
+
+def get_concurrency_count():
+    if threading_model == ThreadingModel.PROCESS:
+        return multiprocessing.cpu_count()
+    elif threading_model == ThreadingModel.THREAD:
+        return 1
+    else:
+        NotImplementedError("THREADING_MODEL not configured")
+
+# def create_worker_class():
+#     from discograph.app import app
+#     from discograph.config import ThreadingModel
+#
+#     if app.config["THREADING_MODEL"] == ThreadingModel.THREAD:
+#         from multiprocessing.dummy import Process
+#     elif app.config["THREADING_MODEL"] == ThreadingModel.PROCESS:
+#         from multiprocessing import Process
+#     else:
+#         raise NotImplementedError(app.config["THREADING_MODEL"])
+#     return Process
+#
+#
+# AbstractThread = create_worker_class()

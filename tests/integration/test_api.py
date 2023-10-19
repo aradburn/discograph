@@ -1,7 +1,7 @@
 import json
 
 from discograph.app import app
-from tests.app_test_case import AppTestCase
+from tests.integration.app_test_case import AppTestCase
 
 
 class TestAPI(AppTestCase):
