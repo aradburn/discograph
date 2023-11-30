@@ -6,7 +6,7 @@ import traceback
 import peewee
 from abjad import sequence, Timer
 
-from discograph import helpers
+import discograph.utils
 from discograph.library import EntityType
 from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.discogs_model import DiscogsModel, database_proxy
@@ -14,18 +14,6 @@ from discograph.library.models.relation import Relation
 
 
 class Entity(DiscogsModel):
-
-    # def __format__(self, format_specification=''):
-    #     return json.dumps(
-    #         model_to_dict(self, exclude=[
-    #             Entity.random,
-    #             Entity.relation_counts,
-    #             Entity.search_content,
-    #         ]),
-    #         indent=4,
-    #         sort_keys=True,
-    #         default=str
-    #     )
 
     # CLASS VARIABLES
 
@@ -40,27 +28,47 @@ class Entity(DiscogsModel):
             self.indices = indices
 
         def run(self):
-            proc_number = self.name.split('-')[-1]
+            proc_name = self.name
+            proc_number = proc_name.split('-')[-1]
             corpus = {}
-            total = len(self.indices)
-            from discograph.helpers import bootstrap_database
+
+            count = 0
+            total_count = len(self.indices)
+
+            from discograph.database import bootstrap_database
             if bootstrap_database:
                 database_proxy.initialize(bootstrap_database)
             with DiscogsModel.connection_context():
                 for i, entity_id in enumerate(self.indices):
-                    with DiscogsModel.atomic():
-                        progress = float(i) / total
+                    max_attempts = 10
+                    error = True
+                    while error and max_attempts != 0:
+                        error = False
                         try:
-                            self.model_class.bootstrap_pass_two_single(
-                                entity_type=self.entity_type,
-                                entity_id=entity_id,
-                                annotation=proc_number,
-                                corpus=corpus,
-                                progress=progress,
-                            )
+                            with DiscogsModel.atomic():
+                                progress = float(i) / total_count
+                                try:
+                                    self.model_class.bootstrap_pass_two_single(
+                                        entity_type=self.entity_type,
+                                        entity_id=entity_id,
+                                        annotation=proc_number,
+                                        corpus=corpus,
+                                        progress=progress,
+                                    )
+                                    count += 1
+                                    if count % 10000 == 0:
+                                        print(f"[{proc_name}] processed {count} of {total_count}")
+                                except peewee.PeeweeException:
+                                    print('ERROR 1:', self.entity_type, entity_id, proc_number)
+                                    # traceback.print_exc()
+                                    max_attempts -= 1
+                                    error = True
                         except peewee.PeeweeException:
-                            print('ERROR:', self.entity_type, entity_id, proc_number)
-                            traceback.print_exc()
+                            print('ERROR 2:', self.entity_type, entity_id, proc_number)
+                            # traceback.print_exc()
+                            max_attempts -= 1
+                            error = True
+            print(f"[{proc_name}] processed {count} of {total_count}")
 
     class BootstrapPassThreeWorker(multiprocessing.Process):
 
@@ -78,14 +86,16 @@ class Entity(DiscogsModel):
             relation_module_name = entity_module_name.replace("entity", "relation")
             relation_class = getattr(sys.modules[relation_module_name], relation_class_name)
 
-            total = len(self.indices)
-            from discograph.helpers import bootstrap_database
+            count = 0
+            total_count = len(self.indices)
+
+            from discograph.database import bootstrap_database
             if bootstrap_database:
                 database_proxy.initialize(bootstrap_database)
             with DiscogsModel.connection_context():
                 for i, entity_id in enumerate(self.indices):
                     with DiscogsModel.atomic():
-                        progress = float(i) / total
+                        progress = float(i) / total_count
                         try:
                             self.model_class.bootstrap_pass_three_single(
                                 relation_class,
@@ -94,9 +104,13 @@ class Entity(DiscogsModel):
                                 annotation=proc_name,
                                 progress=progress,
                             )
+                            count += 1
+                            if count % 1000 == 0:
+                                print(f"[{proc_name}] processed {count} of {total_count}")
                         except peewee.PeeweeException:
                             print('ERROR:', self.entity_type, entity_id, proc_name)
                             traceback.print_exc()
+            print(f"[{proc_name}] processed {count} of {total_count}")
 
     # PEEWEE FIELDS
 
@@ -169,7 +183,7 @@ class Entity(DiscogsModel):
                 peewee.fn.Max(cls.entity_id)).where(
                     cls.entity_type == entity_type
                     ).scalar()
-            step = maximum_id // helpers.get_concurrency_count()
+            step = maximum_id // discograph.utils.get_concurrency_count()
             for start in range(0, maximum_id, step):
                 stop = start + step
                 indices.append(range(start, stop))
@@ -179,8 +193,7 @@ class Entity(DiscogsModel):
             query = query.order_by(cls.entity_id)
             query = query.tuples()
             all_ids = tuple(_[0] for _ in query)
-            ratio = [1] * helpers.get_concurrency_count()
-            # ratio = [1] * multiprocessing.cpu_count()
+            ratio = [1] * int(discograph.utils.get_concurrency_count())
             for chunk in sequence.partition_by_ratio_of_lengths(all_ids, tuple(ratio)):
                 indices.append(chunk)
         return indices
@@ -191,8 +204,6 @@ class Entity(DiscogsModel):
         entity_type: EntityType = EntityType.ARTIST
         indices = cls.get_indices(entity_type, pessimistic=pessimistic)
 
-        # worker_class = helpers.create_worker(cls.BootstrapPassTwoWorker)
-        # workers = [worker_class(cls, entity_type, x) for x in indices]
         workers = [cls.BootstrapPassTwoWorker(cls, entity_type, x) for x in indices]
         print("entity bootstrap pass two - artist start workers")
         for worker in workers:
@@ -201,7 +212,7 @@ class Entity(DiscogsModel):
             worker.join()
             if worker.exitcode > 0:
                 print(f"worker.exitcode: {worker.exitcode}")
-                raise Exception("Error in worker process")
+                # raise Exception("Error in worker process")
         for worker in workers:
             worker.terminate()
 
@@ -217,7 +228,7 @@ class Entity(DiscogsModel):
             worker.join()
             if worker.exitcode > 0:
                 print(f"worker.exitcode: {worker.exitcode}")
-                raise Exception("Error in worker process")
+                # raise Exception("Error in worker process")
         for worker in workers:
             worker.terminate()
         print("entity bootstrap pass two - done")
@@ -235,7 +246,7 @@ class Entity(DiscogsModel):
             worker.join()
             if worker.exitcode > 0:
                 print(f"worker.exitcode: {worker.exitcode}")
-                raise Exception("Error in worker process")
+                # raise Exception("Error in worker process")
         for worker in workers:
             worker.terminate()
         entity_type: EntityType = EntityType.LABEL
@@ -247,15 +258,15 @@ class Entity(DiscogsModel):
             worker.join()
             if worker.exitcode > 0:
                 print(f"worker.exitcode: {worker.exitcode}")
-                raise Exception("Error in worker process")
+                # raise Exception("Error in worker process")
         for worker in workers:
             worker.terminate()
 
     @classmethod
     def bootstrap_pass_two_single(cls, entity_type: EntityType, entity_id: int,
                                   annotation='', corpus=None, progress=None):
-        skipped_template = u'{} (Pass 2) {:.3%} [{}]\t[SKIPPED] (id:{}) [{:.8f}]: {}'
-        changed_template = u'{} (Pass 2) {:.3%} [{}]\t          (id:{}) [{:.8f}]: {}'
+        # skipped_template = u'{} (Pass 2) {:.3%} [{}]\t[SKIPPED] (id:{}) [{:.8f}]: {}'
+        # changed_template = u'{} (Pass 2) {:.3%} [{}]\t          (id:{}) [{:.8f}]: {}'
         query = cls.select().where(
             cls.entity_id == entity_id,
             cls.entity_type == entity_type,
@@ -267,31 +278,34 @@ class Entity(DiscogsModel):
         with Timer(verbose=False) as timer:
             changed = document.resolve_references(corpus)
         if not changed:
-            message = skipped_template.format(
-                cls.__name__.upper(),
-                progress,
-                annotation,
-                (document.entity_type, document.entity_id),
-                timer.elapsed_time,
-                document.name,
-            )
-            if Bootstrapper.is_test:
-                print(message)
+            # message = skipped_template.format(
+            #     cls.__name__.upper(),
+            #     progress,
+            #     annotation,
+            #     (document.entity_type, document.entity_id),
+            #     timer.elapsed_time,
+            #     document.name,
+            # )
+            # if Bootstrapper.is_test:
+            #     print(message)
             return
-        document.save()
-        message = changed_template.format(
-            cls.__name__.upper(),
-            progress,
-            annotation,
-            (document.entity_type, document.entity_id),
-            timer.elapsed_time,
-            document.name,
-        )
-        if Bootstrapper.is_test:
-            print(message)
+        if document.is_dirty():
+            document.save(only=document.dirty_fields)
+        # message = changed_template.format(
+        #     cls.__name__.upper(),
+        #     progress,
+        #     annotation,
+        #     (document.entity_type, document.entity_id),
+        #     timer.elapsed_time,
+        #     document.name,
+        # )
+        # if Bootstrapper.is_test:
+        #     print(message)
 
     @classmethod
-    def bootstrap_pass_three_single(cls, relation_class, entity_type: EntityType, entity_id: int, annotation='', progress=None):
+    def bootstrap_pass_three_single(cls, relation_class,
+                                    entity_type: EntityType, entity_id: int,
+                                    annotation='', progress=None):
         query = cls.select(
             cls.entity_id,
             cls.entity_type,
@@ -306,12 +320,12 @@ class Entity(DiscogsModel):
         document = query.get()
         entity_id = document.entity_id
         where_clause = (
-            (relation_class.entity_one_id == entity_id) &
-            (relation_class.entity_one_type == entity_type)
+            (relation_class.entity_one_type == entity_type) &
+            (relation_class.entity_one_id == entity_id)
             )
         where_clause |= (
-            (relation_class.entity_two_id == entity_id) &
-            (relation_class.entity_two_type == entity_type)
+            (relation_class.entity_two_type == entity_type) &
+            (relation_class.entity_two_id == entity_id)
             )
         query = relation_class.select().where(where_clause)
         _relation_counts = {}
@@ -330,19 +344,20 @@ class Entity(DiscogsModel):
         if not _relation_counts:
             return
         document.relation_counts = _relation_counts
-        document.save()
-        message_pieces = [
-            cls.__name__.upper(),
-            progress,
-            annotation,
-            (document.entity_type, document.entity_id),
-            document.name,
-            len(_relation_counts),
-            ]
-        template = u'{} (Pass 3) {:.3%} [{}]\t(id:{}) {}: {}'
-        message = template.format(*message_pieces)
-        if Bootstrapper.is_test:
-            print(message)
+        if document.is_dirty():
+            document.save(only=document.dirty_fields)
+        # message_pieces = [
+        #     cls.__name__.upper(),
+        #     progress,
+        #     annotation,
+        #     (document.entity_type, document.entity_id),
+        #     document.name,
+        #     len(_relation_counts),
+        #     ]
+        # template = u'{} (Pass 3) {:.3%} [{}]\t(id:{}) {}: {}'
+        # message = template.format(*message_pieces)
+        # if Bootstrapper.is_test:
+        #     print(message)
 
     @classmethod
     def element_to_names(cls, names):
@@ -532,34 +547,6 @@ class Entity(DiscogsModel):
                 (cls.entity_id.in_(label_ids))
                 )
         return cls.select().where(where_clause)
-
-    # @classmethod
-    # def search_text(cls, search_string):
-    #     search_string = search_string.lower()
-    #     # Transliterate the unicode string into a plain ASCII string
-    #     search_string = unidecode(search_string, "preserve")
-    #     search_string = ','.join(search_string.split())
-    #     query = Entity.raw("""
-    #         SELECT entity_type,
-    #             entity_id,
-    #             name,
-    #             ts_rank_cd(search_content, query, 63) AS rank
-    #         FROM entities,
-    #             to_tsquery(%s) query
-    #         WHERE query @@ search_content
-    #         ORDER BY rank DESC
-    #         LIMIT 100
-    #         """, search_string)
-    #     return query
-
-    # @classmethod
-    # def string_to_tsvector(cls, string):
-    #     string = string.lower()
-    #     # Transliterate the unicode string into a plain ASCII string
-    #     string = unidecode(string, "preserve")
-    #     string = cls._strip_pattern.sub('', string)
-    #     tsvector = peewee.fn.to_tsvector(string)
-    #     return tsvector
 
     def structural_roles_to_entity_keys(self, roles):
         entity_keys = set()

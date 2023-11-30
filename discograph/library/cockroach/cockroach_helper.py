@@ -5,18 +5,18 @@ from abjad import Timer
 from discograph.library import EntityType, CreditRole
 from discograph.library.database_helper import DatabaseHelper
 from discograph.library.discogs_model import DiscogsModel
-from discograph.library.postgres.postgres_entity import PostgresEntity
-from discograph.library.postgres.postgres_relation import PostgresRelation
-from discograph.library.postgres.postgres_relation_grapher import PostgresRelationGrapher
+from discograph.library.cockroach.cockroach_entity import CockroachEntity
+from discograph.library.cockroach.cockroach_relation import CockroachRelation
+from discograph.library.cockroach.cockroach_relation_grapher import CockroachRelationGrapher
 
 
-class PostgresHelper(DatabaseHelper):
+class CockroachHelper(DatabaseHelper):
     @staticmethod
     def get_entity(entity_type: EntityType, entity_id: int):
-        where_clause = PostgresEntity.entity_id == entity_id
-        where_clause &= PostgresEntity.entity_type == entity_type
+        where_clause = CockroachEntity.entity_id == entity_id
+        where_clause &= CockroachEntity.entity_type == entity_type
         with DiscogsModel.connection_context():
-            query = PostgresEntity.select().where(where_clause)
+            query = CockroachEntity.select().where(where_clause)
             if not query.count():
                 return None
             return query.get()
@@ -28,7 +28,7 @@ class PostgresHelper(DatabaseHelper):
         if on_mobile:
             template = '{}/mobile'.format(template)
 
-        cache_key = PostgresRelationGrapher.make_cache_key(
+        cache_key = CockroachRelationGrapher.make_cache_key(
             template,
             entity_type,
             entity_id,
@@ -37,11 +37,11 @@ class PostgresHelper(DatabaseHelper):
         cache_key = cache_key.format(entity_type, entity_id)
         cache = False
         if cache:
-            data = PostgresRelationGrapher.cache_get(cache_key)
+            data = CockroachRelationGrapher.cache_get(cache_key)
             if data is not None:
                 return data
         # entity_type = entity_name_types[entity_type]
-        entity = PostgresHelper.get_entity(entity_type, entity_id)
+        entity = CockroachHelper.get_entity(entity_type, entity_id)
         if entity is None:
             return None
         if not on_mobile:
@@ -50,7 +50,7 @@ class PostgresHelper(DatabaseHelper):
         else:
             max_nodes = 25
             degree = 6
-        relation_grapher = PostgresRelationGrapher(
+        relation_grapher = CockroachRelationGrapher(
             center_entity=entity,
             degree=degree,
             max_nodes=max_nodes,
@@ -60,7 +60,7 @@ class PostgresHelper(DatabaseHelper):
             with DiscogsModel.connection_context():
                 data = relation_grapher()
         if cache:
-            PostgresRelationGrapher.cache_set(cache_key, data)
+            CockroachRelationGrapher.cache_set(cache_key, data)
         return data
 
     @staticmethod
@@ -72,7 +72,7 @@ class PostgresHelper(DatabaseHelper):
             ]
         with DiscogsModel.connection_context():
             if roles and any(_ not in structural_roles for _ in roles):
-                relation = PostgresRelation.get_random(roles=roles)
+                relation = CockroachRelation.get_random(roles=roles)
                 entity_choice = random.randint(1, 2)
                 if entity_choice == 1:
                     entity_type = relation.entity_one_type
@@ -81,28 +81,28 @@ class PostgresHelper(DatabaseHelper):
                     entity_type = relation.entity_two_type
                     entity_id = relation.entity_two_id
             else:
-                entity = PostgresEntity.get_random()
+                entity = CockroachEntity.get_random()
                 entity_type, entity_id = entity.entity_type, entity.entity_id
         assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
         return entity_type, entity_id
 
     @staticmethod
     def get_relations(entity_id: int, entity_type: EntityType):
-        entity = PostgresHelper.get_entity(entity_type, entity_id)
+        entity = CockroachHelper.get_entity(entity_type, entity_id)
         if entity is None:
             return None
         with DiscogsModel.connection_context():
-            query = PostgresRelation.search(
+            query = CockroachRelation.search(
                 entity_id=entity.entity_id,
                 entity_type=entity.entity_type,
                 query_only=True
                 )
         query = query.order_by(
-            PostgresRelation.role,
-            PostgresRelation.entity_one_id,
-            PostgresRelation.entity_one_type,
-            PostgresRelation.entity_two_id,
-            PostgresRelation.entity_two_type,
+            CockroachRelation.role,
+            CockroachRelation.entity_one_id,
+            CockroachRelation.entity_one_type,
+            CockroachRelation.entity_two_id,
+            CockroachRelation.entity_two_type,
             )
         data = []
         for relation in query:
@@ -147,14 +147,14 @@ class PostgresHelper(DatabaseHelper):
             urlify_pattern.sub('+', search_string))
         cache = False
         if cache:
-            data = PostgresRelationGrapher.cache_get(cache_key)
+            data = CockroachRelationGrapher.cache_get(cache_key)
             if data is not None:
                 print('{}: CACHED'.format(cache_key))
                 for datum in data['results']:
                     print('    {}'.format(datum))
                 return data
         with DiscogsModel.connection_context():
-            query = PostgresEntity.search_text(search_string)
+            query = CockroachEntity.search_text(search_string)
             print('{}: NOT CACHED'.format(cache_key))
             data = []
             for entity in query:
@@ -169,5 +169,5 @@ class PostgresHelper(DatabaseHelper):
                 print('    {}'.format(datum))
         data = {'results': tuple(data)}
         if cache:
-            PostgresRelationGrapher.cache_set(cache_key, data)
+            CockroachRelationGrapher.cache_set(cache_key, data)
         return data

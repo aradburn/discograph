@@ -10,12 +10,15 @@ from abjad import Timer
 from peewee import Model, FloatField, DatabaseProxy, DataError, fn
 from playhouse.shortcuts import model_to_dict
 
+import discograph.utils
 from discograph.library.bootstrapper import Bootstrapper
 
 database_proxy = DatabaseProxy()  # Create a proxy for the database.
 
 
 class DiscogsModel(Model):
+
+    BULK_INSERT_BATCH_SIZE = 1000
 
     class BootstrapPassOneWorker(multiprocessing.Process):
 
@@ -26,22 +29,22 @@ class DiscogsModel(Model):
             self.inserted_count = inserted_count
 
         def run(self):
-            proc_number = self.name.split('-')[-1]
-            corpus = {}
-            total = len(self.bulk_inserts)
-            from discograph.helpers import bootstrap_database
-            database_proxy.initialize(bootstrap_database)
+            proc_name = self.name
+            from discograph.database import bootstrap_database
+            if bootstrap_database:
+                database_proxy.initialize(bootstrap_database)
             with DiscogsModel.connection_context():
                 try:
-                    with DiscogsModel.atomic():
-                        self.model_class.bulk_create(self.bulk_inserts)
+                    # with DiscogsModel.atomic():
+                    self.model_class.bulk_create(self.bulk_inserts)
                 except peewee.PeeweeException:
                     print("Error in bootstrap_pass_one worker")
                     traceback.print_exc()
-            print(f"inserted_count: {self.inserted_count}")
+            print(f"[{proc_name}] inserted_count: {self.inserted_count}")
 
     # PEEWEE FIELDS
 
+    # random = FloatField(index=False, null=True)
     random = FloatField(index=True, null=True)
 
     # PEEWEE META
@@ -86,21 +89,21 @@ class DiscogsModel(Model):
                         bulk_inserts.append(new_instance)
                         # document = model_class.create(**data)
                         inserted_count += 1
-                        if len(bulk_inserts) >= 50000:
+                        if len(bulk_inserts) >= DiscogsModel.BULK_INSERT_BATCH_SIZE:
                             worker = cls.insert_bulk(model_class, bulk_inserts, inserted_count)
                             worker.start()
                             workers.append(worker)
                             bulk_inserts.clear()
-                        if len(workers) > multiprocessing.cpu_count():
+                        if len(workers) > discograph.utils.get_concurrency_count():
                             worker = workers.pop(0)
                             # print(f"wait for worker {len(workers)} in list", flush=True)
                             worker.join()
                             if worker.exitcode > 0:
                                 print(f"worker.exitcode: {worker.exitcode}")
-                                raise Exception("Error in worker process")
+                                # raise Exception("Error in worker process")
                             worker.terminate()
-                        if inserted_count > 2000000:
-                            break
+                        # if inserted_count >= 1000000:
+                        #     break
                     # message = template.format(
                     #     model_class.__name__.upper(),
                     #     i,
@@ -121,7 +124,7 @@ class DiscogsModel(Model):
                 worker.join()
                 if worker.exitcode > 0:
                     print(f"worker.exitcode: {worker.exitcode}")
-                    raise Exception("Error in worker process")
+                    # raise Exception("Error in worker process")
                 worker.terminate()
             if len(bulk_inserts) > 0:
                 with DiscogsModel.atomic():
@@ -131,9 +134,9 @@ class DiscogsModel(Model):
                         print("Error in bootstrap_pass_one")
                         traceback.print_exc()
             updated_count = len(model_class) - initial_count
-            print(f"inserted_count: {inserted_count}", flush=True)
-            print(f"updated_count: {updated_count}", flush=True)
-            print(f"i+1: {i+1}", flush=True)
+            # print(f"inserted_count: {inserted_count}", flush=True)
+            # print(f"updated_count: {updated_count}", flush=True)
+            # print(f"i+1: {i+1}", flush=True)
             assert inserted_count == updated_count
 
     @classmethod
@@ -174,6 +177,10 @@ class DiscogsModel(Model):
             if Bootstrapper.is_test:
                 print(message)
             document.save()
+
+    @staticmethod
+    def database():
+        return database_proxy
 
     @staticmethod
     def connect():

@@ -125,7 +125,7 @@ class SqliteHelper(DatabaseHelper):
 
     @staticmethod
     def parse_request_args(args):
-        from discograph.helpers import args_roles_pattern
+        from discograph.utils import args_roles_pattern
         year = None
         roles = set()
         for key in args:
@@ -149,7 +149,7 @@ class SqliteHelper(DatabaseHelper):
 
     @staticmethod
     def search_entities(search_string, cache=True):
-        from discograph.helpers import urlify_pattern
+        from discograph.utils import urlify_pattern
         cache_key = 'discograph:/api/search/{}'.format(
             urlify_pattern.sub('+', search_string))
         cache = False

@@ -5,12 +5,13 @@ import traceback
 import peewee
 from abjad import sequence, Timer
 
-from discograph import helpers
+import discograph.utils
 from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.discogs_model import DiscogsModel, database_proxy
 
 
 class Release(DiscogsModel):
+
     # CLASS VARIABLES
 
     _artists_mapping = {}
@@ -30,7 +31,7 @@ class Release(DiscogsModel):
             proc_name = self.name
             corpus = {}
             total = len(self.indices)
-            from discograph.helpers import bootstrap_database
+            from discograph.database import bootstrap_database
             if bootstrap_database:
                 database_proxy.initialize(bootstrap_database)
             with DiscogsModel.connection_context():
@@ -49,13 +50,6 @@ class Release(DiscogsModel):
                             traceback.print_exc()
 
     # PEEWEE FIELDS
-
-    # id = peewee.IntegerField(primary_key=True)
-    # country = peewee.TextField(null=True, index=False)
-    # master_id = peewee.IntegerField(null=True, index=False)
-    # notes = peewee.TextField(null=True, index=False)
-    # release_date = peewee.DateTimeField(null=True, index=False)
-    # title = peewee.TextField(index=False)
 
     # PEEWEE META
 
@@ -87,7 +81,7 @@ class Release(DiscogsModel):
         if not pessimistic:
             maximum_id = cls.select(
                 peewee.fn.Max(cls.id)).scalar()
-            step = maximum_id // helpers.get_concurrency_count()
+            step = maximum_id // discograph.utils.get_concurrency_count()
             for start in range(0, maximum_id, step):
                 stop = start + step
                 indices.append(range(start, stop))
@@ -96,7 +90,7 @@ class Release(DiscogsModel):
             query = query.order_by(cls.id)
             query = query.tuples()
             all_ids = tuple(_[0] for _ in query)
-            ratio = [1] * helpers.get_concurrency_count()
+            ratio = [1] * int(discograph.utils.get_concurrency_count())
             # ratio = [1] * multiprocessing.cpu_count()
             for chunk in sequence.partition_by_ratio_of_lengths(all_ids, tuple(ratio)):
                 indices.append(chunk)
@@ -132,7 +126,7 @@ class Release(DiscogsModel):
             worker.join()
             if worker.exitcode > 0:
                 print(f"worker.exitcode: {worker.exitcode}")
-                raise Exception("Error in worker process")
+                # raise Exception("Error in worker process")
         for worker in workers:
             worker.terminate()
         print("release bootstrap pass two - done")
@@ -154,28 +148,29 @@ class Release(DiscogsModel):
         with Timer(verbose=False) as timer:
             changed = document.resolve_references(corpus)
         if not changed:
-            message = skipped_template.format(
-                cls.__name__.upper(),
-                progress,
-                annotation,
-                document.id,
-                timer.elapsed_time,
-                document.title,
-            )
-            if Bootstrapper.is_test:
-                print(message)
+            # message = skipped_template.format(
+            #     cls.__name__.upper(),
+            #     progress,
+            #     annotation,
+            #     document.id,
+            #     timer.elapsed_time,
+            #     document.title,
+            # )
+            # if Bootstrapper.is_test:
+            #     print(message)
             return
-        document.save()
-        message = changed_template.format(
-            cls.__name__.upper(),
-            progress,
-            annotation,
-            document.id,
-            timer.elapsed_time,
-            document.title,
-        )
-        if Bootstrapper.is_test:
-            print(message)
+        if document.is_dirty():
+            document.save(only=document.dirty_fields)
+        # message = changed_template.format(
+        #     cls.__name__.upper(),
+        #     progress,
+        #     annotation,
+        #     document.id,
+        #     timer.elapsed_time,
+        #     document.title,
+        # )
+        # if Bootstrapper.is_test:
+        #     print(message)
 
     @classmethod
     def element_to_artist_credits(cls, element):

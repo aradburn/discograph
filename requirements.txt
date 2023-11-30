@@ -9,6 +9,7 @@ pg_temp~=0.9.1
 fakeredis
 psycopg2
 pytest
+python-dotenv
 redis-py~=5.0.1
 setuptools~=68.2.2
 werkzeug~=2.3.7

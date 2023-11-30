@@ -1,12 +1,12 @@
 import peewee
-from playhouse import postgres_ext
+from playhouse.cockroachdb import JSONField
 
 from discograph.library import EntityType
 from discograph.library.EnumField import EnumField
 from discograph.library.models.relation import Relation
 
 
-class PostgresRelation(Relation):
+class CockroachRelation(Relation):
 
     # PEEWEE FIELDS
 
@@ -15,4 +15,4 @@ class PostgresRelation(Relation):
     entity_two_type = EnumField(index=False, choices=EntityType)
     entity_two_id = peewee.IntegerField(index=False)
     role = peewee.CharField(index=False)
-    releases = postgres_ext.BinaryJSONField(index=False, null=True)
+    releases = JSONField(index=False, null=True)

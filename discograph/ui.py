@@ -7,7 +7,8 @@ from flask import render_template
 from flask import request
 from flask import url_for
 
-from discograph import helpers, exceptions
+import discograph.utils
+from discograph import database, exceptions
 from discograph.library import CreditRole, EntityType
 
 blueprint = Blueprint('ui', __name__, template_folder='templates')
@@ -27,7 +28,7 @@ def route__index():
     initial_json = 'var dgData = null;'
     # noinspection PyUnresolvedReferences
     on_mobile = request.MOBILE
-    parsed_args = helpers.parse_request_args(request.args)
+    parsed_args = discograph.utils.parse_request_args(request.args)
     original_roles, original_year = parsed_args
     if not original_roles:
         original_roles = default_roles
@@ -56,7 +57,7 @@ def route__index():
 
 @blueprint.route('/<entity_type>/<entity_id>')
 def route__entity_type__entity_id(entity_type, entity_id):
-    parsed_args = helpers.parse_request_args(request.args)
+    parsed_args = discograph.utils.parse_request_args(request.args)
     original_roles, original_year = parsed_args
     if not original_roles:
         original_roles = default_roles
@@ -68,7 +69,7 @@ def route__entity_type__entity_id(entity_type, entity_id):
     entity_id = int(entity_id)
 
     # on_mobile = request.MOBILE
-    data = helpers.db_helper.get_network(
+    data = database.db_helper.get_network(
         entity_id,
         entity_type,
         # on_mobile=on_mobile,

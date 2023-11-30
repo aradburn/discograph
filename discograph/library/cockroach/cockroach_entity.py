@@ -2,23 +2,24 @@ import json
 
 import peewee
 from playhouse import postgres_ext
+from playhouse.cockroachdb import JSONField
 from playhouse.shortcuts import model_to_dict
 from unidecode import unidecode
 
 from discograph.library import EntityType
 from discograph.library.EnumField import EnumField
 from discograph.library.models.entity import Entity
-from discograph.library.postgres.postgres_relation import PostgresRelation
+from discograph.library.cockroach.cockroach_relation import CockroachRelation
 
 
-class PostgresEntity(Entity):
+class CockroachEntity(Entity):
 
     def __format__(self, format_specification=''):
         return json.dumps(
             model_to_dict(self, exclude=[
-                PostgresEntity.random,
-                PostgresEntity.relation_counts,
-                PostgresEntity.search_content,
+                CockroachEntity.random,
+                CockroachEntity.relation_counts,
+                CockroachEntity.search_content,
             ]),
             indent=4,
             sort_keys=True,
@@ -29,12 +30,10 @@ class PostgresEntity(Entity):
 
     entity_id = peewee.IntegerField(index=False)
     entity_type = EnumField(index=False, choices=EntityType)
-    # name = peewee.TextField(index=False)
     name = peewee.TextField(index=True)
-    relation_counts = postgres_ext.BinaryJSONField(null=True, index=False)
-    metadata = postgres_ext.BinaryJSONField(null=True, index=False)
-    entities = postgres_ext.BinaryJSONField(null=True, index=False)
-    # search_content = postgres_ext.TSVectorField(index=False)
+    relation_counts = JSONField(index=False, null=True)
+    metadata = JSONField(index=False, null=True)
+    entities = JSONField(index=False, null=True)
     search_content = postgres_ext.TSVectorField(index=True)
 
     @classmethod
@@ -43,7 +42,7 @@ class PostgresEntity(Entity):
         # Transliterate the unicode string into a plain ASCII string
         search_string = unidecode(search_string, "preserve")
         search_string = ','.join(search_string.split())
-        query = PostgresEntity.raw("""
+        query = CockroachEntity.raw("""
             SELECT entity_type,
                 entity_id,
                 name,
@@ -67,7 +66,7 @@ class PostgresEntity(Entity):
 
     @classmethod
     def create_relation(cls, entity_one_type, entity_one_id, entity_two_type, entity_two_id, role):
-        return PostgresRelation(
+        return CockroachRelation(
                         entity_one_type=entity_one_type,
                         entity_one_id=entity_one_id,
                         entity_two_type=entity_two_type,

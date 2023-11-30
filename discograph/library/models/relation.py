@@ -10,7 +10,6 @@ import peewee
 from discograph.library import EntityType, CreditRole
 from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.discogs_model import DiscogsModel, database_proxy
-from discograph.library.models.release import Release
 
 
 class Relation(DiscogsModel):
@@ -34,11 +33,13 @@ class Relation(DiscogsModel):
             release_module_name = relation_module_name.replace("relation", "release")
             release_class = getattr(sys.modules[release_module_name], release_class_name)
 
-            from discograph.helpers import bootstrap_database
+            count = 0
+            total_count = len(self.indices)
+
+            from discograph.database import bootstrap_database
             if bootstrap_database:
                 database_proxy.initialize(bootstrap_database)
             with DiscogsModel.connection_context():
-                count = 0
                 for release_id in self.indices:
                     try:
                         self.model_class.bootstrap_pass_one_inner(
@@ -48,10 +49,11 @@ class Relation(DiscogsModel):
                             annotation=proc_name,
                         )
                         count += 1
-                        if count % 10000 == 0:
-                            print(f"processed {count}")
+                        if count % 1000 == 0:
+                            print(f"[{proc_name}] processed {count} of {total_count}")
                     except peewee.PeeweeException:
                         traceback.print_exc()
+            print(f"[{proc_name}] processed {count} of {total_count}")
 
     aggregate_roles = (
         'Compiled By',
@@ -64,12 +66,6 @@ class Relation(DiscogsModel):
     word_pattern = re.compile(r'\s+')
 
     # PEEWEE FIELDS
-
-    # entity_one_type = EnumField(index=False, choices=EntityType)
-    # entity_one_id = peewee.IntegerField(index=False)
-    # entity_two_type = EnumField(index=False, choices=EntityType)
-    # entity_two_id = peewee.IntegerField(index=False)
-    # role = peewee.CharField(index=False)
 
     # PEEWEE META
 
@@ -86,12 +82,12 @@ class Relation(DiscogsModel):
         #     (('entity_one_type', 'entity_one_id'), False),
         #     (('entity_two_type', 'entity_two_id'), False),
         # )
-        indexes = (
-            ((
-                'entity_one_type', 'entity_one_id',
-                'entity_two_type', 'entity_two_id',
-                'role'), True),
-        )
+        # indexes = (
+        #     ((
+        #         'entity_one_type', 'entity_one_id',
+        #         'entity_two_type', 'entity_two_id',
+        #         'role'), True),
+        # )
         #     ((
         #         'entity_two_type', 'entity_two_id',
         #         'entity_one_type', 'entity_one_id',
@@ -151,29 +147,32 @@ class Relation(DiscogsModel):
             worker.join()
             if worker.exitcode > 0:
                 print(f"worker.exitcode: {worker.exitcode}")
-                raise Exception("Error in worker process")
+                # raise Exception("Error in worker process")
         for worker in workers:
             worker.terminate()
 
     # noinspection PyUnusedLocal
     @classmethod
     def bootstrap_pass_one_inner(cls, release_cls, release_id, corpus, annotation=''):
+        document = None
         with DiscogsModel.atomic():
             query = release_cls.select().where(release_cls.id == release_id)
             if not query.count():
                 return
             document = query.get()
-            relations = cls.from_release(document)
-            if Bootstrapper.is_test:
-                print('{} (Pass 1) [{}]\t(id:{})\t[{}] {}'.format(
-                    cls.__name__.upper(),
-                    annotation,
-                    document.id,
-                    len(relations),
-                    document.title,
-                    )
-                )
-            for relation in relations:
+
+        relations = cls.from_release(document)
+        # if Bootstrapper.is_test:
+        #     print('{} (Pass 1) [{}]\t(id:{})\t[{}] {}'.format(
+        #         cls.__name__.upper(),
+        #         annotation,
+        #         document.id,
+        #         len(relations),
+        #         document.title,
+        #         )
+        #     )
+        for relation in relations:
+            with DiscogsModel.atomic():
                 instance, created = cls.get_or_create(
                     entity_one_type=relation['entity_one_type'],
                     entity_one_id=relation['entity_one_id'],
@@ -190,7 +189,8 @@ class Relation(DiscogsModel):
                     if not instance.releases:
                         instance.releases = {}
                     instance.releases[release_id] = year
-                instance.save()
+                if instance.is_dirty():
+                    instance.save(only=instance.dirty_fields)
 
     @classmethod
     def from_release(cls, release):
