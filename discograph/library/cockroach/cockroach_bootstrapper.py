@@ -5,7 +5,7 @@ from discograph.library.cockroach.cockroach_release import CockroachRelease
 
 class CockroachBootstrapper:
     @classmethod
-    def bootstrap_models(cls, pessimistic=False):
+    def bootstrap_models(cls):
         print("bootstrap cockroach models")
         CockroachEntity.drop_table(True)
         CockroachRelease.drop_table(True)
@@ -32,15 +32,15 @@ class CockroachBootstrapper:
         CockroachRelease.bootstrap_pass_one()
 
         print("entity pass 2")
-        CockroachEntity.bootstrap_pass_two(pessimistic=pessimistic)
+        CockroachEntity.bootstrap_pass_two()
 
         print("release pass 2")
-        CockroachRelease.bootstrap_pass_two(pessimistic=pessimistic)
+        CockroachRelease.bootstrap_pass_two()
 
         print("relation pass 1")
-        CockroachRelation.bootstrap_pass_one(pessimistic=pessimistic)
+        CockroachRelation.bootstrap_pass_one()
 
         print("entity pass 3")
-        CockroachEntity.bootstrap_pass_three(pessimistic=pessimistic)
+        CockroachEntity.bootstrap_pass_three()
 
         print("bootstrap done.")

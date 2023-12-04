@@ -6,10 +6,11 @@ import random
 import traceback
 
 import peewee
-from abjad import Timer
 from peewee import Model, FloatField, DatabaseProxy, DataError, fn
 from playhouse.shortcuts import model_to_dict
 
+import discograph.config
+import discograph.database
 import discograph.utils
 from discograph.library.bootstrapper import Bootstrapper
 
@@ -65,7 +66,6 @@ class DiscogsModel(Model):
         # Pass one.
         initial_count = len(model_class)
         inserted_count = 0
-        template = u'{} (Pass 1) (idx:{}) (id:{}) [{:.8f}]: {}'
         xml_path = Bootstrapper.get_xml_path(xml_tag)
         print(f"Loading data from {xml_path}", flush=True)
         with gzip.GzipFile(xml_path, 'r') as file_pointer:
@@ -75,44 +75,43 @@ class DiscogsModel(Model):
             for i, element in enumerate(iterator):
                 data = None
                 try:
-                    with Timer(verbose=False) as timer:
-                        data = model_class.tags_to_fields(element)
-                        if skip_without:
-                            if any(not data.get(_) for _ in skip_without):
-                                continue
-                        if element.get('id'):
-                            data['id'] = element.get('id')
-                        data['random'] = random.random()
-                        # print(**data)
-                        new_instance = model_class(model_class, **data)
-                        # print(f"new_instance: {new_instance}", flush=True)
-                        bulk_inserts.append(new_instance)
-                        # document = model_class.create(**data)
-                        inserted_count += 1
-                        if len(bulk_inserts) >= DiscogsModel.BULK_INSERT_BATCH_SIZE:
-                            worker = cls.insert_bulk(model_class, bulk_inserts, inserted_count)
-                            worker.start()
-                            workers.append(worker)
-                            bulk_inserts.clear()
-                        if len(workers) > discograph.utils.get_concurrency_count():
-                            worker = workers.pop(0)
-                            # print(f"wait for worker {len(workers)} in list", flush=True)
-                            worker.join()
-                            if worker.exitcode > 0:
-                                print(f"worker.exitcode: {worker.exitcode}")
-                                # raise Exception("Error in worker process")
-                            worker.terminate()
-                        # if inserted_count >= 1000000:
-                        #     break
-                    # message = template.format(
-                    #     model_class.__name__.upper(),
-                    #     i,
-                    #     getattr(document, id_attr),
-                    #     timer.elapsed_time,
-                    #     getattr(document, name_attr),
-                    #     )
-                    # if Bootstrapper.is_test:
-                    #     print(message)
+                    data = model_class.tags_to_fields(element)
+                    if skip_without:
+                        if any(not data.get(_) for _ in skip_without):
+                            continue
+                    if element.get('id'):
+                        data['id'] = element.get('id')
+                    data['random'] = random.random()
+                    # print(**data)
+                    new_instance = model_class(model_class, **data)
+                    # print(f"new_instance: {new_instance}", flush=True)
+                    bulk_inserts.append(new_instance)
+                    inserted_count += 1
+                    if len(bulk_inserts) >= DiscogsModel.BULK_INSERT_BATCH_SIZE:
+                        worker = cls.insert_bulk(model_class, bulk_inserts, inserted_count)
+                        worker.start()
+                        workers.append(worker)
+                        bulk_inserts.clear()
+                    if len(workers) > discograph.database.get_concurrency_count():
+                        worker = workers.pop(0)
+                        # print(f"wait for worker {len(workers)} in list", flush=True)
+                        worker.join()
+                        if worker.exitcode > 0:
+                            print(f"worker.exitcode: {worker.exitcode}")
+                            # raise Exception("Error in worker process")
+                        worker.terminate()
+                    # if inserted_count >= 1000000:
+                    #     break
+                    if Bootstrapper.is_test:
+                        document = model_class.create(**data)
+                        template = u'{} (Pass 1) (idx:{}) (id:{}): {}'
+                        message = template.format(
+                            model_class.__name__.upper(),
+                            i,
+                            getattr(document, id_attr),
+                            getattr(document, name_attr),
+                        )
+                        print(message)
                 except DataError as e:
                     print("Error in bootstrap_pass_one")
                     pprint.pprint(data)
@@ -147,8 +146,8 @@ class DiscogsModel(Model):
 
     @classmethod
     def bootstrap_pass_two(cls, model_class, name_attr='name'):
-        skipped_template = u'{} [SKIPPED] (Pass 2) (id:{}) [{:.8f}]: {}'
-        changed_template = u'{}           (Pass 2) (id:{}) [{:.8f}]: {}'
+        skipped_template = u'{} [SKIPPED] (Pass 2) (id:{}): {}'
+        changed_template = u'{}           (Pass 2) (id:{}): {}'
         corpus = {}
         maximum_id = model_class.select(fn.Max(model_class.id)).scalar()
         for i in range(1, maximum_id + 1):
@@ -156,13 +155,11 @@ class DiscogsModel(Model):
             if not query.count():
                 continue
             document = list(query)[0]
-            with Timer(verbose=False) as timer:
-                changed = document.resolve_references(corpus)
+            changed = document.resolve_references(corpus)
             if not changed:
                 message = skipped_template.format(
                     model_class.__name__.upper(),
                     document.id,
-                    timer.elapsed_time,
                     getattr(document, name_attr),
                     )
                 if Bootstrapper.is_test:
@@ -171,7 +168,6 @@ class DiscogsModel(Model):
             message = changed_template.format(
                 model_class.__name__.upper(),
                 document.id,
-                timer.elapsed_time,
                 getattr(document, name_attr),
                 )
             if Bootstrapper.is_test:
@@ -197,9 +193,6 @@ class DiscogsModel(Model):
     @staticmethod
     def atomic():
         return database_proxy.atomic()
-        # from discograph.app import app
-        # from discograph.config import ThreadingModel
-        # return database_proxy.atomic() if app.config['THREADING_MODEL'] == ThreadingModel.PROCESS else nullcontext()
 
     @classmethod
     def get_random(cls):

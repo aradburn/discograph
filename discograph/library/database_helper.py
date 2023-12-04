@@ -5,6 +5,16 @@ from discograph.library import EntityType
 
 class DatabaseHelper(ABC):
 
+    MAX_NODES = 400
+    MAX_NODES_MOBILE = 25
+
+    MAX_DEGREE = 3
+    # was 12
+    MAX_DEGREE_MOBILE = 3
+
+    LINK_RATIO = 10
+    # was 3
+
     @staticmethod
     @abstractmethod
     def get_entity(entity_type: EntityType, entity_id: int):

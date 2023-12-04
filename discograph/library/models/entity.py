@@ -4,9 +4,11 @@ import sys
 import traceback
 
 import peewee
-from abjad import sequence, Timer
 
+import discograph.config
+import discograph.database
 import discograph.utils
+from discograph import utils
 from discograph.library import EntityType
 from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.discogs_model import DiscogsModel, database_proxy
@@ -150,62 +152,35 @@ class Entity(DiscogsModel):
         )
 
     @classmethod
-    def get_entity_iterator(cls, entity_type: EntityType, pessimistic=False):
-        if not pessimistic:
-            id_query = cls.select(peewee.fn.Max(cls.entity_id))
-            id_query = id_query.where(cls.entity_type == entity_type)
-            max_id = id_query.scalar()
-            for i in range(1, max_id + 1):
-                query = cls.select().where(
-                    cls.entity_id == i,
-                    cls.entity_type == entity_type,
-                    )
-                if not query.count():
-                    continue
-                document = query.get()
-                yield document
-        else:
-            id_query = cls.select(cls.entity_id)
-            id_query = id_query.where(cls.entity_type == entity_type)
-            for entity in id_query:
-                entity_id = entity.entity_id
-                entity = cls.select().where(
-                    cls.entity_id == entity_id,
-                    cls.entity_type == entity_type,
-                    ).get()
-                yield entity
+    def get_entity_iterator(cls, entity_type: EntityType):
+        id_query = cls.select(cls.entity_id)
+        id_query = id_query.where(cls.entity_type == entity_type)
+        for entity in id_query:
+            entity_id = entity.entity_id
+            entity = cls.select().where(
+                cls.entity_id == entity_id,
+                cls.entity_type == entity_type,
+                ).get()
+            yield entity
 
     @classmethod
-    def get_indices(cls, entity_type: EntityType, pessimistic=False):
-        indices = []
-        if not pessimistic:
-            maximum_id = cls.select(
-                peewee.fn.Max(cls.entity_id)).where(
-                    cls.entity_type == entity_type
-                    ).scalar()
-            step = maximum_id // discograph.utils.get_concurrency_count()
-            for start in range(0, maximum_id, step):
-                stop = start + step
-                indices.append(range(start, stop))
-        else:
-            query = cls.select(cls.entity_id)
-            query = query.where(cls.entity_type == entity_type)
-            query = query.order_by(cls.entity_id)
-            query = query.tuples()
-            all_ids = tuple(_[0] for _ in query)
-            ratio = [1] * int(discograph.utils.get_concurrency_count())
-            for chunk in sequence.partition_by_ratio_of_lengths(all_ids, tuple(ratio)):
-                indices.append(chunk)
-        return indices
+    def get_indices(cls, entity_type: EntityType):
+        query = cls.select(cls.entity_id)
+        query = query.where(cls.entity_type == entity_type)
+        query = query.order_by(cls.entity_id)
+        query = query.tuples()
+        all_ids = tuple(_[0] for _ in query)
+        num_chunks = discograph.database.get_concurrency_count()
+        return utils.split_tuple(num_chunks, all_ids)
 
     @classmethod
-    def bootstrap_pass_two(cls, pessimistic=False, **kwargs):
+    def bootstrap_pass_two(cls, **kwargs):
         print("entity bootstrap pass two - artist")
         entity_type: EntityType = EntityType.ARTIST
-        indices = cls.get_indices(entity_type, pessimistic=pessimistic)
+        indices = cls.get_indices(entity_type)
 
         workers = [cls.BootstrapPassTwoWorker(cls, entity_type, x) for x in indices]
-        print("entity bootstrap pass two - artist start workers")
+        print(f"entity bootstrap pass two - artist start {len(workers)} workers")
         for worker in workers:
             worker.start()
         for worker in workers:
@@ -218,10 +193,10 @@ class Entity(DiscogsModel):
 
         print("entity bootstrap pass two - label")
         entity_type: EntityType = EntityType.LABEL
-        indices = cls.get_indices(entity_type, pessimistic=pessimistic)
+        indices = cls.get_indices(entity_type)
 
         workers = [cls.BootstrapPassTwoWorker(cls, entity_type, x) for x in indices]
-        print("entity bootstrap pass two - label start workers")
+        print(f"entity bootstrap pass two - label start {len(workers)} workers")
         for worker in workers:
             worker.start()
         for worker in workers:
@@ -234,12 +209,13 @@ class Entity(DiscogsModel):
         print("entity bootstrap pass two - done")
 
     @classmethod
-    def bootstrap_pass_three(cls, pessimistic=False):
+    def bootstrap_pass_three(cls):
         print("entity bootstrap pass three")
 
         entity_type: EntityType = EntityType.ARTIST
-        indices = cls.get_indices(entity_type, pessimistic=pessimistic)
+        indices = cls.get_indices(entity_type)
         workers = [cls.BootstrapPassThreeWorker(cls, entity_type, x) for x in indices]
+        print(f"entity bootstrap pass three - artist start {len(workers)} workers")
         for worker in workers:
             worker.start()
         for worker in workers:
@@ -250,8 +226,9 @@ class Entity(DiscogsModel):
         for worker in workers:
             worker.terminate()
         entity_type: EntityType = EntityType.LABEL
-        indices = cls.get_indices(entity_type, pessimistic=pessimistic)
+        indices = cls.get_indices(entity_type)
         workers = [cls.BootstrapPassThreeWorker(cls, entity_type, _) for _ in indices]
+        print(f"entity bootstrap pass three - label start {len(workers)} workers")
         for worker in workers:
             worker.start()
         for worker in workers:
@@ -265,8 +242,6 @@ class Entity(DiscogsModel):
     @classmethod
     def bootstrap_pass_two_single(cls, entity_type: EntityType, entity_id: int,
                                   annotation='', corpus=None, progress=None):
-        # skipped_template = u'{} (Pass 2) {:.3%} [{}]\t[SKIPPED] (id:{}) [{:.8f}]: {}'
-        # changed_template = u'{} (Pass 2) {:.3%} [{}]\t          (id:{}) [{:.8f}]: {}'
         query = cls.select().where(
             cls.entity_id == entity_id,
             cls.entity_type == entity_type,
@@ -275,32 +250,31 @@ class Entity(DiscogsModel):
             return
         document = query.get()
         corpus = corpus or {}
-        with Timer(verbose=False) as timer:
-            changed = document.resolve_references(corpus)
+        changed = document.resolve_references(corpus)
         if not changed:
-            # message = skipped_template.format(
-            #     cls.__name__.upper(),
-            #     progress,
-            #     annotation,
-            #     (document.entity_type, document.entity_id),
-            #     timer.elapsed_time,
-            #     document.name,
-            # )
-            # if Bootstrapper.is_test:
-            #     print(message)
+            if Bootstrapper.is_test:
+                skipped_template = u'{} (Pass 2) {:.3%} [{}]\t[SKIPPED] (id:{}): {}'
+                message = skipped_template.format(
+                    cls.__name__.upper(),
+                    progress,
+                    annotation,
+                    (document.entity_type, document.entity_id),
+                    document.name,
+                )
+                print(message)
             return
         if document.is_dirty():
             document.save(only=document.dirty_fields)
-        # message = changed_template.format(
-        #     cls.__name__.upper(),
-        #     progress,
-        #     annotation,
-        #     (document.entity_type, document.entity_id),
-        #     timer.elapsed_time,
-        #     document.name,
-        # )
-        # if Bootstrapper.is_test:
-        #     print(message)
+        if Bootstrapper.is_test:
+            changed_template = u'{} (Pass 2) {:.3%} [{}]\t          (id:{}): {}'
+            message = changed_template.format(
+                cls.__name__.upper(),
+                progress,
+                annotation,
+                (document.entity_type, document.entity_id),
+                document.name,
+            )
+            print(message)
 
     @classmethod
     def bootstrap_pass_three_single(cls, relation_class,
@@ -346,18 +320,18 @@ class Entity(DiscogsModel):
         document.relation_counts = _relation_counts
         if document.is_dirty():
             document.save(only=document.dirty_fields)
-        # message_pieces = [
-        #     cls.__name__.upper(),
-        #     progress,
-        #     annotation,
-        #     (document.entity_type, document.entity_id),
-        #     document.name,
-        #     len(_relation_counts),
-        #     ]
-        # template = u'{} (Pass 3) {:.3%} [{}]\t(id:{}) {}: {}'
-        # message = template.format(*message_pieces)
-        # if Bootstrapper.is_test:
-        #     print(message)
+        if Bootstrapper.is_test:
+            message_pieces = [
+                cls.__name__.upper(),
+                progress,
+                annotation,
+                (document.entity_type, document.entity_id),
+                document.name,
+                len(_relation_counts),
+            ]
+            template = u'{} (Pass 3) {:.3%} [{}]\t(id:{}) {}: {}'
+            message = template.format(*message_pieces)
+            print(message)
 
     @classmethod
     def element_to_names(cls, names):

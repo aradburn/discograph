@@ -1,10 +1,10 @@
 import collections
 import collections.abc as collections_abc
-import math
 import re
 from abc import abstractmethod, ABC
 
 from discograph.library import CreditRole, EntityType
+from discograph.library.database_helper import DatabaseHelper
 from discograph.library.trellis_node import TrellisNode
 
 
@@ -38,7 +38,7 @@ class RelationGrapher(ABC):
 
     # INITIALIZER
 
-    def __init__(self, center_entity, degree=3, link_ratio=None, max_nodes=None, roles=None):
+    def __init__(self, center_entity, degree=DatabaseHelper.MAX_DEGREE, link_ratio=None, max_nodes=None, roles=None):
         self._center_entity = center_entity
         degree = int(degree)
         assert 0 < degree
@@ -47,13 +47,13 @@ class RelationGrapher(ABC):
             max_nodes = int(max_nodes)
             assert 0 < max_nodes
         else:
-            max_nodes = 100
+            max_nodes = DatabaseHelper.MAX_NODES
         self._max_nodes = max_nodes
         if link_ratio is not None:
             link_ratio = int(link_ratio)
             assert 0 < link_ratio
         else:
-            link_ratio = 3
+            link_ratio = DatabaseHelper.LINK_RATIO
         self._link_ratio = link_ratio
         roles = roles or ()
         structural_roles, relational_roles = [], []
@@ -237,7 +237,8 @@ class RelationGrapher(ABC):
         print(message)
 
     def _partition_trellis(self, distance):
-        page_count = math.ceil(float(len(self.nodes)) / self.max_nodes)
+        page_count = 1
+        # TODO was math.ceil(float(len(self.nodes)) / self.max_nodes)
         print('    Partitioning trellis into {} pages...'.format(page_count))
         message = '        Maximum: {} nodes / {} links'
         message = message.format(self.max_nodes, self.max_links)

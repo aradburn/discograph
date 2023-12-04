@@ -1,7 +1,5 @@
 import random
 
-from abjad import Timer
-
 from discograph.library import EntityType, CreditRole
 from discograph.library.database_helper import DatabaseHelper
 from discograph.library.discogs_model import DiscogsModel
@@ -45,20 +43,19 @@ class CockroachHelper(DatabaseHelper):
         if entity is None:
             return None
         if not on_mobile:
-            max_nodes = 75
-            degree = 12
+            max_nodes = DatabaseHelper.MAX_NODES
+            degree = DatabaseHelper.MAX_DEGREE
         else:
-            max_nodes = 25
-            degree = 6
+            max_nodes = DatabaseHelper.MAX_NODES_MOBILE
+            degree = DatabaseHelper.MAX_DEGREE_MOBILE
         relation_grapher = CockroachRelationGrapher(
             center_entity=entity,
             degree=degree,
             max_nodes=max_nodes,
             roles=roles,
             )
-        with Timer(exit_message='Network query time:'):
-            with DiscogsModel.connection_context():
-                data = relation_grapher()
+        with DiscogsModel.connection_context():
+            data = relation_grapher()
         if cache:
             CockroachRelationGrapher.cache_set(cache_key, data)
         return data

@@ -3,9 +3,11 @@ import sys
 import traceback
 
 import peewee
-from abjad import sequence, Timer
 
+import discograph.config
+import discograph.database
 import discograph.utils
+from discograph import utils
 from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.discogs_model import DiscogsModel, database_proxy
 
@@ -76,50 +78,29 @@ class Release(DiscogsModel):
         )
 
     @classmethod
-    def get_indices(cls, pessimistic=False):
-        indices = []
-        if not pessimistic:
-            maximum_id = cls.select(
-                peewee.fn.Max(cls.id)).scalar()
-            step = maximum_id // discograph.utils.get_concurrency_count()
-            for start in range(0, maximum_id, step):
-                stop = start + step
-                indices.append(range(start, stop))
-        else:
-            query = cls.select(cls.id)
-            query = query.order_by(cls.id)
-            query = query.tuples()
-            all_ids = tuple(_[0] for _ in query)
-            ratio = [1] * int(discograph.utils.get_concurrency_count())
-            # ratio = [1] * multiprocessing.cpu_count()
-            for chunk in sequence.partition_by_ratio_of_lengths(all_ids, tuple(ratio)):
-                indices.append(chunk)
-        return indices
+    def get_indices(cls):
+        query = cls.select(cls.id)
+        query = query.order_by(cls.id)
+        query = query.tuples()
+        all_ids = tuple(_[0] for _ in query)
+        num_chunks = discograph.database.get_concurrency_count()
+        return utils.split_tuple(num_chunks, all_ids)
 
     @classmethod
-    def get_release_iterator(cls, pessimistic=False):
-        if not pessimistic:
-            maximum_id = cls.select(peewee.fn.Max(cls.id)).scalar()
-            for i in range(1, maximum_id + 1):
-                query = cls.select().where(cls.id == i)
-                if not query.count():
-                    continue
-                document = query.get()
-                yield document
-        else:
-            id_query = cls.select(cls.id)
-            for release in id_query:
-                release_id = release.id
-                release = cls.select().where(cls.id == release_id).get()
-                yield release
+    def get_release_iterator(cls):
+        id_query = cls.select(cls.id)
+        for release in id_query:
+            release_id = release.id
+            release = cls.select().where(cls.id == release_id).get()
+            yield release
 
     @classmethod
-    def bootstrap_pass_two(cls, pessimistic=False, **kwargs):
+    def bootstrap_pass_two(cls, **kwargs):
         print("release bootstrap pass two")
-        indices = cls.get_indices(pessimistic=pessimistic)
+        indices = cls.get_indices()
 
         workers = [cls.BootstrapPassTwoWorker(cls, x) for x in indices]
-        print("release bootstrap pass two - start workers")
+        print(f"release bootstrap pass two - start {len(workers)} workers")
         for worker in workers:
             worker.start()
         for worker in workers:
@@ -139,38 +120,35 @@ class Release(DiscogsModel):
             corpus=None,
             progress=None,
     ):
-        skipped_template = u'{} (Pass 2) {:.3%} [{}]\t[SKIPPED] (id:{}) [{:.8f}]: {}'
-        changed_template = u'{} (Pass 2) {:.3%} [{}]\t          (id:{}) [{:.8f}]: {}'
         query = cls.select().where(cls.id == release_id)
         if not query.count():
             return
         document = query.get()
-        with Timer(verbose=False) as timer:
-            changed = document.resolve_references(corpus)
+        changed = document.resolve_references(corpus)
         if not changed:
-            # message = skipped_template.format(
-            #     cls.__name__.upper(),
-            #     progress,
-            #     annotation,
-            #     document.id,
-            #     timer.elapsed_time,
-            #     document.title,
-            # )
-            # if Bootstrapper.is_test:
-            #     print(message)
+            if Bootstrapper.is_test:
+                skipped_template = u'{} (Pass 2) {:.3%} [{}]\t[SKIPPED] (id:{}): {}'
+                message = skipped_template.format(
+                    cls.__name__.upper(),
+                    progress,
+                    annotation,
+                    document.id,
+                    document.title,
+                )
+                print(message)
             return
         if document.is_dirty():
             document.save(only=document.dirty_fields)
-        # message = changed_template.format(
-        #     cls.__name__.upper(),
-        #     progress,
-        #     annotation,
-        #     document.id,
-        #     timer.elapsed_time,
-        #     document.title,
-        # )
-        # if Bootstrapper.is_test:
-        #     print(message)
+        if Bootstrapper.is_test:
+            changed_template = u'{} (Pass 2) {:.3%} [{}]\t          (id:{}): {}'
+            message = changed_template.format(
+                cls.__name__.upper(),
+                progress,
+                annotation,
+                document.id,
+                document.title,
+            )
+            print(message)
 
     @classmethod
     def element_to_artist_credits(cls, element):

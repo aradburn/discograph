@@ -130,7 +130,7 @@ class Relation(DiscogsModel):
         cls.bootstrap_pass_one()
 
     @classmethod
-    def bootstrap_pass_one(cls, pessimistic=False, **kwargs):
+    def bootstrap_pass_one(cls, **kwargs):
         print("relation bootstrap pass one")
         relation_class_name = cls.__qualname__
         relation_module_name = cls.__module__
@@ -138,9 +138,9 @@ class Relation(DiscogsModel):
         release_module_name = relation_module_name.replace("relation", "release")
         release_class = getattr(sys.modules[release_module_name], release_class_name)
 
-        indices = release_class.get_indices(pessimistic)
-        # indices = Release.get_indices(pessimistic)
+        indices = release_class.get_indices()
         workers = [cls.BootstrapPassOneWorker(cls, _) for _ in indices]
+        print(f"relation bootstrap pass one - start {len(workers)} workers")
         for worker in workers:
             worker.start()
         for worker in workers:

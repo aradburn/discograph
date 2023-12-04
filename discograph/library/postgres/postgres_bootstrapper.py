@@ -5,7 +5,7 @@ from discograph.library.postgres.postgres_release import PostgresRelease
 
 class PostgresBootstrapper:
     @classmethod
-    def bootstrap_models(cls, pessimistic=False):
+    def bootstrap_models(cls):
         print("bootstrap postgres models")
         # PostgresEntity.drop_table(True)
         # PostgresRelease.drop_table(True)
@@ -28,13 +28,13 @@ class PostgresBootstrapper:
         # PostgresRelease._meta.database.execute_sql("VACUUM FULL ANALYZE postgresrelease;")
         #
         # print("entity pass 2")
-        # PostgresEntity.bootstrap_pass_two(pessimistic=pessimistic)
+        # PostgresEntity.bootstrap_pass_two()
         #
         # print("release pass 2")
-        # PostgresRelease.bootstrap_pass_two(pessimistic=pessimistic)
+        # PostgresRelease.bootstrap_pass_two()
         #
         # print("relation pass 1")
-        # PostgresRelation.bootstrap_pass_one(pessimistic=pessimistic)
+        # PostgresRelation.bootstrap_pass_one()
         #
         # print("relation analyze")
         # PostgresEntity._meta.database.execute_sql("VACUUM FULL ANALYZE postgresentity;")
@@ -42,7 +42,7 @@ class PostgresBootstrapper:
         # PostgresRelation._meta.database.execute_sql("VACUUM FULL ANALYZE postgresrelation;")
 
         # print("entity pass 3")
-        # PostgresEntity.bootstrap_pass_three(pessimistic=pessimistic)
+        # PostgresEntity.bootstrap_pass_three()
         #
         # print("final vacuum analyze")
         # PostgresEntity._meta.database.execute_sql("VACUUM FULL ANALYZE postgresentity;")

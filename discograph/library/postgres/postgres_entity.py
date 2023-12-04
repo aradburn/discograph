@@ -48,7 +48,7 @@ class PostgresEntity(Entity):
                 entity_id,
                 name,
                 ts_rank_cd(search_content, query, 63) AS rank
-            FROM entities,
+            FROM postgresentity,
                 to_tsquery(%s) query
             WHERE query @@ search_content
             ORDER BY rank DESC
