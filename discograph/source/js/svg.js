@@ -10,13 +10,14 @@ function dg_svg_init() {
         w.innerWidth || e.clientWidth || g.clientWidth,
         w.innerHeight|| e.clientHeight|| g.clientHeight,
     ];
+    dg.zoomFactor = Math.min(dg.dimensions[0], dg.dimensions[1]) / 1024;
     dg.network.newNodeCoords = [
-        dg.dimensions[0] / 2,
-        dg.dimensions[1] / 2,
+        dg.dimensions[0],
+        dg.dimensions[1],
     ];
     d3.select("#svg")
-        .attr("width", dg.dimensions[0])
-        .attr("height", dg.dimensions[1]);
+        .attr("width", dg.dimensions[0] * 2)
+        .attr("height", dg.dimensions[1] * 2);
     dg_svg_setupDefs();
     d3.select('#svg').call(tip);
 }

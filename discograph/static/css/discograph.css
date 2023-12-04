@@ -1,7 +1,12 @@
-@import url(//fonts.googleapis.com/css?family=Open+Sans);
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: normal;
+  src: url(http://fonts.gstatic.com/s/opensans/v36/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0B4gaVc.ttf) format('truetype');
+}
 html,
-body,
-svg {
+body {
   margin: 0;
   height: 100%;
   width: 100%;
@@ -12,6 +17,25 @@ svg {
 }
 body {
   padding-top: 70px;
+}
+svg {
+  margin: 0;
+  height: 200%;
+  width: 200%;
+  /*  top: -50%;
+  left: -50%;
+  position: relative;*/
+  z-index: -1;
+}
+#svg-container {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  left: 0;
+  position: fixed;
+  z-index: -1;
+  overflow: scroll;
 }
 #svg {
   pointer-events: visible;
@@ -89,7 +113,9 @@ form .clear,
 }
 #networkLayer .link.member-of path.inner,
 #networkLayer .link.sublabel-of path.inner {
+  opacity: 0.5;
   marker-end: url(#aggregate);
+  stroke: #700;
   stroke-dasharray: 0, 0;
 }
 #networkLayer .link.released-on path.inner {
@@ -98,12 +124,17 @@ form .clear,
 #networkLayer .link.selected {
   opacity: 1;
 }
+#networkLayer .link.selected path {
+  opacity: 0.5;
+  stroke: #700;
+  stroke-width: 3;
+}
 #networkLayer .link.selected text {
   font-size: 10px;
 }
 #networkLayer .hull path {
-  fill: #000;
-  opacity: 0.05;
+  fill: #343d46;
+  opacity: 0.1;
   stroke: #000;
   stroke-width: 32;
   stroke-linecap: round;
@@ -272,7 +303,7 @@ form .clear,
   line-height: 1;
   font-size: 10px;
   padding: 12px;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(101, 115, 126, 0.8);
   color: #fff;
   border-radius: 2px;
   pointer-events: none;

@@ -1,5 +1,5 @@
 !function(){
-    var dg = {version: "0.1"};
+    var dg = {version: "0.2"};
 
 import "color";
 import "loading";

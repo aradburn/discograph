@@ -1,29 +1,46 @@
+LINK_STRENGTH = 1.5
+//LINK_STRENGTH = 1.5
+FRICTION = 0.9
+//FRICTION = 0.9
+CHARGE = -1000
+//CHARGE = -300
+GRAVITY = 0.4
+//GRAVITY = 0.2
+THETA = 1
+ALPHA = 0.1
+LINK_DISTANCE_ALIAS = 10
+//LINK_DISTANCE_ALIAS = 100
+LINK_DISTANCE_RELEASED_ON = 200
+LINK_DISTANCE = 100
+LINK_DISTANCE_RANDOM = 100
+//LINK_DISTANCE_RANDOM = 20
+
 function dg_network_setupForceLayout() {
     return d3.layout.force()
         .nodes(dg.network.pageData.nodes)
         .links(dg.network.pageData.links)
         .size(dg.dimensions)
         .on("tick", dg_network_tick)
-        .linkStrength(1.5)
-        .friction(0.9)
+        .linkStrength(LINK_STRENGTH)
+        .friction(FRICTION)
         .linkDistance(function(d, i) {
             if (d.isSpline) {
                 if (d.role == 'Released On') {
-                    return 100;
+                    return LINK_DISTANCE_RELEASED_ON / 2 * dg.zoomFactor;
                 }
-                return 50;
+                return LINK_DISTANCE / 2 * dg.zoomFactor;
             } else if (d.role == 'Alias') {
-                return 100;
+                return LINK_DISTANCE_ALIAS * dg.zoomFactor;
             } else if (d.role == 'Released On') {
-                return 200;
+                return LINK_DISTANCE_RELEASED_ON * dg.zoomFactor;
             } else {
-                return 90 + (Math.random() * 20);
+                return LINK_DISTANCE * dg.zoomFactor + (Math.tanh(Math.random()) * LINK_DISTANCE_RANDOM * dg.zoomFactor);
             }
         })
-        .charge(-300)
-        .gravity(0.2)
-        .theta(1)
-        .alpha(0.1);
+        .charge(CHARGE)
+        .gravity(GRAVITY)
+        .theta(THETA)
+        .alpha(ALPHA);
 }
 
 function dg_network_startForceLayout() {
@@ -133,8 +150,8 @@ function dg_network_processJson(json) {
             oldNode.missingByPage = newNode.missingByPage;
             oldNode.pages = newNode.pages;
         } else {
-            newNode.x = dg.network.newNodeCoords[0] + (Math.random() * 200) - 100;
-            newNode.y = dg.network.newNodeCoords[1] + (Math.random() * 200) - 100;
+            newNode.x = dg.network.newNodeCoords[0] + (Math.random() * LINK_DISTANCE * 2.0 * dg.zoomFactor) -  LINK_DISTANCE * dg.zoomFactor;
+            newNode.y = dg.network.newNodeCoords[1] + (Math.random() * LINK_DISTANCE * 2.0 * dg.zoomFactor) -  LINK_DISTANCE * dg.zoomFactor;
             dg.network.data.nodeMap.set(key, newNode);
         }
     });

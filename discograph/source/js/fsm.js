@@ -36,8 +36,8 @@ var DiscographFsm = machina.Fsm.extend({
             var entityType = entityKey.split("-")[0];
             var entityId = entityKey.split("-")[1];
             var url = "/" + entityType + "/" + entityId;
-            ga('send', 'pageview', url);
-            ga('set', 'page', url);
+            // ### TODO setup analytics ga('send', 'pageview', url);
+            // ### TODO setup analytics ga('set', 'page', url);
             $(window).trigger({
                 type: 'discograph:request-network',
                 entityKey: event.state.key,
@@ -291,8 +291,8 @@ var DiscographFsm = machina.Fsm.extend({
         }
         var state = {key: entityKey, params: params};
         window.history.pushState(state, title, url);
-        ga('send', 'pageview', url);
-        ga('set', 'page', url);
+        // ### TODO setup analytics ga('send', 'pageview', url);
+        // ### TODO setup analytics ga('set', 'page', url);
     },
     requestNetwork: function(entityKey, pushHistory) {
         this.transition('requesting');

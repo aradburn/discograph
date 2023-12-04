@@ -12,13 +12,13 @@ $(document).ready(function() {
             type: 'discograph:request-random',
         });
     });
-    $('#paging .next a').click(function(event) {
+    $('#paging .next a').on("click", function(event) {
         $(this).trigger({
             type: 'discograph:select-next-page', 
         });
         $(this).tooltip('hide');
     });
-    $('#paging .previous a').click(function(event) {
+    $('#paging .previous a').on("click", function(event) {
         $(this).trigger({
             type: 'discograph:select-previous-page',
         });

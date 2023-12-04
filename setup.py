@@ -11,7 +11,6 @@ if __name__ == '__main__':
         install_requires=[
             'Flask-Compress',
             'Flask-Mobility',
-            'abjad',
             'apsw',
             'flask',
             'gunicorn',

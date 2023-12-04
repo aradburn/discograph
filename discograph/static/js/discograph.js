@@ -1,6 +1,6 @@
 ! function() {
     var dg = {
-        version: "0.1"
+        version: "0.2"
     };
 
     function dg_color_greyscale(d) {
@@ -181,6 +181,22 @@
             });
         });
     }
+    LINK_STRENGTH = 1.5
+    //LINK_STRENGTH = 1.5
+    FRICTION = 0.9
+    //FRICTION = 0.9
+    CHARGE = -1000
+    //CHARGE = -300
+    GRAVITY = 0.4
+    //GRAVITY = 0.2
+    THETA = 1
+    ALPHA = 0.1
+    LINK_DISTANCE_ALIAS = 10
+    //LINK_DISTANCE_ALIAS = 100
+    LINK_DISTANCE_RELEASED_ON = 200
+    LINK_DISTANCE = 100
+    LINK_DISTANCE_RANDOM = 100
+    //LINK_DISTANCE_RANDOM = 20
 
     function dg_network_setupForceLayout() {
         return d3.layout.force()
@@ -188,26 +204,26 @@
             .links(dg.network.pageData.links)
             .size(dg.dimensions)
             .on("tick", dg_network_tick)
-            .linkStrength(1.5)
-            .friction(0.9)
+            .linkStrength(LINK_STRENGTH)
+            .friction(FRICTION)
             .linkDistance(function(d, i) {
                 if (d.isSpline) {
                     if (d.role == 'Released On') {
-                        return 100;
+                        return LINK_DISTANCE_RELEASED_ON / 2 * dg.zoomFactor;
                     }
-                    return 50;
+                    return LINK_DISTANCE / 2 * dg.zoomFactor;
                 } else if (d.role == 'Alias') {
-                    return 100;
+                    return LINK_DISTANCE_ALIAS * dg.zoomFactor;
                 } else if (d.role == 'Released On') {
-                    return 200;
+                    return LINK_DISTANCE_RELEASED_ON * dg.zoomFactor;
                 } else {
-                    return 90 + (Math.random() * 20);
+                    return LINK_DISTANCE * dg.zoomFactor + (Math.tanh(Math.random()) * LINK_DISTANCE_RANDOM * dg.zoomFactor);
                 }
             })
-            .charge(-300)
-            .gravity(0.2)
-            .theta(1)
-            .alpha(0.1);
+            .charge(CHARGE)
+            .gravity(GRAVITY)
+            .theta(THETA)
+            .alpha(ALPHA);
     }
 
     function dg_network_startForceLayout() {
@@ -325,8 +341,8 @@
                 oldNode.missingByPage = newNode.missingByPage;
                 oldNode.pages = newNode.pages;
             } else {
-                newNode.x = dg.network.newNodeCoords[0] + (Math.random() * 200) - 100;
-                newNode.y = dg.network.newNodeCoords[1] + (Math.random() * 200) - 100;
+                newNode.x = dg.network.newNodeCoords[0] + (Math.random() * LINK_DISTANCE * 2.0 * dg.zoomFactor) - LINK_DISTANCE * dg.zoomFactor;
+                newNode.y = dg.network.newNodeCoords[1] + (Math.random() * LINK_DISTANCE * 2.0 * dg.zoomFactor) - LINK_DISTANCE * dg.zoomFactor;
                 dg.network.data.nodeMap.set(key, newNode);
             }
         });
@@ -879,13 +895,14 @@
             w.innerWidth || e.clientWidth || g.clientWidth,
             w.innerHeight || e.clientHeight || g.clientHeight,
         ];
+        dg.zoomFactor = Math.min(dg.dimensions[0], dg.dimensions[1]) / 1024;
         dg.network.newNodeCoords = [
-            dg.dimensions[0] / 2,
-            dg.dimensions[1] / 2,
+            dg.dimensions[0],
+            dg.dimensions[1],
         ];
         d3.select("#svg")
-            .attr("width", dg.dimensions[0])
-            .attr("height", dg.dimensions[1]);
+            .attr("width", dg.dimensions[0] * 2)
+            .attr("height", dg.dimensions[1] * 2);
         dg_svg_setupDefs();
         d3.select('#svg').call(tip);
     }
@@ -1098,7 +1115,7 @@
                     },
                 },
             })
-            .keydown(function(event) {
+            .on('keydown', function(event) {
                 if (event.keyCode == 13) {
                     event.preventDefault();
                     dg_typeahead_navigate();
@@ -1126,7 +1143,7 @@
                 $(this).data("selectedKey", datum.key);
                 dg_typeahead_navigate();
             });
-        $('#search .clear').click(function() {
+        $('#search .clear').on("click", function() {
             $('#typeahead').typeahead('val', '');
         });
     }
@@ -1182,8 +1199,8 @@
                 var entityType = entityKey.split("-")[0];
                 var entityId = entityKey.split("-")[1];
                 var url = "/" + entityType + "/" + entityId;
-                ga('send', 'pageview', url);
-                ga('set', 'page', url);
+                // ### TODO setup analytics ga('send', 'pageview', url);
+                // ### TODO setup analytics ga('set', 'page', url);
                 $(window).trigger({
                     type: 'discograph:request-network',
                     entityKey: event.state.key,
@@ -1203,8 +1220,10 @@
                     .attr('width', dg.dimensions[0])
                     .attr('height', dg.dimensions[1]);
                 var transform = [
-                    'translate(', (dg.dimensions[0] / 2),
-                    ',', (dg.dimensions[1] / 2),
+                    'translate(',
+                    (dg.dimensions[0] / 2),
+                    ',',
+                    (dg.dimensions[1] / 2),
                     ')'
                 ].join('');
                 d3.selectAll('.centered')
@@ -1458,8 +1477,8 @@
                 params: params
             };
             window.history.pushState(state, title, url);
-            ga('send', 'pageview', url);
-            ga('set', 'page', url);
+            // ### TODO setup analytics ga('send', 'pageview', url);
+            // ### TODO setup analytics ga('set', 'page', url);
         },
         requestNetwork: function(entityKey, pushHistory) {
             this.transition('requesting');
@@ -1614,13 +1633,13 @@
                 type: 'discograph:request-random',
             });
         });
-        $('#paging .next a').click(function(event) {
+        $('#paging .next a').on("click", function(event) {
             $(this).trigger({
                 type: 'discograph:select-next-page',
             });
             $(this).tooltip('hide');
         });
-        $('#paging .previous a').click(function(event) {
+        $('#paging .previous a').on("click", function(event) {
             $(this).trigger({
                 type: 'discograph:select-previous-page',
             });
@@ -1644,7 +1663,6 @@
         dg.fsm = new DiscographFsm();
         console.log('discograph initialized.');
     });
-
     if (typeof define === "function" && define.amd) define(dg);
     else if (typeof module === "object" && module.exports) module.exports = dg;
     this.dg = dg;

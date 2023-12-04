@@ -1,8 +1,7 @@
 @import url(//fonts.googleapis.com/css?family=Open+Sans);
 
 html,
-body,
-svg {
+body {
     margin: 0;
     height: 100%;
     width: 100%;
@@ -10,15 +9,36 @@ svg {
     left: 0;
     position: fixed;
     z-index: -1;
-    }
+}
 
 body {
     padding-top: 70px;
-    }
+}
+
+svg {
+  margin: 0;
+  height: 200%;
+  width: 200%;
+/*  top: -50%;
+  left: -50%;
+  position: relative;*/
+  z-index: -1;
+}
+
+#svg-container {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  left: 0;
+  position: fixed;
+  z-index: -1;
+  overflow: scroll;
+}
 
 #svg {
     pointer-events: visible;
-    }
+}
 
 #svg text {
     //display: none;
@@ -26,36 +46,36 @@ body {
     font-feature-settings: none;
     text-rendering: optimizeSpeed;
     font-family: 'Open Sans', sans-serif;
-    }
+}
 
 a {
     &:hover {
         color: #cc8548;
-        }
+    }
     .input-group-addon {
         color: #337ab7;
         &:active {
             background-color: #ccc;
-            }
         }
     }
+}
 
 #paging {
     pointer-events: none;
     a {
         pointer-events: visible;
-        }
     }
+}
 
 .navbar-collapse.in {
     overflow-y: visible;
-    }
+}
 
 #brand,
 form .clear,
 .navbar-nav a {
     cursor: pointer;
-    }
+}
 
 /* NETWORK */
 
@@ -106,7 +126,9 @@ form .clear,
         &.member-of,
         &.sublabel-of {
             path.inner {
+                opacity: 0.5;
                 marker-end: url(#aggregate);
+                stroke: #700;
                 stroke-dasharray: 0, 0;
                 }
             }
@@ -117,6 +139,11 @@ form .clear,
             }
         &.selected {
             opacity: 1;
+            path {
+                opacity: 0.5;
+                stroke: #700;
+                stroke-width: 3;
+            }
             text {
                 font-size: 10px;
                 }
@@ -125,8 +152,8 @@ form .clear,
 
     .hull {
         path {
-            fill: #000;
-            opacity: 0.05;
+            fill: #343d46;
+            opacity: 0.1;
             stroke: #000;
             stroke-width: 32;
             stroke-linecap: round;
@@ -311,7 +338,7 @@ form .clear,
     line-height: 1;
     font-size: 10px;
     padding: 12px;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(101,115,126, 0.8);
     color: #fff;
     border-radius: 2px;
     pointer-events: none;
