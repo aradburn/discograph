@@ -1,6 +1,6 @@
-from abjad import string
 import json
 
+from discograph import utils
 from discograph.library import EntityType
 from discograph.library.cockroach.cockroach_entity import CockroachEntity
 from discograph.library.cockroach.cockroach_relation_grapher import CockroachRelationGrapher
@@ -36,7 +36,7 @@ class TestCockroachRelationGrapher(CockroachTestCase):
         network = grapher.__call__()
         print(f"network: {network}")
         actual = json.dumps(network, **self.json_kwargs)
-        expected = string.normalize('''
+        expected = utils.normalize('''
             {
                 "center": {                
                     "key": "artist-2239",                
@@ -203,7 +203,7 @@ class TestCockroachRelationGrapher(CockroachTestCase):
         )
         network = grapher.__call__()
         actual = json.dumps(network, **self.json_kwargs)
-        expected = string.normalize('''
+        expected = utils.normalize('''
             {            
                 "center": {                
                     "key": "artist-489350",                
@@ -377,7 +377,7 @@ class TestCockroachRelationGrapher(CockroachTestCase):
         )
         network = grapher.__call__()
         actual = json.dumps(network, **self.json_kwargs)
-        expected = string.normalize('''
+        expected = utils.normalize('''
             {
                 "center": {
                     "key": "artist-489350",
@@ -550,7 +550,7 @@ class TestCockroachRelationGrapher(CockroachTestCase):
         )
         network = grapher.__call__()
         actual = json.dumps(network, **self.json_kwargs)
-        expected = string.normalize('''
+        expected = utils.normalize('''
             {
                 "center": {
                     "key": "artist-489350",

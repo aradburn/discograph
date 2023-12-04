@@ -1,8 +1,7 @@
-from abjad import string
-
+from discograph import utils
+from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.sqlite.sqlite_release import SqliteRelease
 from .sqlite_test_case import SqliteTestCase
-from discograph.library.bootstrapper import Bootstrapper
 
 
 class TestSqliteRelease(SqliteTestCase):
@@ -12,7 +11,7 @@ class TestSqliteRelease(SqliteTestCase):
         release_element = next(iterator)
         release = SqliteRelease.from_element(release_element)
         actual = format(release)
-        expected = string.normalize(u"""
+        expected = utils.normalize(u"""
         {
             "artists": [
                 {
@@ -132,7 +131,7 @@ class TestSqliteRelease(SqliteTestCase):
         release_element = next(iterator)
         release = SqliteRelease.from_element(release_element)
         actual = format(release)
-        expected = string.normalize(u"""
+        expected = utils.normalize(u"""
         {
             "artists": [
                 {

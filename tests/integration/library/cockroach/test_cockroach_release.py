@@ -1,8 +1,7 @@
-from abjad import string
-
+from discograph import utils
+from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.cockroach.cockroach_release import CockroachRelease
 from .cockroach_test_case import CockroachTestCase
-from discograph.library.bootstrapper import Bootstrapper
 
 
 class TestCockroachRelease(CockroachTestCase):
@@ -12,7 +11,7 @@ class TestCockroachRelease(CockroachTestCase):
         release_element = next(iterator)
         release = CockroachRelease.from_element(release_element)
         actual = format(release)
-        expected = string.normalize(u"""
+        expected = utils.normalize(u"""
         {
             "artists": [
                 {
@@ -132,7 +131,7 @@ class TestCockroachRelease(CockroachTestCase):
         release_element = next(iterator)
         release = CockroachRelease.from_element(release_element)
         actual = format(release)
-        expected = string.normalize(u"""
+        expected = utils.normalize(u"""
         {
             "artists": [
                 {

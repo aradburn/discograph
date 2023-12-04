@@ -1,11 +1,11 @@
-from abjad import string
 from xml.etree import ElementTree
 
+from discograph import utils
 from discograph.library import EntityType
+from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.sqlite.sqlite_relation import SqliteRelation
 from discograph.library.sqlite.sqlite_release import SqliteRelease
 from .sqlite_test_case import SqliteTestCase
-from discograph.library.bootstrapper import Bootstrapper
 
 
 class TestSqliteRelationFromRelease(SqliteTestCase):
@@ -58,7 +58,7 @@ class TestSqliteRelationFromRelease(SqliteTestCase):
 
     # @unittest.skip('Labels not constructed by Relation.from_release().')
     def test_02(self):
-        source = string.normalize('''
+        source = utils.normalize('''
             <?xml version="1.0" ?>
             <release id="103" status="Accepted">
                 <artists>
@@ -200,7 +200,7 @@ class TestSqliteRelationFromRelease(SqliteTestCase):
         assert actual == expected
 
     def test_03(self):
-        source = string.normalize('''
+        source = utils.normalize('''
             <?xml version="1.0" ?>
             <release id="5" status="Accepted">
                 <artists>
@@ -433,7 +433,7 @@ class TestSqliteRelationFromRelease(SqliteTestCase):
         assert actual == expected
 
     def test_04(self):
-        source = string.normalize(r"""
+        source = utils.normalize(r"""
             <?xml version="1.0" ?>
             <release id="36" status="Accepted">
                 <artists>
@@ -814,7 +814,7 @@ class TestSqliteRelationFromRelease(SqliteTestCase):
         assert actual == expected
 
     def test_05(self):
-        source = string.normalize(r'''
+        source = utils.normalize(r'''
             <?xml version="1.0" ?>
             <release id="3286" status="Accepted">
                 <artists>

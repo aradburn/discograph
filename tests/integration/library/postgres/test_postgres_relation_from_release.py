@@ -1,6 +1,6 @@
-from abjad import string
 from xml.etree import ElementTree
 
+from discograph import utils
 from discograph.library import EntityType
 from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.postgres.postgres_relation import PostgresRelation
@@ -57,7 +57,7 @@ class TestPostgresRelationFromRelease(PostgresTestCase):
         assert actual == expected
 
     def test_02(self):
-        source = string.normalize('''
+        source = utils.normalize('''
             <?xml version="1.0" ?>
             <release id="103" status="Accepted">
                 <artists>
@@ -199,7 +199,7 @@ class TestPostgresRelationFromRelease(PostgresTestCase):
         assert actual == expected
 
     def test_03(self):
-        source = string.normalize('''
+        source = utils.normalize('''
             <?xml version="1.0" ?>
             <release id="5" status="Accepted">
                 <artists>
@@ -432,7 +432,7 @@ class TestPostgresRelationFromRelease(PostgresTestCase):
         assert actual == expected
 
     def test_04(self):
-        source = string.normalize(r"""
+        source = utils.normalize(r"""
             <?xml version="1.0" ?>
             <release id="36" status="Accepted">
                 <artists>
@@ -813,7 +813,7 @@ class TestPostgresRelationFromRelease(PostgresTestCase):
         assert actual == expected
 
     def test_05(self):
-        source = string.normalize(r'''
+        source = utils.normalize(r'''
             <?xml version="1.0" ?>
             <release id="3286" status="Accepted">
                 <artists>

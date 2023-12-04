@@ -43,12 +43,12 @@ def route__index():
         initial_json=initial_json,
         is_a_return_visitor=is_a_return_visitor,
         multiselect_mapping=multiselect_mapping,
-        og_title='Disco/graph: visualizing music as a social graph',
+        og_title='DiscoGraph2',
         og_url=url,
         on_mobile=on_mobile,
         original_roles=original_roles,
         original_year=original_year,
-        title='Disco/graph: Visualizing music as a social graph',
+        title='DiscoGraph2',
         )
     response = make_response(rendered_template)
     response.set_cookie('is_a_return_visitor', 'true')

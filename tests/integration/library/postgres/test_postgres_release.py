@@ -1,8 +1,7 @@
-from abjad import string
-
+from discograph import utils
+from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.postgres.postgres_release import PostgresRelease
 from .postgres_test_case import PostgresTestCase
-from discograph.library.bootstrapper import Bootstrapper
 
 
 class TestPostgresRelease(PostgresTestCase):
@@ -12,7 +11,7 @@ class TestPostgresRelease(PostgresTestCase):
         release_element = next(iterator)
         release = PostgresRelease.from_element(release_element)
         actual = format(release)
-        expected = string.normalize(u"""
+        expected = utils.normalize(u"""
         {
             "artists": [
                 {
@@ -132,7 +131,7 @@ class TestPostgresRelease(PostgresTestCase):
         release_element = next(iterator)
         release = PostgresRelease.from_element(release_element)
         actual = format(release)
-        expected = string.normalize(u"""
+        expected = utils.normalize(u"""
         {
             "artists": [
                 {

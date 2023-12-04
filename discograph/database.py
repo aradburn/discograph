@@ -1,4 +1,5 @@
 import atexit
+import multiprocessing
 import os
 import pathlib
 import shutil
@@ -140,7 +141,7 @@ def setup_database(config, bootstrap=True):
             Bootstrapper.is_test = True
 
         if bootstrap:
-            PostgresBootstrapper.bootstrap_models(pessimistic=True)
+            PostgresBootstrapper.bootstrap_models()
 
         import logging
 
@@ -195,8 +196,8 @@ def setup_database(config, bootstrap=True):
         if config['TESTING']:
             Bootstrapper.is_test = True
 
-        if bootstrap and not pathlib.Path(config['SQLITE_DATABASE_NAME']).is_file():
-            SqliteBootstrapper.bootstrap_models(pessimistic=True)
+        if bootstrap:
+            SqliteBootstrapper.bootstrap_models()
     elif config['DATABASE'] == DatabaseType.COCKROACH:
         print("Using Cockroach Database")
         db_helper = CockroachHelper
@@ -235,7 +236,7 @@ def setup_database(config, bootstrap=True):
         )
 
         if bootstrap:
-            CockroachBootstrapper.bootstrap_models(pessimistic=True)
+            CockroachBootstrapper.bootstrap_models()
 
 
 def shutdown_database():
@@ -251,3 +252,12 @@ def shutdown_database():
             print(f"Delete socket dir: {postgres_db.pg_socket_dir}")
             shutil.rmtree(postgres_db.pg_socket_dir)
         postgres_db = None
+
+
+def get_concurrency_count():
+    if threading_model == ThreadingModel.PROCESS:
+        return multiprocessing.cpu_count() * 2
+    elif threading_model == ThreadingModel.THREAD:
+        return 1
+    else:
+        NotImplementedError("THREADING_MODEL not configured")

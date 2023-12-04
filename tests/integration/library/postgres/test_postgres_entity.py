@@ -1,5 +1,4 @@
-from abjad import string
-
+from discograph import utils
 from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.postgres.postgres_entity import PostgresEntity
 from .postgres_test_case import PostgresTestCase
@@ -12,9 +11,9 @@ class TestPostgresEntity(PostgresTestCase):
         iterator = Bootstrapper.get_iterator('artist')
         element = next(iterator)
         entity = PostgresEntity.from_element(element)
-        actual = string.normalize(format(entity))
+        actual = utils.normalize(format(entity))
         # noinspection PyPep8
-        expected = string.normalize(u"""
+        expected = utils.normalize(u"""
             {
                 "entities": {
                     "aliases": {},
@@ -71,9 +70,9 @@ class TestPostgresEntity(PostgresTestCase):
         while element.find('name').text != 'Seefeel':
             element = next(iterator)
         entity = PostgresEntity.from_element(element)
-        actual = string.normalize(format(entity))
+        actual = utils.normalize(format(entity))
         # noinspection PyPep8
-        expected = string.normalize(u"""
+        expected = utils.normalize(u"""
             {
                 "entities": {
                     "members": {
@@ -107,8 +106,8 @@ class TestPostgresEntity(PostgresTestCase):
         iterator = Bootstrapper.get_iterator('label')
         element = next(iterator)
         entity = PostgresEntity.from_element(element)
-        actual = string.normalize(format(entity))
-        expected = string.normalize(r"""
+        actual = utils.normalize(format(entity))
+        expected = utils.normalize(r"""
             {
                 "entities": {},
                 "entity_id": 1,

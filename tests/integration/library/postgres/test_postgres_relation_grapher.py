@@ -1,6 +1,6 @@
-from abjad import string
 import json
 
+from discograph import utils
 from discograph.library import EntityType
 from discograph.library.postgres.postgres_entity import PostgresEntity
 from discograph.library.postgres.postgres_relation_grapher import PostgresRelationGrapher
@@ -36,7 +36,7 @@ class TestPostgresRelationGrapher(PostgresTestCase):
         network = grapher.__call__()
         print(f"network: {network}")
         actual = json.dumps(network, **self.json_kwargs)
-        expected = string.normalize('''
+        expected = utils.normalize('''
             {
                 "center": {                
                     "key": "artist-2239",                
@@ -203,7 +203,7 @@ class TestPostgresRelationGrapher(PostgresTestCase):
         )
         network = grapher.__call__()
         actual = json.dumps(network, **self.json_kwargs)
-        expected = string.normalize('''
+        expected = utils.normalize('''
             {            
                 "center": {                
                     "key": "artist-489350",                
@@ -377,7 +377,7 @@ class TestPostgresRelationGrapher(PostgresTestCase):
         )
         network = grapher.__call__()
         actual = json.dumps(network, **self.json_kwargs)
-        expected = string.normalize('''
+        expected = utils.normalize('''
             {
                 "center": {
                     "key": "artist-489350",
@@ -550,7 +550,7 @@ class TestPostgresRelationGrapher(PostgresTestCase):
         )
         network = grapher.__call__()
         actual = json.dumps(network, **self.json_kwargs)
-        expected = string.normalize('''
+        expected = utils.normalize('''
             {
                 "center": {
                     "key": "artist-489350",

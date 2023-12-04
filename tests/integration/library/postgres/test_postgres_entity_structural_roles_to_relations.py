@@ -1,5 +1,4 @@
-from abjad import string
-
+from discograph import utils
 from discograph.library import EntityType
 from discograph.library.postgres.postgres_entity import PostgresEntity
 from .postgres_test_case import PostgresTestCase
@@ -13,7 +12,7 @@ class TestStructuralRolesToRelations(PostgresTestCase):
         relations = entity.structural_roles_to_relations(roles)
         relations = [v for k, v in sorted(relations.items())]
         actual = '\n'.join(format(_) for _ in relations)
-        expected = string.normalize(u"""
+        expected = utils.normalize(u"""
              {
                  "entity_one_id": 430141,
                  "entity_one_type": "EntityType.ARTIST",
