@@ -4,12 +4,8 @@ import tempfile
 from dotenv import load_dotenv, find_dotenv, dotenv_values
 
 env_file = find_dotenv()
-print(f"Using {env_file} env")
 env_config = dotenv_values()  # take environment variables from .env.
 load_dotenv(override=True, verbose=True)  # take environment variables from .env.
-print(f"os env: {os.environ}")
-print(f"env_config: {env_config}")
-print(f"os.getenv('DATABASE_USERNAME'): {os.getenv('DATABASE_USERNAME')}")
 
 
 class DatabaseType(enum.Enum):

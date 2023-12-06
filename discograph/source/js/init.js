@@ -5,7 +5,7 @@ $(document).ready(function() {
     dg_loading_init();
     dg_typeahead_init();
     $('[data-toggle="tooltip"]').tooltip();
-    $('#brand').on("click touchstart", function(event) {
+    $('#request-random').on("click touchstart", function(event) {
         event.preventDefault();
         $(this).tooltip('hide');
         $(this).trigger({
@@ -39,6 +39,21 @@ $(document).ready(function() {
         });
     });
     $('#filter').fadeIn(3000);
+
+    windowWidth = $(window).width();
+    windowHeight = $(window).height();
+    navTopHeight = $('#nav-top').height();
+    navBottomHeight = $('#nav-bottom').height();
+    $('#svg-container').height(windowHeight - navBottomHeight);
+    $('#svg-container').scrollLeft(windowWidth / 2);
+    $('#svg-container').scrollTop(windowHeight / 2);
+
+    $(function () {
+        $('[data-tooltip="tooltip"]').tooltip({
+            trigger: 'hover'
+        });
+    });
+
     dg.fsm = new DiscographFsm();
     console.log('discograph initialized.');
 });

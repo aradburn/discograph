@@ -25,13 +25,13 @@ function dg_loading_toggle(status) {
         var input = dg_loading_makeArray();
         var data = input[0], extent = input[1];
         $("#page-loading")
-            .removeClass("glyphicon-random")
+//            .removeClass("glyphicon-random")
             .addClass("glyphicon-animate glyphicon-refresh");
     } else {
         var data = [], extent = [0, 0];
         $("#page-loading")
             .removeClass("glyphicon-animate glyphicon-refresh")
-            .addClass("glyphicon-random");
+//            .addClass("glyphicon-random");
     }
     dg_loading_update(data, extent);
 }

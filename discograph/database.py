@@ -40,9 +40,6 @@ def setup_database(config, bootstrap=True):
     global bootstrap_database
     global threading_model
 
-    print(f"{config}")
-    print(f"{config['PRODUCTION']}")
-
     # Based on configuration, use a different database.
     if config['DATABASE'] == DatabaseType.POSTGRES:
         print("")
@@ -67,6 +64,8 @@ def setup_database(config, bootstrap=True):
                 user=config['POSTGRES_DATABASE_USERNAME'],
                 password=config['POSTGRES_DATABASE_PASSWORD'],
                 max_connections=40,
+                timeout=300,  # 5 minutes.
+                stale_timeout=300,  # 5 minutes.
             )
             # Configure the proxy database to use the database specified in config.
             database_proxy.initialize(database)
