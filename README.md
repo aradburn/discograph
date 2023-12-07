@@ -1,19 +1,19 @@
-# disco/graph
+# Discograph2
 
 Social Graphing for the Discogs Database
 
 ## What is this?
 
-Disco/graph is an interactive visualization of the relationships between
+Discograph2 is an interactive visualization of the relationships between
 musicians, bands and labels. :notes:
 
-All of Disco/graph's data is derived from the [Discogs](http://www.discogs.com)
-discography database: nearly 4 million artists, 1 million labels, and 7 million
-releases creating a network of nearly 70 million different relationships.
+All of Discograph2's data is derived from the [Discogs](http://www.discogs.com)
+discography database: nearly 7 million artists, 1 million labels, and 10 million
+releases creating a network of nearly 100 million different relationships.
 
 ## How do I use this?
 
-Visit the live site at TBD.
+Visit the live site at https://discograph.azurewebsites.net.
 
 Type an artist name into the search box and go!
 

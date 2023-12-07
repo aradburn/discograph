@@ -17,9 +17,9 @@ blueprint = Blueprint('ui', __name__, template_folder='templates')
 default_roles = (
     'Alias',
     'Member Of',
-    'Sublabel Of',
-    'Released On',
-    )
+    # 'Sublabel Of',
+    # 'Released On',
+)
 
 
 @blueprint.route('/')
@@ -95,7 +95,7 @@ def route__entity_type__entity_id(entity_type, entity_id):
         entity_id=entity_id,
         roles=original_roles,
         )
-    title = 'Disco/graph: {}'.format(entity_name)
+    title = 'Discograph2: {}'.format(entity_name)
     multiselect_mapping = CreditRole.get_multiselect_mapping()
     rendered_template = render_template(
         'index.html',
@@ -104,7 +104,7 @@ def route__entity_type__entity_id(entity_type, entity_id):
         is_a_return_visitor=is_a_return_visitor,
         key=key,
         multiselect_mapping=multiselect_mapping,
-        og_title='Disco/graph: The "{}" network'.format(entity_name),
+        og_title='Discograph2: The "{}" network'.format(entity_name),
         og_url=url,
         # on_mobile=on_mobile,
         original_roles=original_roles,

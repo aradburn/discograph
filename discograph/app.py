@@ -20,7 +20,8 @@ from discograph import exceptions
 from discograph import ui
 from discograph.database import setup_database, shutdown_database
 
-app: Flask = Flask(__name__)
+app: Flask = Flask(__name__.split('.')[0])
+# app: Flask = Flask(__name__)
 app_file_cache: FileSystemCache
 app_redis_cache: RedisCache
 
@@ -117,7 +118,8 @@ def handle_error_500(error):
 
 
 if __name__ == '__main__':
+    # Flask development server, not to be used in production
     setup_application()
     setup_database(app.config)
     atexit.register(shutdown_database)
-    app.run(debug=True)
+    app.run(debug=False)
