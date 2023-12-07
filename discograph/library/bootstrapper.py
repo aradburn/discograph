@@ -4,7 +4,6 @@ import gzip
 import os
 import re
 import traceback
-from abjad import contextmanagers
 from xml.dom import minidom
 from xml.etree import ElementTree
 
@@ -33,9 +32,12 @@ class Bootstrapper(object):
             glob_pattern = 'discogs_2*_{}s.xml.gz'.format(tag)
         print(f"data_directory: {data_directory}")
         print(f"glob_pattern: {glob_pattern}")
-        with contextmanagers.TemporaryDirectoryChange(data_directory):
-            files = sorted(glob.glob(glob_pattern))
-        return os.path.join(data_directory, files[-1])
+        # with contextmanagers.TemporaryDirectoryChange(data_directory):
+        files = sorted(glob.glob(glob_pattern, root_dir=data_directory))
+        print(f"files: {files}")
+        full_path_files = os.path.join(data_directory, files[-1])
+        print(f"full_path_files: {full_path_files}")
+        return full_path_files
 
     @staticmethod
     def clean_elements(elements):
@@ -106,10 +108,7 @@ class Bootstrapper(object):
 
     @staticmethod
     def iterparse(source, tag):
-        context = ElementTree.iterparse(
-            source,
-            events=('start', 'end',),
-            )
+        context = ElementTree.iterparse(source, events=('start', 'end'))
         context = iter(context)
         _, root = next(context)
         depth = 0

@@ -5,7 +5,9 @@ from discograph.library.sqlite.sqlite_release import SqliteRelease
 
 class SqliteBootstrapper:
     @classmethod
-    def bootstrap_models(cls, pessimistic=False):
+    def bootstrap_models(cls):
+        print("bootstrap sqlite models")
+
         SqliteEntity.drop_table(True)
         SqliteRelease.drop_table(True)
         SqliteRelation.drop_table(True)
@@ -13,8 +15,8 @@ class SqliteBootstrapper:
         SqliteRelease.create_table(True)
         SqliteRelation.create_table(True)
         SqliteEntity.bootstrap_pass_one()
-        SqliteEntity.bootstrap_pass_two(pessimistic=pessimistic)
+        SqliteEntity.bootstrap_pass_two()
         SqliteRelease.bootstrap_pass_one()
-        SqliteRelease.bootstrap_pass_two(pessimistic=pessimistic)
-        SqliteRelation.bootstrap_pass_one(pessimistic=pessimistic)
-        SqliteEntity.bootstrap_pass_three(pessimistic=pessimistic)
+        SqliteRelease.bootstrap_pass_two()
+        SqliteRelation.bootstrap_pass_one()
+        SqliteEntity.bootstrap_pass_three()

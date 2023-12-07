@@ -1,6 +1,6 @@
 ! function() {
     var dg = {
-        version: "0.1"
+        version: "0.2"
     };
 
     function dg_color_greyscale(d) {
@@ -55,14 +55,14 @@
             var data = input[0],
                 extent = input[1];
             $("#page-loading")
-                .removeClass("glyphicon-random")
+                //            .removeClass("glyphicon-random")
                 .addClass("glyphicon-animate glyphicon-refresh");
         } else {
             var data = [],
                 extent = [0, 0];
             $("#page-loading")
                 .removeClass("glyphicon-animate glyphicon-refresh")
-                .addClass("glyphicon-random");
+            //            .addClass("glyphicon-random");
         }
         dg_loading_update(data, extent);
     }
@@ -181,6 +181,22 @@
             });
         });
     }
+    LINK_STRENGTH = 2.5
+    //LINK_STRENGTH = 1.5
+    FRICTION = 0.7
+    //FRICTION = 0.9
+    CHARGE = -900
+    //CHARGE = -300
+    GRAVITY = 0.4
+    //GRAVITY = 0.2
+    THETA = 1
+    ALPHA = 0.1
+    LINK_DISTANCE_ALIAS = 10
+    //LINK_DISTANCE_ALIAS = 100
+    LINK_DISTANCE_RELEASED_ON = 200
+    LINK_DISTANCE = 100
+    LINK_DISTANCE_RANDOM = 100
+    //LINK_DISTANCE_RANDOM = 20
 
     function dg_network_setupForceLayout() {
         return d3.layout.force()
@@ -188,26 +204,26 @@
             .links(dg.network.pageData.links)
             .size(dg.dimensions)
             .on("tick", dg_network_tick)
-            .linkStrength(1.5)
-            .friction(0.9)
+            .linkStrength(LINK_STRENGTH)
+            .friction(FRICTION)
             .linkDistance(function(d, i) {
                 if (d.isSpline) {
                     if (d.role == 'Released On') {
-                        return 100;
+                        return LINK_DISTANCE_RELEASED_ON / 2 * dg.zoomFactor;
                     }
-                    return 50;
+                    return LINK_DISTANCE / 2 * dg.zoomFactor;
                 } else if (d.role == 'Alias') {
-                    return 100;
+                    return LINK_DISTANCE_ALIAS * dg.zoomFactor;
                 } else if (d.role == 'Released On') {
-                    return 200;
+                    return LINK_DISTANCE_RELEASED_ON * dg.zoomFactor;
                 } else {
-                    return 90 + (Math.random() * 20);
+                    return LINK_DISTANCE * dg.zoomFactor + (Math.tanh(Math.random()) * LINK_DISTANCE_RANDOM * dg.zoomFactor);
                 }
             })
-            .charge(-300)
-            .gravity(0.2)
-            .theta(1)
-            .alpha(0.1);
+            .charge(CHARGE)
+            .gravity(GRAVITY)
+            .theta(THETA)
+            .alpha(ALPHA);
     }
 
     function dg_network_startForceLayout() {
@@ -325,8 +341,8 @@
                 oldNode.missingByPage = newNode.missingByPage;
                 oldNode.pages = newNode.pages;
             } else {
-                newNode.x = dg.network.newNodeCoords[0] + (Math.random() * 200) - 100;
-                newNode.y = dg.network.newNodeCoords[1] + (Math.random() * 200) - 100;
+                newNode.x = dg.network.newNodeCoords[0] + (Math.random() * LINK_DISTANCE * 2.0 * dg.zoomFactor) - LINK_DISTANCE * dg.zoomFactor;
+                newNode.y = dg.network.newNodeCoords[1] + (Math.random() * LINK_DISTANCE * 2.0 * dg.zoomFactor) - LINK_DISTANCE * dg.zoomFactor;
                 dg.network.data.nodeMap.set(key, newNode);
             }
         });
@@ -443,18 +459,31 @@
             }
         });
         linkEnter.on("mouseover", function(d) {
-            d3.select(this).select(".inner")
-                .transition()
-                .style("stroke-width", 3);
+            d3.select(this)
+                .classed("selected", true)
+                .transition();
             debounce(this, d, true);
         });
         linkEnter.on("mouseout", function(d) {
-            d3.select(this).select(".inner")
+            d3.select(this)
+                .classed("selected", false)
                 .transition()
-                .duration(500)
-                .style("stroke-width", 1);
+                .duration(500);
             debounce(this, d, false);
         });
+        //    linkEnter.on("mouseover", function(d) {
+        //        d3.select(this).select(".inner")
+        //            .transition()
+        //            .style("stroke-width", 3);
+        //        debounce(this, d, true);
+        //    });
+        //    linkEnter.on("mouseout", function(d) {
+        //        d3.select(this).select(".inner")
+        //            .transition()
+        //            .duration(500)
+        //            .style("stroke-width", 1);
+        //        debounce(this, d, false);
+        //    });
     }
 
     function dg_network_tooltip(d) {
@@ -844,7 +873,7 @@
     }
 
     function dg_network_tick(e) {
-        var k = e.alpha * 5;
+        var k = 1.0; //e.alpha * 5;
         if (dg.network.data.json) {
             var centerNode = dg.network.data.nodeMap.get(dg.network.data.json.center.key);
             if (!centerNode.fixed) {
@@ -876,12 +905,13 @@
             e = d.documentElement,
             g = d.getElementsByTagName('body')[0];
         dg.dimensions = [
-            w.innerWidth || e.clientWidth || g.clientWidth,
-            w.innerHeight || e.clientHeight || g.clientHeight,
+            (w.innerWidth || e.clientWidth || g.clientWidth) * 2,
+            (w.innerHeight || e.clientHeight || g.clientHeight) * 2,
         ];
+        dg.zoomFactor = 0.2; //Math.min(dg.dimensions[0], dg.dimensions[1]) / 2048;
         dg.network.newNodeCoords = [
-            dg.dimensions[0] / 2,
-            dg.dimensions[1] / 2,
+            dg.dimensions[0],
+            dg.dimensions[1],
         ];
         d3.select("#svg")
             .attr("width", dg.dimensions[0])
@@ -898,8 +928,8 @@
             .attr("viewBox", "-5 -5 10 10")
             .attr("refX", 4)
             .attr("refY", 0)
-            .attr("markerWidth", 8)
-            .attr("markerHeight", 8)
+            .attr("markerWidth", 5)
+            .attr("markerHeight", 5)
             .attr("markerUnits", "strokeWidth")
             .attr("orient", "auto")
             .append("path")
@@ -912,8 +942,8 @@
             .attr("viewBox", "-5 -5 10 10")
             .attr("refX", 5)
             .attr("refY", 0)
-            .attr("markerWidth", 8)
-            .attr("markerHeight", 8)
+            .attr("markerWidth", 5)
+            .attr("markerHeight", 5)
             .attr("markerUnits", "strokeWidth")
             .attr("orient", "auto")
             .append("path")
@@ -1098,7 +1128,7 @@
                     },
                 },
             })
-            .keydown(function(event) {
+            .on('keydown', function(event) {
                 if (event.keyCode == 13) {
                     event.preventDefault();
                     dg_typeahead_navigate();
@@ -1126,7 +1156,7 @@
                 $(this).data("selectedKey", datum.key);
                 dg_typeahead_navigate();
             });
-        $('#search .clear').click(function() {
+        $('#search .clear').on("click", function() {
             $('#typeahead').typeahead('val', '');
         });
     }
@@ -1175,6 +1205,7 @@
                 self.rolesBackup = $('#filter select').val();
             });
             window.onpopstate = function(event) {
+                console.log("onpopstate");
                 if (!event || !event.state || !event.state.key) {
                     return;
                 }
@@ -1182,8 +1213,8 @@
                 var entityType = entityKey.split("-")[0];
                 var entityId = entityKey.split("-")[1];
                 var url = "/" + entityType + "/" + entityId;
-                ga('send', 'pageview', url);
-                ga('set', 'page', url);
+                // ### TODO setup analytics ga('send', 'pageview', url);
+                // ### TODO setup analytics ga('set', 'page', url);
                 $(window).trigger({
                     type: 'discograph:request-network',
                     entityKey: event.state.key,
@@ -1191,20 +1222,33 @@
                 });
             };
             $(window).on('resize', $.debounce(100, function(event) {
+                console.log("resize");
                 var w = window,
                     d = document,
                     e = d.documentElement,
                     g = d.getElementsByTagName('body')[0];
                 dg.dimensions = [
-                    w.innerWidth || e.clientWidth || g.clientWidth,
-                    w.innerHeight || e.clientHeight || g.clientHeight,
+                    (w.innerWidth || e.clientWidth || g.clientWidth) * 2,
+                    (w.innerHeight || e.clientHeight || g.clientHeight) * 2,
                 ];
+
+                windowWidth = $(window).width();
+                windowHeight = $(window).height();
+                navTopHeight = $('#nav-top').height();
+                navBottomHeight = $('#nav-bottom').height();
+                $('#svg-container').height(windowHeight - navBottomHeight);
+                $('#svg-container').scrollLeft(windowWidth / 2);
+                $('#svg-container').scrollTop(windowHeight / 2);
+
+                dg.zoomFactor = 0.2; //Math.min(dg.dimensions[0], dg.dimensions[1]) / 2048;
                 d3.select('#svg')
                     .attr('width', dg.dimensions[0])
                     .attr('height', dg.dimensions[1]);
                 var transform = [
-                    'translate(', (dg.dimensions[0] / 2),
-                    ',', (dg.dimensions[1] / 2),
+                    'translate(',
+                    (dg.dimensions[0] / 2),
+                    ',',
+                    (dg.dimensions[1] / 2),
                     ')'
                 ].join('');
                 d3.selectAll('.centered')
@@ -1223,6 +1267,9 @@
                     self.showNetwork();
                 }
             });
+            self.on("*", function(eventName, data) {
+                console.log("FSM: ", eventName, data);
+            });
             this.loadInlineData();
             this.toggleRadial(false);
             self.rolesBackup = $('#filter select').val();
@@ -1232,18 +1279,25 @@
         states: {
             'uninitialized': {
                 'request-network': function(entityKey) {
+                    console.log("request-network");
                     this.requestNetwork(entityKey);
                 },
                 'request-random': function() {
                     this.requestRandom();
                 },
                 'load-inline-data': function() {
+                    console.log("load-inline-data start");
                     var params = {
                         'roles': $('#filter select').val()
                     };
-                    this.handle('received-network', dgData, false, params);
-                    this.deferAndTransition('requesting');
-                }
+                    console.log("load-inline-data", params);
+                    console.log("load-inline-data", dgData);
+                    //                this.handle("received-network", dgData, false, params);
+                    console.log("load-inline-data");
+                    this.deferAndTransition("requesting");
+                    this.handle("received-network", dgData, false, params);
+                    console.log("load-inline-data end");
+                },
             },
             'viewing-network': {
                 '_onEnter': function() {
@@ -1294,7 +1348,7 @@
                             //nodeOn.each(function(d) { d.fixed = true; });
                             node.fixed = true;
                         }
-                        linkOn.classed('selected', true);
+                        linkOn.classed('highlighted', true);
                     } else {
                         var nodeOff = dg.network.layers.root.selectAll('.node');
                         var linkOff = dg.network.selections.link;
@@ -1349,7 +1403,7 @@
                     };
                     var entityKey = data.center.key;
                     dg.network.data.json = JSON.parse(JSON.stringify(data));
-                    document.title = 'Disco/graph: ' + data.center.name;
+                    document.title = 'Discograph2: ' + data.center.name;
                     $(document).attr('body').id = entityKey;
                     if (pushHistory === true) {
                         this.pushState(entityKey, params);
@@ -1364,8 +1418,10 @@
                     dg_network_processJson(data);
                     dg_network_selectPage(1);
                     dg_network_startForceLayout();
-                    this.selectEntity(dg.network.data.json.center.key, false);
+                    //                this.selectEntity(dg.network.data.json.center.key, false);
                     this.deferAndTransition('viewing-network');
+                    this.selectEntity(dg.network.data.json.center.key, false);
+
                 },
                 'received-random': function(data) {
                     this.requestNetwork(data.center, true);
@@ -1446,6 +1502,7 @@
             }
         },
         pushState: function(entityKey, params) {
+            console.log("pushstate");
             var entityType = entityKey.split("-")[0];
             var entityId = entityKey.split("-")[1];
             var title = document.title;
@@ -1458,10 +1515,11 @@
                 params: params
             };
             window.history.pushState(state, title, url);
-            ga('send', 'pageview', url);
-            ga('set', 'page', url);
+            // ### TODO setup analytics ga('send', 'pageview', url);
+            // ### TODO setup analytics ga('set', 'page', url);
         },
         requestNetwork: function(entityKey, pushHistory) {
+            console.log("requestNetwork");
             this.transition('requesting');
             var self = this;
             d3.json(this.getNetworkURL(entityKey), function(error, data) {
@@ -1512,6 +1570,7 @@
             this.selectPage(page);
         },
         selectPage: function(page) {
+            console.log("selectPage");
             dg_network_selectPage(page);
             dg_network_startForceLayout();
             this.selectEntity(dg.network.pageData.selectedNodeKey, true);
@@ -1530,6 +1589,7 @@
             }
         },
         toggleNetwork: function(status) {
+            console.log("toggleNetwork");
             if (status) {
                 if (1 < dg.network.data.json.pages) {
                     $('#paging').fadeIn();
@@ -1559,21 +1619,25 @@
             }
         },
         toggleLoading: function(status) {
+            console.log("toggleLoading");
             if (status) {
+                console.log("state true");
                 var input = dg_loading_makeArray();
                 var data = input[0],
                     extent = input[1];
                 $('#page-loading')
-                    .removeClass('glyphicon-random')
+                    //                .removeClass('glyphicon-random')
                     .addClass('glyphicon-animate glyphicon-refresh');
             } else {
+                console.log("state false");
                 var data = [],
                     extent = [0, 0];
                 $('#page-loading')
                     .removeClass('glyphicon-animate glyphicon-refresh')
-                    .addClass('glyphicon-random');
+                //                .addClass('glyphicon-random');
             }
             dg_loading_update(data, extent);
+            console.log("toggleLoading end");
         },
         toggleRadial: function(status) {
             var self = this;
@@ -1607,20 +1671,20 @@
         dg_loading_init();
         dg_typeahead_init();
         $('[data-toggle="tooltip"]').tooltip();
-        $('#brand').on("click touchstart", function(event) {
+        $('#request-random').on("click touchstart", function(event) {
             event.preventDefault();
             $(this).tooltip('hide');
             $(this).trigger({
                 type: 'discograph:request-random',
             });
         });
-        $('#paging .next a').click(function(event) {
+        $('#paging .next a').on("click", function(event) {
             $(this).trigger({
                 type: 'discograph:select-next-page',
             });
             $(this).tooltip('hide');
         });
-        $('#paging .previous a').click(function(event) {
+        $('#paging .previous a').on("click", function(event) {
             $(this).trigger({
                 type: 'discograph:select-previous-page',
             });
@@ -1641,10 +1705,24 @@
             });
         });
         $('#filter').fadeIn(3000);
+
+        windowWidth = $(window).width();
+        windowHeight = $(window).height();
+        navTopHeight = $('#nav-top').height();
+        navBottomHeight = $('#nav-bottom').height();
+        $('#svg-container').height(windowHeight - navBottomHeight);
+        $('#svg-container').scrollLeft(windowWidth / 2);
+        $('#svg-container').scrollTop(windowHeight / 2);
+
+        $(function() {
+            $('[data-tooltip="tooltip"]').tooltip({
+                trigger: 'hover'
+            });
+        });
+
         dg.fsm = new DiscographFsm();
         console.log('discograph initialized.');
     });
-
     if (typeof define === "function" && define.amd) define(dg);
     else if (typeof module === "object" && module.exports) module.exports = dg;
     this.dg = dg;

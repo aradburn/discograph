@@ -29,6 +29,7 @@ var DiscographFsm = machina.Fsm.extend({
             self.rolesBackup = $('#filter select').val();
         });
         window.onpopstate = function(event) {
+            console.log("onpopstate");
             if (!event || !event.state || !event.state.key) {
                 return;
             }
@@ -36,8 +37,8 @@ var DiscographFsm = machina.Fsm.extend({
             var entityType = entityKey.split("-")[0];
             var entityId = entityKey.split("-")[1];
             var url = "/" + entityType + "/" + entityId;
-            ga('send', 'pageview', url);
-            ga('set', 'page', url);
+            // ### TODO setup analytics ga('send', 'pageview', url);
+            // ### TODO setup analytics ga('set', 'page', url);
             $(window).trigger({
                 type: 'discograph:request-network',
                 entityKey: event.state.key,
@@ -45,14 +46,25 @@ var DiscographFsm = machina.Fsm.extend({
             });
         };
         $(window).on('resize', $.debounce(100, function(event) {
+            console.log("resize");
             var w = window,
                 d = document,
                 e = d.documentElement,
                 g = d.getElementsByTagName('body')[0];
             dg.dimensions = [
-                w.innerWidth || e.clientWidth || g.clientWidth,
-                w.innerHeight|| e.clientHeight|| g.clientHeight,
+                (w.innerWidth || e.clientWidth || g.clientWidth) * 2,
+                (w.innerHeight|| e.clientHeight|| g.clientHeight) * 2,
             ];
+
+            windowWidth = $(window).width();
+            windowHeight = $(window).height();
+            navTopHeight = $('#nav-top').height();
+            navBottomHeight = $('#nav-bottom').height();
+            $('#svg-container').height(windowHeight - navBottomHeight);
+            $('#svg-container').scrollLeft(windowWidth / 2);
+            $('#svg-container').scrollTop(windowHeight / 2);
+
+            dg.zoomFactor = 0.2; //Math.min(dg.dimensions[0], dg.dimensions[1]) / 2048;
             d3.select('#svg')
                 .attr('width', dg.dimensions[0])
                 .attr('height', dg.dimensions[1]);
@@ -79,6 +91,9 @@ var DiscographFsm = machina.Fsm.extend({
                 self.showNetwork();
             }
         });
+        self.on("*", function (eventName, data){
+            console.log("FSM: ", eventName, data);
+        });
         this.loadInlineData();
         this.toggleRadial(false);
         self.rolesBackup = $('#filter select').val();
@@ -88,16 +103,23 @@ var DiscographFsm = machina.Fsm.extend({
     states: {
         'uninitialized': {
             'request-network': function(entityKey) {
+                console.log("request-network");
                 this.requestNetwork(entityKey);
             },
             'request-random': function() {
                 this.requestRandom();
             },
             'load-inline-data': function() {
+                console.log("load-inline-data start");
                 var params = {'roles': $('#filter select').val()};
-                this.handle('received-network', dgData, false, params);
-                this.deferAndTransition('requesting');
-            }
+                console.log("load-inline-data", params);
+                console.log("load-inline-data", dgData);
+//                this.handle("received-network", dgData, false, params);
+                console.log("load-inline-data");
+                this.deferAndTransition("requesting");
+                this.handle("received-network", dgData, false, params);
+                console.log("load-inline-data end");
+            },
         },
         'viewing-network': {
             '_onEnter': function() {
@@ -148,7 +170,7 @@ var DiscographFsm = machina.Fsm.extend({
                         //nodeOn.each(function(d) { d.fixed = true; });
                         node.fixed = true;
                     }
-                    linkOn.classed('selected', true);
+                    linkOn.classed('highlighted', true);
                 } else {
                     var nodeOff = dg.network.layers.root.selectAll('.node');
                     var linkOff = dg.network.selections.link;
@@ -199,7 +221,7 @@ var DiscographFsm = machina.Fsm.extend({
                 var params = {'roles': $('#filter select').val()};
                 var entityKey = data.center.key;
                 dg.network.data.json = JSON.parse(JSON.stringify(data));
-                document.title = 'Disco/graph: ' + data.center.name;
+                document.title = 'Discograph2: ' + data.center.name;
                 $(document).attr('body').id = entityKey;
                 if (pushHistory === true) {
                     this.pushState(entityKey, params);
@@ -214,8 +236,10 @@ var DiscographFsm = machina.Fsm.extend({
                 dg_network_processJson(data);
                 dg_network_selectPage(1);
                 dg_network_startForceLayout();
-                this.selectEntity(dg.network.data.json.center.key, false);
+//                this.selectEntity(dg.network.data.json.center.key, false);
                 this.deferAndTransition('viewing-network');
+                this.selectEntity(dg.network.data.json.center.key, false);
+
             },
             'received-random': function(data) {
                 this.requestNetwork(data.center, true);
@@ -282,6 +306,7 @@ var DiscographFsm = machina.Fsm.extend({
         if (dgData) { this.handle('load-inline-data'); }
     },
     pushState: function(entityKey, params) {
+        console.log("pushstate");
         var entityType = entityKey.split("-")[0];
         var entityId = entityKey.split("-")[1];
         var title = document.title;
@@ -291,10 +316,11 @@ var DiscographFsm = machina.Fsm.extend({
         }
         var state = {key: entityKey, params: params};
         window.history.pushState(state, title, url);
-        ga('send', 'pageview', url);
-        ga('set', 'page', url);
+        // ### TODO setup analytics ga('send', 'pageview', url);
+        // ### TODO setup analytics ga('set', 'page', url);
     },
     requestNetwork: function(entityKey, pushHistory) {
+        console.log("requestNetwork");
         this.transition('requesting');
         var self = this;
         d3.json(this.getNetworkURL(entityKey), function(error, data) {
@@ -345,6 +371,7 @@ var DiscographFsm = machina.Fsm.extend({
         this.selectPage(page);
     },
     selectPage: function(page) {
+        console.log("selectPage");
         dg_network_selectPage(page);
         dg_network_startForceLayout();
         this.selectEntity(dg.network.pageData.selectedNodeKey, true);
@@ -363,6 +390,7 @@ var DiscographFsm = machina.Fsm.extend({
         }
     },
     toggleNetwork: function(status) {
+        console.log("toggleNetwork");
         if (status) {
             if (1 < dg.network.data.json.pages) {
                 $('#paging').fadeIn();
@@ -392,19 +420,23 @@ var DiscographFsm = machina.Fsm.extend({
         }
     },
     toggleLoading: function(status) {
+        console.log("toggleLoading");
         if (status) {
+            console.log("state true");
             var input = dg_loading_makeArray();
             var data = input[0], extent = input[1];
             $('#page-loading')
-                .removeClass('glyphicon-random')
+//                .removeClass('glyphicon-random')
                 .addClass('glyphicon-animate glyphicon-refresh');
         } else {
+            console.log("state false");
             var data = [], extent = [0, 0];
             $('#page-loading')
                 .removeClass('glyphicon-animate glyphicon-refresh')
-                .addClass('glyphicon-random');
+//                .addClass('glyphicon-random');
         }
         dg_loading_update(data, extent);
+        console.log("toggleLoading end");
     },
     toggleRadial: function(status) {
         var self = this;

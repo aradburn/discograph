@@ -8,10 +8,10 @@
                 <span class="icon-bar"></span>
             </button>
             <a id="brand" class="navbar-brand"
-                title="choose a random artist" data-toggle="tooltip" 
+                title="DiscoGraph2" data-toggle="tooltip"
                 data-placement="bottom">
-                DISCO/GRAPH
-                <span id="page-loading" class="glyphicon glyphicon-random glyphicon" style="font-size: 0.9em;"></span>
+                DISCOGRAPH2
+                <span id="page-loading" class="glyphicon" style="font-size: 0.9em;"></span>
             </a>
         </div>
         <div class="collapse navbar-collapse" id="nav-top-details">
@@ -27,15 +27,21 @@
                 </div>
             </form>
             <ul class="nav navbar-nav navbar-right">
-                <li data-toggle="tooltip" data-placement="bottom" title="what is this?">
+                <li data-tooltip="tooltip" data-placement="bottom" title="what is this?">
                     <a data-toggle="modal" data-target="#modal-what">WHAT</a>
                 </li>
-                <li data-toggle="tooltip" data-placement="bottom" title="who made this?">
+                <li data-tooltip="tooltip" data-placement="bottom" title="who made this?">
                     <a data-toggle="modal" data-target="#modal-who">WHO</a>
                 </li>
-                <li data-toggle="tooltip" data-placement="bottom" title="hey, i'm on twitter">
-                    <a href="https://twitter.com/nphthlm" target="_blank">@nphthlm</a>
+                <li id="request-random" data-tooltip="tooltip" data-placement="bottom" title="choose a random artist">
+                    <a>RANDOM
+                        <span class="glyphicon glyphicon-random" style="font-size: 0.9em;"></span>
+                    </a>
                 </li>
+
+<!--                <li data-toggle="tooltip" data-placement="bottom" title="hey, i'm on twitter">-->
+<!--                    <a href="https://twitter.com/nphthlm" target="_blank">@nphthlm</a>-->
+<!--                </li>-->
             </ul>
         </div>
     </div>

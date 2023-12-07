@@ -7,12 +7,13 @@ function dg_svg_init() {
         e = d.documentElement,
         g = d.getElementsByTagName('body')[0];
     dg.dimensions = [
-        w.innerWidth || e.clientWidth || g.clientWidth,
-        w.innerHeight|| e.clientHeight|| g.clientHeight,
+        (w.innerWidth || e.clientWidth || g.clientWidth) * 2,
+        (w.innerHeight|| e.clientHeight|| g.clientHeight) * 2,
     ];
+    dg.zoomFactor = 0.2; //Math.min(dg.dimensions[0], dg.dimensions[1]) / 2048;
     dg.network.newNodeCoords = [
-        dg.dimensions[0] / 2,
-        dg.dimensions[1] / 2,
+        dg.dimensions[0],
+        dg.dimensions[1],
     ];
     d3.select("#svg")
         .attr("width", dg.dimensions[0])
@@ -29,8 +30,8 @@ function dg_svg_setupDefs() {
         .attr("viewBox", "-5 -5 10 10")
         .attr("refX", 4)
         .attr("refY", 0)
-        .attr("markerWidth", 8)
-        .attr("markerHeight", 8)
+        .attr("markerWidth", 5)
+        .attr("markerHeight", 5)
         .attr("markerUnits", "strokeWidth")
         .attr("orient", "auto")
         .append("path")
@@ -43,8 +44,8 @@ function dg_svg_setupDefs() {
         .attr("viewBox", "-5 -5 10 10")
         .attr("refX", 5)
         .attr("refY", 0)
-        .attr("markerWidth", 8)
-        .attr("markerHeight", 8)
+        .attr("markerWidth", 5)
+        .attr("markerHeight", 5)
         .attr("markerUnits", "strokeWidth")
         .attr("orient", "auto")
         .append("path")

@@ -39,19 +39,32 @@ function dg_network_onLinkEnterEventBindings(linkEnter) {
             tip.hide(d);
         }
     });
-    linkEnter.on("mouseover", function(d) {
-        d3.select(this).select(".inner")
-            .transition()
-            .style("stroke-width", 3);
+        linkEnter.on("mouseover", function(d) {
+        d3.select(this)
+            .classed("selected", true)
+            .transition();
         debounce(this, d, true);
     });
     linkEnter.on("mouseout", function(d) {
-        d3.select(this).select(".inner")
+        d3.select(this)
+            .classed("selected", false)
             .transition()
-            .duration(500)
-            .style("stroke-width", 1);
+            .duration(500);
         debounce(this, d, false);
     });
+//    linkEnter.on("mouseover", function(d) {
+//        d3.select(this).select(".inner")
+//            .transition()
+//            .style("stroke-width", 3);
+//        debounce(this, d, true);
+//    });
+//    linkEnter.on("mouseout", function(d) {
+//        d3.select(this).select(".inner")
+//            .transition()
+//            .duration(500)
+//            .style("stroke-width", 1);
+//        debounce(this, d, false);
+//    });
 }
 
 function dg_network_tooltip(d) {

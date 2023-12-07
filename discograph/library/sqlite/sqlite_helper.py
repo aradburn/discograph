@@ -1,7 +1,5 @@
 import random
 
-from abjad import Timer
-
 from discograph.library import EntityType, CreditRole
 from discograph.library.database_helper import DatabaseHelper
 from discograph.library.discogs_model import DiscogsModel
@@ -49,20 +47,19 @@ class SqliteHelper(DatabaseHelper):
         if entity is None:
             return None
         if not on_mobile:
-            max_nodes = 75
-            degree = 12
+            max_nodes = DatabaseHelper.MAX_NODES
+            degree = DatabaseHelper.MAX_DEGREE
         else:
-            max_nodes = 25
-            degree = 6
+            max_nodes = DatabaseHelper.MAX_NODES_MOBILE
+            degree = DatabaseHelper.MAX_DEGREE_MOBILE
         relation_grapher = SqliteRelationGrapher(
             center_entity=entity,
             degree=degree,
             max_nodes=max_nodes,
             roles=roles,
             )
-        with Timer(exit_message='Network query time:'):
-            with DiscogsModel.connection_context():
-                data = relation_grapher()
+        with DiscogsModel.connection_context():
+            data = relation_grapher()
         if cache:
             SqliteRelationGrapher.cache_set(cache_key, data)
         return data
@@ -125,7 +122,7 @@ class SqliteHelper(DatabaseHelper):
 
     @staticmethod
     def parse_request_args(args):
-        from discograph.helpers import args_roles_pattern
+        from discograph.utils import args_roles_pattern
         year = None
         roles = set()
         for key in args:
@@ -149,7 +146,7 @@ class SqliteHelper(DatabaseHelper):
 
     @staticmethod
     def search_entities(search_string, cache=True):
-        from discograph.helpers import urlify_pattern
+        from discograph.utils import urlify_pattern
         cache_key = 'discograph:/api/search/{}'.format(
             urlify_pattern.sub('+', search_string))
         cache = False

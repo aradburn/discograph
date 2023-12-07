@@ -32,7 +32,7 @@ function dg_typeahead_init() {
                 },
             },
         })
-    .keydown(function(event){
+    .on('keydown', function(event) {
         if (event.keyCode == 13) {
             event.preventDefault();
             dg_typeahead_navigate();
@@ -60,7 +60,7 @@ function dg_typeahead_init() {
         $(this).data("selectedKey", datum.key);
         dg_typeahead_navigate();
     });
-    $('#search .clear').click(function() {
+    $('#search .clear').on("click", function() {
         $('#typeahead').typeahead('val', '');
     });
 }
