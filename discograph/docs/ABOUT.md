@@ -1,4 +1,4 @@
-About Disco/graph
+About Discograph2
 =================
 
 - Interactive sociogram graphing
