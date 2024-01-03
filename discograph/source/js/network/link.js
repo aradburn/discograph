@@ -1,7 +1,13 @@
+LINK_DEBOUNCE_TIME = 250
+LINK_OUT_TRANSITION_TIME = 500
+
+
+/* Initialize tooltip */
 var tip = d3.tip()
     .attr('class', 'd3-tip')
-    .direction('e')
-    .offset([0, 20])
+    .direction('n')
+//    .rootElement(e => )
+    .offset([20, 0])
     .html(dg_network_tooltip);
 
 function dg_network_onLinkEnter(linkEnter) {
@@ -21,60 +27,69 @@ function dg_network_onLinkEnter(linkEnter) {
 }
 
 function dg_network_onLinkEnterElementConstruction(linkEnter) {
-    linkEnter.append("path")
+    linkEnter
+        .append("path")
         .attr("class", "inner");
-    linkEnter.append("text")
+    linkEnter
+        .append("text")
         .attr('class', 'outer')
         .text(dg_network_linkAnnotation);
-    linkEnter.append("text")
+    linkEnter
+        .append("text")
         .attr('class', 'inner')
         .text(dg_network_linkAnnotation);
 }
 
 function dg_network_onLinkEnterEventBindings(linkEnter) {
-    var debounce = $.debounce(250, function(self, d, status) {
-        if (status) {
+    var debounce = $.debounce(LINK_DEBOUNCE_TIME, function(self, d, status) {
+        if (status && ! dg.network.isRunningLayout) {
+        console.log("link: ", self, d);
+            d3.select(self)
+                .classed("selected", true);
             tip.show(d, d3.select(self).select('text').node());
         } else {
+            d3.select(self)
+                .classed("selected", false)
+                .transition()
+                .duration(LINK_OUT_TRANSITION_TIME);
             tip.hide(d);
         }
     });
-        linkEnter.on("mouseover", function(d) {
-        d3.select(this)
-            .classed("selected", true)
-            .transition();
+    linkEnter.on("mouseover", function(event, d) {
+//        d3.select(this)
+//            .classed("selected", true);
         debounce(this, d, true);
     });
-    linkEnter.on("mouseout", function(d) {
-        d3.select(this)
-            .classed("selected", false)
-            .transition()
-            .duration(500);
+    linkEnter.on("mouseout", function(event, d) {
+//        d3.select(this)
+//            .classed("selected", false)
+//            .transition()
+//            .duration(LINK_OUT_TRANSITION_TIME);
         debounce(this, d, false);
     });
-//    linkEnter.on("mouseover", function(d) {
-//        d3.select(this).select(".inner")
-//            .transition()
-//            .style("stroke-width", 3);
-//        debounce(this, d, true);
-//    });
-//    linkEnter.on("mouseout", function(d) {
-//        d3.select(this).select(".inner")
-//            .transition()
-//            .duration(500)
-//            .style("stroke-width", 1);
-//        debounce(this, d, false);
-//    });
 }
 
 function dg_network_tooltip(d) {
+
     var parts = [
-        '<p>' + d.source.name + '</p>',
-        '<p><strong>&laquo; ' + d.role + ' &raquo;</strong></p>',
-        '<p>' + d.target.name + '</p>',
+        '<span class="link-label-top">' + d.source.name + '</span><br/>',
+        '<span class="link-label-middle">' + d.role + '</span><br/>',
+        '<span class="link-label-bottom">' + d.target.name + '</span>',
         ];
     return parts.join('');
 }
+
+//function dg_network_tooltip(d) {
+//    var topBackgroundColor = (d.source.type == 'artist') ? dg_color_heatmap(d.source) : dg_color_greyscale(d.source);
+//    var bottomBackgroundColor = (d.target.type == 'artist') ? dg_color_heatmap(d.target) : dg_color_greyscale(d.target);
+//
+//    var parts = [
+//        '<span class="link-label-top" style="border-color:' + topBackgroundColor + '">' + d.source.name + '</span><br/>',
+//        '<span class="link-label-middle">' + d.role + '</span><br/>',
+//        '<span class="link-label-bottom" style="border-color:' + bottomBackgroundColor + '">' + d.target.name + '</span>',
+//        ];
+//    return parts.join('');
+//}
 
 function dg_network_linkAnnotation(d) {
     return d.role.split(' ').map(function(x) { return x[0]; }).join('');

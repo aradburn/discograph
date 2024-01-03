@@ -1,69 +1,131 @@
-LINK_STRENGTH = 2.5
-//LINK_STRENGTH = 1.5
-FRICTION = 0.7
-//FRICTION = 0.9
-CHARGE = -900
-//CHARGE = -300
-GRAVITY = 0.4
-//GRAVITY = 0.2
-THETA = 1
-ALPHA = 0.1
-LINK_DISTANCE_ALIAS = 10
-//LINK_DISTANCE_ALIAS = 100
+
+NODE_STRENGTH = -300
+DISTANCE_MAX = 2000
+
+COLLIDE_ITERATIONS = 2
+//COLLIDE_RADIUS_POWER = 1.5
+COLLIDE_BUFFER = 12
+
+CENTER_STRENGTH = 0.025
+RADIAL_STRENGTH = 0.08
+
+THETA = 0.9; // defaults to 0.9
+ALPHA = 1.0
+ALPHA_DECAY = 0.05
+VELOCITY_DECAY = 0.10; // like friction, defaults to 0.4. less velocity decay may converge on a better solution, but risks numerical instabilities and oscillation.
+
+LINK_STRENGTH = 1.8
+LINK_DISTANCE_ALIAS = 20
 LINK_DISTANCE_RELEASED_ON = 200
-LINK_DISTANCE = 100
+LINK_DISTANCE = 200
 LINK_DISTANCE_RANDOM = 100
-//LINK_DISTANCE_RANDOM = 20
+LINK_ITERATIONS = 2
+
+MAX_NODES_BEFORE_PRUNING = 600
+MAX_LINKS_BEFORE_PRUNING = 1800
+
+const seed = 0.42; // any number in [0, 1)
+const random = d3.randomNormal.source(d3.randomLcg(seed))(0, 1);
+
+
+function linkDistance(d, i) {
+    if (d.isSpline) {
+        if (d.role == 'Released On') {
+            return LINK_DISTANCE_RELEASED_ON / 2;
+        }
+        return d.distance < 2 ? LINK_DISTANCE / 2 : LINK_DISTANCE / 10;
+    } else if (d.role == 'Alias') {
+        return LINK_DISTANCE_ALIAS;
+    } else if (d.role == 'Released On') {
+        return LINK_DISTANCE_RELEASED_ON;
+    } else {
+        return LINK_DISTANCE + (random() * LINK_DISTANCE_RANDOM);
+    }
+}
+
+function nodeStrength(d, i) {
+    if (d.distance) {
+//        if (d.distance != 0 && Math.hypot(d.x - dg.dimensions[0] / 2, d.y - dg.dimensions[1] / 2) <= 40) {
+//            return 200 * NODE_STRENGTH;
+//        }
+        return d.distance == 0 ? 3 * NODE_STRENGTH : d.distance == 1 ? 2.5 * NODE_STRENGTH : NODE_STRENGTH;
+    } else if (d.isIntermediate) {
+        return Math.hypot(d.x - dg.dimensions[0] / 2, d.y - dg.dimensions[1] / 2) <= 300 ? 3 * NODE_STRENGTH : NODE_STRENGTH / 2;
+    } else {
+        return 0;
+    }
+}
+
+function gravityStrength(d, i) {
+    if (d.distance) {
+        var maxDimension = Math.max(dg.dimensions[0], dg.dimensions[1]);
+        var dist = 3 - d.distance;
+        var g = Math.hypot(d.x - dg.dimensions[0] / 2, d.y - dg.dimensions[1] / 2) * dist * 2 / (maxDimension * 3);
+        return g;
+    } else {
+        return 0;
+    }
+}
 
 function dg_network_setupForceLayout() {
-    return d3.layout.force()
-        .nodes(dg.network.pageData.nodes)
-        .links(dg.network.pageData.links)
-        .size(dg.dimensions)
+    console.log("dg_network_setupForceLayout");
+    return d3.forceSimulation(dg.network.pageData.nodes)
+
+        .force("collide", d3.forceCollide().radius(d => d.radius + COLLIDE_BUFFER).iterations(COLLIDE_ITERATIONS))
+//        .force("collide", d3.forceCollide().radius(d => Math.pow(dg_network_getOuterRadius(d) - 10, COLLIDE_RADIUS_POWER) + COLLIDE_OVERLAP).iterations(COLLIDE_ITERATIONS))
+//        .force("charge", d3.forceManyBody())
+//        .force("charge", d3.forceManyBody().strength(d => d.isIntermediate ? 0 : Math.sqrt(d.radius) * NODE_STRENGTH))
+//        .force("charge", d3.forceManyBody().strength(NODE_STRENGTH).distanceMax(DISTANCE_MAX).theta(THETA))
+        .force("charge", d3.forceManyBody().strength(nodeStrength).distanceMax(DISTANCE_MAX).theta(THETA))
+
+
+
+
+//        .force("charge", d3.forceManyBody().strength(d => Math.sqrt(dg_network_getOuterRadius(d)) * NODE_STRENGTH).distanceMax(DISTANCE_MAX).theta(THETA))
+
+//        .force("magnetic", d3.forceMagnetic().charge(d => d.isIntermediate ? 0 : d.radius * d.distance * NODE_STRENGTH).polarity(false).strength(1.0))
+
+//        .force("charge", d3.forceManyBody().strength(d => Math.sqrt(d.radius) * NODE_STRENGTH))
+//        .force("gravity", d3.forceManyBody().strength(GRAVITY))
+//        .force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).strength(LINK_STRENGTH).iterations(LINK_ITERATIONS))
+
+        .force("bbox", dg_network_bbox_force)
         .on("tick", dg_network_tick)
-        .linkStrength(LINK_STRENGTH)
-        .friction(FRICTION)
-        .linkDistance(function(d, i) {
-            if (d.isSpline) {
-                if (d.role == 'Released On') {
-                    return LINK_DISTANCE_RELEASED_ON / 2 * dg.zoomFactor;
-                }
-                return LINK_DISTANCE / 2 * dg.zoomFactor;
-            } else if (d.role == 'Alias') {
-                return LINK_DISTANCE_ALIAS * dg.zoomFactor;
-            } else if (d.role == 'Released On') {
-                return LINK_DISTANCE_RELEASED_ON * dg.zoomFactor;
-            } else {
-                return LINK_DISTANCE * dg.zoomFactor + (Math.tanh(Math.random()) * LINK_DISTANCE_RANDOM * dg.zoomFactor);
-            }
-        })
-        .charge(CHARGE)
-        .gravity(GRAVITY)
-        .theta(THETA)
-        .alpha(ALPHA);
+        .on("end", dg_network_end)
+        .stop();
 }
 
 function dg_network_startForceLayout() {
+    console.log("Start D3 layout");
     var keyFunc = function(d) { return d.key }
-    var nodes = dg.network.pageData.nodes.filter(function(d) {
-        return (!d.isIntermediate) &&
-            (-1 != d.pages.indexOf(dg.network.pageData.currentPage));
+    var nodeData = dg.network.pageData.nodes.filter(function(d) {
+        return (!d.isIntermediate) && (d.pages.indexOf(dg.network.pageData.currentPage) != -1);
     })
-    var links = dg.network.pageData.links.filter(function(d) {
-        return (!d.isSpline) &&
-            (-1 != d.pages.indexOf(dg.network.pageData.currentPage));
+    console.log("nodeData: ", nodeData);
+    var linkData = dg.network.pageData.links.filter(function(d) {
+        return (!d.isSpline) && (d.pages.indexOf(dg.network.pageData.currentPage) != -1);
     })
-    dg.network.selections.halo = dg.network.selections.halo.data(nodes, keyFunc);
-    dg.network.selections.node = dg.network.selections.node.data(nodes, keyFunc);
-    dg.network.selections.text = dg.network.selections.text.data(nodes, keyFunc);
-    dg.network.selections.link = dg.network.selections.link.data(links, keyFunc);
-    var hullNodes = dg.network.pageData.nodes.filter(function(d) {
-            return d.cluster !== undefined;
-        });
-    var hullData = d3.nest().key(function(d) { return d.cluster; })
-        .entries(hullNodes)
-        .filter(function(d) { return 1 < d.values.length; });
+    console.log("linkData: ", linkData);
+
+    dg.network.selections.halo = dg.network.layers.halo.selectAll(".node");
+    dg.network.selections.halo = dg.network.selections.halo.data(nodeData, keyFunc);
+
+    dg.network.selections.node = dg.network.layers.node.selectAll(".node");
+    dg.network.selections.node = dg.network.selections.node.data(nodeData, keyFunc);
+
+    dg.network.selections.text = dg.network.layers.text.selectAll(".node");
+    dg.network.selections.text = dg.network.selections.text.data(nodeData, keyFunc);
+
+    dg.network.selections.link = dg.network.layers.link.selectAll(".link");
+    dg.network.selections.link = dg.network.selections.link.data(linkData, keyFunc);
+
+    var clusterNodes = dg.network.pageData.nodes
+        .filter(function(d) { return d.cluster !== undefined; });
+    var hullGroup = d3.group(clusterNodes, function(d) { return d.cluster; }).values();
+    var hullData = d3.filter(hullGroup, function(d) { return 1 < Array.from(d.values()).length; });
+    dg.network.selections.hull = dg.network.layers.halo.selectAll(".hull");
     dg.network.selections.hull = dg.network.selections.hull.data(hullData);
+
     dg_network_onHaloEnter(dg.network.selections.halo.enter());
     dg_network_onHaloExit(dg.network.selections.halo.exit());
     dg_network_onHullEnter(dg.network.selections.hull.enter());
@@ -78,16 +140,63 @@ function dg_network_startForceLayout() {
     dg_network_onLinkExit(dg.network.selections.link.exit());
     dg_network_onLinkUpdate(dg.network.selections.link);
     dg.network.pageData.nodes.forEach(function(n) { n.fixed = false; });
-    dg.network.forceLayout.start();
+
+    // Restart simulation
+    console.log("Updating forceLayout");
+    console.log("dg.network.pageData.nodes: ", dg.network.pageData.nodes);
+    dg.network.forceLayout.nodes(dg.network.pageData.nodes);
+//    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance))
+//    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).strength(LINK_STRENGTH))
+//    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).strength(LINK_STRENGTH).iterations(LINK_ITERATIONS))
+    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).iterations(LINK_ITERATIONS));
+
+//    dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2));
+//    dg.network.forceLayout.force("y", d3.forceY(dg.dimensions[1] / 2));
+    dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2).strength(gravityStrength));
+    dg.network.forceLayout.force("y", d3.forceY(dg.dimensions[1] / 2).strength(gravityStrength));
+
+
+    dg_network_forceLayout_restart();
+}
+
+function dg_network_forceLayout_restart(alpha) {
+    if (!alpha) {
+        alpha = ALPHA;
+    }
+
+//    dg.network.forceLayout.force("x", null);
+//    dg.network.forceLayout.force("y", null);
+//    dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2).strength(CENTER_STRENGTH));
+//    dg.network.forceLayout.force("y", d3.forceY(dg.dimensions[1] / 2).strength(CENTER_STRENGTH));
+//  dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2).strength(d => (4 - d.distance) * CENTER_STRENGTH))
+//  dg.network.forceLayout.force("y", d3.forceY(dg.dimensions[1] / 2).strength(d => (4 - d.distance) * CENTER_STRENGTH))
+//        .force("center", d3.forceCenter(dg.dimensions[0] / 2, dg.dimensions[1] / 2))
+//        .force("center", d3.forceCenter(dg.dimensions[0] / 2, dg.dimensions[1] / 2).strength(CENTER_STRENGTH))
+//    dg.network.forceLayout.force("radial",
+//        d3.forceRadial()
+//            .radius(Math.max(dg.dimensions[0] / 2, dg.dimensions[1] / 2))
+//            .x(dg.dimensions[0] / 2)
+//            .y(dg.dimensions[1] / 2)
+//            .strength(d => d.distance == 3 ? RADIAL_STRENGTH : 0)
+//    )
+    dg_network_start();
+    dg.network.forceLayout
+        .force("center", d3.forceCenter(dg.dimensions[0] / 2, dg.dimensions[1] / 2))
+//        .force("center", d3.forceCenter(dg.dimensions[0] / 2, dg.dimensions[1] / 2).strength(CENTER_STRENGTH))
+        .alpha(alpha).alphaDecay(ALPHA_DECAY).velocityDecay(VELOCITY_DECAY).restart();
 }
 
 function dg_network_processJson(json) {
-    var newNodeMap = d3.map();
-    var newLinkMap = d3.map();
+    var newNodeMap = new Map();
+    var newLinkMap = new Map();
+
+    // Setup node size
     json.nodes.forEach(function(node) {
         node.radius = dg_network_getOuterRadius(node);
         newNodeMap.set(node.key, node);
     });
+
+    // Setup links, add intermediate node at center of link
     json.links.forEach(function(link) {
         var source = link.source,
             target = link.target;
@@ -120,27 +229,29 @@ function dg_network_processJson(json) {
         }
         newLinkMap.set(link.key, link);
     });
+
+    // Update current lists of nodes and links
     var nodeKeysToRemove = [];
-    dg.network.data.nodeMap.keys().forEach(function(key) {
-        if (!newNodeMap.has(key)) {
-            nodeKeysToRemove.push(key);
-        };
-    });
+    Array.from(dg.network.data.nodeMap.keys())
+        .forEach(function(key) {
+            if (!newNodeMap.has(key)) {
+                nodeKeysToRemove.push(key);
+            };
+        });
     nodeKeysToRemove.forEach(function(key) {
-        dg.network.data.nodeMap.remove(key);
+        dg.network.data.nodeMap.delete(key);
     });
     var linkKeysToRemove = [];
-    dg.network.data.linkMap.keys().forEach(function(key) {
-        if (!newLinkMap.has(key)) {
-            linkKeysToRemove.push(key);
-        };
-    });
+    Array.from(dg.network.data.linkMap.keys())
+        .forEach(function(key) {
+            if (!newLinkMap.has(key)) {
+                linkKeysToRemove.push(key);
+            };
+        });
     linkKeysToRemove.forEach(function(key) {
-        dg.network.data.linkMap.remove(key);
+        dg.network.data.linkMap.delete(key);
     });
-    newNodeMap.entries().forEach(function(entry) {
-        var key = entry.key;
-        var newNode = entry.value;
+    newNodeMap.forEach(function(newNode, key) {
         if (dg.network.data.nodeMap.has(key)) {
             var oldNode = dg.network.data.nodeMap.get(key);
             oldNode.cluster = newNode.cluster;
@@ -150,14 +261,12 @@ function dg_network_processJson(json) {
             oldNode.missingByPage = newNode.missingByPage;
             oldNode.pages = newNode.pages;
         } else {
-            newNode.x = dg.network.newNodeCoords[0] + (Math.random() * LINK_DISTANCE * 2.0 * dg.zoomFactor) -  LINK_DISTANCE * dg.zoomFactor;
-            newNode.y = dg.network.newNodeCoords[1] + (Math.random() * LINK_DISTANCE * 2.0 * dg.zoomFactor) -  LINK_DISTANCE * dg.zoomFactor;
+            newNode.x = dg.network.newNodeCoords[0] + (random() * LINK_DISTANCE * 2.0) -  LINK_DISTANCE;
+            newNode.y = dg.network.newNodeCoords[1] + (random() * LINK_DISTANCE * 2.0) -  LINK_DISTANCE;
             dg.network.data.nodeMap.set(key, newNode);
         }
     });
-    newLinkMap.entries().forEach(function(entry) {
-        var key = entry.key;
-        var newLink = entry.value;
+    newLinkMap.forEach(function(newLink, key) {
         if (dg.network.data.linkMap.has(key)) {
             var oldLink = dg.network.data.linkMap.get(key);
             oldLink.pages = newLink.pages;
@@ -170,11 +279,204 @@ function dg_network_processJson(json) {
             dg.network.data.linkMap.set(key, newLink);
         }
     });
+
+    // Get some useful stats
     var distances = []
-    dg.network.data.nodeMap.values().forEach(function(node) {
-        if (node.distance !== undefined) {
-            distances.push(node.distance);
-        }
+    var distance_counts = [0, 0, 0, 0, 0, 0]
+    Array.from(dg.network.data.nodeMap.values())
+        .forEach(function(node) {
+            if (node.distance !== undefined) {
+                distances.push(node.distance);
+                if (node.distance < distance_counts.length) {
+                    distance_counts[node.distance]++;
+                }
+            }
     })
     dg.network.data.maxDistance = Math.max.apply(Math, distances);
+    console.log("maxDistance: ", dg.network.data.maxDistance);
+    console.log("distance_counts: ", distance_counts);
+    console.log("initial node size: ", dg.network.data.nodeMap.size);
+    console.log("initial link size: ", dg.network.data.linkMap.size);
+
+    // Prune dist==3
+    dg_network_prune(3, 1)
+    dg_network_prune(3, 3)
+    dg_network_prune(3, 100)
+    dg_network_prune(3, 1000000)
+    dg_network_prune(2, 1)
+    dg_network_prune(2, 3)
+    dg_network_prune(2, 100)
+    dg_network_prune(2, 100000)
+
+console.log("final nodes: ", dg.network.data.nodeMap);
+}
+
+function dg_network_prune(maxDist, minLinks) {
+    if (dg.network.data.nodeMap.size > MAX_NODES_BEFORE_PRUNING ||
+        dg.network.data.linkMap.size > MAX_LINKS_BEFORE_PRUNING) {
+        var nodeKeysToPrune = [];
+        Array.from(dg.network.data.nodeMap.values())
+            .forEach(function(node) {
+                if (node.distance >= maxDist && node.links && node.links.length <= minLinks) {
+                    nodeKeysToPrune.push(node.key);
+                };
+            });
+        nodeKeysToPrune.forEach(function(key) {
+            dg.network.data.nodeMap.delete(key);
+        });
+        console.log("pruned nodes: ", nodeKeysToPrune.length);
+
+        var linkKeysToPrune = [];
+        var intermediateNodesToPrune = [];
+        var intermediateLinksToPrune = [];
+        Array.from(dg.network.data.linkMap.values())
+            .forEach(function(link) {
+                if ((link.source && nodeKeysToPrune.indexOf(link.source.key) != -1) ||
+                    (link.target && nodeKeysToPrune.indexOf(link.target.key) != -1)) {
+                    linkKeysToPrune.push(link.key);
+                    link.source.hasMissing = true;
+                    link.target.hasMissing = true;
+                    if (link.source.missing === undefined) {
+                        link.source.missing = 1;
+                    } else {
+                        link.source.missing = link.source.missing + 1;
+                    }
+                    if (link.target.missing === undefined) {
+                        link.target.missing = 1;
+                    } else {
+                        link.target.missing = link.target.missing + 1;
+                    }
+//                    console.log("link.source: ", link.source);
+                };
+            });
+        linkKeysToPrune.forEach(function(key) {
+            intermediateNodesToPrune.push(key);
+            dg.network.data.linkMap.delete(key);
+        });
+        console.log("pruned links: ", linkKeysToPrune.length);
+        intermediateNodesToPrune.forEach(function(key) {
+            dg.network.data.nodeMap.delete(key);
+        });
+        console.log("pruned intermediate nodes: ", intermediateNodesToPrune.length);
+
+        Array.from(dg.network.data.linkMap.values())
+            .forEach(function(link) {
+                if ((link.source && intermediateNodesToPrune.indexOf(link.source.key) != -1) ||
+                    (link.target && intermediateNodesToPrune.indexOf(link.target.key) != -1)) {
+                    intermediateLinksToPrune.push(link.key);
+                    link.source.hasMissing = true;
+                    link.target.hasMissing = true;
+                    if (link.source.missing === undefined) {
+                        link.source.missing = 1;
+                    } else {
+                        link.source.missing = link.source.missing + 1;
+                    }
+                    if (link.target.missing === undefined) {
+                        link.target.missing = 1;
+                    } else {
+                        link.target.missing = link.target.missing + 1;
+                    }
+//                    console.log("link.source: ", link.source);
+                };
+            });
+        intermediateLinksToPrune.forEach(function(key) {
+            dg.network.data.linkMap.delete(key);
+        });
+        console.log("pruned intermediate links: ", intermediateLinksToPrune.length);
+
+        console.log("node size after pruning (maxDist: " + maxDist + ", minLinks: " + minLinks + "): ", dg.network.data.nodeMap.size);
+        console.log("link size after pruning (maxDist: " + maxDist + ", minLinks: " + minLinks + "): ", dg.network.data.linkMap.size);
+    }
+
+}
+
+function dg_network_bbox_force() {
+    dg.network.data.nodeMap.forEach(node => {
+
+        var minX = 20 + node.radius;
+        var maxX = dg.dimensions[0] - 100 - node.radius;
+        var minY = 100 + node.radius;
+        var maxY = dg.dimensions[1] - 100 - node.radius;
+        if (node.x < minX) {
+            node.x = minX;
+        }
+        if (node.x > maxX) {
+            node.x = maxX;
+        }
+        if (node.y < minY) {
+            node.y = minY;
+        }
+        if (node.y > maxY) {
+            node.y = maxY;
+        }
+    })
+
+}
+
+// Reheat the simulation when drag starts, and fix the subject position.
+function dg_network_dragstarted(event) {
+    console.log("dragstart: ", event);
+
+    event.subject.fx = event.subject.x;
+    event.subject.fy = event.subject.y;
+    event.subject.dragx = event.subject.x;
+    event.subject.dragy = event.subject.y;
+    if (event.sourceEvent.type == 'mousedown') {
+        dg_network_onNodeMouseDown(event.sourceEvent, event.subject);
+    }
+}
+
+// Update the subject (dragged node) position during drag.
+function dg_network_dragged(event) {
+    console.log("dragged: ", event);
+    event.subject.fx = event.x;
+    event.subject.fy = event.y;
+    if (event.subject.dragx != event.subject.x ||
+        event.subject.dragy != event.subject.y) {
+        event.subject.dragx = event.subject.x;
+        event.subject.dragy = event.subject.y;
+        if (!event.active) dg_network_forceLayout_restart();
+    }
+}
+
+// Restore the target alpha so the simulation cools after dragging ends.
+// Unfix the subject position now that it’s no longer being dragged.
+function dg_network_dragended(event) {
+    console.log("dragend: ", event);
+    if (event.subject.dragx == event.subject.x &&
+        event.subject.dragy == event.subject.y)
+        return;
+    if (!event.active) dg.network.forceLayout.alphaTarget(0);
+    event.subject.fx = null;
+    event.subject.fy = null;
+    if (event.sourceEvent.type == 'mouseup') {
+        dg_network_onNodeMouseDown(event.sourceEvent, event.subject);
+    }
+}
+
+function dg_network_start() {
+    dg.network.isRunningLayout = true;
+    dg.network.tick = 0;
+    $('#network-running')
+                .addClass('glyphicon-animate glyphicon-refresh');
+    dg.network.layers.link.selectAll('.link')
+        .classed('noninteractive', true);
+    dg.network.layers.node.selectAll('.node')
+        .classed('noninteractive', true);
+}
+
+function dg_network_end(event) {
+    $('#network-running')
+                .removeClass('glyphicon-animate glyphicon-refresh');
+    dg.network.layers.link.selectAll('.link')
+        .classed('noninteractive', false);
+    dg.network.layers.node.selectAll('.node')
+        .classed('noninteractive', false);
+    dg.network.isRunningLayout = false;
+    dg_network_tick();
+}
+
+function dg_network_forceLayout_stop() {
+    console.log("forceLayout_stop: ");
+    dg.network.forceLayout.alpha(0);
 }
