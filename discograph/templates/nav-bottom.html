@@ -23,6 +23,18 @@
             </div>
         </div>
         <div class="collapse navbar-collapse" id="nav-bottom-details">
+            <ul class="nav navbar-nav navbar-right">
+                <li id="stop-layout" data-tooltip="tooltip" data-placement="bottom" title="stop data layout">
+                    <a>STOP
+                        <span class="glyphicon glyphicon-stop" style="font-size: 0.9em;"></span>
+                    </a>
+                </li>
+                <li id="start-layout" data-tooltip="tooltip" data-placement="bottom" title="start data layout">
+                    <a>START
+                        <span class="glyphicon glyphicon-start" style="font-size: 0.9em;"></span>
+                    </a>
+                </li>
+            </ul>
             <form id="filter" class="navbar-form navbar-right" style="display: none" action="#">
                 <select id="filter-roles" multiple="multiple" name="roles" class="form-control" style="width: 100%">
                 {% for category, roles in multiselect_mapping.items() %}
