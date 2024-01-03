@@ -41,17 +41,17 @@ class RelationGrapher(ABC):
     def __init__(self, center_entity, degree=DatabaseHelper.MAX_DEGREE, link_ratio=None, max_nodes=None, roles=None):
         self._center_entity = center_entity
         degree = int(degree)
-        assert 0 < degree
+        assert degree > 0
         self._degree = degree
         if max_nodes is not None:
             max_nodes = int(max_nodes)
-            assert 0 < max_nodes
+            assert max_nodes > 0
         else:
             max_nodes = DatabaseHelper.MAX_NODES
         self._max_nodes = max_nodes
         if link_ratio is not None:
             link_ratio = int(link_ratio)
-            assert 0 < link_ratio
+            assert link_ratio > 0
         else:
             link_ratio = DatabaseHelper.LINK_RATIO
         self._link_ratio = link_ratio
@@ -77,7 +77,7 @@ class RelationGrapher(ABC):
         self._entity_keys_to_visit = set()
 
     def __call__(self):
-        print('Searching around {}...'.format(self.center_entity.name))
+        # print('Searching around {}...'.format(self.center_entity.name))
         provisional_roles = list(self.relational_roles)
         self._report_search_start()
         self._clear()
@@ -106,8 +106,8 @@ class RelationGrapher(ABC):
         for node in self.nodes.values():
             expected_count = node.entity.roles_to_relation_count(self.all_roles)
             node.missing = expected_count - len(node.links)
-        print(f"self.links: {self.links}")
-        print(f"self.nodes: {self.nodes}")
+        # print(f"self.links: {self.links}")
+        # print(f"self.nodes: {self.nodes}")
         json_links = tuple(link.as_json() for key, link in
                            sorted(self.links.items(), key=lambda x: x[0]))
         json_nodes = tuple(node.as_json() for key, node in
@@ -159,7 +159,7 @@ class RelationGrapher(ABC):
 
     @staticmethod
     def _page_naively(pages, trellis_nodes_by_distance):
-        print('        Paging by naively...')
+        # print('        Paging by naively...')
         index = 0
         for distance in sorted(trellis_nodes_by_distance):
             while trellis_nodes_by_distance[distance]:
@@ -252,7 +252,7 @@ class RelationGrapher(ABC):
             )
         self._page_by_local_neighborhood(pages, trellis_nodes_by_distance)
         # TODO: Add fast path when node count is very high (e.g. 4000+)
-        if 1 < distance:
+        if distance > 1:
             self._page_at_winning_distance(pages, trellis_nodes_by_distance, winning_distance)
             self._page_by_distance(pages, trellis_nodes_by_distance)
         else:
@@ -265,7 +265,7 @@ class RelationGrapher(ABC):
 
     @staticmethod
     def _page_at_winning_distance(pages, trellis_nodes_by_distance, winning_distance):
-        print('        Paging at winning distance...')
+        # print('        Paging at winning distance...')
         while trellis_nodes_by_distance[winning_distance]:
             trellis_node = trellis_nodes_by_distance[winning_distance].pop(0)
             parentage = trellis_node.get_parentage()
@@ -287,7 +287,7 @@ class RelationGrapher(ABC):
                 trellis_nodes[:] = []
         message = '        Paging by local neighborhood: {}'
         message = message.format(len(local_neighborhood))
-        print(message)
+        # print(message)
         for trellis_node in local_neighborhood:
             parentage = trellis_node.get_parentage()
             for page in pages:
@@ -295,7 +295,7 @@ class RelationGrapher(ABC):
 
     @staticmethod
     def _page_by_distance(pages, trellis_nodes_by_distance):
-        print('        Paging by distance...')
+        # print('        Paging by distance...')
         for distance in sorted(trellis_nodes_by_distance):
             while trellis_nodes_by_distance[distance]:
                 trellis_node = trellis_nodes_by_distance[distance].pop(0)
@@ -310,47 +310,47 @@ class RelationGrapher(ABC):
 
     @staticmethod
     def _find_trellis_distance(trellis_nodes_by_distance, threshold, verbose=True):
-        if verbose:
-            message = '        Maximum depth: {}'
-            message = message.format(max(trellis_nodes_by_distance))
-            print(message)
-            message = '        Subgraph threshold: {}'
-            message = message.format(threshold)
-            print(message)
+        # if verbose:
+        #     message = '        Maximum depth: {}'
+        #     message = message.format(max(trellis_nodes_by_distance))
+        #     print(message)
+        #     message = '        Subgraph threshold: {}'
+        #     message = message.format(threshold)
+        #     print(message)
         distancewise_average_subgraph_size = {}
         for distance, trellis_nodes in trellis_nodes_by_distance.items():
             trellis_nodes_by_distance[distance] = sorted(
                 trellis_nodes,
                 key=lambda x: x.entity_key,
-                )
+            )
             sizes = sorted(_.subgraph_size for _ in trellis_nodes)
             geometric = sum(sizes) ** (1.0 / len(sizes))
             distancewise_average_subgraph_size[distance] = geometric
-            if verbose:
-                message = '            At distance {}: {} geometric mean'
-                message = message.format(distance, geometric)
-                print(message)
+            # if verbose:
+            #     message = '            At distance {}: {} geometric mean'
+            #     message = message.format(distance, geometric)
+            #     print(message)
         winning_distance = 0
         pairs = ((a, d) for d, a in distancewise_average_subgraph_size.items())
         pairs = sorted(pairs, reverse=True)
         for average, distance in pairs:
-            if verbose:
-                message = '                Testing {} @ distance {}'
-                message = message.format(average, distance)
-                print(message)
+            # if verbose:
+            #     message = '                Testing {} @ distance {}'
+            #     message = message.format(average, distance)
+            #     print(message)
             if average < threshold:
                 winning_distance = distance
                 break
-        if verbose:
-            message = '            Winning distance: {}'
-            message = message.format(winning_distance)
-            print(message)
+        # if verbose:
+        #     message = '            Winning distance: {}'
+        #     message = message.format(winning_distance)
+        #     print(message)
         if (winning_distance + 1) < (len(distancewise_average_subgraph_size) / 2):
             winning_distance += 1
-            if verbose:
-                message = '            Promoting winning distance: {}'
-                message = message.format(winning_distance)
-                print(message)
+            # if verbose:
+            #     message = '            Promoting winning distance: {}'
+            #     message = message.format(winning_distance)
+            #     print(message)
         return winning_distance
 
     def _clear(self):
@@ -360,14 +360,14 @@ class RelationGrapher(ABC):
         self._should_break_loop = False
 
     def _prune_roles(self, distance, provisional_roles):
-        if 0 < distance and self.max_nodes / 4 < len(self.nodes):
+        if distance > 0 and len(self.nodes) > self.max_nodes / 4:
             for role in self.roles_to_prune:
                 if role in provisional_roles:
-                    print('            Pruned {!r} role'.format(role))
+                    # print('            Pruned {!r} role'.format(role))
                     provisional_roles.remove(role)
             if self.center_entity.entity_type == EntityType.ARTIST:
                 if 'Sublabel Of' in provisional_roles:
-                    print('            Pruned {!r} role'.format('Sublabel Of'))
+                    # print('            Pruned {!r} role'.format('Sublabel Of'))
                     provisional_roles.remove('Sublabel Of')
 
     def _process_entities(self, distance, entities):
@@ -430,7 +430,7 @@ class RelationGrapher(ABC):
     def _search_via_structural_roles(self, distance, provisional_roles, relations):
         if not self.structural_roles:
             return
-        print('        Retrieving structural relations')
+        # print('        Retrieving structural relations')
         for entity_key in sorted(self.entity_keys_to_visit):
             node = self.nodes.get(entity_key)
             if not node:
@@ -439,20 +439,20 @@ class RelationGrapher(ABC):
             relations.update(entity.structural_roles_to_relations(self.structural_roles))
 
     def _test_loop_one(self, distance):
-        if 0 < distance:
-            if self.max_nodes <= len(self.nodes):
-                print('        Max nodes: exiting next search loop.')
+        if distance > 0:
+            if len(self.nodes) >= self.max_nodes:
+                # print('        Max nodes: exiting next search loop.')
                 self.should_break_loop = True
 
     def _test_loop_two(self, distance, relations):
         if not relations:
             self.should_break_loop = True
-        if self.max_links * 3 <= len(relations):
-            print('        Max links: exiting next search loop.')
+        if len(relations) >= self.max_links * 3:
+            # print('        Max links: exiting next search loop.')
             self.should_break_loop = True
-        if 1 < distance:
-            if self.max_links <= len(relations):
-                print('        Max links: exiting next search loop.')
+        if distance > 1:
+            if len(relations) >= self.max_links:
+                # print('        Max links: exiting next search loop.')
                 self.should_break_loop = True
 
     # PUBLIC METHODS
