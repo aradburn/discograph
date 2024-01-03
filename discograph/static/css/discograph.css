@@ -3,7 +3,7 @@
   font-style: normal;
   font-weight: 400;
   font-stretch: normal;
-  src: url(http://fonts.gstatic.com/s/opensans/v36/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0B4gaVc.ttf) format('truetype');
+  src: url(http://fonts.gstatic.com/s/opensans/v40/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0B4gaVc.ttf) format('truetype');
 }
 html,
 body {
@@ -20,8 +20,8 @@ body {
 }
 svg {
   margin: 0;
-  height: 200%;
-  width: 200%;
+  /*  height: 200%;
+  width: 200%;*/
   /*  top: -50%;
   left: -50%;
   position: relative;*/
@@ -29,8 +29,8 @@ svg {
 }
 #svg-container {
   margin: 0;
-  height: 100%;
-  width: 100%;
+  /*  height: 100%;
+  width: 100%;*/
   top: 0;
   left: 0;
   position: fixed;
@@ -72,25 +72,38 @@ form .clear,
 /* NETWORK */
 #networkLayer .link {
   opacity: 0.5;
-}
-#networkLayer .link path {
-  /*
-            &.outer {
-                fill: none;
-                stroke-opacity: 0;
-                stroke: #000;
-                stroke-width: 10;
-                }
-            */
+  /*    &.highlighted {
+            opacity: 0.5;
+            path {
+                opacity: 0.5;
+                stroke: #700;
+                stroke-width: 2;
+            }
+            text {
+                font-size: 10px;
+            }
+        }*/
 }
 #networkLayer .link path.inner {
   fill: none;
-  marker-end: url(#arrowhead);
-  stroke-dasharray: 0.5, 4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  /*     marker-end: url(#arrowhead);
+                stroke-dasharray: 0.5, 4;
+                stroke-linecap: round;
+                stroke-linejoin: round;*/
   stroke-width: 1;
   stroke: #000;
+}
+#networkLayer .link path.distance-0 {
+  opacity: 0.6;
+  stroke-width: 4;
+  stroke: #700;
+}
+#networkLayer .link path.distance-1 {
+  stroke-width: 2;
+  stroke: #300;
+}
+#networkLayer .link path.distance-2 {
+  stroke-width: 1;
 }
 #networkLayer .link text {
   cursor: help;
@@ -114,8 +127,8 @@ form .clear,
 #networkLayer .link.member-of path.inner,
 #networkLayer .link.sublabel-of path.inner {
   opacity: 0.5;
-  marker-end: url(#aggregate);
-  stroke: #700;
+  /*     marker-end: url(#aggregate);*/
+  stroke: #070;
   stroke-dasharray: 0, 0;
 }
 #networkLayer .link.released-on path.inner {
@@ -125,23 +138,16 @@ form .clear,
   opacity: 1;
 }
 #networkLayer .link.selected path {
-  opacity: 0.5;
+  opacity: 0.6;
   stroke: #700;
-  stroke-width: 3;
+  stroke-width: 4;
 }
 #networkLayer .link.selected text {
   font-size: 10px;
 }
-#networkLayer .link.highlighted {
-  opacity: 0.5;
-}
-#networkLayer .link.highlighted path {
-  opacity: 0.5;
-  stroke: #700;
-  stroke-width: 2;
-}
-#networkLayer .link.highlighted text {
-  font-size: 10px;
+#networkLayer .link.noninteractive text {
+  pointer-events: none;
+  cursor: wait;
 }
 #networkLayer .hull path {
   fill: #343d46;
@@ -167,6 +173,8 @@ form .clear,
   font: 10px 'Open Sans', sans-serif;
   fill: #000;
   stroke: none;
+  dominant-baseline: middle;
+  text-anchor: middle;
 }
 #networkLayer .node text.outer {
   pointer-events: none;
@@ -174,6 +182,8 @@ form .clear,
   stroke: #fff;
   stroke-width: 3px;
   fill: none;
+  dominant-baseline: middle;
+  text-anchor: middle;
 }
 #networkLayer .node text.icon {
   cursor: pointer;
@@ -314,51 +324,225 @@ form .clear,
 .d3-tip {
   line-height: 1;
   font-size: 10px;
-  padding: 12px;
-  background: rgba(101, 115, 126, 0.8);
-  color: #fff;
-  border-radius: 2px;
+  padding: 6px;
+  background-color: #fff0;
+  background-opacity: 0.01;
+  /*background: rgba(101,115,126, 0.6);*/
+  color: #111;
+  /*border-radius: 8px;
+    border: 2px solid #fff;*/
   pointer-events: none;
-}
-.d3-tip p {
   text-align: center;
+  box-shadow: none !important;
 }
-.d3-tip p:last-child {
-  margin: 0;
+.d3-tip span {
+  padding: 3px;
+  margin: 0px;
+  border: 3px solid;
+  border-radius: 6px #777;
+  display: inline-block;
+  background-color: #fff;
+  opacity: 1;
+  box-shadow: 0 4px 20px 4px rgba(0, 20, 60, 0.1), 0 4px 80px -8px rgba(0, 20, 60, 0.2);
 }
-.d3-tip:after {
-  box-sizing: border-box;
-  display: inline;
+.d3-tip span text {
   font-size: 10px;
-  width: 100%;
-  line-height: 1;
-  color: rgba(0, 0, 0, 0.8);
-  position: absolute;
-  pointer-events: none;
 }
-.d3-tip.n:after {
-  content: "\25BC";
-  margin: -1px 0 0 0;
-  top: 100%;
-  left: 0;
-  text-align: center;
+.d3-tip span.link-label-middle {
+  border-width: 0px;
 }
-.d3-tip.e:after {
-  content: "\25C0";
-  margin: -4px 0 0 0;
-  top: 50%;
-  left: -8px;
+.d3-tip span:first-child {
+  margin-bottom: 0;
 }
-.d3-tip.s:after {
-  content: "\25B2";
-  margin: 0 0 1px 0;
-  top: -8px;
-  left: 0;
-  text-align: center;
+.d3-tip span:last-child {
+  margin-top: 0;
 }
-.d3-tip.w:after {
-  content: "\25B6";
-  margin: -4px 0 0 -1px;
-  top: 50%;
-  left: 100%;
+.YlOrRd .q0-9 {
+  fill: #ffffcc;
+}
+.YlOrRd .q1-9 {
+  fill: #ffeda0;
+}
+.YlOrRd .q2-9 {
+  fill: #fed976;
+}
+.YlOrRd .q3-9 {
+  fill: #feb24c;
+}
+.YlOrRd .q4-9 {
+  fill: #fd8d3c;
+}
+.YlOrRd .q5-9 {
+  fill: #fc4e2a;
+}
+.YlOrRd .q6-9 {
+  fill: #e31a1c;
+}
+.YlOrRd .q7-9 {
+  fill: #bd0026;
+}
+.YlOrRd .q8-9 {
+  fill: #800026;
+}
+.YlGnBu .q0-9 {
+  fill: #ffffd9;
+}
+.YlGnBu .q1-9 {
+  fill: #edf8b1;
+}
+.YlGnBu .q2-9 {
+  fill: #c7e9b4;
+}
+.YlGnBu .q3-9 {
+  fill: #7fcdbb;
+}
+.YlGnBu .q4-9 {
+  fill: #41b6c4;
+}
+.YlGnBu .q5-9 {
+  fill: #1d91c0;
+}
+.YlGnBu .q6-9 {
+  fill: #225ea8;
+}
+.YlGnBu .q7-9 {
+  fill: #253494;
+}
+.YlGnBu .q8-9 {
+  fill: #081d58;
+}
+.RdGnBl .q8-9 {
+  fill: #ff0000;
+}
+.RdGnBl .q7-9 {
+  fill: #ff004c;
+}
+.RdGnBl .q6-9 {
+  fill: #f25f2d;
+}
+.RdGnBl .q5-9 {
+  fill: #dc8926;
+}
+.RdGnBl .q4-9 {
+  fill: #c5a841;
+}
+.RdGnBl .q3-9 {
+  fill: #b1c16c;
+}
+.RdGnBl .q2-9 {
+  fill: #a8d39c;
+}
+.RdGnBl .q1-9 {
+  fill: #b0e1c7;
+}
+.RdGnBl .q0-9 {
+  fill: #ccece6;
+}
+.RdGnLb .q8-9 {
+  fill: #ff0000;
+}
+.RdGnLb .q7-9 {
+  fill: #df6e00;
+}
+.RdGnLb .q6-9 {
+  fill: #b99800;
+}
+.RdGnLb .q5-9 {
+  fill: #93b628;
+}
+.RdGnLb .q4-9 {
+  fill: #70cc72;
+}
+.RdGnLb .q3-9 {
+  fill: #5cdcb1;
+}
+.RdGnLb .q2-9 {
+  fill: #73e8e2;
+}
+.RdGnLb .q1-9 {
+  fill: #a8f0ff;
+}
+.RdGnLb .q0-9 {
+  fill: #b0e1c7;
+}
+.Palette1 .q0-9 {
+  fill: #ff0000;
+}
+.Palette1 .q1-9 {
+  fill: #f55700;
+}
+.Palette1 .q2-9 {
+  fill: #e87d00;
+}
+.Palette1 .q3-9 {
+  fill: #da9a00;
+}
+.Palette1 .q4-9 {
+  fill: #ccb211;
+}
+.Palette1 .q5-9 {
+  fill: #bfc744;
+}
+.Palette1 .q6-9 {
+  fill: #b5da6d;
+}
+.Palette1 .q7-9 {
+  fill: #afeb96;
+}
+.Palette1 .q8-9 {
+  fill: #afeb96;
+}
+.Palette2 .q0-9 {
+  fill: #d53e4f;
+}
+.Palette2 .q1-9 {
+  fill: #f46d43;
+}
+.Palette2 .q2-9 {
+  fill: #fdae61;
+}
+.Palette2 .q3-9 {
+  fill: #fee08b;
+}
+.Palette2 .q4-9 {
+  fill: #ffffbf;
+}
+.Palette2 .q5-9 {
+  fill: #e6f598;
+}
+.Palette2 .q6-9 {
+  fill: #abdda4;
+}
+.Palette2 .q7-9 {
+  fill: #66c2a5;
+}
+.Palette2 .q8-9 {
+  fill: #3288bd;
+}
+.Palette3 .q8-9 {
+  fill: #ffffcc;
+}
+.Palette3 .q7-9 {
+  fill: #ffeda0;
+}
+.Palette3 .q6-9 {
+  fill: #fed976;
+}
+.Palette3 .q5-9 {
+  fill: #feb24c;
+}
+.Palette3 .q4-9 {
+  fill: #fd8d3c;
+}
+.Palette3 .q3-9 {
+  fill: #fc4e2a;
+}
+.Palette3 .q2-9 {
+  fill: #e31a1c;
+}
+.Palette3 .q1-9 {
+  fill: #bd0026;
+}
+.Palette3 .q0-9 {
+  fill: #800026;
 }
