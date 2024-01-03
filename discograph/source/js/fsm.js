@@ -4,22 +4,22 @@ var DiscographFsm = machina.Fsm.extend({
         $(window).on('discograph:request-network', function(event) {
             self.requestNetwork(event.entityKey, event.pushHistory);
         });
-        $(window).on('discograph:request-random', function() {
+        $(window).on('discograph:request-random', function(event) {
             self.requestRandom();
         });
         $(window).on('discograph:select-entity', function(event) {
             self.selectEntity(event.entityKey, event.fixed);
         });
-        $(window).on('discograph:select-next-page', function() {
+        $(window).on('discograph:select-next-page', function(event) {
             self.selectNextPage();
         });
-        $(window).on('discograph:select-previous-page', function() {
+        $(window).on('discograph:select-previous-page', function(event) {
             self.selectPreviousPage();
         });
-        $(window).on('discograph:show-network', function() {
+        $(window).on('discograph:show-network', function(event) {
             self.showNetwork();
         });
-        $(window).on('discograph:show-radial', function() {
+        $(window).on('discograph:show-radial', function(event) {
             self.showRadial();
         });
         $(window).on('select2:selecting', function(event) {
@@ -29,7 +29,6 @@ var DiscographFsm = machina.Fsm.extend({
             self.rolesBackup = $('#filter select').val();
         });
         window.onpopstate = function(event) {
-            console.log("onpopstate");
             if (!event || !event.state || !event.state.key) {
                 return;
             }
@@ -46,28 +45,10 @@ var DiscographFsm = machina.Fsm.extend({
             });
         };
         $(window).on('resize', $.debounce(100, function(event) {
-            console.log("resize");
-            var w = window,
-                d = document,
-                e = d.documentElement,
-                g = d.getElementsByTagName('body')[0];
-            dg.dimensions = [
-                (w.innerWidth || e.clientWidth || g.clientWidth) * 2,
-                (w.innerHeight|| e.clientHeight|| g.clientHeight) * 2,
-            ];
+            dg_window_init();
+            dg_svg_container_setup();
+            dg_svg_set_size();
 
-            windowWidth = $(window).width();
-            windowHeight = $(window).height();
-            navTopHeight = $('#nav-top').height();
-            navBottomHeight = $('#nav-bottom').height();
-            $('#svg-container').height(windowHeight - navBottomHeight);
-            $('#svg-container').scrollLeft(windowWidth / 2);
-            $('#svg-container').scrollTop(windowHeight / 2);
-
-            dg.zoomFactor = 0.2; //Math.min(dg.dimensions[0], dg.dimensions[1]) / 2048;
-            d3.select('#svg')
-                .attr('width', dg.dimensions[0])
-                .attr('height', dg.dimensions[1]);
             var transform = [
                 'translate(',
                 (dg.dimensions[0] / 2),
@@ -79,20 +60,24 @@ var DiscographFsm = machina.Fsm.extend({
                 .transition()
                 .duration(250)
                 .attr('transform', transform);
-            dg.network.forceLayout.size(dg.dimensions);
+
             if (self.state == 'viewing-network') {
-                dg.network.forceLayout.start();
+                console.log("start d3 layout");
+//                dg_network_processJson(dg.network.data.json);
+//                dg_network_selectPage(1);
+//                dg_network_startForceLayout();
+                dg_network_forceLayout_restart(ALPHA / 10.0);
             }
         }));
-        $('#svg').on('mousedown', function() {
+        $('#svg').on('mousedown', function(event) {
             if (self.state == 'viewing-network') {
                 self.selectEntity(null);
             } else if (self.state == 'viewing-radial') {
                 self.showNetwork();
             }
         });
-        self.on("*", function (eventName, data){
-            console.log("FSM: ", eventName, data);
+        self.on("*", function (event, data){
+           // console.log("FSM: ", event, data);
         });
         this.loadInlineData();
         this.toggleRadial(false);
@@ -103,19 +88,16 @@ var DiscographFsm = machina.Fsm.extend({
     states: {
         'uninitialized': {
             'request-network': function(entityKey) {
-                console.log("request-network");
+                console.log("UNINITIALIZED request-network");
                 this.requestNetwork(entityKey);
             },
             'request-random': function() {
                 this.requestRandom();
             },
             'load-inline-data': function() {
-                console.log("load-inline-data start");
+                console.log("UNINITIALIZED load-inline-data");
                 var params = {'roles': $('#filter select').val()};
-                console.log("load-inline-data", params);
-                console.log("load-inline-data", dgData);
 //                this.handle("received-network", dgData, false, params);
-                console.log("load-inline-data");
                 this.deferAndTransition("requesting");
                 this.handle("received-network", dgData, false, params);
                 console.log("load-inline-data end");
@@ -123,12 +105,15 @@ var DiscographFsm = machina.Fsm.extend({
         },
         'viewing-network': {
             '_onEnter': function() {
+                console.log("VIEWING-NETWORK _onEnter");
                 this.toggleNetwork(true);
             },
             '_onExit': function() {
+                console.log("VIEWING-NETWORK _onExit");
                 this.toggleNetwork(false);
             },
             'request-network': function(entityKey) {
+                console.log("VIEWING-NETWORK request-network");
                 this.requestNetwork(entityKey);
             },
             'request-random': function() {
@@ -140,11 +125,12 @@ var DiscographFsm = machina.Fsm.extend({
                 }
             },
             'select-entity': function(entityKey, fixed) {
+//                console.log("VIEWING-NETWORK select-entity", entityKey, fixed);
                 dg.network.pageData.selectedNodeKey = entityKey;
                 if (entityKey !== null) {
                     var selectedNode = dg.network.data.nodeMap.get(entityKey);
                     var currentPage = dg.network.pageData.currentPage;
-                    if (-1 == selectedNode.pages.indexOf(currentPage)) {
+                    if (selectedNode.pages.indexOf(currentPage) == -1) {
                         dg.network.pageData.selectedNodeKey = null;
                     }
                 }
@@ -154,7 +140,7 @@ var DiscographFsm = machina.Fsm.extend({
                     var nodeOff = dg.network.layers.root.selectAll('.node:not(.' + entityKey + ')');
                     var linkKeys = nodeOn.datum().links;
                     var linkOn = dg.network.selections.link.filter(function(d) {
-                        return 0 <= linkKeys.indexOf(d.key);
+                        return linkKeys.indexOf(d.key) >= 0;
                     });
                     var linkOff = dg.network.selections.link.filter(function(d) {
                         return linkKeys.indexOf(d.key) == -1;
@@ -164,13 +150,13 @@ var DiscographFsm = machina.Fsm.extend({
                     $('#entity-name').text(node.name);
                     $('#entity-link').attr('href', url);
                     $('#entity-details').removeClass('hidden').show(0);
-                    nodeOn.moveToFront();
+                    nodeOn.raise();
                     nodeOn.classed('selected', true);
                     if (fixed) {
                         //nodeOn.each(function(d) { d.fixed = true; });
                         node.fixed = true;
                     }
-                    linkOn.classed('highlighted', true);
+                    linkOn.classed('selected', true);
                 } else {
                     var nodeOff = dg.network.layers.root.selectAll('.node');
                     var linkOff = dg.network.selections.link;
@@ -207,10 +193,12 @@ var DiscographFsm = machina.Fsm.extend({
         },
         'requesting': {
             '_onEnter': function(fsm, entityKey, pushHistory) {
+                console.log("REQUESTING _onEnter");
                 this.toggleLoading(true);
                 this.toggleFilter(false);
             },
             '_onExit': function() {
+                console.log("REQUESTING _onExit");
                 this.toggleLoading(false);
                 this.toggleFilter(true);
             },
@@ -218,6 +206,7 @@ var DiscographFsm = machina.Fsm.extend({
                 this.handleError(error);
             },
             'received-network': function(data, pushHistory, params) {
+                console.log("REQUESTING received network", data);
                 var params = {'roles': $('#filter select').val()};
                 var entityKey = data.center.key;
                 dg.network.data.json = JSON.parse(JSON.stringify(data));
@@ -228,13 +217,16 @@ var DiscographFsm = machina.Fsm.extend({
                 }
                 dg.network.data.pageCount = data.pages;
                 dg.network.pageData.currentPage = 1;
-                if (1 < data.pages) {
+                if (data.pages > 1) {
                     $('#paging').fadeIn();
                 } else {
                     $('#paging').fadeOut();
                 }
+                console.log("received-network dg_network_processJson");
                 dg_network_processJson(data);
+                console.log("received-network dg_network_selectPage");
                 dg_network_selectPage(1);
+                console.log("received-network dg_network_startForceLayout");
                 dg_network_startForceLayout();
 //                this.selectEntity(dg.network.data.json.center.key, false);
                 this.deferAndTransition('viewing-network');
@@ -246,15 +238,21 @@ var DiscographFsm = machina.Fsm.extend({
             },
             'received-radial': function(data) {
                 dg.relations.data = data;
-                dg.relations.byYear = d3.nest()
-                    .key(function(d) { return d.year; })
-                    .key(function(d) { return d.category; })
-                    .entries(data.results);
-                dg.relations.byRole = d3.nest()
-                    .key(function(d) { return d.role; })
-                    .sortKeys(d3.ascending)
-                    .rollup(function(leaves) { return leaves.length; })
-                    .entries(dg.relations.data.results);
+                dg.relations.byYear = d3.group(data.results,
+                                               function(d) { return d.year; },
+                                               function(d) { return d.category; });
+//                    .nest()
+//                    .key(function(d) { return d.year; })
+//                    .key(function(d) { return d.category; })
+//                    .entries(data.results);
+                dg.relations.byRole = d3.group(dg.relations.data.results, function(d) { return d.role; })
+                    .groupSort(d3.ascending)
+                    .rollup(function(leaves) { return leaves.length; });
+//                    .nest()
+//                    .key(function(d) { return d.role; })
+//                    .sortKeys(d3.ascending)
+//                    .rollup(function(leaves) { return leaves.length; })
+//                    .entries(dg.relations.data.results);
                 this.transition('viewing-radial');
             },
         },
@@ -323,35 +321,35 @@ var DiscographFsm = machina.Fsm.extend({
         console.log("requestNetwork");
         this.transition('requesting');
         var self = this;
-        d3.json(this.getNetworkURL(entityKey), function(error, data) {
-            if (error) {
-                self.handleError(error);
-            } else {
+        d3.json(this.getNetworkURL(entityKey))
+            .then(function(data) {
                 self.handle('received-network', data, pushHistory);
-            }
-        });
+            })
+            .catch(function(error) {
+                self.handleError(error);
+            });
     },
     requestRadial: function(entityKey) {
         this.transition('requesting');
         var self = this;
-        d3.json(this.getRadialURL(entityKey), function(error, data) {
-            if (error) {
-                self.handleError(error);
-            } else {
+        d3.json(this.getRadialURL(entityKey))
+            .then(function(data) {
                 self.handle('received-radial', data);
-            }
-        });
+            })
+            .catch(function(error) {
+                self.handleError(error);
+            });
     },
     requestRandom: function() {
         this.transition('requesting');
         var self = this;
-        d3.json(this.getRandomURL(), function(error, data) {
-            if (error) {
-                self.handleError(error);
-            } else {
+        d3.json(this.getRandomURL())
+            .then(function(data) {
                 self.handle('received-random', data);
-            }
-        });
+            })
+            .catch(function(error) {
+                self.handleError(error);
+            });
     },
     selectEntity: function(entityKey, fixed) {
         this.handle('select-entity', entityKey, fixed);
@@ -390,53 +388,52 @@ var DiscographFsm = machina.Fsm.extend({
         }
     },
     toggleNetwork: function(status) {
-        console.log("toggleNetwork");
+        console.log("toggleNetwork: ", status);
         if (status) {
             if (1 < dg.network.data.json.pages) {
                 $('#paging').fadeIn();
             } else {
                 $('#paging').fadeOut();
             }
-            dg.network.layers.root.transition()
+            console.log("dg.network.layers.root: ", dg.network.layers.root);
+            dg.network.layers.root
+                .transition()
                 .duration(250)
-                .style('opacity', 1)
-                .each('end', function(d, i) {
-                    dg.network.layers.link.selectAll('.link')
-                        .classed('noninteractive', false);
-                    dg.network.layers.node.selectAll('.node')
-                        .classed('noninteractive', false);
-                    dg.network.forceLayout.start()
-                });
+                .style('opacity', 1);
+//                .on('end', function(d, i) {
+//                    dg.network.layers.link.selectAll('.link')
+//                        .classed('noninteractive', false);
+//                    dg.network.layers.node.selectAll('.node')
+//                        .classed('noninteractive', false);
+////                    console.log("toggleNetwork forceLayout start");
+////                    dg.network.forceLayout.restart()
+//                });
         } else {
             $('#paging').fadeOut();
+            console.log("toggleNetwork: stop");
             dg.network.forceLayout.stop()
-            dg.network.layers.root.transition()
+            dg.network.layers.root
+                .transition()
                 .duration(250)
                 .style('opacity', 0.25);
-            dg.network.layers.link.selectAll('.link')
-                .classed('noninteractive', true);
-            dg.network.layers.node.selectAll('.node')
-                .classed('noninteractive', true);
+//            dg.network.layers.link.selectAll('.link')
+//                .classed('noninteractive', true);
+//            dg.network.layers.node.selectAll('.node')
+//                .classed('noninteractive', true);
         }
     },
     toggleLoading: function(status) {
-        console.log("toggleLoading");
         if (status) {
-            console.log("state true");
             var input = dg_loading_makeArray();
             var data = input[0], extent = input[1];
             $('#page-loading')
-//                .removeClass('glyphicon-random')
                 .addClass('glyphicon-animate glyphicon-refresh');
         } else {
-            console.log("state false");
             var data = [], extent = [0, 0];
             $('#page-loading')
                 .removeClass('glyphicon-animate glyphicon-refresh')
-//                .addClass('glyphicon-random');
         }
         dg_loading_update(data, extent);
-        console.log("toggleLoading end");
     },
     toggleRadial: function(status) {
         var self = this;

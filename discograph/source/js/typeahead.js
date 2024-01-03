@@ -60,7 +60,7 @@ function dg_typeahead_init() {
         $(this).data("selectedKey", datum.key);
         dg_typeahead_navigate();
     });
-    $('#search .clear').on("click", function() {
+    $('#search .clear').on("click", function(event) {
         $('#typeahead').typeahead('val', '');
     });
 }

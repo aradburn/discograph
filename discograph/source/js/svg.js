@@ -1,25 +1,19 @@
 function dg_svg_init() {
-    d3.selection.prototype.moveToFront = function() {
-        return this.each(function(){ this.parentNode.appendChild(this); });
-    };
-    var w = window,
-        d = document,
-        e = d.documentElement,
-        g = d.getElementsByTagName('body')[0];
-    dg.dimensions = [
-        (w.innerWidth || e.clientWidth || g.clientWidth) * 2,
-        (w.innerHeight|| e.clientHeight|| g.clientHeight) * 2,
-    ];
-    dg.zoomFactor = 0.2; //Math.min(dg.dimensions[0], dg.dimensions[1]) / 2048;
-    dg.network.newNodeCoords = [
-        dg.dimensions[0],
-        dg.dimensions[1],
-    ];
+    // Setup window dimensions on SVG element
+    dg_svg_set_size();
+
+    // Setup SVG common definitions
+    dg_svg_setupDefs();
+
+    // Initialise tooltip
+    d3.select('#svg').call(tip);
+}
+
+function dg_svg_set_size() {
+    // Setup window dimensions on SVG element
     d3.select("#svg")
         .attr("width", dg.dimensions[0])
         .attr("height", dg.dimensions[1]);
-    dg_svg_setupDefs();
-    d3.select('#svg').call(tip);
 }
 
 function dg_svg_setupDefs() {
