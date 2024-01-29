@@ -6,7 +6,9 @@ function dg_svg_init() {
     dg_svg_setupDefs();
 
     // Initialise tooltip
-    d3.select('#svg').call(tip);
+    d3.select('#svg')
+        .call(nodeToolTip)
+        .call(linkToolTip);
 }
 
 function dg_svg_set_size() {
@@ -68,4 +70,280 @@ function dg_svg_setupDefs() {
         .attr('offset', '100%')
         .attr('stop-color', '#333')
         .attr('stop-opacity', '0.0');
+}
+
+function dg_svg_print(width, height) {
+    var svgNode = d3.select("#svg").node();
+        console.log("SVG node: ", svgNode);
+
+    var svgString = dg_svg_getSVGString(svgNode);
+    console.log("SVG str: ", svgString);
+	dg_svg_string2Image(svgString, 2 * width, 2 * height, 'png', saveBlob); // passes Blob and filesize String to the callback
+
+	function saveBlob( dataBlob, filesize ){
+	    console.log("Save SVG blob");
+	    // Call FileSaver.js function
+		saveAs(dataBlob, 'Discograph2 exported to PNG.png');
+	}
+}
+
+function dg_svg_getSVGString(svgNode) {
+	svgNode.setAttribute('xlink', 'http://www.w3.org/1999/xlink');
+	var cssStyleText = getCSSStyles(svgNode);
+	console.log("final cssStyleText: ", cssStyleText);
+	appendCSS(cssStyleText, svgNode);
+
+	var serializer = new XMLSerializer();
+	var svgString = serializer.serializeToString(svgNode);
+	svgString = svgString.replace(/(\w+)?:?xlink=/g, 'xmlns:xlink='); // Fix root xlink without namespace
+	svgString = svgString.replace(/NS\d+:href/g, 'xlink:href'); // Safari NS namespace fix
+
+	return svgString;
+
+	function getCSSStyles(parentElement) {
+		var selectorTextArr = [];
+
+		// Add Parent element Id and Classes to the list
+		selectorTextArr.push('#' + parentElement.id);
+		for (var c = 0; c < parentElement.classList.length; c++)
+				if ( !contains('.' + parentElement.classList[c], selectorTextArr) )
+					selectorTextArr.push('.' + parentElement.classList[c]);
+console.log("selectorTextArr: ", selectorTextArr);
+		// Add Children element Ids and Classes to the list
+		var nodes = parentElement.getElementsByTagName("*");
+		for (var i = 0; i < nodes.length; i++) {
+			var id = nodes[i].id;
+			if ( !contains('#' + id, selectorTextArr) )
+				selectorTextArr.push('#' + id);
+
+			var classes = nodes[i].classList;
+//			console.log("nodes[i]: ", nodes[i]);
+
+            // .nodeClass
+			for (var c = 0; c < classes.length; c++) {
+			    var selector = '.' + classes[c];
+				if (!contains(selector, selectorTextArr)) {
+					selectorTextArr.push(selector);
+					console.log("add1: ", selector);
+			    }
+			    // nodeName.nodeClass
+			    if (nodes[i].nodeName) {
+				    var selector = nodes[i].nodeName + '.' + classes[c];
+					if (!contains(selector, selectorTextArr)) {
+				        selectorTextArr.push(selector);
+					    console.log("add2: ", selector);
+			        }
+                }
+            }
+
+            // #parent .nodeClass
+			for (var c = 0; c < classes.length; c++) {
+			    var parentId = nodes[i].parentNode.id;
+			    var selector = '#' + parentId + ' .' + classes[c];
+				if (parentId && !contains(selector, selectorTextArr) ) {
+					selectorTextArr.push(selector);
+					console.log("add3: ", selector);
+				}
+				// #parent nodeName.nodeClass
+			    if (nodes[i].nodeName) {
+				    var selector = '#' + parentId + " " + nodes[i].nodeName + '.' + classes[c];
+					if (!contains(selector, selectorTextArr)) {
+				        selectorTextArr.push(selector);
+					    console.log("add4: ", selector);
+			        }
+                }
+			}
+
+			// #parent's parent .nodeClass
+			for (var c = 0; c < classes.length; c++) {
+			    var parentNode = nodes[i].parentNode
+			    if (parentNode) {
+			        var parentId = parentNode.parentNode.id;
+			        var selector = '#' + parentId + ' .' + classes[c];
+    				if (parentId && !contains(selector, selectorTextArr) ) {
+	    				selectorTextArr.push(selector);
+		    			console.log("add5: ", selector);
+			    	}
+			    	if (nodes[i].nodeName) {
+				        var selector = '#' + parentId + " " + nodes[i].nodeName + '.' + classes[c];
+					    if (!contains(selector, selectorTextArr)) {
+				            selectorTextArr.push(selector);
+					        console.log("add6: ", selector);
+			            }
+                    }
+			    }
+			}
+
+			for (var c = 0; c < classes.length; c++) {
+    			var parentNode = nodes[i].parentNode
+			    var parentId = parentNode.id;
+			    if (parentNode) {
+			        var parentClasses = parentNode.classList;
+			        var parentParentId = parentNode.parentNode.id;
+
+			        for (var pc = 0; pc < parentClasses.length; pc++) {
+			            // No nodeClass
+			            var selector = '.' + parentClasses[pc];
+        				if (!contains(selector, selectorTextArr)) {
+		        			selectorTextArr.push(selector);
+				        	console.log("add7: ", selector);
+			            }
+         			    // No nodeClass + nodeName
+		        	    if (nodes[i].nodeName) {
+				            var selector = '.' + parentClasses[pc] + ' ' + nodes[i].nodeName;
+					        if (!contains(selector, selectorTextArr)) {
+				                selectorTextArr.push(selector);
+					            console.log("add8: ", selector);
+			                }
+			            }
+
+			            // Parent class + nodeClass
+			            var selector = '.' + parentClasses[pc] + ' .' + classes[c];
+        				if (!contains(selector, selectorTextArr)) {
+		        			selectorTextArr.push(selector);
+				        	console.log("add9: ", selector);
+			            }
+         			    // Parent class + nodeName.nodeClass
+		        	    if (nodes[i].nodeName) {
+				            var selector = '.' + parentClasses[pc] + ' ' + nodes[i].nodeName + '.' + classes[c];
+					        if (!contains(selector, selectorTextArr)) {
+				                selectorTextArr.push(selector);
+					            console.log("add10: ", selector);
+			                }
+			            }
+
+                        // ParentParentID + Parent class
+			            selector = '#' + parentParentId + ' .' + parentClasses[pc];
+    				    if (parentParentId && !contains(selector, selectorTextArr) ) {
+	    				    selectorTextArr.push(selector);
+		    			    console.log("add11: ", selector);
+			    	    }
+			    	    // ParentParentID + Parent class + nodeName
+			            if (parentParentId && nodes[i].nodeName) {
+				            var selector = '#' + parentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName;
+					        if (!contains(selector, selectorTextArr)) {
+				                selectorTextArr.push(selector);
+					            console.log("add12: ", selector);
+			                }
+                        }
+
+                        // ParentParentID + Parent class + nodeClass
+			            selector = '#' + parentParentId + ' .' + parentClasses[pc] + ' .' + classes[c];
+    				    if (parentParentId && !contains(selector, selectorTextArr) ) {
+	    				    selectorTextArr.push(selector);
+		    			    console.log("add11: ", selector);
+			    	    }
+			    	    // ParentParentID + Parent class + nodeName.nodeClass
+			            if (parentParentId && nodes[i].nodeName) {
+				            var selector = '#' + parentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName + '.' + classes[c];
+					        if (!contains(selector, selectorTextArr)) {
+				                selectorTextArr.push(selector);
+					            console.log("add12: ", selector);
+			                }
+                        }
+
+                        // ParentParentParentID + Parent class
+			            if (parentNode.parentNode) {
+                            var parentParentParentId = parentNode.parentNode.parentNode.id;
+                            selector = '#' + parentParentParentId + ' .' + parentClasses[pc];
+                            if (parentParentParentId && !contains(selector, selectorTextArr) ) {
+                                selectorTextArr.push(selector);
+                                console.log("add11: ", selector);
+                            }
+                            if (parentParentParentId && nodes[i].nodeName) {
+                                var selector = '#' + parentParentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName;
+                                if (!contains(selector, selectorTextArr)) {
+                                    selectorTextArr.push(selector);
+                                    console.log("add12: ", selector);
+                                }
+                            }
+                        }
+
+                        // ParentParentParentID + Parent class + nodeClass
+			            if (parentNode.parentNode) {
+                            var parentParentParentId = parentNode.parentNode.parentNode.id;
+                            selector = '#' + parentParentParentId + ' .' + parentClasses[pc] + ' .' + classes[c];
+                            if (parentParentParentId && !contains(selector, selectorTextArr) ) {
+                                selectorTextArr.push(selector);
+                                console.log("add11: ", selector);
+                            }
+                            if (parentParentParentId && nodes[i].nodeName) {
+                                var selector = '#' + parentParentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName + '.' + classes[c];
+                                if (!contains(selector, selectorTextArr)) {
+                                    selectorTextArr.push(selector);
+                                    console.log("add12: ", selector);
+                                }
+                            }
+                        }
+			        }
+                }
+            }
+		}
+console.log("selectorTextArr: ", selectorTextArr);
+
+		// Extract CSS Rules
+		var extractedCSSText = "";
+		for (var i = 0; i < document.styleSheets.length; i++) {
+			var s = document.styleSheets[i];
+
+			try {
+			    if (!s.cssRules)
+			        continue;
+			} catch(e) {
+		    		if (e.name !== 'SecurityError') throw e; // for Firefox
+		    		continue;
+		    }
+
+			var cssRules = s.cssRules;
+
+			for (var r = 0; r < cssRules.length; r++) {
+			//console.log("cssRules[r].selectorText: ", cssRules[r].selectorText);
+				if (contains(cssRules[r].selectorText, selectorTextArr)) {
+					extractedCSSText += cssRules[r].cssText + "\n";
+					console.log("add cssRules[r].cssText: ", cssRules[r].cssText);
+					//console.log("extractedCSSText: ", extractedCSSText);
+			    }
+			}
+		}
+
+		return extractedCSSText;
+
+		function contains(str, arr) {
+			return arr.indexOf(str) === -1 ? false : true;
+		}
+	}
+
+	function appendCSS(cssText, element) {
+		var styleElement = document.createElement("style");
+		styleElement.setAttribute("type","text/css");
+		styleElement.innerHTML = cssText;
+		var refNode = element.hasChildNodes() ? element.children[0] : null;
+		element.insertBefore(styleElement, refNode);
+	}
+}
+
+function dg_svg_string2Image(svgString, width, height, format, callback) {
+	var format = format ? format : 'png';
+
+    // Convert SVG string to data URL
+	var imgsrc = 'data:image/svg+xml;base64,'+ btoa(unescape(encodeURIComponent(svgString)));
+
+	var canvas = document.createElement("canvas");
+	var context = canvas.getContext("2d");
+
+	canvas.width = width;
+	canvas.height = height;
+
+	var image = new Image();
+	image.onload = function() {
+		context.clearRect (0, 0, width, height);
+		context.drawImage(image, 0, 0, width, height);
+
+		canvas.toBlob(function(blob) {
+			var filesize = Math.round(blob.length/1024) + ' KB';
+			if (callback) callback(blob, filesize);
+		});
+	};
+
+	image.src = imgsrc;
 }

@@ -3,12 +3,22 @@ NODE_OUT_TRANSITION_TIME = 500
 NODE_UPDATE_TRANSITION_TIME = 1000
 NODE_PALETTE = "Palette3"
 
+/* Initialize node tooltip */
+var nodeToolTip = d3.tip()
+    .attr('class', 'd3-node-tooltip')
+    .direction('s')
+    .offset([-20, 0])
+    .html(dg_network_node_tooltip);
+
 function dg_network_onNodeEnter(nodeEnter) {
     var nodeEnter = nodeEnter.append("g")
+        .attr("id", function(d) {
+            return d.key;
+        })
         .attr("class", function(d) {
             var classes = [
                 "node",
-                d.key,
+//                d.key,
                 d.key.split('-')[0],
                 NODE_PALETTE,
             ];
@@ -28,6 +38,8 @@ function dg_network_onNodeEnter(nodeEnter) {
 //                return dg_color_greyscale(d);
 //            }
 //        })
+//        .attr("data-tooltip", "tooltip")
+//        .attr("title", function(d) { return d.name; })
         .call(d3.drag()
             .on("start", dg_network_dragstarted)
             .on("drag", dg_network_dragged)
@@ -95,13 +107,26 @@ function dg_network_onNodeEnterElementConstruction(nodeEnter) {
         // Show a + symbol if there are extra links from this node that are missing / not shown
         .attr("d", d3.symbol(d3.symbolCross, 64))
         .style("opacity", function(d) {return d.missing > 0 ? 1 : 0; });
-    nodeEnter.append("title")
-        .text(function(d) { return d.name; });
+//    nodeEnter.append("title")
+//        .attr("class", "node-tooltip")
+//        .text(function(d) { return d.name; });
 }
 
 function dg_network_onNodeEnterEventBindings(nodeEnter) {
+    var debounceToolTip = $.debounce(LINK_DEBOUNCE_TIME, function(self, d, status) {
+        if (status) {
+        //console.log("link: ", self, d);
+            nodeToolTip.show(d, d3.select(self).node());
+        } else {
+            nodeToolTip.hide(d);
+        }
+    });
     nodeEnter.on("mouseover", function(event, d) {
         dg_network_onNodeMouseOver(event, d);
+        debounceToolTip(this, d, true);
+    });
+    nodeEnter.on("mouseout", function(event, d) {
+        debounceToolTip(this, d, false);
     });
     nodeEnter.on("mousedown", function(event, d) {
         dg_network_onNodeMouseDown(event, d);
@@ -247,4 +272,11 @@ console.log("touchstart ", d);
         });
     }
     event.stopPropagation(); // Prevents propagation to #svg element.
+}
+
+function dg_network_node_tooltip(d) {
+    var parts = [
+        '<span>' + d.name + '</span>',
+        ];
+    return parts.join('');
 }

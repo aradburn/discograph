@@ -268,7 +268,7 @@
                 }, 20);
             });
     }
-    NODE_STRENGTH = -300
+    NODE_STRENGTH = -350
     DISTANCE_MAX = 2000
 
     COLLIDE_ITERATIONS = 2
@@ -281,14 +281,14 @@
     THETA = 0.9; // defaults to 0.9
     ALPHA = 1.0
     ALPHA_DECAY = 0.05
-    VELOCITY_DECAY = 0.10; // like friction, defaults to 0.4. less velocity decay may converge on a better solution, but risks numerical instabilities and oscillation.
+    VELOCITY_DECAY = 0.3; // like friction, defaults to 0.4. less velocity decay may converge on a better solution, but risks numerical instabilities and oscillation.
 
     LINK_STRENGTH = 1.8
     LINK_DISTANCE_ALIAS = 20
     LINK_DISTANCE_RELEASED_ON = 200
     LINK_DISTANCE = 200
     LINK_DISTANCE_RANDOM = 100
-    LINK_ITERATIONS = 2
+    LINK_ITERATIONS = 3
 
     MAX_NODES_BEFORE_PRUNING = 600
     MAX_LINKS_BEFORE_PRUNING = 1800
@@ -329,7 +329,9 @@
         if (d.distance) {
             var maxDimension = Math.max(dg.dimensions[0], dg.dimensions[1]);
             var dist = 3 - d.distance;
-            var g = Math.hypot(d.x - dg.dimensions[0] / 2, d.y - dg.dimensions[1] / 2) * dist * 2 / (maxDimension * 3);
+            var scaling = dist / 7.0;
+            var radialDistance = (maxDimension - Math.hypot(d.x - dg.dimensions[0] / 2, d.y - dg.dimensions[1] / 2)) / maxDimension;
+            var g = radialDistance * scaling;
             return g;
         } else {
             return 0;
@@ -579,10 +581,12 @@
 
         // Prune dist==3
         dg_network_prune(3, 1)
+        dg_network_prune(3, 2)
         dg_network_prune(3, 3)
         dg_network_prune(3, 100)
         dg_network_prune(3, 1000000)
         dg_network_prune(2, 1)
+        dg_network_prune(2, 2)
         dg_network_prune(2, 3)
         dg_network_prune(2, 100)
         dg_network_prune(2, 100000)
@@ -762,10 +766,13 @@
 
     function dg_network_onHaloEnter(haloEnter) {
         var haloEnter = haloEnter.append("g")
+            .attr("id", function(d) {
+                return d.key;
+            })
             .attr("class", function(d) {
                 var classes = [
                     "node",
-                    d.key,
+                    //                d.key,
                     d.key.split('-')[0],
                 ];
                 return classes.join(" ");
@@ -786,8 +793,9 @@
         var hullGroup = hullEnter
             .append("g")
             .attr("class", function(d) {
-                return "hull hull-" + d.key
+                return "hull"
             });
+        //        .attr("class", function(d) { return "hull hull-" + d.key });
         hullGroup.append("path");
     }
 
@@ -813,22 +821,25 @@
     LINK_OUT_TRANSITION_TIME = 500
 
 
-    /* Initialize tooltip */
-    var tip = d3.tip()
-        .attr('class', 'd3-tip')
+    /* Initialize link tooltip */
+    var linkToolTip = d3.tip()
+        .attr('class', 'd3-link-tooltip')
         .direction('n')
         //    .rootElement(e => )
         .offset([20, 0])
-        .html(dg_network_tooltip);
+        .html(dg_network_link_tooltip);
 
     function dg_network_onLinkEnter(linkEnter) {
         var linkEnter = linkEnter.append("g")
+            .attr("id", function(d) {
+                return "link-" + d.key;
+            })
             .attr("class", function(d) {
                 var parts = d.key.split('-');
                 var role = parts.slice(2, 2 + parts.length - 4).join('-')
                 var classes = [
                     "link",
-                    "link-" + d.key,
+                    //                "link-" + d.key,
                     role,
                 ];
                 return classes.join(" ");
@@ -852,41 +863,39 @@
     }
 
     function dg_network_onLinkEnterEventBindings(linkEnter) {
-        var debounce = $.debounce(LINK_DEBOUNCE_TIME, function(self, d, status) {
-            if (status && !dg.network.isRunningLayout) {
-                console.log("link: ", self, d);
-                d3.select(self)
-                    .classed("selected", true);
-                tip.show(d, d3.select(self).select('text').node());
+        var debounceToolTip = $.debounce(LINK_DEBOUNCE_TIME, function(self, d, status) {
+            if (status) {
+                //console.log("link: ", self, d);
+                linkToolTip.show(d, d3.select(self).select('text').node());
             } else {
-                d3.select(self)
-                    .classed("selected", false)
-                    .transition()
-                    .duration(LINK_OUT_TRANSITION_TIME);
-                tip.hide(d);
+                linkToolTip.hide(d);
             }
         });
         linkEnter.on("mouseover", function(event, d) {
-            //        d3.select(this)
-            //            .classed("selected", true);
-            debounce(this, d, true);
+            d3.select(this)
+                .classed("selected", true);
+            debounceToolTip(this, d, true);
         });
         linkEnter.on("mouseout", function(event, d) {
-            //        d3.select(this)
-            //            .classed("selected", false)
-            //            .transition()
-            //            .duration(LINK_OUT_TRANSITION_TIME);
-            debounce(this, d, false);
+            d3.select(this)
+                .classed("selected", false)
+                .transition()
+                .duration(LINK_OUT_TRANSITION_TIME);
+            debounceToolTip(this, d, false);
         });
     }
 
-    function dg_network_tooltip(d) {
-
+    function dg_network_link_tooltip(d) {
         var parts = [
-            '<span class="link-label-top">' + d.source.name + '</span><br/>',
-            '<span class="link-label-middle">' + d.role + '</span><br/>',
-            '<span class="link-label-bottom">' + d.target.name + '</span>',
+            '<div>' + d.source.name + '</div>',
+            '<div>' + d.role + '</div>',
+            '<div>' + d.target.name + '</div>',
         ];
+        //    var parts = [
+        //        '<span class="link-label-top">' + d.source.name + '</span><br/>',
+        //        '<span class="link-label-middle">' + d.role + '</span><br/>',
+        //        '<span class="link-label-bottom">' + d.target.name + '</span>',
+        //        ];
         return parts.join('');
     }
 
@@ -918,12 +927,22 @@
     NODE_UPDATE_TRANSITION_TIME = 1000
     NODE_PALETTE = "Palette3"
 
+    /* Initialize node tooltip */
+    var nodeToolTip = d3.tip()
+        .attr('class', 'd3-node-tooltip')
+        .direction('s')
+        .offset([-20, 0])
+        .html(dg_network_node_tooltip);
+
     function dg_network_onNodeEnter(nodeEnter) {
         var nodeEnter = nodeEnter.append("g")
+            .attr("id", function(d) {
+                return d.key;
+            })
             .attr("class", function(d) {
                 var classes = [
                     "node",
-                    d.key,
+                    //                d.key,
                     d.key.split('-')[0],
                     NODE_PALETTE,
                 ];
@@ -943,6 +962,8 @@
             //                return dg_color_greyscale(d);
             //            }
             //        })
+            //        .attr("data-tooltip", "tooltip")
+            //        .attr("title", function(d) { return d.name; })
             .call(d3.drag()
                 .on("start", dg_network_dragstarted)
                 .on("drag", dg_network_dragged)
@@ -1022,15 +1043,26 @@
             .style("opacity", function(d) {
                 return d.missing > 0 ? 1 : 0;
             });
-        nodeEnter.append("title")
-            .text(function(d) {
-                return d.name;
-            });
+        //    nodeEnter.append("title")
+        //        .attr("class", "node-tooltip")
+        //        .text(function(d) { return d.name; });
     }
 
     function dg_network_onNodeEnterEventBindings(nodeEnter) {
+        var debounceToolTip = $.debounce(LINK_DEBOUNCE_TIME, function(self, d, status) {
+            if (status) {
+                //console.log("link: ", self, d);
+                nodeToolTip.show(d, d3.select(self).node());
+            } else {
+                nodeToolTip.hide(d);
+            }
+        });
         nodeEnter.on("mouseover", function(event, d) {
             dg_network_onNodeMouseOver(event, d);
+            debounceToolTip(this, d, true);
+        });
+        nodeEnter.on("mouseout", function(event, d) {
+            debounceToolTip(this, d, false);
         });
         nodeEnter.on("mousedown", function(event, d) {
             dg_network_onNodeMouseDown(event, d);
@@ -1177,6 +1209,13 @@
         }
         event.stopPropagation(); // Prevents propagation to #svg element.
     }
+
+    function dg_network_node_tooltip(d) {
+        var parts = [
+            '<span>' + d.name + '</span>',
+        ];
+        return parts.join('');
+    }
     dg.network = {
         dimensions: [0, 0],
         forceLayout: null,
@@ -1275,10 +1314,13 @@
 
     function dg_network_onTextEnter(textEnter) {
         var textEnter = textEnter.append("g")
+            .attr("id", function(d) {
+                return d.key;
+            })
             .attr("class", function(d) {
                 var classes = [
                     "node",
-                    d.key,
+                    //                d.key,
                     d.key.split('-')[0],
                 ];
                 return classes.join(" ");
@@ -1318,13 +1360,13 @@
         textUpdate.select('.inner').text(dg_network_getNodeText);
     }
 
-    NODE_INNER_RADIUS = 7
-    NODE_OUTER_RADIUS = 10
+    NODE_INNER_RADIUS = 8
+    NODE_OUTER_RADIUS = 11
     //NODE_INNER_RADIUS = 9
     //NODE_OUTER_RADIUS = 12
 
     function dg_network_getRadius(d) {
-        var boost1 = d.distance == 0 ? 10 : d.distance == 1 ? 5 : 0;
+        var boost1 = d.distance === 0 ? 10 : d.distance === 1 ? 5 : 0;
         var boost2 = d.links && d.links.length >= 20 ? 10 : d.links && d.links.length >= 10 ? 5 : 0;
         var alias = (d.cluster !== undefined) ? 2 : 1;
         return Math.round(((Math.sqrt(d.size) * 2) + boost1 + boost2) / alias);
@@ -1459,7 +1501,9 @@
         dg_svg_setupDefs();
 
         // Initialise tooltip
-        d3.select('#svg').call(tip);
+        d3.select('#svg')
+            .call(nodeToolTip)
+            .call(linkToolTip);
     }
 
     function dg_svg_set_size() {
@@ -1521,6 +1565,282 @@
             .attr('offset', '100%')
             .attr('stop-color', '#333')
             .attr('stop-opacity', '0.0');
+    }
+
+    function dg_svg_print(width, height) {
+        var svgNode = d3.select("#svg").node();
+        console.log("SVG node: ", svgNode);
+
+        var svgString = dg_svg_getSVGString(svgNode);
+        console.log("SVG str: ", svgString);
+        dg_svg_string2Image(svgString, 2 * width, 2 * height, 'png', saveBlob); // passes Blob and filesize String to the callback
+
+        function saveBlob(dataBlob, filesize) {
+            console.log("Save SVG blob");
+            // Call FileSaver.js function
+            saveAs(dataBlob, 'Discograph2 exported to PNG.png');
+        }
+    }
+
+    function dg_svg_getSVGString(svgNode) {
+        svgNode.setAttribute('xlink', 'http://www.w3.org/1999/xlink');
+        var cssStyleText = getCSSStyles(svgNode);
+        console.log("final cssStyleText: ", cssStyleText);
+        appendCSS(cssStyleText, svgNode);
+
+        var serializer = new XMLSerializer();
+        var svgString = serializer.serializeToString(svgNode);
+        svgString = svgString.replace(/(\w+)?:?xlink=/g, 'xmlns:xlink='); // Fix root xlink without namespace
+        svgString = svgString.replace(/NS\d+:href/g, 'xlink:href'); // Safari NS namespace fix
+
+        return svgString;
+
+        function getCSSStyles(parentElement) {
+            var selectorTextArr = [];
+
+            // Add Parent element Id and Classes to the list
+            selectorTextArr.push('#' + parentElement.id);
+            for (var c = 0; c < parentElement.classList.length; c++)
+                if (!contains('.' + parentElement.classList[c], selectorTextArr))
+                    selectorTextArr.push('.' + parentElement.classList[c]);
+            console.log("selectorTextArr: ", selectorTextArr);
+            // Add Children element Ids and Classes to the list
+            var nodes = parentElement.getElementsByTagName("*");
+            for (var i = 0; i < nodes.length; i++) {
+                var id = nodes[i].id;
+                if (!contains('#' + id, selectorTextArr))
+                    selectorTextArr.push('#' + id);
+
+                var classes = nodes[i].classList;
+                //			console.log("nodes[i]: ", nodes[i]);
+
+                // .nodeClass
+                for (var c = 0; c < classes.length; c++) {
+                    var selector = '.' + classes[c];
+                    if (!contains(selector, selectorTextArr)) {
+                        selectorTextArr.push(selector);
+                        console.log("add1: ", selector);
+                    }
+                    // nodeName.nodeClass
+                    if (nodes[i].nodeName) {
+                        var selector = nodes[i].nodeName + '.' + classes[c];
+                        if (!contains(selector, selectorTextArr)) {
+                            selectorTextArr.push(selector);
+                            console.log("add2: ", selector);
+                        }
+                    }
+                }
+
+                // #parent .nodeClass
+                for (var c = 0; c < classes.length; c++) {
+                    var parentId = nodes[i].parentNode.id;
+                    var selector = '#' + parentId + ' .' + classes[c];
+                    if (parentId && !contains(selector, selectorTextArr)) {
+                        selectorTextArr.push(selector);
+                        console.log("add3: ", selector);
+                    }
+                    // #parent nodeName.nodeClass
+                    if (nodes[i].nodeName) {
+                        var selector = '#' + parentId + " " + nodes[i].nodeName + '.' + classes[c];
+                        if (!contains(selector, selectorTextArr)) {
+                            selectorTextArr.push(selector);
+                            console.log("add4: ", selector);
+                        }
+                    }
+                }
+
+                // #parent's parent .nodeClass
+                for (var c = 0; c < classes.length; c++) {
+                    var parentNode = nodes[i].parentNode
+                    if (parentNode) {
+                        var parentId = parentNode.parentNode.id;
+                        var selector = '#' + parentId + ' .' + classes[c];
+                        if (parentId && !contains(selector, selectorTextArr)) {
+                            selectorTextArr.push(selector);
+                            console.log("add5: ", selector);
+                        }
+                        if (nodes[i].nodeName) {
+                            var selector = '#' + parentId + " " + nodes[i].nodeName + '.' + classes[c];
+                            if (!contains(selector, selectorTextArr)) {
+                                selectorTextArr.push(selector);
+                                console.log("add6: ", selector);
+                            }
+                        }
+                    }
+                }
+
+                for (var c = 0; c < classes.length; c++) {
+                    var parentNode = nodes[i].parentNode
+                    var parentId = parentNode.id;
+                    if (parentNode) {
+                        var parentClasses = parentNode.classList;
+                        var parentParentId = parentNode.parentNode.id;
+
+                        for (var pc = 0; pc < parentClasses.length; pc++) {
+                            // No nodeClass
+                            var selector = '.' + parentClasses[pc];
+                            if (!contains(selector, selectorTextArr)) {
+                                selectorTextArr.push(selector);
+                                console.log("add7: ", selector);
+                            }
+                            // No nodeClass + nodeName
+                            if (nodes[i].nodeName) {
+                                var selector = '.' + parentClasses[pc] + ' ' + nodes[i].nodeName;
+                                if (!contains(selector, selectorTextArr)) {
+                                    selectorTextArr.push(selector);
+                                    console.log("add8: ", selector);
+                                }
+                            }
+
+                            // Parent class + nodeClass
+                            var selector = '.' + parentClasses[pc] + ' .' + classes[c];
+                            if (!contains(selector, selectorTextArr)) {
+                                selectorTextArr.push(selector);
+                                console.log("add9: ", selector);
+                            }
+                            // Parent class + nodeName.nodeClass
+                            if (nodes[i].nodeName) {
+                                var selector = '.' + parentClasses[pc] + ' ' + nodes[i].nodeName + '.' + classes[c];
+                                if (!contains(selector, selectorTextArr)) {
+                                    selectorTextArr.push(selector);
+                                    console.log("add10: ", selector);
+                                }
+                            }
+
+                            // ParentParentID + Parent class
+                            selector = '#' + parentParentId + ' .' + parentClasses[pc];
+                            if (parentParentId && !contains(selector, selectorTextArr)) {
+                                selectorTextArr.push(selector);
+                                console.log("add11: ", selector);
+                            }
+                            // ParentParentID + Parent class + nodeName
+                            if (parentParentId && nodes[i].nodeName) {
+                                var selector = '#' + parentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName;
+                                if (!contains(selector, selectorTextArr)) {
+                                    selectorTextArr.push(selector);
+                                    console.log("add12: ", selector);
+                                }
+                            }
+
+                            // ParentParentID + Parent class + nodeClass
+                            selector = '#' + parentParentId + ' .' + parentClasses[pc] + ' .' + classes[c];
+                            if (parentParentId && !contains(selector, selectorTextArr)) {
+                                selectorTextArr.push(selector);
+                                console.log("add11: ", selector);
+                            }
+                            // ParentParentID + Parent class + nodeName.nodeClass
+                            if (parentParentId && nodes[i].nodeName) {
+                                var selector = '#' + parentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName + '.' + classes[c];
+                                if (!contains(selector, selectorTextArr)) {
+                                    selectorTextArr.push(selector);
+                                    console.log("add12: ", selector);
+                                }
+                            }
+
+                            // ParentParentParentID + Parent class
+                            if (parentNode.parentNode) {
+                                var parentParentParentId = parentNode.parentNode.parentNode.id;
+                                selector = '#' + parentParentParentId + ' .' + parentClasses[pc];
+                                if (parentParentParentId && !contains(selector, selectorTextArr)) {
+                                    selectorTextArr.push(selector);
+                                    console.log("add11: ", selector);
+                                }
+                                if (parentParentParentId && nodes[i].nodeName) {
+                                    var selector = '#' + parentParentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName;
+                                    if (!contains(selector, selectorTextArr)) {
+                                        selectorTextArr.push(selector);
+                                        console.log("add12: ", selector);
+                                    }
+                                }
+                            }
+
+                            // ParentParentParentID + Parent class + nodeClass
+                            if (parentNode.parentNode) {
+                                var parentParentParentId = parentNode.parentNode.parentNode.id;
+                                selector = '#' + parentParentParentId + ' .' + parentClasses[pc] + ' .' + classes[c];
+                                if (parentParentParentId && !contains(selector, selectorTextArr)) {
+                                    selectorTextArr.push(selector);
+                                    console.log("add11: ", selector);
+                                }
+                                if (parentParentParentId && nodes[i].nodeName) {
+                                    var selector = '#' + parentParentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName + '.' + classes[c];
+                                    if (!contains(selector, selectorTextArr)) {
+                                        selectorTextArr.push(selector);
+                                        console.log("add12: ", selector);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            console.log("selectorTextArr: ", selectorTextArr);
+
+            // Extract CSS Rules
+            var extractedCSSText = "";
+            for (var i = 0; i < document.styleSheets.length; i++) {
+                var s = document.styleSheets[i];
+
+                try {
+                    if (!s.cssRules)
+                        continue;
+                } catch (e) {
+                    if (e.name !== 'SecurityError') throw e; // for Firefox
+                    continue;
+                }
+
+                var cssRules = s.cssRules;
+
+                for (var r = 0; r < cssRules.length; r++) {
+                    //console.log("cssRules[r].selectorText: ", cssRules[r].selectorText);
+                    if (contains(cssRules[r].selectorText, selectorTextArr)) {
+                        extractedCSSText += cssRules[r].cssText + "\n";
+                        console.log("add cssRules[r].cssText: ", cssRules[r].cssText);
+                        //console.log("extractedCSSText: ", extractedCSSText);
+                    }
+                }
+            }
+
+            return extractedCSSText;
+
+            function contains(str, arr) {
+                return arr.indexOf(str) === -1 ? false : true;
+            }
+        }
+
+        function appendCSS(cssText, element) {
+            var styleElement = document.createElement("style");
+            styleElement.setAttribute("type", "text/css");
+            styleElement.innerHTML = cssText;
+            var refNode = element.hasChildNodes() ? element.children[0] : null;
+            element.insertBefore(styleElement, refNode);
+        }
+    }
+
+    function dg_svg_string2Image(svgString, width, height, format, callback) {
+        var format = format ? format : 'png';
+
+        // Convert SVG string to data URL
+        var imgsrc = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+
+        var canvas = document.createElement("canvas");
+        var context = canvas.getContext("2d");
+
+        canvas.width = width;
+        canvas.height = height;
+
+        var image = new Image();
+        image.onload = function() {
+            context.clearRect(0, 0, width, height);
+            context.drawImage(image, 0, 0, width, height);
+
+            canvas.toBlob(function(blob) {
+                var filesize = Math.round(blob.length / 1024) + ' KB';
+                if (callback) callback(blob, filesize);
+            });
+        };
+
+        image.src = imgsrc;
     }
     dg.relations = {
         layers: {
@@ -1852,7 +2172,7 @@
                     }
                 },
                 'select-entity': function(entityKey, fixed) {
-                    //                console.log("VIEWING-NETWORK select-entity", entityKey, fixed);
+                    console.log("VIEWING-NETWORK select-entity", entityKey, fixed);
                     dg.network.pageData.selectedNodeKey = entityKey;
                     if (entityKey !== null) {
                         var selectedNode = dg.network.data.nodeMap.get(entityKey);
@@ -1863,8 +2183,10 @@
                     }
                     entityKey = dg.network.pageData.selectedNodeKey;
                     if (entityKey !== null) {
-                        var nodeOn = dg.network.layers.root.selectAll('.' + entityKey);
-                        var nodeOff = dg.network.layers.root.selectAll('.node:not(.' + entityKey + ')');
+                        var nodeOn = dg.network.layers.root.selectAll('#' + entityKey);
+                        var nodeOff = dg.network.layers.root.selectAll('.node:not(#' + entityKey + ')');
+                        //                    var nodeOn = dg.network.layers.root.selectAll('.' + entityKey);
+                        //                    var nodeOff = dg.network.layers.root.selectAll('.node:not(.' + entityKey + ')');
                         var linkKeys = nodeOn.datum().links;
                         var linkOn = dg.network.selections.link.filter(function(d) {
                             return linkKeys.indexOf(d.key) >= 0;
@@ -2221,7 +2543,6 @@
         dg_loading_init();
         dg_typeahead_init();
 
-        $('[data-toggle="tooltip"]').tooltip();
         $('#request-random').on("click touchstart", function(event) {
             event.preventDefault();
             $(this).tooltip('hide');
@@ -2236,6 +2557,10 @@
         $('#stop-layout').on("click touchstart", function(event) {
             event.preventDefault();
             dg_network_forceLayout_stop();
+        });
+        $('#print').on("click touchstart", function(event) {
+            event.preventDefault();
+            dg_svg_print(dg.dimensions[0], dg.dimensions[1]);
         });
         $('#paging .next a').on("click", function(event) {
             $(this).trigger({
@@ -2265,6 +2590,8 @@
         });
         $('#filter').fadeIn(3000);
 
+        // Tooltip from Bootstrap
+        $('[data-toggle="tooltip"]').tooltip();
         $(function() {
             $('[data-tooltip="tooltip"]').tooltip({
                 trigger: 'hover'

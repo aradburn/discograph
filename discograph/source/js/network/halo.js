@@ -1,9 +1,12 @@
 function dg_network_onHaloEnter(haloEnter) {
     var haloEnter = haloEnter.append("g")
+        .attr("id", function(d) {
+            return d.key;
+        })
         .attr("class", function(d) {
             var classes = [
                 "node",
-                d.key,
+//                d.key,
                 d.key.split('-')[0],
                 ];
             return classes.join(" ");

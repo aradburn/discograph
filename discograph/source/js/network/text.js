@@ -26,10 +26,13 @@ function dg_network_getNodeDebug(d) {
 
 function dg_network_onTextEnter(textEnter) {
     var textEnter = textEnter.append("g")
+        .attr("id", function(d) {
+            return d.key;
+        })
         .attr("class", function(d) {
             var classes = [
                 "node",
-                d.key,
+//                d.key,
                 d.key.split('-')[0],
                 ];
             return classes.join(" ");

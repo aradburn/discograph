@@ -1,10 +1,10 @@
-NODE_INNER_RADIUS = 7
-NODE_OUTER_RADIUS = 10
+NODE_INNER_RADIUS = 8
+NODE_OUTER_RADIUS = 11
 //NODE_INNER_RADIUS = 9
 //NODE_OUTER_RADIUS = 12
 
 function dg_network_getRadius(d) {
-    var boost1 = d.distance == 0 ? 10 : d.distance == 1 ? 5 : 0;
+    var boost1 = d.distance === 0 ? 10 : d.distance === 1 ? 5 : 0;
     var boost2 = d.links && d.links.length >= 20 ? 10 : d.links && d.links.length >= 10 ? 5 : 0;
     var alias = (d.cluster !== undefined) ? 2 : 1;
     return Math.round(((Math.sqrt(d.size) * 2) + boost1 + boost2) / alias);

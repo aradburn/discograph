@@ -125,7 +125,7 @@ var DiscographFsm = machina.Fsm.extend({
                 }
             },
             'select-entity': function(entityKey, fixed) {
-//                console.log("VIEWING-NETWORK select-entity", entityKey, fixed);
+                console.log("VIEWING-NETWORK select-entity", entityKey, fixed);
                 dg.network.pageData.selectedNodeKey = entityKey;
                 if (entityKey !== null) {
                     var selectedNode = dg.network.data.nodeMap.get(entityKey);
@@ -136,8 +136,10 @@ var DiscographFsm = machina.Fsm.extend({
                 }
                 entityKey = dg.network.pageData.selectedNodeKey;
                 if (entityKey !== null) {
-                    var nodeOn = dg.network.layers.root.selectAll('.' + entityKey);
-                    var nodeOff = dg.network.layers.root.selectAll('.node:not(.' + entityKey + ')');
+                    var nodeOn = dg.network.layers.root.selectAll('#' + entityKey);
+                    var nodeOff = dg.network.layers.root.selectAll('.node:not(#' + entityKey + ')');
+//                    var nodeOn = dg.network.layers.root.selectAll('.' + entityKey);
+//                    var nodeOff = dg.network.layers.root.selectAll('.node:not(.' + entityKey + ')');
                     var linkKeys = nodeOn.datum().links;
                     var linkOn = dg.network.selections.link.filter(function(d) {
                         return linkKeys.indexOf(d.key) >= 0;

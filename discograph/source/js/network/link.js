@@ -2,22 +2,25 @@ LINK_DEBOUNCE_TIME = 250
 LINK_OUT_TRANSITION_TIME = 500
 
 
-/* Initialize tooltip */
-var tip = d3.tip()
-    .attr('class', 'd3-tip')
+/* Initialize link tooltip */
+var linkToolTip = d3.tip()
+    .attr('class', 'd3-link-tooltip')
     .direction('n')
 //    .rootElement(e => )
     .offset([20, 0])
-    .html(dg_network_tooltip);
+    .html(dg_network_link_tooltip);
 
 function dg_network_onLinkEnter(linkEnter) {
     var linkEnter = linkEnter.append("g")
+        .attr("id", function(d) {
+            return "link-" + d.key;
+        })
         .attr("class", function(d) {
             var parts = d.key.split('-');
             var role = parts.slice(2, 2 + parts.length - 4).join('-')
             var classes = [
                 "link",
-                "link-" + d.key,
+//                "link-" + d.key,
                 role,
                 ];
             return classes.join(" ");
@@ -41,41 +44,39 @@ function dg_network_onLinkEnterElementConstruction(linkEnter) {
 }
 
 function dg_network_onLinkEnterEventBindings(linkEnter) {
-    var debounce = $.debounce(LINK_DEBOUNCE_TIME, function(self, d, status) {
-        if (status && ! dg.network.isRunningLayout) {
-        console.log("link: ", self, d);
-            d3.select(self)
-                .classed("selected", true);
-            tip.show(d, d3.select(self).select('text').node());
+    var debounceToolTip = $.debounce(LINK_DEBOUNCE_TIME, function(self, d, status) {
+        if (status) {
+        //console.log("link: ", self, d);
+            linkToolTip.show(d, d3.select(self).select('text').node());
         } else {
-            d3.select(self)
-                .classed("selected", false)
-                .transition()
-                .duration(LINK_OUT_TRANSITION_TIME);
-            tip.hide(d);
+            linkToolTip.hide(d);
         }
     });
     linkEnter.on("mouseover", function(event, d) {
-//        d3.select(this)
-//            .classed("selected", true);
-        debounce(this, d, true);
+        d3.select(this)
+            .classed("selected", true);
+        debounceToolTip(this, d, true);
     });
     linkEnter.on("mouseout", function(event, d) {
-//        d3.select(this)
-//            .classed("selected", false)
-//            .transition()
-//            .duration(LINK_OUT_TRANSITION_TIME);
-        debounce(this, d, false);
+        d3.select(this)
+            .classed("selected", false)
+            .transition()
+            .duration(LINK_OUT_TRANSITION_TIME);
+        debounceToolTip(this, d, false);
     });
 }
 
-function dg_network_tooltip(d) {
-
+function dg_network_link_tooltip(d) {
     var parts = [
-        '<span class="link-label-top">' + d.source.name + '</span><br/>',
-        '<span class="link-label-middle">' + d.role + '</span><br/>',
-        '<span class="link-label-bottom">' + d.target.name + '</span>',
+        '<div>' + d.source.name + '</div>',
+        '<div>' + d.role + '</div>',
+        '<div>' + d.target.name + '</div>',
         ];
+//    var parts = [
+//        '<span class="link-label-top">' + d.source.name + '</span><br/>',
+//        '<span class="link-label-middle">' + d.role + '</span><br/>',
+//        '<span class="link-label-bottom">' + d.target.name + '</span>',
+//        ];
     return parts.join('');
 }
 

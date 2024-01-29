@@ -1,5 +1,5 @@
 
-NODE_STRENGTH = -300
+NODE_STRENGTH = -350
 DISTANCE_MAX = 2000
 
 COLLIDE_ITERATIONS = 2
@@ -12,14 +12,14 @@ RADIAL_STRENGTH = 0.08
 THETA = 0.9; // defaults to 0.9
 ALPHA = 1.0
 ALPHA_DECAY = 0.05
-VELOCITY_DECAY = 0.10; // like friction, defaults to 0.4. less velocity decay may converge on a better solution, but risks numerical instabilities and oscillation.
+VELOCITY_DECAY = 0.3; // like friction, defaults to 0.4. less velocity decay may converge on a better solution, but risks numerical instabilities and oscillation.
 
 LINK_STRENGTH = 1.8
 LINK_DISTANCE_ALIAS = 20
 LINK_DISTANCE_RELEASED_ON = 200
 LINK_DISTANCE = 200
 LINK_DISTANCE_RANDOM = 100
-LINK_ITERATIONS = 2
+LINK_ITERATIONS = 3
 
 MAX_NODES_BEFORE_PRUNING = 600
 MAX_LINKS_BEFORE_PRUNING = 1800
@@ -60,7 +60,9 @@ function gravityStrength(d, i) {
     if (d.distance) {
         var maxDimension = Math.max(dg.dimensions[0], dg.dimensions[1]);
         var dist = 3 - d.distance;
-        var g = Math.hypot(d.x - dg.dimensions[0] / 2, d.y - dg.dimensions[1] / 2) * dist * 2 / (maxDimension * 3);
+        var scaling = dist / 7.0;
+        var radialDistance = (maxDimension - Math.hypot(d.x - dg.dimensions[0] / 2, d.y - dg.dimensions[1] / 2)) / maxDimension;
+        var g = radialDistance * scaling;
         return g;
     } else {
         return 0;
@@ -300,10 +302,12 @@ function dg_network_processJson(json) {
 
     // Prune dist==3
     dg_network_prune(3, 1)
+    dg_network_prune(3, 2)
     dg_network_prune(3, 3)
     dg_network_prune(3, 100)
     dg_network_prune(3, 1000000)
     dg_network_prune(2, 1)
+    dg_network_prune(2, 2)
     dg_network_prune(2, 3)
     dg_network_prune(2, 100)
     dg_network_prune(2, 100000)

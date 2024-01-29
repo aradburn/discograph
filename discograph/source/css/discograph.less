@@ -16,28 +16,29 @@ body {
 }
 
 svg {
-  margin: 0;
-/*  height: 200%;
-  width: 200%;*/
-/*  top: -50%;
-  left: -50%;
-  position: relative;*/
-  z-index: -1;
+    margin: 0;
+/*    height: 200%;
+    width: 200%;*/
+/*    top: -50%;
+    left: -50%;
+    position: relative;*/
+    z-index: -1;
 }
 
 #svg-container {
-  margin: 0;
-/*  height: 100%;
-  width: 100%;*/
-  top: 0;
-  left: 0;
-  position: fixed;
-  z-index: -1;
-  overflow: scroll;
+    margin: 0;
+/*    height: 100%;
+    width: 100%;*/
+    top: 0;
+    left: 0;
+    position: fixed;
+    z-index: -1;
+    overflow: scroll;
 }
 
 #svg {
     pointer-events: visible;
+    background-color: white;
 }
 
 #svg text {
@@ -170,14 +171,20 @@ form .clear,
     }
 
     .hull {
-        path {
+        fill: #343d46;
+        opacity: 0.1;
+        stroke: #000;
+        stroke-width: 32;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+/*        path {
             fill: #343d46;
             opacity: 0.1;
             stroke: #000;
             stroke-width: 32;
             stroke-linecap: round;
             stroke-linejoin: round;
-        }
+        }*/
     }
 
     .node {
@@ -220,19 +227,19 @@ form .clear,
                 stroke: #000;
             }
         }
-        .halo {
+        circle.halo {
             pointer-events: none;
             fill: #000;
             opacity: 0;
             stroke: none;
         }
-        .more {
+        path.more {
             stroke-width: 0;
             fill-opacity: 1;
-            fill: #fff;
+            fill: #ffeda0;
         }
         &.selected {
-            stroke: #000;
+            stroke: #f00;
             .halo {
                 opacity: 0.1;
                 fill: #700;
@@ -241,7 +248,7 @@ form .clear,
                 fill: #000;
             }
             &.label {
-                stroke: #fff;
+                stroke: #f00;
                 .more {
                     fill: #fff;
                 }
@@ -358,44 +365,63 @@ form .clear,
 
 /* TOOLTIPS */
 
-.d3-tip {
-    line-height: 1;
-    font-size: 10px;
-    padding: 6px;
-    background-color: #fff0;
-    background-opacity: 0.01;
+.d3-node-tooltip {
+    line-height: 0.8em;
+    font-size: 1.0em;
+    padding: 8px;
+    background-color: #ffffcc;
     /*background: rgba(101,115,126, 0.6);*/
     color: #111;
-    /*border-radius: 8px;
-    border: 2px solid #fff;*/
-    pointer-events: none;
+    border-radius: 8px;
+    border: 2px solid #800026;
+    pointer-events: none !important;
     text-align: center;
-    box-shadow: none !important;
+    box-shadow: 0 4px 20px 4px rgba(0,20,60,.1),0 4px 80px -8px rgba(0,20,60,.2);
+    display: flex;
+    flex-direction: column;
+    gap: 0em;
     span {
-        padding: 3px;
-        margin: 0px;
-        border: 3px solid;
-        border-radius: 6px #777;
-        display: inline-block;
-        background-color: #fff;
         opacity: 1.0;
-        box-shadow: 0 4px 20px 4px rgba(0,20,60,.1),0 4px 80px -8px rgba(0,20,60,.2);
-        text {
-            font-size: 10px;
-        }
-        &.link-label-top {
+        font-size: 1.4em;
+        line-height: 1.4em;
+    }
+}
 
-        }
-        &.link-label-middle {
-            border-width: 0px;
-        }
-        &.link-label-bottom {
-
-        }
+.d3-link-tooltip {
+    line-height: 0.8em;
+    font-size: 1.0em;
+    padding: 0px;
+    background-color: #ffeda0;
+    /*background: rgba(101,115,126, 0.6);*/
+    color: #111;
+    opacity: 1.0;
+    border-radius: 8px;
+    border: 2px solid #800026;
+    pointer-events: none !important;
+    text-align: center;
+    box-shadow: 0 4px 20px 4px rgba(0,20,60,.1),0 4px 80px -8px rgba(0,20,60,.2);
+    display: flex;
+    flex-direction: column;
+    gap: 0em;
+    div {
+        padding: 3px 6px;
+        margin: 4px;
+        display: inline-block;
+        background-color: #ffeda0;
         &:first-child {
+            font-size: 1.4em;
+            line-height: 1.4em;
             margin-bottom: 0;
         }
+        &:nth-child(2) {
+            font-size: 0.8em;
+            line-height: 1.0em;
+            border-width: 0px;
+            margin: 0;
+        }
         &:last-child {
+            font-size: 1.4em;
+            line-height: 1.4em;
             margin-top: 0;
         }
     }

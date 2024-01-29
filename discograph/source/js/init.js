@@ -9,7 +9,6 @@ $(document).ready(function() {
     dg_loading_init();
     dg_typeahead_init();
 
-    $('[data-toggle="tooltip"]').tooltip();
     $('#request-random').on("click touchstart", function(event) {
         event.preventDefault();
         $(this).tooltip('hide');
@@ -24,6 +23,10 @@ $(document).ready(function() {
     $('#stop-layout').on("click touchstart", function(event) {
         event.preventDefault();
         dg_network_forceLayout_stop();
+    });
+    $('#print').on("click touchstart", function(event) {
+        event.preventDefault();
+        dg_svg_print(dg.dimensions[0], dg.dimensions[1]);
     });
     $('#paging .next a').on("click", function(event) {
         $(this).trigger({
@@ -53,6 +56,8 @@ $(document).ready(function() {
     });
     $('#filter').fadeIn(3000);
 
+    // Tooltip from Bootstrap
+    $('[data-toggle="tooltip"]').tooltip();
     $(function () {
         $('[data-tooltip="tooltip"]').tooltip({
             trigger: 'hover'
