@@ -10,14 +10,14 @@ from discograph.config import CacheType
 
 log = logging.getLogger(__name__)
 
-cache: BaseCache
+cache: BaseCache | None = None
 
 
 def setup_cache(config):
     global cache
-    # Based on configuration, use a different database.
-    match config["CACHE_TYPE"]:
 
+    # Based on configuration, use a different cache setup.
+    match config["CACHE_TYPE"]:
         case CacheType.MEMORY:
             cache = SimpleCache()
             log.info("Using memory cache")

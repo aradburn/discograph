@@ -14,7 +14,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from discograph import api
 from discograph import exceptions
 from discograph import ui
-from discograph.cache_manager import setup_cache, shutdown_cache
+from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.database import setup_database, shutdown_database
 from discograph.logging import setup_logging, shutdown_logging
 

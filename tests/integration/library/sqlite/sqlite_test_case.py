@@ -2,7 +2,7 @@ import logging
 import unittest
 
 from discograph import database
-from discograph.cache_manager import setup_cache, shutdown_cache
+from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.config import SqliteTestConfiguration
 from discograph.logging import setup_logging, shutdown_logging
 

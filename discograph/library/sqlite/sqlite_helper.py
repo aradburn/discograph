@@ -28,7 +28,7 @@ class SqliteHelper(DatabaseHelper):
     def get_network(
         entity_id: int, entity_type: EntityType, on_mobile=False, roles=None
     ):
-        from discograph.cache_manager import cache
+        from discograph.library.cache.cache_manager import cache
 
         log.debug(f"entity_type: {entity_type}")
         assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
@@ -153,7 +153,7 @@ class SqliteHelper(DatabaseHelper):
     @staticmethod
     def search_entities(search_string):
         from discograph.utils import urlify_pattern
-        from discograph.cache_manager import cache
+        from discograph.library.cache.cache_manager import cache
 
         cache_key = f"discograph:/api/search/{urlify_pattern.sub('+', search_string)}"
         log.debug(f"  get cache_key: {cache_key}")
