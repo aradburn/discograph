@@ -1,29 +1,32 @@
+import atexit
+import logging
 import unittest
 
-from discograph import database
+from discograph.cache_manager import setup_cache, shutdown_cache
 from discograph.config import PostgresTestConfiguration
+from discograph.database import shutdown_database, setup_database
+from discograph.logging import setup_logging, shutdown_logging
 
-
-# noinspection PyPep8Naming
-# def setUpModule():
-#     print("setup temp postgres DB", flush=True)
-#     helpers.setup_database(vars(PostgresTestConfiguration))
-
-
-# noinspection PyPep8Naming
-# def tearDownModule():
-# release resources
-# print("cleanup temp postgres DB", flush=True)
-# helpers.shutdown_database()
+log = logging.getLogger(__name__)
 
 
 class PostgresTestCase(unittest.TestCase):
+    def setUp(self):
+        log.info("-------------------------------------------------------------------")
+        log.info(f"Test {self.id()}")
+
     @classmethod
     def setUpClass(cls):
-        print("setup temp postgres DB", flush=True)
-        database.setup_database(vars(PostgresTestConfiguration))
+        setup_logging(is_testing=True)
+        log.debug("setup temp postgres DB")
+        config = vars(PostgresTestConfiguration)
+        setup_cache(config)
+        setup_database(config)
+        atexit.register(shutdown_database)
 
     @classmethod
     def tearDownClass(cls):
-        print("cleanup temp postgres DB", flush=True)
-        database.shutdown_database()
+        log.debug("cleanup temp postgres DB")
+        shutdown_database()
+        shutdown_cache()
+        shutdown_logging()

@@ -1,13 +1,17 @@
+import logging
+
 import peewee
 from playhouse import sqlite_ext
 
 from discograph.library import EntityType
-from discograph.library.EnumField import EnumField
+from discograph.library.enum_field import EnumField
 from discograph.library.models.relation import Relation
 
 
-class SqliteRelation(Relation):
+log = logging.getLogger(__name__)
 
+
+class SqliteRelation(Relation):
     # PEEWEE FIELDS
 
     entity_one_type = EnumField(index=False, choices=EntityType)

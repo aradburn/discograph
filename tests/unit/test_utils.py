@@ -4,7 +4,6 @@ from discograph import utils
 
 
 class TestUtils(unittest.TestCase):
-
     def test_split_tuple_1(self):
         input_seq = (1, 2, 3, 4, 10, 11, 12, 13, 20, 21, 22, 23)
         num_chunks = 3

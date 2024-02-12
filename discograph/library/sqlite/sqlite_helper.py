@@ -1,3 +1,4 @@
+import logging
 import random
 
 from discograph.library import EntityType, CreditRole
@@ -6,6 +7,9 @@ from discograph.library.discogs_model import DiscogsModel
 from discograph.library.sqlite.sqlite_entity import SqliteEntity
 from discograph.library.sqlite.sqlite_relation import SqliteRelation
 from discograph.library.sqlite.sqlite_relation_grapher import SqliteRelationGrapher
+
+
+log = logging.getLogger(__name__)
 
 
 class SqliteHelper(DatabaseHelper):
@@ -21,29 +25,31 @@ class SqliteHelper(DatabaseHelper):
             return query.get()
 
     @staticmethod
-    def get_network(entity_id: int, entity_type: EntityType, on_mobile=False, cache=True, roles=None):
-        print(f"entity_type: {entity_type}")
+    def get_network(
+        entity_id: int, entity_type: EntityType, on_mobile=False, roles=None
+    ):
+        from discograph.cache_manager import cache
+
+        log.debug(f"entity_type: {entity_type}")
         assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
-        template = 'discograph:/api/{entity_type}/network/{entity_id}'
+        template = "discograph:/api/{entity_type}/network/{entity_id}"
         if on_mobile:
-            template = '{}/mobile'.format(template)
+            template += "/mobile"
 
         cache_key_formatter = SqliteRelationGrapher.make_cache_key(
             template,
             entity_type,
             entity_id,
             roles=roles,
-            )
+        )
         cache_key = cache_key_formatter.format(entity_type, entity_id)
-        print(f"cache_key: {cache_key}")
-        cache = False
-        if cache:
-            data = SqliteRelationGrapher.cache_get(cache_key)
-            if data is not None:
-                return data
+        log.debug(f"cache_key: {cache_key}")
+        data = cache.get(cache_key)
+        if data is not None:
+            return data
         # entity_type = entity_name_types[entity_type]
         entity = SqliteHelper.get_entity(entity_type, entity_id)
-        print(f"entity: {entity}")
+        log.debug(f"entity: {entity}")
         if entity is None:
             return None
         if not on_mobile:
@@ -57,20 +63,19 @@ class SqliteHelper(DatabaseHelper):
             degree=degree,
             max_nodes=max_nodes,
             roles=roles,
-            )
+        )
         with DiscogsModel.connection_context():
             data = relation_grapher()
-        if cache:
-            SqliteRelationGrapher.cache_set(cache_key, data)
+        cache.set(cache_key, data)
         return data
 
     @staticmethod
     def get_random_entity(roles=None):
         structural_roles = [
-            'Alias',
-            'Member Of',
-            'Sublabel Of',
-            ]
+            "Alias",
+            "Member Of",
+            "Sublabel Of",
+        ]
         with DiscogsModel.connection_context():
             if roles and any(_ not in structural_roles for _ in roles):
                 relation = SqliteRelation.get_random(roles=roles)
@@ -99,38 +104,39 @@ class SqliteHelper(DatabaseHelper):
             query = SqliteRelation.search(
                 entity_id=entity.entity_id,
                 entity_type=entity.entity_type,
-                query_only=True
-                )
+                query_only=True,
+            )
         query = query.order_by(
             SqliteRelation.role,
             SqliteRelation.entity_one_id,
             SqliteRelation.entity_one_type,
             SqliteRelation.entity_two_id,
             SqliteRelation.entity_two_type,
-            )
+        )
         data = []
         for relation in query:
             category = CreditRole.all_credit_roles[relation.role]
             if category is None:
                 continue
             datum = {
-                'role': relation.role,
-                }
+                "role": relation.role,
+            }
             data.append(datum)
-        data = {'results': tuple(data)}
+        data = {"results": tuple(data)}
         return data
 
     @staticmethod
     def parse_request_args(args):
         from discograph.utils import args_roles_pattern
+
         year = None
         roles = set()
         for key in args:
-            if key == 'year':
+            if key == "year":
                 year = args[key]
                 try:
-                    if '-' in year:
-                        start, _, stop = year.partition('-')
+                    if "-" in year:
+                        start, _, stop = year.partition("-")
                         year = tuple(sorted((int(start), int(stop))))
                     else:
                         year = int(year)
@@ -145,34 +151,31 @@ class SqliteHelper(DatabaseHelper):
         return roles, year
 
     @staticmethod
-    def search_entities(search_string, cache=True):
+    def search_entities(search_string):
         from discograph.utils import urlify_pattern
-        cache_key = 'discograph:/api/search/{}'.format(
-            urlify_pattern.sub('+', search_string))
-        cache = False
-        if cache:
-            data = SqliteRelationGrapher.cache_get(cache_key)
-            if data is not None:
-                print('{}: CACHED'.format(cache_key))
-                for datum in data['results']:
-                    print('    {}'.format(datum))
-                return data
+        from discograph.cache_manager import cache
+
+        cache_key = f"discograph:/api/search/{urlify_pattern.sub('+', search_string)}"
+        log.debug(f"  get cache_key: {cache_key}")
+        data = cache.get(cache_key)
+        if data is not None:
+            log.debug(f"{cache_key}: CACHED")
+            for datum in data["results"]:
+                log.debug(f"    {datum}")
+            return data
         with DiscogsModel.connection_context():
             query = SqliteEntity.search_text(search_string)
-            print(f"query: {query}")
-            print('{}: NOT CACHED'.format(cache_key))
+            log.debug(f"query: {query}")
+            log.debug(f"{cache_key}: NOT CACHED")
             data = []
             for entity in query:
                 datum = dict(
-                    key='{}-{}'.format(
-                        entity.entity_type.name.lower(),
-                        entity.entity_id,
-                        ),
+                    key=f"{entity.entity_type.name.lower()}-{entity.entity_id}",
                     name=entity.name,
-                    )
+                )
                 data.append(datum)
-                print('    {}'.format(datum))
-        data = {'results': tuple(data)}
-        if cache:
-            SqliteRelationGrapher.cache_set(cache_key, data)
+                log.debug(f"    {datum}")
+        data = {"results": tuple(data)}
+        log.debug(f"  set cache_key: {cache_key} data: {data}")
+        cache.set(cache_key, data)
         return data

@@ -1,48 +1,52 @@
 import datetime
 import glob
 import gzip
+import logging
 import os
 import re
-import traceback
 from xml.dom import minidom
 from xml.etree import ElementTree
 
 
-class Bootstrapper(object):
+log = logging.getLogger(__name__)
 
+
+class Bootstrapper(object):
     # CLASS VARIABLES
 
-    date_regex = re.compile(r'^(\d{4})-(\d{2})-(\d{2})$')
-    date_no_dashes_regex = re.compile(r'^(\d{4})(\d{2})(\d{2})$')
-    year_regex = re.compile(r'^\d\d\d\d$')
+    date_regex = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
+    date_no_dashes_regex = re.compile(r"^(\d{4})(\d{2})(\d{2})$")
+    year_regex = re.compile(r"^\d\d\d\d$")
     is_test = False
 
     # PUBLIC METHODS
 
     @staticmethod
     def get_xml_path(tag, test=False):
-        data_directory = os.path.join(
-            os.path.abspath(os.path.dirname(__file__)),
-            '..',
-            'data',
+        data_directory = os.path.abspath(
+            os.path.join(
+                os.path.abspath(os.path.dirname(__file__)),
+                "..",
+                "data",
             )
+        )
         if Bootstrapper.is_test or test:
-            glob_pattern = 'discogs_test_{}s.xml.gz'.format(tag)
+            glob_pattern = f"discogs_test_{tag}s.xml.gz"
         else:
-            glob_pattern = 'discogs_2*_{}s.xml.gz'.format(tag)
-        print(f"data_directory: {data_directory}")
-        print(f"glob_pattern: {glob_pattern}")
+            glob_pattern = f"discogs_2*_{tag}s.xml.gz"
+        log.debug(f"data_directory: {data_directory}")
+        log.debug(f"glob_pattern: {glob_pattern}")
         # with contextmanagers.TemporaryDirectoryChange(data_directory):
         files = sorted(glob.glob(glob_pattern, root_dir=data_directory))
-        print(f"files: {files}")
+        log.debug(f"files: {files}")
         full_path_files = os.path.join(data_directory, files[-1])
-        print(f"full_path_files: {full_path_files}")
+        log.debug(f"full_path_files: {full_path_files}")
         return full_path_files
 
     @staticmethod
     def clean_elements(elements):
         for element in elements:
-            image_tags = element.findall('images')
+            image_tags = element.findall("images")
             if image_tags:
                 element.remove(*image_tags)
             # url_tags = element.findall('urls')
@@ -68,7 +72,7 @@ class Bootstrapper(object):
         # yyyy
         match = Bootstrapper.year_regex.match(date_string)
         if match:
-            year, month, day = match.group(), '1', '1'
+            year, month, day = match.group(), "1", "1"
             return Bootstrapper.validate_release_date(year, month, day)
         # other: "?", "????", "None", "Unknown"
         return None
@@ -101,20 +105,20 @@ class Bootstrapper(object):
     @staticmethod
     def get_iterator(tag):
         file_path = Bootstrapper.get_xml_path(tag)
-        file_pointer = gzip.GzipFile(file_path, 'r')
+        file_pointer = gzip.GzipFile(file_path, "r")
         iterator = Bootstrapper.iterparse(file_pointer, tag)
         iterator = Bootstrapper.clean_elements(iterator)
         return iterator
 
     @staticmethod
     def iterparse(source, tag):
-        context = ElementTree.iterparse(source, events=('start', 'end'))
+        context = ElementTree.iterparse(source, events=("start", "end"))
         context = iter(context)
         _, root = next(context)
         depth = 0
         for event, element in context:
             if element.tag == tag:
-                if event == 'start':
+                if event == "start":
                     depth += 1
                 else:
                     depth -= 1
@@ -124,9 +128,9 @@ class Bootstrapper(object):
 
     @staticmethod
     def prettify(element):
-        string = ElementTree.tostring(element, 'utf-8')
+        string = ElementTree.tostring(element, "utf-8")
         reparsed = minidom.parseString(string)
-        return reparsed.toprettyxml(indent='    ')
+        return reparsed.toprettyxml(indent="    ")
 
     @staticmethod
     def validate_release_date(year: str, month: str, day: str):
@@ -146,7 +150,6 @@ class Bootstrapper(object):
             day_offset = day - 1
             date = date + datetime.timedelta(days=day_offset)
         except ValueError:
-            traceback.print_exc()
-            print('BAD DATE:', year, month, day)
+            log.exception("BAD DATE:", year, month, day)
             date = None
         return date

@@ -1,10 +1,13 @@
 import functools
+import logging
 import time
 
 import fakeredis
 import flask
 
 from discograph import exceptions
+
+log = logging.getLogger(__name__)
 
 redis_client = fakeredis.FakeStrictRedis()
 # redis_client = redis.StrictRedis()
@@ -14,14 +17,10 @@ def limit(max_requests=10, period=60):
     def decorator(f):
         @functools.wraps(f)
         def wrapped(*args, **kwargs):
-
             # For testing error handlers:
             # max_requests = 2
 
-            key = 'ratelimit:{}:{}'.format(
-                flask.request.endpoint,
-                flask.request.remote_addr,
-                )
+            key = f"ratelimit:{flask.request.endpoint}:{flask.request.remote_addr}"
 
             try:
                 remaining = max_requests - int(redis_client.get(key))
@@ -38,11 +37,12 @@ def limit(max_requests=10, period=60):
 
             if 0 < remaining:
                 redis_client.incr(key, 1)
-                print(key, remaining, ttl)
+                log.debug(key, remaining, ttl)
                 return f(*args, **kwargs)
             else:
-                print(key, remaining, ttl)
+                log.debug(key, remaining, ttl)
                 raise exceptions.RateLimitError()
 
         return wrapped
+
     return decorator

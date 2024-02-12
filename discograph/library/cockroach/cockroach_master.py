@@ -2,12 +2,11 @@ import peewee
 from playhouse.cockroachdb import JSONField, ArrayField
 
 from discograph.library.bootstrapper import Bootstrapper
-from discograph.library.discogs_model import DiscogsModel
 from discograph.library.cockroach.cockroach_release import CockroachRelease
+from discograph.library.discogs_model import DiscogsModel
 
 
 class CockroachMaster(DiscogsModel):
-
     # PEEWEE FIELDS
 
     id = peewee.IntegerField(primary_key=True)
@@ -21,7 +20,7 @@ class CockroachMaster(DiscogsModel):
     # PEEWEE META
 
     class Meta:
-        db_table = 'masters'
+        db_table = "masters"
 
     # PUBLIC METHODS
 
@@ -41,17 +40,17 @@ class CockroachMaster(DiscogsModel):
     def bootstrap_pass_one(cls, **kwargs):
         DiscogsModel.bootstrap_pass_one(
             model_class=cls,
-            xml_tag='master',
-            name_attr='title',
-            skip_without=['title'],
+            xml_tag="master",
+            name_attr="title",
+            skip_without=["title"],
         )
 
 
 CockroachMaster._tags_to_fields_mapping = {
-    'artists': ('artists', CockroachRelease.element_to_artist_credits),
-    'genres': ('genres', Bootstrapper.element_to_strings),
-    'main_release': ('main_release_id', Bootstrapper.element_to_integer),
-    'styles': ('styles', Bootstrapper.element_to_strings),
-    'title': ('title', Bootstrapper.element_to_string),
-    'year': ('year', Bootstrapper.element_to_integer),
+    "artists": ("artists", CockroachRelease.element_to_artist_credits),
+    "genres": ("genres", Bootstrapper.element_to_strings),
+    "main_release": ("main_release_id", Bootstrapper.element_to_integer),
+    "styles": ("styles", Bootstrapper.element_to_strings),
+    "title": ("title", Bootstrapper.element_to_string),
+    "year": ("year", Bootstrapper.element_to_integer),
 }

@@ -1,13 +1,17 @@
+import logging
+
 import peewee
 from playhouse import postgres_ext
 
 from discograph.library import EntityType
-from discograph.library.EnumField import EnumField
+from discograph.library.enum_field import EnumField
 from discograph.library.models.relation import Relation
 
 
-class PostgresRelation(Relation):
+log = logging.getLogger(__name__)
 
+
+class PostgresRelation(Relation):
     # PEEWEE FIELDS
 
     entity_one_type = EnumField(index=False, choices=EntityType)

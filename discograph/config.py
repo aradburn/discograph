@@ -1,7 +1,15 @@
 import enum
 import os
 import tempfile
+
 from dotenv import load_dotenv, find_dotenv, dotenv_values
+
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(APP_DIR, ".."))
+LOGGING_DIR = os.path.join(ROOT_DIR, "logs")
+LOGGING_FILE = os.path.join(LOGGING_DIR, "discograph.log")
+LOGGING_ERROR_FILE = os.path.join(LOGGING_DIR, "error.log")
+LOGGING_DEBUG_FILE = os.path.join(LOGGING_DIR, "debug.log")
 
 env_file = find_dotenv()
 env_config = dotenv_values()  # take environment variables from .env.
@@ -19,10 +27,14 @@ class ThreadingModel(enum.Enum):
     THREAD = 2
 
 
+class CacheType(enum.Enum):
+    MEMORY = 1
+    FILESYSTEM = 2
+    REDIS = 3
+
+
 class Configuration(object):
-    FILE_CACHE_PATH = os.path.join(tempfile.gettempdir(), 'discograph', 'cache')
-    FILE_CACHE_THRESHOLD = 1024 * 128
-    FILE_CACHE_TIMEOUT = 60 * 60 * 24 * 7
+    pass
 
 
 class PostgresProductionConfiguration(Configuration):
@@ -35,8 +47,9 @@ class PostgresProductionConfiguration(Configuration):
     POSTGRES_DATABASE_HOST = os.getenv("DATABASE_HOST")
     POSTGRES_DATABASE_PORT = os.getenv("DATABASE_PORT")
     POSTGRES_DATABASE_NAME = os.getenv("DATABASE_NAME")
-    APPLICATION_ROOT = 'http://discograph.org'
+    APPLICATION_ROOT = "http://discograph.org"
     THREADING_MODEL = ThreadingModel.PROCESS
+    CACHE_TYPE = CacheType.FILESYSTEM
 
 
 class PostgresDevelopmentConfiguration(Configuration):
@@ -44,11 +57,12 @@ class PostgresDevelopmentConfiguration(Configuration):
     DEBUG = True
     TESTING = False
     DATABASE = DatabaseType.POSTGRES
-    POSTGRES_DATABASE_NAME = 'dev_discograph'
-    POSTGRES_ROOT = '/usr/lib/postgresql/16'
-    POSTGRES_DATA = '/data1/tmp/pg_temp/dev'
-    APPLICATION_ROOT = 'http://localhost'
+    POSTGRES_DATABASE_NAME = "dev_discograph"
+    POSTGRES_ROOT = "/usr/lib/postgresql/16"
+    POSTGRES_DATA = "/data1/tmp/pg_temp/dev"
+    APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.PROCESS
+    CACHE_TYPE = CacheType.FILESYSTEM
 
 
 class PostgresTestConfiguration(Configuration):
@@ -56,11 +70,12 @@ class PostgresTestConfiguration(Configuration):
     DEBUG = True
     TESTING = True
     DATABASE = DatabaseType.POSTGRES
-    POSTGRES_DATABASE_NAME = 'test_discograph'
-    POSTGRES_ROOT = '/usr/lib/postgresql/16'
-    POSTGRES_DATA = '/data1/tmp/pg_temp/test'
-    APPLICATION_ROOT = 'http://localhost'
+    POSTGRES_DATABASE_NAME = "test_discograph"
+    POSTGRES_ROOT = "/usr/lib/postgresql/16"
+    POSTGRES_DATA = "/data1/tmp/pg_temp/test"
+    APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.PROCESS
+    CACHE_TYPE = CacheType.MEMORY
 
 
 class SqliteDevelopmentConfiguration(Configuration):
@@ -68,9 +83,12 @@ class SqliteDevelopmentConfiguration(Configuration):
     DEBUG = True
     TESTING = False
     DATABASE = DatabaseType.SQLITE
-    SQLITE_DATABASE_NAME = os.path.join(tempfile.gettempdir(), 'discograph', 'discograph.db')
-    APPLICATION_ROOT = 'http://localhost'
+    SQLITE_DATABASE_NAME = os.path.join(
+        tempfile.gettempdir(), "discograph", "discograph.db"
+    )
+    APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.THREAD
+    CACHE_TYPE = CacheType.FILESYSTEM
 
 
 class SqliteTestConfiguration(Configuration):
@@ -78,9 +96,12 @@ class SqliteTestConfiguration(Configuration):
     DEBUG = True
     TESTING = True
     DATABASE = DatabaseType.SQLITE
-    SQLITE_DATABASE_NAME = os.path.join(tempfile.gettempdir(), 'discograph', 'test_discograph.db')
-    APPLICATION_ROOT = 'http://localhost'
+    SQLITE_DATABASE_NAME = os.path.join(
+        tempfile.gettempdir(), "discograph", "test_discograph.db"
+    )
+    APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.THREAD
+    CACHE_TYPE = CacheType.MEMORY
 
 
 class CockroachDevelopmentConfiguration(Configuration):
@@ -88,9 +109,10 @@ class CockroachDevelopmentConfiguration(Configuration):
     DEBUG = True
     TESTING = False
     DATABASE = DatabaseType.COCKROACH
-    COCKROACH_DATABASE_NAME = 'dev_discograph'
-    APPLICATION_ROOT = 'http://localhost'
+    COCKROACH_DATABASE_NAME = "dev_discograph"
+    APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.PROCESS
+    CACHE_TYPE = CacheType.FILESYSTEM
 
 
 class CockroachTestConfiguration(Configuration):
@@ -98,19 +120,7 @@ class CockroachTestConfiguration(Configuration):
     DEBUG = True
     TESTING = True
     DATABASE = DatabaseType.COCKROACH
-    COCKROACH_DATABASE_NAME = 'test_discograph'
-    APPLICATION_ROOT = 'http://localhost'
+    COCKROACH_DATABASE_NAME = "test_discograph"
+    APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.PROCESS
-
-
-__all__ = [
-    'DatabaseType',
-    'ThreadingModel',
-    'PostgresProductionConfiguration',
-    'PostgresDevelopmentConfiguration',
-    'PostgresTestConfiguration',
-    'SqliteDevelopmentConfiguration',
-    'SqliteTestConfiguration',
-    'CockroachDevelopmentConfiguration',
-    'CockroachTestConfiguration',
-]
+    CACHE_TYPE = CacheType.MEMORY

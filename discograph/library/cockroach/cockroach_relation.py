@@ -2,12 +2,11 @@ import peewee
 from playhouse.cockroachdb import JSONField
 
 from discograph.library import EntityType
-from discograph.library.EnumField import EnumField
+from discograph.library.enum_field import EnumField
 from discograph.library.models.relation import Relation
 
 
 class CockroachRelation(Relation):
-
     # PEEWEE FIELDS
 
     entity_one_type = EnumField(index=False, choices=EntityType)

@@ -1,17 +1,20 @@
 from discograph import utils
 from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.postgres.postgres_release import PostgresRelease
-from .postgres_test_case import PostgresTestCase
+from tests.integration.library.postgres.postgres_test_case import PostgresTestCase
 
 
 class TestPostgresRelease(PostgresTestCase):
+    def setUp(self):
+        super(TestPostgresRelease, self).setUp()
 
     def test_01(self):
-        iterator = Bootstrapper.get_iterator('release')
+        iterator = Bootstrapper.get_iterator("release")
         release_element = next(iterator)
         release = PostgresRelease.from_element(release_element)
         actual = format(release)
-        expected = utils.normalize(u"""
+        expected = utils.normalize(
+            """
         {
             "artists": [
                 {
@@ -116,12 +119,13 @@ class TestPostgresRelease(PostgresTestCase):
                 }
             ]
         }
-        """)
+        """
+        )
         assert actual == expected
 
     # noinspection PyUnusedLocal
     def test_02(self):
-        iterator = Bootstrapper.get_iterator('release')
+        iterator = Bootstrapper.get_iterator("release")
         release_element = next(iterator)
         release_element = next(iterator)
         release_element = next(iterator)
@@ -131,7 +135,8 @@ class TestPostgresRelease(PostgresTestCase):
         release_element = next(iterator)
         release = PostgresRelease.from_element(release_element)
         actual = format(release)
-        expected = utils.normalize(u"""
+        expected = utils.normalize(
+            """
         {
             "artists": [
                 {
@@ -268,5 +273,6 @@ class TestPostgresRelease(PostgresTestCase):
                 }
             ]
         }
-        """)
+        """
+        )
         assert actual == expected

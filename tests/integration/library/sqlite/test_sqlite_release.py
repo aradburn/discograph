@@ -1,17 +1,20 @@
 from discograph import utils
 from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.sqlite.sqlite_release import SqliteRelease
-from .sqlite_test_case import SqliteTestCase
+from tests.integration.library.sqlite.sqlite_test_case import SqliteTestCase
 
 
 class TestSqliteRelease(SqliteTestCase):
+    def setUp(self):
+        super(TestSqliteRelease, self).setUp()
 
     def test_01(self):
-        iterator = Bootstrapper.get_iterator('release')
+        iterator = Bootstrapper.get_iterator("release")
         release_element = next(iterator)
         release = SqliteRelease.from_element(release_element)
         actual = format(release)
-        expected = utils.normalize(u"""
+        expected = utils.normalize(
+            """
         {
             "artists": [
                 {
@@ -116,12 +119,13 @@ class TestSqliteRelease(SqliteTestCase):
                 }
             ]
         }
-        """)
+        """
+        )
         assert actual == expected
 
     # noinspection PyUnusedLocal
     def test_02(self):
-        iterator = Bootstrapper.get_iterator('release')
+        iterator = Bootstrapper.get_iterator("release")
         release_element = next(iterator)
         release_element = next(iterator)
         release_element = next(iterator)
@@ -131,7 +135,8 @@ class TestSqliteRelease(SqliteTestCase):
         release_element = next(iterator)
         release = SqliteRelease.from_element(release_element)
         actual = format(release)
-        expected = utils.normalize(u"""
+        expected = utils.normalize(
+            """
         {
             "artists": [
                 {
@@ -268,5 +273,6 @@ class TestSqliteRelease(SqliteTestCase):
                 }
             ]
         }
-        """)
+        """
+        )
         assert actual == expected

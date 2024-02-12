@@ -1,19 +1,22 @@
 from discograph import utils
 from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.sqlite.sqlite_entity import SqliteEntity
-from .sqlite_test_case import SqliteTestCase
+from tests.integration.library.sqlite.sqlite_test_case import SqliteTestCase
 
 
 class TestSqliteEntity(SqliteTestCase):
+    def setUp(self):
+        super(TestSqliteEntity, self).setUp()
 
     # noinspection PyPep8
     def test_01(self):
-        iterator = Bootstrapper.get_iterator('artist')
+        iterator = Bootstrapper.get_iterator("artist")
         element = next(iterator)
         entity = SqliteEntity.from_element(element)
         actual = utils.normalize(format(entity))
         # noinspection PyPep8
-        expected = utils.normalize(u"""
+        expected = utils.normalize(
+            """
             {
                 "entities": {
                     "aliases": {},
@@ -60,19 +63,21 @@ class TestSqliteEntity(SqliteTestCase):
                 },
                 "name": "Josh Wink"
             }
-            """)
+            """
+        )
         assert actual == expected
 
     # noinspection PyPep8
     def test_02(self):
-        iterator = Bootstrapper.get_iterator('artist')
+        iterator = Bootstrapper.get_iterator("artist")
         element = next(iterator)
-        while element.find('name').text != 'Seefeel':
+        while element.find("name").text != "Seefeel":
             element = next(iterator)
         entity = SqliteEntity.from_element(element)
         actual = utils.normalize(format(entity))
         # noinspection PyPep8
-        expected = utils.normalize(u"""
+        expected = utils.normalize(
+            """
             {
                 "entities": {
                     "members": {
@@ -99,15 +104,17 @@ class TestSqliteEntity(SqliteTestCase):
                 },
                 "name": "Seefeel"
             }
-            """)
+            """
+        )
         assert actual == expected
 
     def test_03(self):
-        iterator = Bootstrapper.get_iterator('label')
+        iterator = Bootstrapper.get_iterator("label")
         element = next(iterator)
         entity = SqliteEntity.from_element(element)
         actual = utils.normalize(format(entity))
-        expected = utils.normalize(r"""
+        expected = utils.normalize(
+            r"""
             {
                 "entities": {},
                 "entity_id": 1,
@@ -124,5 +131,6 @@ class TestSqliteEntity(SqliteTestCase):
                 },
                 "name": "Planet E"
             }
-            """)
+            """
+        )
         assert actual == expected

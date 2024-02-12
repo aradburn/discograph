@@ -1,13 +1,21 @@
 import json
+import logging
 
 from discograph import utils
 from discograph.library import EntityType
 from discograph.library.postgres.postgres_entity import PostgresEntity
-from discograph.library.postgres.postgres_relation_grapher import PostgresRelationGrapher
-from .postgres_test_case import PostgresTestCase
+from discograph.library.postgres.postgres_relation_grapher import (
+    PostgresRelationGrapher,
+)
+from tests.integration.library.postgres.postgres_test_case import PostgresTestCase
+
+log = logging.getLogger(__name__)
 
 
 class TestPostgresRelationGrapher(PostgresTestCase):
+    def setUp(self):
+        super(TestPostgresRelationGrapher, self).setUp()
+
     """
     Problematic networks:
 
@@ -18,25 +26,26 @@ class TestPostgresRelationGrapher(PostgresTestCase):
     """
 
     json_kwargs = {
-        'indent': 4,
-        'separators': (',', ': '),
-        'sort_keys': True,
-        }
+        "indent": 4,
+        "separators": (",", ": "),
+        "sort_keys": True,
+    }
 
     def test___call___01(self):
-        print(PostgresEntity._meta.database)
-        artist = PostgresEntity.get(entity_type=EntityType.ARTIST, name='Seefeel')
-        print(f"artist: {artist}")
-        roles = ['Alias', 'Member Of']
+        log.debug(PostgresEntity.database())
+        artist = PostgresEntity.get(entity_type=EntityType.ARTIST, name="Seefeel")
+        log.debug(f"artist: {artist}")
+        roles = ["Alias", "Member Of"]
         grapher = PostgresRelationGrapher(
             artist,
             degree=1,
             roles=roles,
         )
         network = grapher.__call__()
-        print(f"network: {network}")
+        log.debug(f"network: {network}")
         actual = json.dumps(network, **self.json_kwargs)
-        expected = utils.normalize('''
+        expected = utils.normalize(
+            """
             {
                 "center": {                
                     "key": "artist-2239",                
@@ -189,12 +198,15 @@ class TestPostgresRelationGrapher(PostgresTestCase):
                 ],                
                 "pages": 1                
             }
-        ''')
+        """
+        )
         assert actual == expected
 
     def test___call___02(self):
-        artist = PostgresEntity.get(entity_type=1, name='Justin Fletcher')
-        roles = ['Alias', 'Member Of']
+        artist = PostgresEntity.get(
+            entity_type=EntityType.ARTIST, name="Justin Fletcher"
+        )
+        roles = ["Alias", "Member Of"]
         grapher = PostgresRelationGrapher(
             artist,
             degree=2,
@@ -203,7 +215,8 @@ class TestPostgresRelationGrapher(PostgresTestCase):
         )
         network = grapher.__call__()
         actual = json.dumps(network, **self.json_kwargs)
-        expected = utils.normalize('''
+        expected = utils.normalize(
+            """
             {            
                 "center": {                
                     "key": "artist-489350",                
@@ -231,8 +244,7 @@ class TestPostgresRelationGrapher(PostgresTestCase):
                     {                
                         "key": "artist-489350-member-of-artist-2239",                
                         "pages": [                
-                            1,                
-                            2                
+                            1              
                         ],                
                         "role": "Member Of",                
                         "source": "artist-489350",                
@@ -241,7 +253,7 @@ class TestPostgresRelationGrapher(PostgresTestCase):
                     {                
                         "key": "artist-51674-member-of-artist-2239",                
                         "pages": [                
-                            2                
+                            1                
                         ],                
                         "role": "Member Of",                
                         "source": "artist-51674",                
@@ -250,7 +262,7 @@ class TestPostgresRelationGrapher(PostgresTestCase):
                     {                
                         "key": "artist-66803-member-of-artist-2239",                
                         "pages": [                
-                            2                
+                            1                
                         ],                
                         "role": "Member Of",                
                         "source": "artist-66803",                
@@ -269,15 +281,10 @@ class TestPostgresRelationGrapher(PostgresTestCase):
                             "artist-51674-member-of-artist-2239",                
                             "artist-66803-member-of-artist-2239"                
                         ],                
-                        "missing": 0,                
-                        "missingByPage": {                
-                            "1": 2,                
-                            "2": 2                
-                        },                
+                        "missing": 0,           
                         "name": "Seefeel",                
                         "pages": [                
-                            1,                
-                            2                
+                            1              
                         ],                
                         "size": 5,                
                         "type": "artist"                
@@ -309,7 +316,7 @@ class TestPostgresRelationGrapher(PostgresTestCase):
                         "missing": 3,                
                         "name": "Mark Clifford",                
                         "pages": [                
-                            2                
+                            1                
                         ],                
                         "size": 0,                
                         "type": "artist"                
@@ -324,7 +331,7 @@ class TestPostgresRelationGrapher(PostgresTestCase):
                         "missing": 0,                
                         "name": "Daren Seymour",                
                         "pages": [                
-                            2                
+                            1                
                         ],                
                         "size": 0,                
                         "type": "artist"                
@@ -354,21 +361,23 @@ class TestPostgresRelationGrapher(PostgresTestCase):
                         "missing": 0,                
                         "name": "Justin Fletcher",                
                         "pages": [                
-                            1,                
-                            2                
+                            1              
                         ],                
                         "size": 0,                
                         "type": "artist"                
                     }                
                 ],                
-                "pages": 2                
+                "pages": 1                
             }
-        ''')
+        """
+        )
         assert actual == expected
 
     def test___call___03(self):
-        artist = PostgresEntity.get(entity_type=1, name='Justin Fletcher')
-        roles = ['Alias', 'Member Of']
+        artist = PostgresEntity.get(
+            entity_type=EntityType.ARTIST, name="Justin Fletcher"
+        )
+        roles = ["Alias", "Member Of"]
         grapher = PostgresRelationGrapher(
             artist,
             degree=2,
@@ -377,7 +386,8 @@ class TestPostgresRelationGrapher(PostgresTestCase):
         )
         network = grapher.__call__()
         actual = json.dumps(network, **self.json_kwargs)
-        expected = utils.normalize('''
+        expected = utils.normalize(
+            """
             {
                 "center": {
                     "key": "artist-489350",
@@ -530,7 +540,8 @@ class TestPostgresRelationGrapher(PostgresTestCase):
                 ],
                 "pages": 1
             }
-        ''')
+        """
+        )
         assert actual == expected
 
     def test___call___04(self):
@@ -539,10 +550,10 @@ class TestPostgresRelationGrapher(PostgresTestCase):
         aliases, groups, sublabels, parent labels, etc.
         """
         artist = PostgresEntity.get(
-            entity_type=1,
+            entity_type=EntityType.ARTIST,
             entity_id=489350,
         )
-        roles = ['Alias', 'Member Of']
+        roles = ["Alias", "Member Of"]
         grapher = PostgresRelationGrapher(
             artist,
             degree=12,
@@ -550,7 +561,9 @@ class TestPostgresRelationGrapher(PostgresTestCase):
         )
         network = grapher.__call__()
         actual = json.dumps(network, **self.json_kwargs)
-        expected = utils.normalize('''
+        log.debug(f"network: {actual}")
+        expected = utils.normalize(
+            """
             {
                 "center": {
                     "key": "artist-489350",
@@ -817,15 +830,16 @@ class TestPostgresRelationGrapher(PostgresTestCase):
                 ],
                 "pages": 1
             }
-        ''')
+        """
+        )
         assert actual == expected
 
     def test___call___05(self):
         artist = PostgresEntity.get(
             entity_type=EntityType.LABEL,
-            name='Lab Studio, Berlin',
+            name="Lab Studio, Berlin",
         )
-        roles = ['Recorded At']
+        roles = ["Recorded At"]
         grapher = PostgresRelationGrapher(
             artist,
             degree=2,

@@ -1,12 +1,17 @@
+import logging
+
 import peewee
 from playhouse import sqlite_ext
+
 from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.discogs_model import DiscogsModel
 from discograph.library.sqlite.sqlite_release import SqliteRelease
 
 
-class SqliteMaster(DiscogsModel):
+log = logging.getLogger(__name__)
 
+
+class SqliteMaster(DiscogsModel):
     # PEEWEE FIELDS
 
     id = peewee.IntegerField(primary_key=True)
@@ -20,7 +25,7 @@ class SqliteMaster(DiscogsModel):
     # PEEWEE META
 
     class Meta:
-        db_table = 'masters'
+        db_table = "masters"
 
     # PUBLIC METHODS
 
@@ -40,17 +45,17 @@ class SqliteMaster(DiscogsModel):
     def bootstrap_pass_one(cls, **kwargs):
         DiscogsModel.bootstrap_pass_one(
             model_class=cls,
-            xml_tag='master',
-            name_attr='title',
-            skip_without=['title'],
+            xml_tag="master",
+            name_attr="title",
+            skip_without=["title"],
         )
 
 
 SqliteMaster._tags_to_fields_mapping = {
-    'artists': ('artists', SqliteRelease.element_to_artist_credits),
-    'genres': ('genres', Bootstrapper.element_to_strings),
-    'main_release': ('main_release_id', Bootstrapper.element_to_integer),
-    'styles': ('styles', Bootstrapper.element_to_strings),
-    'title': ('title', Bootstrapper.element_to_string),
-    'year': ('year', Bootstrapper.element_to_integer),
+    "artists": ("artists", SqliteRelease.element_to_artist_credits),
+    "genres": ("genres", Bootstrapper.element_to_strings),
+    "main_release": ("main_release_id", Bootstrapper.element_to_integer),
+    "styles": ("styles", Bootstrapper.element_to_strings),
+    "title": ("title", Bootstrapper.element_to_string),
+    "year": ("year", Bootstrapper.element_to_integer),
 }

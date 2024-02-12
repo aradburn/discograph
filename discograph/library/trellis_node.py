@@ -1,22 +1,23 @@
+import json
+
+from playhouse.shortcuts import model_to_dict
 
 
 class TrellisNode(object):
-
     __slots__ = (
-        '_children',
-        '_cluster',
-        '_links',
-        '_missing',
-        '_missing_by_page',
-        '_entity',
-        '_pages',
-        '_parents',
-        '_parentage',
-        '_siblings',
-        '_subgraph_size',
-        '_distance',
-        '_links',
-        )
+        "_children",
+        "_cluster",
+        "_distance",
+        "_links",
+        "_missing",
+        "_missing_by_page",
+        "_entity",
+        "_pages",
+        "_parentage",
+        "_parents",
+        "_siblings",
+        "_subgraph_size",
+    )
 
     def __init__(self, entity, distance=0):
         self._children = set()
@@ -34,32 +35,38 @@ class TrellisNode(object):
 
     # SPECIAL METHODS
 
-    def __eq__(self, expr):
-        if type(self) != type(expr):
-            return False
-        return self.entity_key == expr.entity_key
+    def __eq__(self, other):
+        if isinstance(other, TrellisNode):
+            return self.entity_key == other.entity_key
+        return False
 
     def __hash__(self):
         return hash((type(self), self.entity_key))
+
+    # def __format__(self, format_specification=""):
+    #     return json.dumps(self, indent=4, sort_keys=True, default=str)
+    #
+    # def __repr__(self):
+    #     return str(self)
 
     # PUBLIC METHODS
 
     def as_json(self):
         data = {
-            'distance': self.distance,
-            'id': self.entity.entity_id,
-            'key': self.entity.json_entity_key,
-            'links': tuple(sorted(self.links)),
-            'missing': self.missing,
-            'name': self.entity.name,
-            'pages': tuple(sorted(self.pages)),
-            'size': self.entity.size,
-            'type': self.entity.json_entity_key.split('-')[0],
-            }
+            "distance": self.distance,
+            "id": self.entity.entity_id,
+            "key": self.entity.json_entity_key,
+            "links": tuple(sorted(self.links)),
+            "missing": self.missing,
+            "name": self.entity.name,
+            "pages": tuple(sorted(self.pages)),
+            "size": self.entity.size,
+            "type": self.entity.json_entity_key.split("-")[0],
+        }
         if self.cluster:
-            data['cluster'] = self.cluster
+            data["cluster"] = self.cluster
         if self.missing_by_page:
-            data['missingByPage'] = self.missing_by_page
+            data["missingByPage"] = self.missing_by_page
         return data
 
     def get_neighbors(self):

@@ -1,19 +1,22 @@
 from discograph import utils
 from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.postgres.postgres_entity import PostgresEntity
-from .postgres_test_case import PostgresTestCase
+from tests.integration.library.postgres.postgres_test_case import PostgresTestCase
 
 
 class TestPostgresEntity(PostgresTestCase):
+    def setUp(self):
+        super(TestPostgresEntity, self).setUp()
 
     # noinspection PyPep8
     def test_01(self):
-        iterator = Bootstrapper.get_iterator('artist')
+        iterator = Bootstrapper.get_iterator("artist")
         element = next(iterator)
         entity = PostgresEntity.from_element(element)
         actual = utils.normalize(format(entity))
         # noinspection PyPep8
-        expected = utils.normalize(u"""
+        expected = utils.normalize(
+            """
             {
                 "entities": {
                     "aliases": {},
@@ -60,19 +63,21 @@ class TestPostgresEntity(PostgresTestCase):
                 },
                 "name": "Josh Wink"
             }
-            """)
+            """
+        )
         assert actual == expected
 
     # noinspection PyPep8
     def test_02(self):
-        iterator = Bootstrapper.get_iterator('artist')
+        iterator = Bootstrapper.get_iterator("artist")
         element = next(iterator)
-        while element.find('name').text != 'Seefeel':
+        while element.find("name").text != "Seefeel":
             element = next(iterator)
         entity = PostgresEntity.from_element(element)
         actual = utils.normalize(format(entity))
         # noinspection PyPep8
-        expected = utils.normalize(u"""
+        expected = utils.normalize(
+            """
             {
                 "entities": {
                     "members": {
@@ -99,15 +104,17 @@ class TestPostgresEntity(PostgresTestCase):
                 },
                 "name": "Seefeel"
             }
-            """)
+            """
+        )
         assert actual == expected
 
     def test_03(self):
-        iterator = Bootstrapper.get_iterator('label')
+        iterator = Bootstrapper.get_iterator("label")
         element = next(iterator)
         entity = PostgresEntity.from_element(element)
         actual = utils.normalize(format(entity))
-        expected = utils.normalize(r"""
+        expected = utils.normalize(
+            r"""
             {
                 "entities": {},
                 "entity_id": 1,
@@ -124,5 +131,6 @@ class TestPostgresEntity(PostgresTestCase):
                 },
                 "name": "Planet E"
             }
-            """)
+            """
+        )
         assert actual == expected
