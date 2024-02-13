@@ -214,6 +214,8 @@ function dg_network_onNodeMouseDown(event, d) {
 
 function dg_network_onNodeMouseDoubleClick(event, d) {
 //    console.log("mousedown double click");
+    nodeToolTip.hide(d);
+    linkToolTip.hide();
     $(window).trigger({
         type: 'discograph:request-network',
         entityKey: d.key,
