@@ -1,5 +1,6 @@
 import json
 import logging
+import random
 
 import peewee
 from playhouse import postgres_ext
@@ -22,7 +23,7 @@ class PostgresEntity(Entity):
                 self,
                 exclude=[
                     PostgresEntity.random,
-                    PostgresEntity.relation_counts,
+                    # PostgresEntity.relation_counts,
                     PostgresEntity.search_content,
                 ],
             ),
@@ -84,4 +85,19 @@ class PostgresEntity(Entity):
             entity_two_type=entity_two_type,
             entity_two_id=entity_two_id,
             role=role,
+        )
+
+    @classmethod
+    def get_random(cls):
+        n = random.random()
+        return (
+            cls.select()
+            .where(
+                (cls.random > n)
+                & (cls.entity_type == EntityType.ARTIST)
+                & ~(cls.entities.is_null())
+                & ~(cls.relation_counts.is_null())
+            )
+            .order_by(cls.random)
+            .get()
         )

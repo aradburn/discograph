@@ -1,8 +1,3 @@
-import json
-
-from playhouse.shortcuts import model_to_dict
-
-
 class TrellisNode(object):
     __slots__ = (
         "_children",

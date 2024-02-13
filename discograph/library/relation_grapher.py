@@ -97,7 +97,7 @@ class RelationGrapher(ABC):
             self._report_search_loop_start(distance)
             log.debug(f"    Search for: {self.entity_keys_to_visit}")
             entities = self._search_entities(self.entity_keys_to_visit)
-            log.debug(f"    Search found entities: {entities}")
+            # log.debug(f"    Search found entities: {entities}")
             relations = {}
             self._process_entities(distance, entities)
             if not self.entity_keys_to_visit or self.should_break_loop:
@@ -122,8 +122,8 @@ class RelationGrapher(ABC):
         for node in self.nodes.values():
             expected_count = node.entity.roles_to_relation_count(self.all_roles)
             node.missing = expected_count - len(node.links)
-        log.debug(f"self.links: {self.links}")
-        log.debug(f"self.nodes: {self.nodes}")
+        # log.debug(f"self.links: {self.links}")
+        # log.debug(f"self.nodes: {self.nodes}")
         json_links = tuple(
             link.as_json()
             for key, link in sorted(self.links.items(), key=lambda x: x[0])
@@ -174,9 +174,9 @@ class RelationGrapher(ABC):
             cluster = cluster_map[entity.entity_id]
             if cluster is not None:
                 node.cluster = cluster
-        import pprint
-
-        log.debug(pprint.pformat(cluster_map))
+        # import pprint
+        #
+        # log.debug(pprint.pformat(cluster_map))
 
     @staticmethod
     def _page_naively(pages, trellis_nodes_by_distance):
@@ -379,28 +379,28 @@ class RelationGrapher(ABC):
                 continue
             entity_key = entity.entity_key
             if entity_key not in self.nodes:
-                log.debug(f"        add TrellisNode for entity: {entity_key}")
+                # log.debug(f"        add TrellisNode for entity: {entity_key}")
                 self.nodes[entity_key] = TrellisNode(entity, distance)
 
     def _process_relations(self, relations):
-        log.debug(f"    process relations: {relations}")
+        # log.debug(f"    process relations: {relations}")
         for link_key, relation in sorted(relations.items()):
-            log.debug(f"        link_key: {link_key}")
-            log.debug(f"        relation: {relation}")
+            # log.debug(f"        link_key: {link_key}")
+            # log.debug(f"        relation: {relation}")
 
             if not relation.entity_one_id or not relation.entity_two_id:
-                log.debug(f"        skip: {relation}")
+                # log.debug(f"        skip: {relation}")
                 continue
             entity_one_key = relation.entity_one_key
             entity_two_key = relation.entity_two_key
             if entity_one_key not in self.nodes:
-                log.debug(f"        add: {entity_one_key}")
+                # log.debug(f"        add: {entity_one_key}")
                 self.entity_keys_to_visit.add(entity_one_key)
             if entity_two_key not in self.nodes:
-                log.debug(f"        add: {entity_two_key}")
+                # log.debug(f"        add: {entity_two_key}")
                 self.entity_keys_to_visit.add(entity_two_key)
             self.links[link_key] = relation
-        log.debug(f"        entity_keys_to_visit: {self.entity_keys_to_visit}")
+        # log.debug(f"        entity_keys_to_visit: {self.entity_keys_to_visit}")
 
     def _recurse_trellis(self, node):
         # noinspection PySetFunctionToLiteral
@@ -408,7 +408,7 @@ class RelationGrapher(ABC):
         for child in node.children:
             traversed_keys.update(self._recurse_trellis(child))
         node.subgraph_size = len(traversed_keys)
-        log.debug(f"{'    ' * node.distance}{node.entity.name}: {node.subgraph_size}")
+        # log.debug(f"{'    ' * node.distance}{node.entity.name}: {node.subgraph_size}")
         return traversed_keys
 
     def _report_search_loop_start(self, distance):
@@ -429,15 +429,15 @@ class RelationGrapher(ABC):
             return
         log.debug("        Retrieving structural relations")
         for entity_key in sorted(self.entity_keys_to_visit):
-            log.debug(f"            entity_key: {entity_key}")
+            # log.debug(f"            entity_key: {entity_key}")
             node = self.nodes.get(entity_key)
-            log.debug(f"            node: {node}")
+            # log.debug(f"            node: {node}")
             if not node:
-                log.debug(f"            ...skipped")
+                # log.debug(f"            ...skipped")
                 continue
             entity = node.entity
-            log.debug(f"            entity: {entity}")
-            log.debug(f"            relations: {relations}")
+            # log.debug(f"            entity: {entity}")
+            # log.debug(f"            relations: {relations}")
             relations.update(
                 entity.structural_roles_to_relations(self.structural_roles)
             )
@@ -487,7 +487,7 @@ class RelationGrapher(ABC):
             query_string = "&".join(parts)
             key = f"{key}?{query_string}"
         key = f"discograph:{key}"
-        log.debug("  cache key: {key}")
+        log.debug(f"  cache key: {key}")
         return key
 
     # PUBLIC PROPERTIES

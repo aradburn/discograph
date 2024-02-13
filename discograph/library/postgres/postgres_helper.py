@@ -85,8 +85,34 @@ class PostgresHelper(DatabaseHelper):
                 else:
                     entity_type = relation.entity_two_type
                     entity_id = relation.entity_two_id
+                log.debug("random link")
             else:
-                entity = PostgresEntity.get_random()
+                counter = 0
+
+                while True:
+                    entity: PostgresEntity = PostgresEntity.get_random()
+                    relation_counts = entity.relation_counts
+                    entities = entity.entities
+                    # log.debug(f"relation_counts: {relation_counts}")
+                    counter = counter + 1
+                    if (
+                        relation_counts is not None
+                        and (
+                            "Member Of" in relation_counts
+                            or "Alias" in relation_counts
+                            or "members" in entities
+                        )
+                        and entity.entity_type == EntityType.ARTIST
+                    ):
+                        log.debug(f"random node: {entity}")
+                        break
+                    if entity.entity_type == EntityType.LABEL:
+                        log.debug("random skip label")
+                        continue
+                    if counter >= 1000:
+                        log.debug("random count expired")
+                        break
+
                 entity_type, entity_id = entity.entity_type, entity.entity_id
         assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
         return entity_type, entity_id
@@ -169,7 +195,7 @@ class PostgresHelper(DatabaseHelper):
                     name=entity.name,
                 )
                 data.append(datum)
-                log.debug(f"    {datum}")
+                # log.debug(f"    {datum}")
         data = {"results": tuple(data)}
         log.debug(f"  set cache_key: {cache_key} data: {data}")
         cache.set(cache_key, data)

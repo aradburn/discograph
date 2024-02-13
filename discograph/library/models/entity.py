@@ -412,7 +412,7 @@ class Entity(DiscogsModel):
     @classmethod
     def from_element(cls, element):
         data = cls.tags_to_fields(element)
-        log.debug(f"from_element: {cls.name} element: {element} data: {data}")
+        # log.debug(f"from_element: {cls.name} element: {element} data: {data}")
         # noinspection PyArgumentList
         return cls(**data)
 
@@ -519,7 +519,7 @@ class Entity(DiscogsModel):
             where_clause = (cls.entity_type == EntityType.LABEL) & (
                 cls.entity_id.in_(label_ids)
             )
-        log.debug(f"            search_multi where_clause: {where_clause}")
+        # log.debug(f"            search_multi where_clause: {where_clause}")
         return cls.select().where(where_clause)
 
     def structural_roles_to_entity_keys(self, roles):
@@ -553,11 +553,11 @@ class Entity(DiscogsModel):
         return entity_keys
 
     def structural_roles_to_relations(self, roles):
-        log.debug(f"            structural_roles_to_relations entity: {self}")
-        log.debug(
-            f"            structural_roles_to_relations entities: {self.entities}"
-        )
-        log.debug(f"            structural_roles_to_relations roles: {roles}")
+        # log.debug(f"            structural_roles_to_relations entity: {self}")
+        # log.debug(
+        #     f"            structural_roles_to_relations entities: {self.entities}"
+        # )
+        # log.debug(f"            structural_roles_to_relations roles: {roles}")
         relations = {}
         if self.entity_type == EntityType.ARTIST:
             role = "Alias"
@@ -626,7 +626,7 @@ class Entity(DiscogsModel):
                         role=role,
                     )
                     relations[relation.link_key] = relation
-        log.debug(f"            structural_roles_to_relations relations: {relations}")
+        # log.debug(f"            structural_roles_to_relations relations: {relations}")
         return relations
 
     @classmethod
