@@ -18,6 +18,22 @@ body {
 body {
   padding-top: 70px;
 }
+.navbar-title {
+  color: #777777;
+  transition: color ease-in-out 0.2s;
+  display: block;
+  text-align: center;
+  float: none;
+  vertical-align: middle;
+  height: 50px;
+  padding: 15px 15px;
+  font-size: 18px;
+  line-height: 20px;
+}
+/*
+.navbar.navbar-default .navbar-header{
+  float: none;
+}*/
 svg {
   margin: 0;
   /*    height: 200%;

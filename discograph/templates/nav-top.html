@@ -1,50 +1,62 @@
-<nav id="nav-top" class="navbar navbar-default navbar-fixed-top"> 
+<nav id="nav-top" class="navbar navbar-default navbar-fixed-top">
     <div class="container-fluid">
-        <div class="navbar-header">
-            <button type="button"
-                    class="navbar-toggle collapsed"
-                    data-toggle="collapse"
-                    data-target="#nav-top-details"
-                    aria-expanded="false">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <a id="brand"
-                class="navbar-brand"
-                title="Discograph2" data-toggle="tooltip"
-                data-placement="bottom">
-                DISCOGRAPH2
-                <span id="page-loading" class="glyphicon" style="font-size: 0.9em;"></span>
-                <span id="network-running" class="glyphicon" style="font-size: 0.9em;"></span>
-            </a>
-        </div>
-        <div class="collapse navbar-collapse" id="nav-top-details">
-            <form id="search" class="navbar-form navbar-right" role="search" method="get">
-                <div class="input-group">
-                    <div class="form-group has-feedback">
-                        <input id="typeahead" type="text" class="form-control" placeholder="Search">
-                        <span class="loading glyphicon glyphicon-refresh form-control-feedback glyphicon-animate invisible"></span> 
-                    </div>
-                    <a class="clear input-group-addon">
-                        <i class="glyphicon glyphicon-remove"></i>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="navbar-header">
+                    <button type="button"
+                            class="navbar-toggle collapsed"
+                            data-toggle="collapse"
+                            data-target="#nav-top-details"
+                            aria-expanded="false">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a id="brand"
+                       class="navbar-brand"
+                       title="Discograph2" data-toggle="tooltip"
+                       data-placement="bottom">
+                        DISCOGRAPH2
+                        <span id="page-loading" class="glyphicon" style="font-size: 0.9em;"></span>
+                        <span id="network-running" class="glyphicon" style="font-size: 0.9em;"></span>
                     </a>
                 </div>
-            </form>
-            <ul class="nav navbar-nav navbar-right">
-                <li data-tooltip="tooltip" data-placement="bottom" title="what is this?">
-                    <a data-toggle="modal" data-target="#modal-what">WHAT</a>
-                </li>
-                <li data-tooltip="tooltip" data-placement="bottom" title="who made this?">
-                    <a data-toggle="modal" data-target="#modal-who">WHO</a>
-                </li>
-                <li id="request-random" data-tooltip="tooltip" data-placement="bottom" title="choose a random artist">
-                    <a>RANDOM
-                        <span class="glyphicon glyphicon-random" style="font-size: 0.9em;"></span>
-                    </a>
-                </li>
-            </ul>
+            </div>
+            <div class="col-md-4">
+                <div class="navbar-title">
+                    <span id="navbar-title"></span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="collapse navbar-collapse" id="nav-top-details">
+                    <form id="search" class="navbar-form navbar-right" role="search" method="get">
+                        <div class="input-group">
+                            <div class="form-group has-feedback">
+                                <input id="typeahead" type="text" class="form-control" placeholder="Search">
+                                <span class="loading glyphicon glyphicon-refresh form-control-feedback glyphicon-animate invisible"></span>
+                            </div>
+                            <a class="clear input-group-addon">
+                                <i class="glyphicon glyphicon-remove"></i>
+                            </a>
+                        </div>
+                    </form>
+                    <ul class="nav navbar-nav navbar-right">
+                        <li data-tooltip="tooltip" data-placement="bottom" title="what is this?">
+                            <a data-toggle="modal" data-target="#modal-what">WHAT</a>
+                        </li>
+                        <li data-tooltip="tooltip" data-placement="bottom" title="who made this?">
+                            <a data-toggle="modal" data-target="#modal-who">WHO</a>
+                        </li>
+                        <li id="request-random" data-tooltip="tooltip" data-placement="bottom"
+                            title="choose a random artist">
+                            <a>RANDOM
+                                <span class="glyphicon glyphicon-random" style="font-size: 0.9em;"></span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
 </nav>

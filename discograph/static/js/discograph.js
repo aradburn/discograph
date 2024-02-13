@@ -2178,6 +2178,7 @@
                         $('#entity-name').text(node.name);
                         $('#entity-link').attr('href', url);
                         $('#entity-details').removeClass('hidden').show(0);
+                        $('#navbar-title').text(node.name);
                         nodeOn.raise();
                         nodeOn.classed('selected', true);
                         if (fixed) {
