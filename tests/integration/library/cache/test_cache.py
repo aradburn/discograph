@@ -2,7 +2,7 @@ import unittest
 
 from discograph.config import SqliteTestConfiguration, SqliteDevelopmentConfiguration
 from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
-from discograph.logging import setup_logging, shutdown_logging
+from discograph.logging_config import setup_logging, shutdown_logging
 
 
 class TestCache(unittest.TestCase):
