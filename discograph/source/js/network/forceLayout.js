@@ -45,9 +45,6 @@ function linkDistance(d, i) {
 
 function nodeStrength(d, i) {
     if (d.distance) {
-//        if (d.distance != 0 && Math.hypot(d.x - dg.dimensions[0] / 2, d.y - dg.dimensions[1] / 2) <= 40) {
-//            return 200 * NODE_STRENGTH;
-//        }
         return d.distance == 0 ? 3 * NODE_STRENGTH : d.distance == 1 ? 2.5 * NODE_STRENGTH : NODE_STRENGTH;
     } else if (d.isIntermediate) {
         return Math.hypot(d.x - dg.dimensions[0] / 2, d.y - dg.dimensions[1] / 2) <= 300 ? 3 * NODE_STRENGTH : NODE_STRENGTH / 2;
@@ -150,13 +147,22 @@ function dg_network_startForceLayout() {
 //    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance))
 //    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).strength(LINK_STRENGTH))
 //    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).strength(LINK_STRENGTH).iterations(LINK_ITERATIONS))
-    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).iterations(LINK_ITERATIONS));
 
 //    dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2));
 //    dg.network.forceLayout.force("y", d3.forceY(dg.dimensions[1] / 2));
-    dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2).strength(gravityStrength));
-    dg.network.forceLayout.force("y", d3.forceY(dg.dimensions[1] / 2).strength(gravityStrength));
 
+    if (nodeData.length > 16 && nodeData.length < 500) {
+        dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2).strength(gravityStrength));
+        dg.network.forceLayout.force("y", d3.forceY(dg.dimensions[1] / 2).strength(gravityStrength));
+    } else {
+        dg.network.forceLayout.force("x", null);
+        dg.network.forceLayout.force("y", null);
+    }
+    if (linkData.length > 16 && linkData.length < 500) {
+        dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).iterations(LINK_ITERATIONS));
+    } else {
+        dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(d => linkDistance(d) / 10.0).iterations(LINK_ITERATIONS));
+    }
 
     dg_network_forceLayout_restart();
 }
@@ -351,6 +357,7 @@ function dg_network_prune(maxDist, minLinks) {
                         link.target.missing = link.target.missing + 1;
                     }
 //                    console.log("link.source: ", link.source);
+//                    console.log("link.target: ", link.target);
                 };
             });
         linkKeysToPrune.forEach(function(key) {
@@ -381,6 +388,7 @@ function dg_network_prune(maxDist, minLinks) {
                         link.target.missing = link.target.missing + 1;
                     }
 //                    console.log("link.source: ", link.source);
+//                    console.log("link.target: ", link.target);
                 };
             });
         intermediateLinksToPrune.forEach(function(key) {

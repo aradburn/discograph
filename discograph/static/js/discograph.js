@@ -314,9 +314,6 @@
 
     function nodeStrength(d, i) {
         if (d.distance) {
-            //        if (d.distance != 0 && Math.hypot(d.x - dg.dimensions[0] / 2, d.y - dg.dimensions[1] / 2) <= 40) {
-            //            return 200 * NODE_STRENGTH;
-            //        }
             return d.distance == 0 ? 3 * NODE_STRENGTH : d.distance == 1 ? 2.5 * NODE_STRENGTH : NODE_STRENGTH;
         } else if (d.isIntermediate) {
             return Math.hypot(d.x - dg.dimensions[0] / 2, d.y - dg.dimensions[1] / 2) <= 300 ? 3 * NODE_STRENGTH : NODE_STRENGTH / 2;
@@ -429,13 +426,22 @@
         //    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance))
         //    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).strength(LINK_STRENGTH))
         //    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).strength(LINK_STRENGTH).iterations(LINK_ITERATIONS))
-        dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).iterations(LINK_ITERATIONS));
 
         //    dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2));
         //    dg.network.forceLayout.force("y", d3.forceY(dg.dimensions[1] / 2));
-        dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2).strength(gravityStrength));
-        dg.network.forceLayout.force("y", d3.forceY(dg.dimensions[1] / 2).strength(gravityStrength));
 
+        if (nodeData.length > 16 && nodeData.length < 500) {
+            dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2).strength(gravityStrength));
+            dg.network.forceLayout.force("y", d3.forceY(dg.dimensions[1] / 2).strength(gravityStrength));
+        } else {
+            dg.network.forceLayout.force("x", null);
+            dg.network.forceLayout.force("y", null);
+        }
+        if (linkData.length > 16 && linkData.length < 500) {
+            dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).iterations(LINK_ITERATIONS));
+        } else {
+            dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(d => linkDistance(d) / 10.0).iterations(LINK_ITERATIONS));
+        }
 
         dg_network_forceLayout_restart();
     }
@@ -630,6 +636,7 @@
                             link.target.missing = link.target.missing + 1;
                         }
                         //                    console.log("link.source: ", link.source);
+                        //                    console.log("link.target: ", link.target);
                     };
                 });
             linkKeysToPrune.forEach(function(key) {
@@ -660,6 +667,7 @@
                             link.target.missing = link.target.missing + 1;
                         }
                         //                    console.log("link.source: ", link.source);
+                        //                    console.log("link.target: ", link.target);
                     };
                 });
             intermediateLinksToPrune.forEach(function(key) {
@@ -994,7 +1002,6 @@
                 return 0 < d.size ? this : null;
             })
             .append("circle")
-            //        .attr("class", "outer")
             .attr("class", function(d) {
                 var classes = [
                     "outer",
@@ -1005,7 +1012,6 @@
             .attr("r", dg_network_getOuterRadius);
         artistEnter
             .append("circle")
-            //        .attr("class", "inner")
             .attr("class", function(d) {
                 var classes = [
                     "inner",
@@ -1043,15 +1049,11 @@
             .style("opacity", function(d) {
                 return d.missing > 0 ? 1 : 0;
             });
-        //    nodeEnter.append("title")
-        //        .attr("class", "node-tooltip")
-        //        .text(function(d) { return d.name; });
     }
 
     function dg_network_onNodeEnterEventBindings(nodeEnter) {
         var debounceToolTip = $.debounce(LINK_DEBOUNCE_TIME, function(self, d, status) {
             if (status) {
-                //console.log("link: ", self, d);
                 nodeToolTip.show(d, d3.select(self).node());
             } else {
                 nodeToolTip.hide(d);
@@ -1080,7 +1082,6 @@
     }
 
     function dg_network_onNodeUpdate(nodeUpdate) {
-        console.log("dg_network_onNodeUpdate");
         nodeUpdate.selectAll(".outer")
             .transition()
             .duration(NODE_UPDATE_TRANSITION_TIME)
@@ -1101,16 +1102,6 @@
                 ];
                 return classes.join(" ");
             })
-        //    nodeUpdate
-        //        .transition()
-        //        .duration(1000)
-        //        .style("fill", function(d) {
-        //            if (d.type == 'artist') {
-        //                return dg_color_heatmap(d);
-        //            } else {
-        //                return dg_color_greyscale(d);
-        //            }
-        //        })
         nodeUpdate.selectAll(".more").each(function(d, i) {
             var prevMissing = Boolean(d.hasMissing);
             var prevMissingByPage = Boolean(d.hasMissingByPage);
@@ -1143,7 +1134,7 @@
 
     function dg_network_onNodeMouseOver(event, d) {
         var debounce = $.debounce(NODE_DEBOUNCE_TIME, function(self, d) {
-            console.log("node: ", d);
+            //console.log("node: ", d);
         });
         debounce(this, d);
 
@@ -1158,18 +1149,18 @@
     function dg_network_onNodeMouseDown(event, d) {
         var thisTime = d3.now();
         var lastTime = d.lastClickTime;
-        console.log("lastTime: ", lastTime);
-        console.log("thisTime: ", thisTime);
+        //    console.log("lastTime: ", lastTime);
+        //    console.log("thisTime: ", thisTime);
         d.lastClickTime = thisTime;
         if (!lastTime || (thisTime - lastTime) < 700) {
-            console.log("mousedown single click");
+            //    console.log("mousedown single click");
             $(window).trigger({
                 type: 'discograph:select-entity',
                 entityKey: d.key,
                 fixed: true,
             });
         } else if ((thisTime - lastTime) < 700) {
-            console.log("mousedown double click");
+            //    console.log("mousedown double click");
             $(window).trigger({
                 type: 'discograph:request-network',
                 entityKey: d.key,
@@ -1180,7 +1171,7 @@
     }
 
     function dg_network_onNodeMouseDoubleClick(event, d) {
-        console.log("mousedown double click");
+        //    console.log("mousedown double click");
         $(window).trigger({
             type: 'discograph:request-network',
             entityKey: d.key,
@@ -1190,7 +1181,7 @@
     }
 
     function dg_network_onNodeTouchStart(event, d) {
-        console.log("touchstart ", d);
+        //console.log("touchstart ", d);
         var thisTime = $.now();
         var lastTime = d.lastTouchTime;
         d.lastTouchTime = thisTime;
@@ -2205,7 +2196,7 @@
                             //nodeOn.each(function(d) { d.fixed = true; });
                             node.fixed = true;
                         }
-                        linkOn.classed('selected', true);
+                        // linkOn.classed('selected', true);
                     } else {
                         var nodeOff = dg.network.layers.root.selectAll('.node');
                         var linkOff = dg.network.selections.link;

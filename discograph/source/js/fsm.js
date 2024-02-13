@@ -158,7 +158,7 @@ var DiscographFsm = machina.Fsm.extend({
                         //nodeOn.each(function(d) { d.fixed = true; });
                         node.fixed = true;
                     }
-                    linkOn.classed('selected', true);
+                    // linkOn.classed('selected', true);
                 } else {
                     var nodeOff = dg.network.layers.root.selectAll('.node');
                     var linkOff = dg.network.selections.link;

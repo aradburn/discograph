@@ -96,14 +96,17 @@ form .clear,
 }
 #networkLayer .link path.distance-0 {
   opacity: 0.6;
-  stroke-width: 4;
+  stroke-width: 5;
   stroke: #700;
 }
 #networkLayer .link path.distance-1 {
-  stroke-width: 2;
+  stroke-width: 3;
   stroke: #300;
 }
 #networkLayer .link path.distance-2 {
+  stroke-width: 1;
+}
+#networkLayer .link path.distance-3 {
   stroke-width: 1;
 }
 #networkLayer .link text {
@@ -211,9 +214,12 @@ form .clear,
   stroke: none;
 }
 #networkLayer .node path.more {
-  stroke-width: 0;
+  stroke: #000;
+  stroke-width: 1;
+  stroke-opacity: 0.3;
   fill-opacity: 1;
-  fill: #ffeda0;
+  fill: #fff;
+  /*            fill: #ffeda0;*/
 }
 #networkLayer .node.selected {
   stroke: #f00;
@@ -333,11 +339,11 @@ form .clear,
 .d3-node-tooltip {
   line-height: 0.8em;
   font-size: 1em;
-  padding: 8px;
+  padding: 2px 4px;
   background-color: #ffffcc;
   /*background: rgba(101,115,126, 0.6);*/
   color: #111;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 2px solid #800026;
   pointer-events: none !important;
   text-align: center;
@@ -359,7 +365,7 @@ form .clear,
   /*background: rgba(101,115,126, 0.6);*/
   color: #111;
   opacity: 1;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 2px solid #800026;
   pointer-events: none !important;
   text-align: center;
@@ -369,8 +375,8 @@ form .clear,
   gap: 0em;
 }
 .d3-link-tooltip div {
-  padding: 3px 6px;
-  margin: 4px;
+  padding: 0px 4px;
+  margin: 2px;
   display: inline-block;
   background-color: #ffeda0;
 }
