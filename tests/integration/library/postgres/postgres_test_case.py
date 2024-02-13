@@ -5,7 +5,7 @@ import unittest
 from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.config import PostgresTestConfiguration
 from discograph.database import shutdown_database, setup_database
-from discograph.logging import setup_logging, shutdown_logging
+from discograph.logging_config import setup_logging, shutdown_logging
 
 log = logging.getLogger(__name__)
 

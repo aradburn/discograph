@@ -70,10 +70,13 @@ def route__api__search(search_string):
 def route__api__random():
     parsed_args = discograph.utils.parse_request_args(request.args)
     original_roles, original_year = parsed_args
-    log.debug("Roles:", original_roles)
-    entity_type, entity_id = database.db_helper.get_random_entity(
-        roles=original_roles,
-    )
+    log.debug(f"Roles: {original_roles}")
+    try:
+        entity_type, entity_id = database.db_helper.get_random_entity(
+            roles=original_roles,
+        )
+    except Exception as e:
+        log.error(f"{e}")
     log.debug(f"    Found: {entity_type}-{entity_id}")
-    data = {f"center": "{entity_type.name.lower()}-{entity_id}"}
+    data = {f"center": f"{entity_type.name.lower()}-{entity_id}"}
     return jsonify(data)

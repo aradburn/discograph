@@ -16,7 +16,7 @@ from discograph import exceptions
 from discograph import ui
 from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.database import setup_database, shutdown_database
-from discograph.logging import setup_logging, shutdown_logging
+from discograph.logging_config import setup_logging, shutdown_logging
 
 log = logging.getLogger(__name__)
 
@@ -26,11 +26,6 @@ app: Flask = Flask(__name__.split(".")[0])
 
 def setup_application():
     global app
-
-    # app.config.from_object('discograph.config.CockroachDevelopmentConfiguration')
-    # app.config.from_object('discograph.config.PostgresDevelopmentConfiguration')
-    # app.config.from_object("discograph.config.PostgresProductionConfiguration")
-    # app.config.from_object('discograph.config.SqliteDevelopmentConfiguration')
 
     app.register_blueprint(api.blueprint, url_prefix="/api")
     app.register_blueprint(ui.blueprint)
@@ -108,6 +103,10 @@ def handle_error_500(error):
 
 def main():
     setup_logging()
+    # app.config.from_object('discograph.config.CockroachDevelopmentConfiguration')
+    # app.config.from_object('discograph.config.PostgresDevelopmentConfiguration')
+    app.config.from_object("discograph.config.PostgresProductionConfiguration")
+    # app.config.from_object('discograph.config.SqliteDevelopmentConfiguration')
     setup_cache(app.config)
     setup_database(app.config)
     setup_application()

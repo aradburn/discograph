@@ -37,10 +37,10 @@ def limit(max_requests=10, period=60):
 
             if 0 < remaining:
                 redis_client.incr(key, 1)
-                log.debug(key, remaining, ttl)
+                log.debug(f"key: {key}, remaining: {remaining}, ttl: {ttl}")
                 return f(*args, **kwargs)
             else:
-                log.debug(key, remaining, ttl)
+                log.debug(f"key: {key}, remaining: {remaining}, ttl: {ttl}")
                 raise exceptions.RateLimitError()
 
         return wrapped

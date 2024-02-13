@@ -4,7 +4,7 @@ import unittest
 from discograph import database
 from discograph.config import PostgresTestConfiguration
 from discograph.library.postgres.postgres_entity import PostgresEntity
-from discograph.logging import setup_logging
+from discograph.logging_config import setup_logging
 
 log = logging.getLogger(__name__)
 
