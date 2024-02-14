@@ -1,7 +1,8 @@
 NODE_DEBOUNCE_TIME = 250
 NODE_OUT_TRANSITION_TIME = 500
 NODE_UPDATE_TRANSITION_TIME = 5000
-NODE_PALETTE = "Palette3"
+NODE_ARTIST_PALETTE = "Palette3"
+NODE_LABEL_PALETTE = "Palette4"
 
 /* Initialize node tooltip */
 var nodeToolTip = d3.tip()
@@ -16,10 +17,11 @@ function dg_network_onNodeEnter(nodeEnter) {
             return d.key;
         })
         .attr("class", function(d) {
+            var entity_type = d.key.split('-')[0]
             var classes = [
                 "node",
-                d.key.split('-')[0],
-                NODE_PALETTE,
+                entity_type,
+                entity_type == "artist" ? NODE_ARTIST_PALETTE : NODE_LABEL_PALETTE,
             ];
             return classes.join(" ");
         })
@@ -76,7 +78,13 @@ function dg_network_onNodeEnterElementConstruction(nodeEnter) {
     });
     labelEnter
         .append("rect")
-        .attr("class", "inner")
+        .attr("class", function(d) {
+            var classes = [
+                "inner",
+                dg_color_class(d),
+            ];
+            return classes.join(" ");
+        })
         .attr("height", function(d) { return 2 * dg_network_getInnerRadius(d); })
         .attr("width", function(d) { return 2 * dg_network_getInnerRadius(d); })
         .attr("x", function(d) { return -1 * dg_network_getInnerRadius(d); })

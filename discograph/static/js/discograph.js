@@ -5,61 +5,19 @@
 
     function dg_color_class(d) {
         if (d.type == 'artist') {
-            return dg_color_heatmap_class(d);
+            return dg_color_artist_class(d);
         } else {
-            return dg_color_greyscale_class(d);
+            return dg_color_label_class(d);
         }
     }
 
-    function dg_color_greyscale_class(d) {
-        return 'q' + d.distance + '-9';
-        //    var dist = d.distance == 0 ? 0 :
-        //               d.distance == 1 ? 1 : 2;
-        //    var radius = d.radius <= 8 ? 0 : d.radius <= 14 ? 1 : 2;
-        //    var value = dist * 3 + radius;
-        //    var color_class = 'q' + value + '-9';
-        //    return color_class;
-    }
-
-    //function dg_color_greyscale(d) {
-    //    var hue = 0;
-    //    var saturation = 0;
-    //    var lightness = (d.distance / (dg.network.data.maxDistance + 1));
-    //    return d3.hsl(hue, saturation, lightness).toString();
-    //}
-
-    function dg_color_heatmap_class(d) {
+    function dg_color_artist_class(d) {
         return 'q' + ((d.distance * 2) + 1) + '-9';
-        //    var value = 0;
-        //    if (d.distance > 0) {
-        //        var dist = d.distance * 2;
-        //        var radius = d.radius <= 20 ? 1 : 0;
-        //        var value = dist + radius;
-        //    }
-        //    var color_class = 'q' + value + '-9';
-        //    return color_class;
     }
 
-    //function dg_color_heatmap(d) {
-    ////console.log("d: ", d);
-    //    var hue = d.distance == 0 ? 0 :
-    //              d.distance == 1 ? 22 :
-    //              d.distance == 2 ? 90 : 200;
-    //    var saturation = 0.2 + (d.links.length <= 2 ? 0.2 : d.links.length <= 7 ? 0.4 : 0.8);
-    //    var lightness = 0.4 + (d.radius <= 8 ? 0.4 : d.radius <= 14 ? 0.2 : 0.0);
-    ////    console.log("hsl: ", hue, saturation, lightness);
-    //    return d3.hsl(hue, saturation, lightness).toString();
-    //}
-
-    //function dg_color_heatmap(d) {
-    //    var hue = ((d.distance / 12) * 360) % 360;
-    //    var variation_a = ((d.id % 5) - 2) / 20;
-    //    var variation_b = ((d.id % 9) - 4) / 80;
-    //    var saturation = 0.67 + variation_a;
-    //    var lightness = 0.5 + variation_b;
-    //    return d3.hsl(hue, saturation, lightness).toString();
-    //}
-
+    function dg_color_label_class(d) {
+        return 'q' + ((d.distance * 2) + 2) + '-9';
+    }
     dg.loading = {};
 
     function dg_loading_init() {
@@ -941,7 +899,8 @@
     NODE_DEBOUNCE_TIME = 250
     NODE_OUT_TRANSITION_TIME = 500
     NODE_UPDATE_TRANSITION_TIME = 5000
-    NODE_PALETTE = "Palette3"
+    NODE_ARTIST_PALETTE = "Palette3"
+    NODE_LABEL_PALETTE = "Palette4"
 
     /* Initialize node tooltip */
     var nodeToolTip = d3.tip()
@@ -956,10 +915,11 @@
                 return d.key;
             })
             .attr("class", function(d) {
+                var entity_type = d.key.split('-')[0]
                 var classes = [
                     "node",
-                    d.key.split('-')[0],
-                    NODE_PALETTE,
+                    entity_type,
+                    entity_type == "artist" ? NODE_ARTIST_PALETTE : NODE_LABEL_PALETTE,
                 ];
                 return classes.join(" ");
             })
@@ -1018,7 +978,13 @@
         });
         labelEnter
             .append("rect")
-            .attr("class", "inner")
+            .attr("class", function(d) {
+                var classes = [
+                    "inner",
+                    dg_color_class(d),
+                ];
+                return classes.join(" ");
+            })
             .attr("height", function(d) {
                 return 2 * dg_network_getInnerRadius(d);
             })
