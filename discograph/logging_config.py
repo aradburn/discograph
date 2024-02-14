@@ -28,23 +28,22 @@ LOGGING_CONFIG = {
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",
         },
-        "rotating_file_handler": {
-            "level": "INFO",
-            "formatter": "standard",
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": LOGGING_FILE,
-            "mode": "a",
-            "maxBytes": 1048576,
-            "backupCount": 10,
-        },
-        "error_file_handler": {
-            "level": "WARNING",
-            "formatter": "error",
-            "class": "logging.FileHandler",
-            "filename": LOGGING_ERROR_FILE,
-            "mode": "a",
-        },
-
+        # "rotating_file_handler": {
+        #     "level": "INFO",
+        #     "formatter": "standard",
+        #     "class": "logging.handlers.RotatingFileHandler",
+        #     "filename": LOGGING_FILE,
+        #     "mode": "a",
+        #     "maxBytes": 1048576,
+        #     "backupCount": 10,
+        # },
+        # "error_file_handler": {
+        #     "level": "WARNING",
+        #     "formatter": "error",
+        #     "class": "logging.FileHandler",
+        #     "filename": LOGGING_ERROR_FILE,
+        #     "mode": "a",
+        # },
         # "critical_mail_handler": {
         #     "level": "CRITICAL",
         #     "formatter": "error",
@@ -100,13 +99,13 @@ TEST_LOGGING_CONFIG = {
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",
         },
-        "debug_file_handler": {
-            "level": "DEBUG",
-            "formatter": "standard",
-            "class": "logging.FileHandler",
-            "filename": LOGGING_DEBUG_FILE,
-            # "mode": "a",
-        },
+        # "debug_file_handler": {
+        #     "level": "DEBUG",
+        #     "formatter": "standard",
+        #     "class": "logging.FileHandler",
+        #     "filename": LOGGING_DEBUG_FILE,
+        #     # "mode": "a",
+        # },
     },
     "loggers": {
         "": {  # root logger
@@ -115,12 +114,12 @@ TEST_LOGGING_CONFIG = {
             "propagate": False,
         },
         "discograph": {
-            "handlers": ["console_handler", "debug_file_handler"],
+            "handlers": ["console_handler"],
             "level": "DEBUG",
             "propagate": False,
         },
         "tests": {
-            "handlers": ["console_handler", "debug_file_handler"],
+            "handlers": ["console_handler"],
             "level": "DEBUG",
             "propagate": False,
         },
@@ -134,7 +133,6 @@ TEST_LOGGING_CONFIG = {
 
 
 def setup_logging(is_testing=False):
-
     # Run once at startup:
     config = LOGGING_CONFIG if is_testing is False else TEST_LOGGING_CONFIG
     logging.config.dictConfig(config)
