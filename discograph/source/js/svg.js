@@ -15,7 +15,9 @@ function dg_svg_set_size() {
     // Setup window dimensions on SVG element
     d3.select("#svg")
         .attr("width", dg.dimensions[0])
-        .attr("height", dg.dimensions[1]);
+        .attr("height", dg.dimensions[1])
+        .attr("viewBox", "0 0 " + dg.svg_dimensions[0] + " " + dg.svg_dimensions[1])
+        .attr("preserveAspectRatio", "none");
 }
 
 function dg_svg_setupDefs() {

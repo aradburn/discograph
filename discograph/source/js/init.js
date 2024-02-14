@@ -1,4 +1,5 @@
 VIEWPORT_SIZE_MULTIPLIER = 3;
+SVG_SCALING_MULTIPLIER = 120.0 / 100.0
 
 $(document).ready(function() {
     dg_window_init();
@@ -26,7 +27,7 @@ $(document).ready(function() {
     });
     $('#print').on("click touchstart", function(event) {
         event.preventDefault();
-        dg_svg_print(dg.dimensions[0], dg.dimensions[1]);
+        dg_svg_print(dg.svg_dimensions[0], dg.svg_dimensions[1]);
     });
     $('#paging .next a').on("click", function(event) {
         $(this).trigger({
@@ -85,16 +86,25 @@ function dg_window_init() {
         d = document,
         e = d.documentElement,
         g = d.getElementsByTagName('body')[0];
+
     dg.dimensions = [
         (w.innerWidth || e.clientWidth || g.clientWidth) * VIEWPORT_SIZE_MULTIPLIER,
         (w.innerHeight|| e.clientHeight|| g.clientHeight) * VIEWPORT_SIZE_MULTIPLIER,
     ];
     console.log("window dimensions: ", dg.dimensions);
+
+    dg.svg_dimensions = [
+        dg.dimensions[0] * SVG_SCALING_MULTIPLIER,
+        dg.dimensions[1] * SVG_SCALING_MULTIPLIER,
+    ];
+    console.log("svg dimensions: ", dg.svg_dimensions);
+
     // All nodes start at center of the screen
     dg.network.newNodeCoords = [
-        dg.dimensions[0] / 2,
-        dg.dimensions[1] / 2,
+        dg.svg_dimensions[0] / 2,
+        dg.svg_dimensions[1] / 2,
     ];
+    console.log("newNodeCoords: ", dg.network.newNodeCoords);
 }
 
 function dg_show_message(type, message) {

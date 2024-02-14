@@ -53,7 +53,7 @@ function nodeStrength(d, i) {
         return dist * NODE_STRENGTH;
 //        return d.distance == 0 ? 3 * NODE_STRENGTH : d.distance == 1 ? 2.5 * NODE_STRENGTH : NODE_STRENGTH;
     } else if (d.isIntermediate) {
-        return Math.hypot(d.x - dg.dimensions[0] / 2, d.y - dg.dimensions[1] / 2) <= 300 ? 3 * NODE_STRENGTH : NODE_STRENGTH / 2;
+        return Math.hypot(d.x - dg.svg_dimensions[0] / 2, d.y - dg.svg_dimensions[1] / 2) <= 300 ? 3 * NODE_STRENGTH : NODE_STRENGTH / 2;
     } else {
         return 0;
     }
@@ -61,10 +61,10 @@ function nodeStrength(d, i) {
 
 function gravityStrength(d, i) {
     if (d.distance) {
-        var maxDimension = Math.max(dg.dimensions[0], dg.dimensions[1]);
+        var maxDimension = Math.max(dg.svg_dimensions[0], dg.svg_dimensions[1]);
         var dist = 3 - d.distance;
         var scaling = dist / 5.0;
-        var radialDistance = (maxDimension - Math.hypot(d.x - dg.dimensions[0] / 2, d.y - dg.dimensions[1] / 2)) / maxDimension;
+        var radialDistance = (maxDimension - Math.hypot(d.x - dg.svg_dimensions[0] / 2, d.y - dg.svg_dimensions[1] / 2)) / maxDimension;
         var g = radialDistance * scaling;
         return g;
     } else {
@@ -135,8 +135,8 @@ function dg_network_startForceLayout() {
     dg.network.forceLayout.nodes(dg.network.pageData.nodes);
 
     if (nodeData.length > 16 && nodeData.length < 500) {
-        dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2).strength(gravityStrength));
-        dg.network.forceLayout.force("y", d3.forceY(dg.dimensions[1] / 2).strength(gravityStrength));
+        dg.network.forceLayout.force("x", d3.forceX(dg.svg_dimensions[0] / 2).strength(gravityStrength));
+        dg.network.forceLayout.force("y", d3.forceY(dg.svg_dimensions[1] / 2).strength(gravityStrength));
     } else {
         dg.network.forceLayout.force("x", null);
         dg.network.forceLayout.force("y", null);
@@ -155,25 +155,9 @@ function dg_network_forceLayout_restart(alpha) {
         alpha = ALPHA;
     }
 
-//    dg.network.forceLayout.force("x", null);
-//    dg.network.forceLayout.force("y", null);
-//    dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2).strength(CENTER_STRENGTH));
-//    dg.network.forceLayout.force("y", d3.forceY(dg.dimensions[1] / 2).strength(CENTER_STRENGTH));
-//  dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2).strength(d => (4 - d.distance) * CENTER_STRENGTH))
-//  dg.network.forceLayout.force("y", d3.forceY(dg.dimensions[1] / 2).strength(d => (4 - d.distance) * CENTER_STRENGTH))
-//        .force("center", d3.forceCenter(dg.dimensions[0] / 2, dg.dimensions[1] / 2))
-//        .force("center", d3.forceCenter(dg.dimensions[0] / 2, dg.dimensions[1] / 2).strength(CENTER_STRENGTH))
-//    dg.network.forceLayout.force("radial",
-//        d3.forceRadial()
-//            .radius(Math.max(dg.dimensions[0] / 2, dg.dimensions[1] / 2))
-//            .x(dg.dimensions[0] / 2)
-//            .y(dg.dimensions[1] / 2)
-//            .strength(d => d.distance == 3 ? RADIAL_STRENGTH : 0)
-//    )
     dg_network_start();
     dg.network.forceLayout
-        .force("center", d3.forceCenter(dg.dimensions[0] / 2, dg.dimensions[1] / 2))
-//        .force("center", d3.forceCenter(dg.dimensions[0] / 2, dg.dimensions[1] / 2).strength(CENTER_STRENGTH))
+        .force("center", d3.forceCenter(dg.svg_dimensions[0] / 2, dg.svg_dimensions[1] / 2))
         .alpha(alpha).alphaDecay(ALPHA_DECAY).velocityDecay(VELOCITY_DECAY).restart();
 }
 
@@ -395,9 +379,9 @@ function dg_network_bbox_force() {
     dg.network.data.nodeMap.forEach(node => {
 
         var minX = 20 + node.radius;
-        var maxX = dg.dimensions[0] - 100 - node.radius;
+        var maxX = dg.svg_dimensions[0] - 100 - node.radius;
         var minY = 100 + node.radius;
-        var maxY = dg.dimensions[1] - 100 - node.radius;
+        var maxY = dg.svg_dimensions[1] - 100 - node.radius;
         if (node.x < minX) {
             node.x = minX;
         }
