@@ -1,8 +1,8 @@
-<nav id="nav-bottom" class="navbar navbar-default navbar-fixed-bottom"> 
+<nav id="nav-bottom" class="navbar navbar-default navbar-fixed-bottom">
     <div class="container-fluid">
-        <div class="navbar-header"> 
-            <button type="button" class="navbar-toggle collapsed" 
-                data-toggle="collapse" data-target="#nav-bottom-details">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed"
+                    data-toggle="collapse" data-target="#nav-bottom-details">
                 <span class="sr-only">Toggle navigation</span>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
@@ -10,12 +10,12 @@
             </button>
             <div class="navbar-brand hidden" id="entity-details">
                 <p>
-                    <a class="navbar-link" id="entity-relations" data-toggle="tooltip" 
-                        title="see their relation breakdown"><span 
-                        class="glyphicon glyphicon-eye-open"></span></a>
-                    &nbsp;/&nbsp;
-                    <a class="navbar-link" id="entity-link" href="#" target="_blank" 
-                        data-toggle="tooltip" title="visit them on discogs.com">
+                    <!--                    <a class="navbar-link" id="entity-relations" data-toggle="tooltip" -->
+                    <!--                        title="see their relation breakdown"><span -->
+                    <!--                        class="glyphicon glyphicon-eye-open"></span></a>-->
+                    &nbsp;
+                    <a class="navbar-link" id="entity-link" href="#" target="_blank"
+                       data-toggle="tooltip" title="visit them on discogs.com">
                         <span class="glyphicon glyphicon-new-window"></span>
                         <span id="entity-name">Band Name</span>
                     </a>
@@ -30,29 +30,29 @@
                     </a>
                 </li>
                 <li id="stop-layout" data-tooltip="tooltip" data-placement="bottom" title="stop data layout">
-                    <a>STOP
+                    <a>STOP LAYOUT
                         <span class="glyphicon glyphicon-stop" style="font-size: 0.9em;"></span>
                     </a>
                 </li>
                 <li id="start-layout" data-tooltip="tooltip" data-placement="bottom" title="start data layout">
-                    <a>START
+                    <a>JIGGLE LAYOUT
                         <span class="glyphicon glyphicon-start" style="font-size: 0.9em;"></span>
                     </a>
                 </li>
             </ul>
             <form id="filter" class="navbar-form navbar-right" style="display: none" action="#">
                 <select id="filter-roles" multiple="multiple" name="roles" class="form-control" style="width: 100%">
-                {% for category, roles in multiselect_mapping.items() %}
+                    {% for category, roles in multiselect_mapping.items() %}
                     <optgroup label="{{ category }}">
-                    {% for role in roles %}
+                        {% for role in roles %}
                         {% if role in original_roles %}
                         <option value="{{ role }}" selected>{{ role }}</option>
                         {% else %}
                         <option value="{{ role }}">{{ role }}</option>
                         {% endif %}
-                    {% endfor %}
+                        {% endfor %}
                     </optgroup>
-                {% endfor %}
+                    {% endfor %}
                 </select>
             </form>
         </div>
