@@ -2,7 +2,6 @@ import enum
 
 
 class EntityType(enum.Enum):
-
     ARTIST = 1
     LABEL = 2
 

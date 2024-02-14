@@ -1,11 +1,15 @@
+import logging
+
 import peewee
 from playhouse import sqlite_ext
 
 from discograph.library.models.release import Release
 
 
-class SqliteRelease(Release):
+log = logging.getLogger(__name__)
 
+
+class SqliteRelease(Release):
     # PEEWEE FIELDS
 
     id = peewee.IntegerField(primary_key=True)

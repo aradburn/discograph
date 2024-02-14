@@ -5,15 +5,15 @@ from .cockroach_test_case import CockroachTestCase
 
 
 class TestCockroachEntity(CockroachTestCase):
-
     # noinspection PyPep8
     def test_01(self):
-        iterator = Bootstrapper.get_iterator('artist')
+        iterator = Bootstrapper.get_iterator("artist")
         element = next(iterator)
         entity = CockroachEntity.from_element(element)
         actual = utils.normalize(format(entity))
         # noinspection PyPep8
-        expected = utils.normalize(u"""
+        expected = utils.normalize(
+            """
             {
                 "entities": {
                     "aliases": {},
@@ -46,7 +46,7 @@ class TestCockroachEntity(CockroachTestCase):
                         "Winks",
                         "Winx",
                         "Winxs"
-                    ],
+                    ], 
                     "profile": "After forming [l=Ovum Recordings] as an independent label in October 1994 with former partner [a=King Britt], Josh recorded the cult classic 'Liquid Summer'. He went on to release singles for a wide variety of revered European labels ranging from Belgium's [l=R & S Records] to England's [l=XL Recordings]. In 1995, Wink became one of the first DJ-producers to translate his hard work into mainstream success when he unleashed a string of classics including 'Don't Laugh'\\u00b8 'I'm Ready' and 'Higher State of Consciousness' that topped charts worldwide. More recently he has had massive club hits such as 'How's Your Evening So Far' and 'Superfreak' but he has also gained a lot of attention trough his remixes for [a=FC Kahuna], [a=Paul Oakenfold], [a=Ladytron], [a=Clint Mansell], [a=Sting] and [a=Depeche Mode], among others.",
                     "real_name": "Joshua Winkelman",
                     "urls": [
@@ -60,19 +60,21 @@ class TestCockroachEntity(CockroachTestCase):
                 },
                 "name": "Josh Wink"
             }
-            """)
+            """
+        )
         assert actual == expected
 
     # noinspection PyPep8
     def test_02(self):
-        iterator = Bootstrapper.get_iterator('artist')
+        iterator = Bootstrapper.get_iterator("artist")
         element = next(iterator)
-        while element.find('name').text != 'Seefeel':
+        while element.find("name").text != "Seefeel":
             element = next(iterator)
         entity = CockroachEntity.from_element(element)
         actual = utils.normalize(format(entity))
         # noinspection PyPep8
-        expected = utils.normalize(u"""
+        expected = utils.normalize(
+            """
             {
                 "entities": {
                     "members": {
@@ -99,15 +101,17 @@ class TestCockroachEntity(CockroachTestCase):
                 },
                 "name": "Seefeel"
             }
-            """)
+            """
+        )
         assert actual == expected
 
     def test_03(self):
-        iterator = Bootstrapper.get_iterator('label')
+        iterator = Bootstrapper.get_iterator("label")
         element = next(iterator)
         entity = CockroachEntity.from_element(element)
         actual = utils.normalize(format(entity))
-        expected = utils.normalize(r"""
+        expected = utils.normalize(
+            r"""
             {
                 "entities": {},
                 "entity_id": 1,
@@ -124,5 +128,6 @@ class TestCockroachEntity(CockroachTestCase):
                 },
                 "name": "Planet E"
             }
-            """)
+            """
+        )
         assert actual == expected

@@ -1,21 +1,30 @@
+import logging
 import unittest
+from unittest import SkipTest
 
 from discograph import database
+from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.config import CockroachTestConfiguration
+from discograph.logging_config import setup_logging, shutdown_logging
 
-
-# noinspection PyPep8Naming
-def setUpModule():
-    print("setup temp Cockroach DB", flush=True)
-    database.setup_database(vars(CockroachTestConfiguration))
-
-
-# noinspection PyPep8Naming
-def tearDownModule():
-    # release resources
-    print("cleanup temp Cockroach DB", flush=True)
-    database.shutdown_database()
+log = logging.getLogger(__name__)
 
 
 class CockroachTestCase(unittest.TestCase):
-    pass
+    @classmethod
+    def setUpClass(cls):
+        setup_logging(is_testing=True)
+        log.debug("setup temp Cockroach DB")
+        config = vars(CockroachTestConfiguration)
+        try:
+            database.setup_database(config)
+        except Exception as e:
+            raise SkipTest("Cannot connect to Cockroach Database")
+        setup_cache(config)
+
+    @classmethod
+    def tearDownClass(cls):
+        log.debug("cleanup temp Cockroach DB")
+        database.shutdown_database()
+        shutdown_cache()
+        shutdown_logging()

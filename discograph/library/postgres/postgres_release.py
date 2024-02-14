@@ -1,11 +1,15 @@
+import logging
+
 import peewee
 from playhouse import postgres_ext
 
 from discograph.library.models.release import Release
 
 
-class PostgresRelease(Release):
+log = logging.getLogger(__name__)
 
+
+class PostgresRelease(Release):
     # PEEWEE FIELDS
 
     id = peewee.IntegerField(primary_key=True)

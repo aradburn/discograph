@@ -1,4 +1,6 @@
 import json
+import logging
+import random
 
 import peewee
 from playhouse import postgres_ext
@@ -6,23 +8,28 @@ from playhouse.shortcuts import model_to_dict
 from unidecode import unidecode
 
 from discograph.library import EntityType
-from discograph.library.EnumField import EnumField
+from discograph.library.enum_field import EnumField
 from discograph.library.models.entity import Entity
 from discograph.library.postgres.postgres_relation import PostgresRelation
 
 
-class PostgresEntity(Entity):
+log = logging.getLogger(__name__)
 
-    def __format__(self, format_specification=''):
+
+class PostgresEntity(Entity):
+    def __format__(self, format_specification=""):
         return json.dumps(
-            model_to_dict(self, exclude=[
-                PostgresEntity.random,
-                PostgresEntity.relation_counts,
-                PostgresEntity.search_content,
-            ]),
+            model_to_dict(
+                self,
+                exclude=[
+                    PostgresEntity.random,
+                    # PostgresEntity.relation_counts,
+                    PostgresEntity.search_content,
+                ],
+            ),
             indent=4,
             sort_keys=True,
-            default=str
+            default=str,
         )
 
     # PEEWEE FIELDS
@@ -42,8 +49,9 @@ class PostgresEntity(Entity):
         search_string = search_string.lower()
         # Transliterate the unicode string into a plain ASCII string
         search_string = unidecode(search_string, "preserve")
-        search_string = ','.join(search_string.split())
-        query = PostgresEntity.raw("""
+        search_string = ",".join(search_string.split())
+        query = PostgresEntity.raw(
+            """
             SELECT entity_type,
                 entity_id,
                 name,
@@ -53,7 +61,9 @@ class PostgresEntity(Entity):
             WHERE query @@ search_content
             ORDER BY rank DESC
             LIMIT 100
-            """, search_string)
+            """,
+            search_string,
+        )
         return query
 
     @classmethod
@@ -61,16 +71,33 @@ class PostgresEntity(Entity):
         string = string.lower()
         # Transliterate the unicode string into a plain ASCII string
         string = unidecode(string, "preserve")
-        string = cls._strip_pattern.sub('', string)
+        string = cls._strip_pattern.sub("", string)
         tsvector = peewee.fn.to_tsvector(string)
         return tsvector
 
     @classmethod
-    def create_relation(cls, entity_one_type, entity_one_id, entity_two_type, entity_two_id, role):
+    def create_relation(
+        cls, entity_one_type, entity_one_id, entity_two_type, entity_two_id, role
+    ):
         return PostgresRelation(
-                        entity_one_type=entity_one_type,
-                        entity_one_id=entity_one_id,
-                        entity_two_type=entity_two_type,
-                        entity_two_id=entity_two_id,
-                        role=role,
-                        )
+            entity_one_type=entity_one_type,
+            entity_one_id=entity_one_id,
+            entity_two_type=entity_two_type,
+            entity_two_id=entity_two_id,
+            role=role,
+        )
+
+    @classmethod
+    def get_random(cls):
+        n = random.random()
+        return (
+            cls.select()
+            .where(
+                (cls.random > n)
+                & (cls.entity_type == EntityType.ARTIST)
+                & ~(cls.entities.is_null())
+                & ~(cls.relation_counts.is_null())
+            )
+            .order_by(cls.random)
+            .get()
+        )

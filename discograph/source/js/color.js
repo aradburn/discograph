@@ -1,16 +1,15 @@
-function dg_color_greyscale(d) {
-    var hue = 0;
-    var saturation = 0;
-    var lightness = (d.distance / (dg.network.data.maxDistance + 1));
-    return d3.hsl(hue, saturation, lightness).toString();
+function dg_color_class(d) {
+    if (d.type == 'artist') {
+        return dg_color_artist_class(d);
+    } else {
+        return dg_color_label_class(d);
+    }
 }
 
-function dg_color_heatmap(d) {
-    var hue = ((d.distance / 12) * 360) % 360;
-    var variation_a = ((d.id % 5) - 2) / 20;
-    var variation_b = ((d.id % 9) - 4) / 80;
-    var saturation = 0.67 + variation_a;
-    var lightness = 0.5 + variation_b;
-    return d3.hsl(hue, saturation, lightness).toString();
+function dg_color_artist_class(d) {
+    return 'q' + ((d.distance * 2) + 1) + '-9';
 }
 
+function dg_color_label_class(d) {
+    return 'q' + ((d.distance * 2) + 2) + '-9';
+}

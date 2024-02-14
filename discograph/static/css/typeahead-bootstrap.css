@@ -50,11 +50,15 @@ span.twitter-typeahead {
   width: inherit !important;
 }
 .tt-suggestion.tt-cursor {
+    color: #fff;
     background-color: #dddddd;
+/*    background-color: #0097cf; */
 }
 .tt-suggestion:hover {
+    cursor: pointer;
     color: #fff;
     background-color: #428bca;
+/*    background-color: #0097cf; */
 }
 .tt-suggestion:hover em {
     color: #fff;

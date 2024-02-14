@@ -5,7 +5,6 @@ from discograph.library.models.release import Release
 
 
 class CockroachRelease(Release):
-
     # PEEWEE FIELDS
 
     id = peewee.IntegerField(primary_key=True)

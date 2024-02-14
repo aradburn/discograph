@@ -5,13 +5,13 @@ from .cockroach_test_case import CockroachTestCase
 
 
 class TestCockroachRelease(CockroachTestCase):
-
     def test_01(self):
-        iterator = Bootstrapper.get_iterator('release')
+        iterator = Bootstrapper.get_iterator("release")
         release_element = next(iterator)
         release = CockroachRelease.from_element(release_element)
         actual = format(release)
-        expected = utils.normalize(u"""
+        expected = utils.normalize(
+            """
         {
             "artists": [
                 {
@@ -116,12 +116,13 @@ class TestCockroachRelease(CockroachTestCase):
                 }
             ]
         }
-        """)
+        """
+        )
         assert actual == expected
 
     # noinspection PyUnusedLocal
     def test_02(self):
-        iterator = Bootstrapper.get_iterator('release')
+        iterator = Bootstrapper.get_iterator("release")
         release_element = next(iterator)
         release_element = next(iterator)
         release_element = next(iterator)
@@ -131,7 +132,8 @@ class TestCockroachRelease(CockroachTestCase):
         release_element = next(iterator)
         release = CockroachRelease.from_element(release_element)
         actual = format(release)
-        expected = utils.normalize(u"""
+        expected = utils.normalize(
+            """
         {
             "artists": [
                 {
@@ -268,5 +270,6 @@ class TestCockroachRelease(CockroachTestCase):
                 }
             ]
         }
-        """)
+        """
+        )
         assert actual == expected

@@ -1,12 +1,17 @@
+import logging
+
 from discograph.library.sqlite.sqlite_entity import SqliteEntity
 from discograph.library.sqlite.sqlite_relation import SqliteRelation
 from discograph.library.sqlite.sqlite_release import SqliteRelease
 
 
+log = logging.getLogger(__name__)
+
+
 class SqliteBootstrapper:
     @classmethod
     def bootstrap_models(cls):
-        print("bootstrap sqlite models")
+        log.info("Bootstrap sqlite models")
 
         SqliteEntity.drop_table(True)
         SqliteRelease.drop_table(True)

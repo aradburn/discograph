@@ -60,6 +60,7 @@ target/
 tmp/
 src/
 logs/
+discograph/logs/
 discograph.cfg
 discograph.conf
 

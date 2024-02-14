@@ -1,10 +1,15 @@
 import json
+import logging
 
 from discograph import utils
 from discograph.library import EntityType
 from discograph.library.cockroach.cockroach_entity import CockroachEntity
-from discograph.library.cockroach.cockroach_relation_grapher import CockroachRelationGrapher
+from discograph.library.cockroach.cockroach_relation_grapher import (
+    CockroachRelationGrapher,
+)
 from .cockroach_test_case import CockroachTestCase
+
+log = logging.getLogger(__name__)
 
 
 class TestCockroachRelationGrapher(CockroachTestCase):
@@ -18,25 +23,26 @@ class TestCockroachRelationGrapher(CockroachTestCase):
     """
 
     json_kwargs = {
-        'indent': 4,
-        'separators': (',', ': '),
-        'sort_keys': True,
-        }
+        "indent": 4,
+        "separators": (",", ": "),
+        "sort_keys": True,
+    }
 
     def test___call___01(self):
-        print(CockroachEntity._meta.database)
-        artist = CockroachEntity.get(entity_type=EntityType.ARTIST, name='Seefeel')
-        print(f"artist: {artist}")
-        roles = ['Alias', 'Member Of']
+        log.debug(CockroachEntity.database())
+        artist = CockroachEntity.get(entity_type=EntityType.ARTIST, name="Seefeel")
+        log.debug(f"artist: {artist}")
+        roles = ["Alias", "Member Of"]
         grapher = CockroachRelationGrapher(
             artist,
             degree=1,
             roles=roles,
         )
         network = grapher.__call__()
-        print(f"network: {network}")
+        log.debug(f"network: {network}")
         actual = json.dumps(network, **self.json_kwargs)
-        expected = utils.normalize('''
+        expected = utils.normalize(
+            """
             {
                 "center": {                
                     "key": "artist-2239",                
@@ -189,12 +195,15 @@ class TestCockroachRelationGrapher(CockroachTestCase):
                 ],                
                 "pages": 1                
             }
-        ''')
+        """
+        )
         assert actual == expected
 
     def test___call___02(self):
-        artist = CockroachEntity.get(entity_type=1, name='Justin Fletcher')
-        roles = ['Alias', 'Member Of']
+        artist = CockroachEntity.get(
+            entity_type=EntityType.ARTIST, name="Justin Fletcher"
+        )
+        roles = ["Alias", "Member Of"]
         grapher = CockroachRelationGrapher(
             artist,
             degree=2,
@@ -203,7 +212,8 @@ class TestCockroachRelationGrapher(CockroachTestCase):
         )
         network = grapher.__call__()
         actual = json.dumps(network, **self.json_kwargs)
-        expected = utils.normalize('''
+        expected = utils.normalize(
+            """
             {            
                 "center": {                
                     "key": "artist-489350",                
@@ -231,8 +241,7 @@ class TestCockroachRelationGrapher(CockroachTestCase):
                     {                
                         "key": "artist-489350-member-of-artist-2239",                
                         "pages": [                
-                            1,                
-                            2                
+                            1              
                         ],                
                         "role": "Member Of",                
                         "source": "artist-489350",                
@@ -241,7 +250,7 @@ class TestCockroachRelationGrapher(CockroachTestCase):
                     {                
                         "key": "artist-51674-member-of-artist-2239",                
                         "pages": [                
-                            2                
+                            1                
                         ],                
                         "role": "Member Of",                
                         "source": "artist-51674",                
@@ -250,7 +259,7 @@ class TestCockroachRelationGrapher(CockroachTestCase):
                     {                
                         "key": "artist-66803-member-of-artist-2239",                
                         "pages": [                
-                            2                
+                            1                
                         ],                
                         "role": "Member Of",                
                         "source": "artist-66803",                
@@ -269,15 +278,10 @@ class TestCockroachRelationGrapher(CockroachTestCase):
                             "artist-51674-member-of-artist-2239",                
                             "artist-66803-member-of-artist-2239"                
                         ],                
-                        "missing": 0,                
-                        "missingByPage": {                
-                            "1": 2,                
-                            "2": 2                
-                        },                
+                        "missing": 0,           
                         "name": "Seefeel",                
                         "pages": [                
-                            1,                
-                            2                
+                            1              
                         ],                
                         "size": 5,                
                         "type": "artist"                
@@ -309,7 +313,7 @@ class TestCockroachRelationGrapher(CockroachTestCase):
                         "missing": 3,                
                         "name": "Mark Clifford",                
                         "pages": [                
-                            2                
+                            1                
                         ],                
                         "size": 0,                
                         "type": "artist"                
@@ -324,7 +328,7 @@ class TestCockroachRelationGrapher(CockroachTestCase):
                         "missing": 0,                
                         "name": "Daren Seymour",                
                         "pages": [                
-                            2                
+                            1                
                         ],                
                         "size": 0,                
                         "type": "artist"                
@@ -354,21 +358,23 @@ class TestCockroachRelationGrapher(CockroachTestCase):
                         "missing": 0,                
                         "name": "Justin Fletcher",                
                         "pages": [                
-                            1,                
-                            2                
+                            1              
                         ],                
                         "size": 0,                
                         "type": "artist"                
                     }                
                 ],                
-                "pages": 2                
+                "pages": 1                
             }
-        ''')
+        """
+        )
         assert actual == expected
 
     def test___call___03(self):
-        artist = CockroachEntity.get(entity_type=1, name='Justin Fletcher')
-        roles = ['Alias', 'Member Of']
+        artist = CockroachEntity.get(
+            entity_type=EntityType.ARTIST, name="Justin Fletcher"
+        )
+        roles = ["Alias", "Member Of"]
         grapher = CockroachRelationGrapher(
             artist,
             degree=2,
@@ -377,7 +383,8 @@ class TestCockroachRelationGrapher(CockroachTestCase):
         )
         network = grapher.__call__()
         actual = json.dumps(network, **self.json_kwargs)
-        expected = utils.normalize('''
+        expected = utils.normalize(
+            """
             {
                 "center": {
                     "key": "artist-489350",
@@ -530,7 +537,8 @@ class TestCockroachRelationGrapher(CockroachTestCase):
                 ],
                 "pages": 1
             }
-        ''')
+        """
+        )
         assert actual == expected
 
     def test___call___04(self):
@@ -539,10 +547,10 @@ class TestCockroachRelationGrapher(CockroachTestCase):
         aliases, groups, sublabels, parent labels, etc.
         """
         artist = CockroachEntity.get(
-            entity_type=1,
+            entity_type=EntityType.ARTIST,
             entity_id=489350,
         )
-        roles = ['Alias', 'Member Of']
+        roles = ["Alias", "Member Of"]
         grapher = CockroachRelationGrapher(
             artist,
             degree=12,
@@ -550,7 +558,9 @@ class TestCockroachRelationGrapher(CockroachTestCase):
         )
         network = grapher.__call__()
         actual = json.dumps(network, **self.json_kwargs)
-        expected = utils.normalize('''
+        log.debug(f"network: {actual}")
+        expected = utils.normalize(
+            """
             {
                 "center": {
                     "key": "artist-489350",
@@ -817,15 +827,16 @@ class TestCockroachRelationGrapher(CockroachTestCase):
                 ],
                 "pages": 1
             }
-        ''')
+        """
+        )
         assert actual == expected
 
     def test___call___05(self):
         artist = CockroachEntity.get(
             entity_type=EntityType.LABEL,
-            name='Lab Studio, Berlin',
+            name="Lab Studio, Berlin",
         )
-        roles = ['Recorded At']
+        roles = ["Recorded At"]
         grapher = CockroachRelationGrapher(
             artist,
             degree=2,

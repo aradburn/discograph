@@ -4,7 +4,6 @@ from discograph.library import EntityType
 
 
 class DatabaseHelper(ABC):
-
     MAX_NODES = 400
     MAX_NODES_MOBILE = 25
 
@@ -22,7 +21,9 @@ class DatabaseHelper(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_network(entity_id: int, entity_type: EntityType, on_mobile=False, cache=True, roles=None):
+    def get_network(
+        entity_id: int, entity_type: EntityType, on_mobile=False, roles=None
+    ):
         pass
 
     @staticmethod
@@ -37,5 +38,5 @@ class DatabaseHelper(ABC):
 
     @staticmethod
     @abstractmethod
-    def search_entities(search_string: str, cache=True):
+    def search_entities(search_string: str):
         pass

@@ -40,13 +40,13 @@ function dg_relations_chartRadial() {
     var barHeight = d3.min(dg.dimensions) / 3;
     var data = dg.relations.byRole;
     var extent = d3.extent(data, function(d) { return d.values; });
-    var barScale = d3.scale.sqrt()
+    var barScale = d3.scaleSqrt()
         .exponent(0.25)
         .domain(extent)
         .range([barHeight / 4, barHeight]);
     var keys = data.map(function(d, i) { return d.key; });
-    var numBars = keys.length;
-    var arc = d3.svg.arc()
+    var numBars = keys.size();
+    var arc = d3.arc()
         .startAngle(function(d,i) { return (i * 2 * Math.PI) / numBars; })
         .endAngle(function(d,i) { return ((i + 1) * 2 * Math.PI) / numBars; })
         .innerRadius(0);
@@ -67,17 +67,17 @@ function dg_relations_chartRadial() {
         .classed('selected', function(d) {
             return selectedRoles.indexOf(d.key) != -1;
         })
-        .on('mouseover', function() { d3.select(this).moveToFront(); });
+        .on('mouseover', function(event) { d3.select(this).raise(); });
     var arcs = segments.append('path')
         .attr('class', 'arc')
         .attr('d', arc)
         .each(function(d) { d.outerRadius = 0; })
-        .on('mousedown', function(d) {
+        .on('mousedown', function(event, d) {
             var values = $('#filter-roles').val();
             values.push(d.key);
             $('#filter-roles').val(values).trigger('change');
             dg.fsm.requestNetwork(dg.network.data.json.center.key, true);
-            d3.event.stopPropagation();
+            event.stopPropagation();
         })
         .transition()
         .ease('elastic')

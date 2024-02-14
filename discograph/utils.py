@@ -5,19 +5,20 @@ import textwrap
 from toolz import partition_all
 
 urlify_pattern = re.compile(r"\s+", re.MULTILINE)
-args_roles_pattern = re.compile(r'^roles(\[\d*\])?$')
+args_roles_pattern = re.compile(r"^roles(\[\d*\])?$")
 
 
 def parse_request_args(args):
     from discograph.library import CreditRole
+
     year = None
     roles = set()
     for key in args:
-        if key == 'year':
+        if key == "year":
             year = args[key]
             try:
-                if '-' in year:
-                    start, _, stop = year.partition('-')
+                if "-" in year:
+                    start, _, stop = year.partition("-")
                     year = tuple(sorted((int(start), int(stop))))
                 else:
                     year = int(year)

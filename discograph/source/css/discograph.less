@@ -15,29 +15,52 @@ body {
     padding-top: 70px;
 }
 
+.navbar-title {
+    color: #777777;
+    transition: color ease-in-out .2s;
+    display: block;
+    text-align:center;
+    float: none;
+    vertical-align: middle;
+    height: 50px;
+    padding: 15px 15px;
+    font-size: 18px;
+    line-height: 20px;
+}
+/*
+.navbar.navbar-default .navbar-header{
+  float: none;
+}*/
+
+#flash {
+  margin: auto;
+  width: 50%;
+}
+
 svg {
-  margin: 0;
-  height: 200%;
-  width: 200%;
-/*  top: -50%;
-  left: -50%;
-  position: relative;*/
-  z-index: -1;
+    margin: 0;
+/*    height: 200%;
+    width: 200%;*/
+/*    top: -50%;
+    left: -50%;
+    position: relative;*/
+    z-index: -1;
 }
 
 #svg-container {
-  margin: 0;
-  height: 100%;
-  width: 100%;
-  top: 0;
-  left: 0;
-  position: fixed;
-  z-index: -1;
-  overflow: scroll;
+    margin: 0;
+/*    height: 100%;
+    width: 100%;*/
+    top: 0;
+    left: 0;
+    position: fixed;
+    z-index: -1;
+    overflow: scroll;
 }
 
 #svg {
     pointer-events: visible;
+    background-color: white;
 }
 
 #svg text {
@@ -84,21 +107,28 @@ form .clear,
         path {
             &.inner {
                 fill: none;
-                marker-end: url(#arrowhead);
+           /*     marker-end: url(#arrowhead);
                 stroke-dasharray: 0.5, 4;
                 stroke-linecap: round;
-                stroke-linejoin: round;
+                stroke-linejoin: round;*/
                 stroke-width: 1;
                 stroke: #000;
             }
-            /*
-            &.outer {
-                fill: none;
-                stroke-opacity: 0;
-                stroke: #000;
-                stroke-width: 10;
-                }
-            */
+            &.distance-0 {
+                opacity: 0.6;
+                stroke-width: 4;
+            /*    stroke: #700;*/
+            }
+            &.distance-1 {
+                stroke-width: 3;
+            /*    stroke: #300;*/
+            }
+            &.distance-2 {
+                stroke-width: 2;
+            }
+            &.distance-3 {
+                stroke-width: 2;
+            }
         }
         text {
             cursor: help;
@@ -117,7 +147,7 @@ form .clear,
         }
         &.alias {
             path.inner {
-                marker-end: none;
+            /*    marker-end: none;*/
                 stroke-dasharray: 2, 4;
             }
         }
@@ -125,28 +155,37 @@ form .clear,
         &.sublabel-of {
             path.inner {
                 opacity: 0.5;
-                marker-end: url(#aggregate);
-                stroke: #700;
-                stroke-dasharray: 0, 0;
+           /*     marker-end: url(#aggregate);*/
+                stroke: #00BD20;
+           /*     stroke-dasharray: 0, 0;*/
             }
         }
         &.released-on {
             path.inner {
-                stroke-dasharray: 0, 0;
+                opacity: 0.5;
+           /*     marker-end: url(#aggregate);*/
+                stroke: #00BD20;
+                stroke-dasharray: 2, 4;
             }
         }
         &.selected {
             opacity: 1;
             path {
-                opacity: 0.5;
+                opacity: 0.6;
                 stroke: #700;
-                stroke-width: 3;
+                stroke-width: 4;
             }
             text {
                 font-size: 10px;
             }
         }
-        &.highlighted {
+        &.noninteractive {
+            text {
+                pointer-events: none;
+                cursor: wait;
+            }
+        }
+    /*    &.highlighted {
             opacity: 0.5;
             path {
                 opacity: 0.5;
@@ -156,18 +195,24 @@ form .clear,
             text {
                 font-size: 10px;
             }
-        }
+        }*/
     }
 
     .hull {
-        path {
+        fill: #343d46;
+        opacity: 0.1;
+        stroke: #000;
+        stroke-width: 32;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+/*        path {
             fill: #343d46;
             opacity: 0.1;
             stroke: #000;
             stroke-width: 32;
             stroke-linecap: round;
             stroke-linejoin: round;
-        }
+        }*/
     }
 
     .node {
@@ -187,6 +232,8 @@ form .clear,
                 font: 10px 'Open Sans', sans-serif;
                 fill: #000;
                 stroke: none;
+                dominant-baseline: middle;
+                text-anchor: middle;
             }
             &.outer {
                 pointer-events: none;
@@ -194,6 +241,8 @@ form .clear,
                 stroke: #fff;
                 stroke-width: 3px;
                 fill: none;
+                dominant-baseline: middle;
+                text-anchor: middle;
             }
             &.icon {
                 cursor: pointer;
@@ -206,19 +255,22 @@ form .clear,
                 stroke: #000;
             }
         }
-        .halo {
+        circle.halo {
             pointer-events: none;
             fill: #000;
             opacity: 0;
             stroke: none;
         }
-        .more {
-            stroke-width: 0;
+        path.more {
+            stroke: #000;
+            stroke-width: 1;
+            stroke-opacity: 0.3;
             fill-opacity: 1;
             fill: #fff;
+/*            fill: #ffeda0;*/
         }
         &.selected {
-            stroke: #000;
+            stroke: #f00;
             .halo {
                 opacity: 0.1;
                 fill: #700;
@@ -227,7 +279,7 @@ form .clear,
                 fill: #000;
             }
             &.label {
-                stroke: #fff;
+                stroke: #f00;
                 .more {
                     fill: #fff;
                 }
@@ -344,57 +396,147 @@ form .clear,
 
 /* TOOLTIPS */
 
-.d3-tip {
-    line-height: 1;
-    font-size: 10px;
-    padding: 12px;
-    background: rgba(101,115,126, 0.8);
-    color: #fff;
-    border-radius: 2px;
-    pointer-events: none;
-    p {
-        text-align: center;
-        &:last-child {
+.d3-node-tooltip {
+    line-height: 0.8em;
+    font-size: 1.0em;
+    padding: 2px 4px;
+    background-color: #ffffcc;
+    /*background: rgba(101,115,126, 0.6);*/
+    color: #111;
+    border-radius: 6px;
+    border: 2px solid #800026;
+    pointer-events: none !important;
+    text-align: center;
+    box-shadow: 0 4px 20px 4px rgba(0,20,60,.1),0 4px 80px -8px rgba(0,20,60,.2);
+    display: flex;
+    flex-direction: column;
+    gap: 0em;
+    span {
+        opacity: 1.0;
+        font-size: 1.4em;
+        line-height: 1.4em;
+    }
+}
+
+.d3-link-tooltip {
+    line-height: 0.8em;
+    font-size: 1.0em;
+    padding: 0px;
+    background-color: #ffeda0;
+    /*background: rgba(101,115,126, 0.6);*/
+    color: #111;
+    opacity: 1.0;
+    border-radius: 6px;
+    border: 2px solid #800026;
+    pointer-events: none !important;
+    text-align: center;
+    box-shadow: 0 4px 20px 4px rgba(0,20,60,.1),0 4px 80px -8px rgba(0,20,60,.2);
+    display: flex;
+    flex-direction: column;
+    gap: 0em;
+    div {
+        padding: 0px 4px;
+        margin: 2px;
+        display: inline-block;
+        background-color: #ffeda0;
+        &:first-child {
+            font-size: 1.4em;
+            line-height: 1.4em;
+            margin-bottom: 0;
+        }
+        &:nth-child(2) {
+            font-size: 0.8em;
+            line-height: 1.0em;
+            border-width: 0px;
             margin: 0;
         }
-    }
-    &:after {
-        box-sizing: border-box;
-        display: inline;
-        font-size: 10px;
-        width: 100%;
-        line-height: 1;
-        color: rgba(0, 0, 0, 0.8);
-        position: absolute;
-        pointer-events: none;
-    }
-    &.n:after {
-        content: "\25BC";
-        margin: -1px 0 0 0;
-        top: 100%;
-        left: 0;
-        text-align: center;
-    }
-    &.e:after {
-        content: "\25C0";
-        margin: -4px 0 0 0;
-        top: 50%;
-        left: -8px;
-    }
-    &.s:after {
-        content: "\25B2";
-        margin: 0 0 1px 0;
-        top: -8px;
-        left: 0;
-        text-align: center;
-    }
-    &.w:after {
-        content: "\25B6";
-        margin: -4px 0 0 -1px;
-        top: 50%;
-        left: 100%;
+        &:last-child {
+            font-size: 1.4em;
+            line-height: 1.4em;
+            margin-top: 0;
+        }
     }
 }
 
 .select2 {
 }
+
+.YlOrRd .q0-9 {fill:rgb(255,255,204)}
+.YlOrRd .q1-9 {fill:rgb(255,237,160)}
+.YlOrRd .q2-9 {fill:rgb(254,217,118)}
+.YlOrRd .q3-9 {fill:rgb(254,178,76)}
+.YlOrRd .q4-9 {fill:rgb(253,141,60)}
+.YlOrRd .q5-9 {fill:rgb(252,78,42)}
+.YlOrRd .q6-9 {fill:rgb(227,26,28)}
+.YlOrRd .q7-9 {fill:rgb(189,0,38)}
+.YlOrRd .q8-9 {fill:rgb(128,0,38)}
+
+.YlGnBu .q0-9 {fill:rgb(255,255,217)}
+.YlGnBu .q1-9 {fill:rgb(237,248,177)}
+.YlGnBu .q2-9 {fill:rgb(199,233,180)}
+.YlGnBu .q3-9 {fill:rgb(127,205,187)}
+.YlGnBu .q4-9 {fill:rgb(65,182,196)}
+.YlGnBu .q5-9 {fill:rgb(29,145,192)}
+.YlGnBu .q6-9 {fill:rgb(34,94,168)}
+.YlGnBu .q7-9 {fill:rgb(37,52,148)}
+.YlGnBu .q8-9 {fill:rgb(8,29,88)}
+
+.RdGnBl .q8-9 {fill:#ff0000}
+.RdGnBl .q7-9 {fill:#ff004c}
+.RdGnBl .q6-9 {fill:#f25f2d}
+.RdGnBl .q5-9 {fill:#dc8926}
+.RdGnBl .q4-9 {fill:#c5a841}
+.RdGnBl .q3-9 {fill:#b1c16c}
+.RdGnBl .q2-9 {fill:#a8d39c}
+.RdGnBl .q1-9 {fill:#b0e1c7}
+.RdGnBl .q0-9 {fill:#ccece6}
+
+.RdGnLb .q8-9 {fill:#ff0000}
+.RdGnLb .q7-9 {fill:#df6e00}
+.RdGnLb .q6-9 {fill:#b99800}
+.RdGnLb .q5-9 {fill:#93b628}
+.RdGnLb .q4-9 {fill:#70cc72}
+.RdGnLb .q3-9 {fill:#5cdcb1}
+.RdGnLb .q2-9 {fill:#73e8e2}
+.RdGnLb .q1-9 {fill:#a8f0ff}
+.RdGnLb .q0-9 {fill:#b0e1c7}
+
+.Palette1 .q0-9 {fill:#ff0000}
+.Palette1 .q1-9 {fill:#f55700}
+.Palette1 .q2-9 {fill:#e87d00}
+.Palette1 .q3-9 {fill:#da9a00}
+.Palette1 .q4-9 {fill:#ccb211}
+.Palette1 .q5-9 {fill:#bfc744}
+.Palette1 .q6-9 {fill:#b5da6d}
+.Palette1 .q7-9 {fill:#afeb96}
+.Palette1 .q8-9 {fill:#afeb96}
+
+.Palette2 .q0-9 {fill:#d53e4f}
+.Palette2 .q1-9 {fill:#f46d43}
+.Palette2 .q2-9 {fill:#fdae61}
+.Palette2 .q3-9 {fill:#fee08b}
+.Palette2 .q4-9 {fill:#ffffbf}
+.Palette2 .q5-9 {fill:#e6f598}
+.Palette2 .q6-9 {fill:#abdda4}
+.Palette2 .q7-9 {fill:#66c2a5}
+.Palette2 .q8-9 {fill:#3288bd}
+
+.Palette3 .q8-9 {fill:#ffffcc}
+.Palette3 .q7-9 {fill:#ffeda0}
+.Palette3 .q6-9 {fill:#fed976}
+.Palette3 .q5-9 {fill:#feb24c}
+.Palette3 .q4-9 {fill:#fd8d3c}
+.Palette3 .q3-9 {fill:#fc4e2a}
+.Palette3 .q2-9 {fill:#e31a1c}
+.Palette3 .q1-9 {fill:#bd0026}
+.Palette3 .q0-9 {fill:#800026}
+
+.Palette4 .q0-9 {fill:#23682e}
+.Palette4 .q1-9 {fill:#347a3d}
+.Palette4 .q2-9 {fill:#448b4c}
+.Palette4 .q3-9 {fill:#549e5b}
+.Palette4 .q4-9 {fill:#64b16b}
+.Palette4 .q5-9 {fill:#74c47c}
+.Palette4 .q6-9 {fill:#85d78d}
+.Palette4 .q7-9 {fill:#96eb9e}
+.Palette4 .q8-9 {fill:#a7ffaf}

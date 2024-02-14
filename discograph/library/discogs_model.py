@@ -1,9 +1,9 @@
 import gzip
 import json
+import logging
 import multiprocessing
 import pprint
 import random
-import traceback
 
 import peewee
 from peewee import Model, FloatField, DatabaseProxy, DataError, fn
@@ -14,15 +14,16 @@ import discograph.database
 import discograph.utils
 from discograph.library.bootstrapper import Bootstrapper
 
+log = logging.getLogger(__name__)
+
 database_proxy = DatabaseProxy()  # Create a proxy for the database.
 
 
 class DiscogsModel(Model):
-
     BULK_INSERT_BATCH_SIZE = 1000
+    _tags_to_fields_mapping: dict = None
 
     class BootstrapPassOneWorker(multiprocessing.Process):
-
         def __init__(self, model_class, bulk_inserts, inserted_count):
             super().__init__()
             self.model_class = model_class
@@ -32,20 +33,18 @@ class DiscogsModel(Model):
         def run(self):
             proc_name = self.name
             from discograph.database import bootstrap_database
+
             if bootstrap_database:
                 database_proxy.initialize(bootstrap_database)
             with DiscogsModel.connection_context():
                 try:
-                    # with DiscogsModel.atomic():
                     self.model_class.bulk_create(self.bulk_inserts)
                 except peewee.PeeweeException:
-                    print("Error in bootstrap_pass_one worker")
-                    traceback.print_exc()
-            print(f"[{proc_name}] inserted_count: {self.inserted_count}")
+                    log.exception("Error in bootstrap_pass_one worker")
+            log.info(f"[{proc_name}] inserted_count: {self.inserted_count}")
 
     # PEEWEE FIELDS
 
-    # random = FloatField(index=False, null=True)
     random = FloatField(index=True, null=True)
 
     # PEEWEE META
@@ -55,20 +54,22 @@ class DiscogsModel(Model):
 
     # SPECIAL METHODS
 
-    def __format__(self, format_specification=''):
+    def __format__(self, format_specification=""):
         return json.dumps(model_to_dict(self), indent=4, sort_keys=True, default=str)
 
     def __repr__(self):
         return str(self)
 
     @classmethod
-    def bootstrap_pass_one(cls, model_class, xml_tag, id_attr='id', name_attr='name', skip_without=None):
+    def bootstrap_pass_one(
+        cls, model_class, xml_tag, id_attr="id", name_attr="name", skip_without=None
+    ):
         # Pass one.
         initial_count = len(model_class)
         inserted_count = 0
         xml_path = Bootstrapper.get_xml_path(xml_tag)
-        print(f"Loading data from {xml_path}", flush=True)
-        with gzip.GzipFile(xml_path, 'r') as file_pointer:
+        log.info(f"Loading data from {xml_path}")
+        with gzip.GzipFile(xml_path, "r") as file_pointer:
             iterator = Bootstrapper.iterparse(file_pointer, xml_tag)
             bulk_inserts = []
             workers = []
@@ -79,75 +80,77 @@ class DiscogsModel(Model):
                     if skip_without:
                         if any(not data.get(_) for _ in skip_without):
                             continue
-                    if element.get('id'):
-                        data['id'] = element.get('id')
-                    data['random'] = random.random()
-                    # print(**data)
+                    if element.get("id"):
+                        data["id"] = element.get("id")
+                    data["random"] = random.random()
+                    # log.debug(**data)
                     new_instance = model_class(model_class, **data)
-                    # print(f"new_instance: {new_instance}", flush=True)
+                    # log.debug(f"new_instance: {new_instance}", flush=True)
                     bulk_inserts.append(new_instance)
                     inserted_count += 1
-                    if len(bulk_inserts) >= DiscogsModel.BULK_INSERT_BATCH_SIZE:
-                        worker = cls.insert_bulk(model_class, bulk_inserts, inserted_count)
-                        worker.start()
-                        workers.append(worker)
-                        bulk_inserts.clear()
-                    if len(workers) > discograph.database.get_concurrency_count():
-                        worker = workers.pop(0)
-                        # print(f"wait for worker {len(workers)} in list", flush=True)
-                        worker.join()
-                        if worker.exitcode > 0:
-                            print(f"worker.exitcode: {worker.exitcode}")
-                            # raise Exception("Error in worker process")
-                        worker.terminate()
+                    if discograph.database.get_concurrency_count() > 1:
+                        # Can do multi threading
+                        if len(bulk_inserts) >= DiscogsModel.BULK_INSERT_BATCH_SIZE:
+                            worker = cls.insert_bulk(
+                                model_class, bulk_inserts, inserted_count
+                            )
+                            worker.start()
+                            workers.append(worker)
+                            bulk_inserts.clear()
+                        if len(workers) > discograph.database.get_concurrency_count():
+                            worker = workers.pop(0)
+                            log.debug(f"wait for worker {len(workers)} in list")
+                            worker.join()
+                            if worker.exitcode > 0:
+                                log.debug(
+                                    f"worker {worker.name} exitcode: {worker.exitcode}"
+                                )
+                                # raise Exception("Error in worker process")
+                            worker.terminate()
                     # if inserted_count >= 1000000:
                     #     break
-                    if Bootstrapper.is_test:
-                        document = model_class.create(**data)
-                        template = u'{} (Pass 1) (idx:{}) (id:{}): {}'
-                        message = template.format(
-                            model_class.__name__.upper(),
-                            i,
-                            getattr(document, id_attr),
-                            getattr(document, name_attr),
-                        )
-                        print(message)
+                    # document = model_class.create(**data)
+                    # template = "{} (Pass 1) (idx:{}) (id:{}): {}"
+                    # message = template.format(
+                    #     model_class.__name__.upper(),
+                    #     i,
+                    #     getattr(document, id_attr),
+                    #     getattr(document, name_attr),
+                    # )
+                    # log.debug(message)
                 except DataError as e:
-                    print("Error in bootstrap_pass_one")
-                    pprint.pprint(data)
-                    traceback.print_exc()
+                    log.exception("Error in bootstrap_pass_one", pprint.pformat(data))
+                    # traceback.print_exc()
                     raise e
             while len(workers) > 0:
                 worker = workers.pop(0)
-                # print(f"wait for worker {len(workers)} in list", flush=True)
+                log.debug(
+                    f"wait for worker {worker.name} - {len(workers)} left in list"
+                )
                 worker.join()
                 if worker.exitcode > 0:
-                    print(f"worker.exitcode: {worker.exitcode}")
+                    log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
                     # raise Exception("Error in worker process")
                 worker.terminate()
             if len(bulk_inserts) > 0:
                 with DiscogsModel.atomic():
                     try:
                         model_class.bulk_create(bulk_inserts)
-                    except peewee.PeeweeException:
-                        print("Error in bootstrap_pass_one")
-                        traceback.print_exc()
+                    except peewee.PeeweeException as e:
+                        log.exception("Error in bootstrap_pass_one")
+                        raise e
             updated_count = len(model_class) - initial_count
-            # print(f"inserted_count: {inserted_count}", flush=True)
-            # print(f"updated_count: {updated_count}", flush=True)
-            # print(f"i+1: {i+1}", flush=True)
+            log.debug(f"inserted_count: {inserted_count}")
+            log.debug(f"updated_count: {updated_count}")
             assert inserted_count == updated_count
 
     @classmethod
     def insert_bulk(cls, model_class, bulk_inserts, inserted_count):
         worker = cls.BootstrapPassOneWorker(model_class, bulk_inserts, inserted_count)
-        # print("bootstrap pass one - start worker")
         return worker
 
     @classmethod
-    def bootstrap_pass_two(cls, model_class, name_attr='name'):
-        skipped_template = u'{} [SKIPPED] (Pass 2) (id:{}): {}'
-        changed_template = u'{}           (Pass 2) (id:{}): {}'
+    def bootstrap_pass_two(cls, model_class, name_attr="name"):
         corpus = {}
         maximum_id = model_class.select(fn.Max(model_class.id)).scalar()
         for i in range(1, maximum_id + 1):
@@ -156,23 +159,17 @@ class DiscogsModel(Model):
                 continue
             document = list(query)[0]
             changed = document.resolve_references(corpus)
-            if not changed:
-                message = skipped_template.format(
-                    model_class.__name__.upper(),
-                    document.id,
-                    getattr(document, name_attr),
-                    )
-                if Bootstrapper.is_test:
-                    print(message)
-                continue
-            message = changed_template.format(
-                model_class.__name__.upper(),
-                document.id,
-                getattr(document, name_attr),
+            if changed:
+                log.debug(
+                    f"{model_class.__name__.upper()}           (Pass 2) (id:{document.id}):\t"
+                    + f"{getattr(document, name_attr)}"
                 )
-            if Bootstrapper.is_test:
-                print(message)
-            document.save()
+                document.save()
+            else:
+                log.debug(
+                    f"{model_class.__name__.upper()} [SKIPPED] (Pass 2) (id:{document.id}):\t"
+                    + f"{getattr(document, name_attr)}"
+                )
 
     @staticmethod
     def database():
