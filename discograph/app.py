@@ -1,5 +1,6 @@
 import atexit
 import logging
+import os
 
 from flask import Flask
 from flask import g
@@ -14,6 +15,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from discograph import api
 from discograph import exceptions
 from discograph import ui
+from discograph.config import PostgresProductionConfiguration
 from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.database import setup_database, shutdown_database
 from discograph.logging_config import setup_logging, shutdown_logging
@@ -113,13 +115,13 @@ def main():
     log.info("######  #  ####   ####   ####   ####  #    # #    # #      #    # ")
     log.info("")
     log.info("")
-
-    # app.config.from_object('discograph.config.CockroachDevelopmentConfiguration')
-    # app.config.from_object('discograph.config.PostgresDevelopmentConfiguration')
-    app.config.from_object("discograph.config.PostgresProductionConfiguration")
-    # app.config.from_object('discograph.config.SqliteDevelopmentConfiguration')
-    setup_cache(app.config)
-    setup_database(app.config)
+    log.info("Using PostgresProductionConfiguration")
+    log.info(f"DATABASE_HOST: {os.getenv('DATABASE_HOST')}")
+    log.info(f"DATABASE_NAME: {os.getenv('DATABASE_NAME')}")
+    config = vars(PostgresProductionConfiguration)
+    app.config.from_object(config)
+    setup_cache(config)
+    setup_database(config)
     setup_application()
     # Note reverse order (last in first out), logging is the last to be shutdown
     atexit.register(shutdown_logging)

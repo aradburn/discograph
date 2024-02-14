@@ -41,9 +41,6 @@ class Configuration(object):
 
 
 class PostgresProductionConfiguration(Configuration):
-    log.info("PostgresProductionConfiguration")
-    log.info(f"DATABASE_HOST: {os.getenv('DATABASE_HOST')}")
-    log.info(f"DATABASE_NAME: {os.getenv('DATABASE_NAME')}")
     PRODUCTION = True
     DEBUG = True
     TESTING = False
