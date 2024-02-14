@@ -96,3 +96,22 @@ function dg_window_init() {
         dg.dimensions[1] / 2,
     ];
 }
+
+function dg_show_message(type, message) {
+    var text = [
+            '<div class="alert alert-' + type + ' alert-dismissible" role="alert">',
+            '<button type="button" class="close" data-dismiss="alert" aria-label="Close">',
+            '<span aria-hidden="true">&times;</span>',
+            '</button>',
+            message,
+            '</div>'
+            ].join('');
+    $('#flash').append(text);
+}
+
+function dg_clear_messages(delay) {
+    setTimeout(
+        function() {
+            $('#flash').empty();
+        }, delay);
+}

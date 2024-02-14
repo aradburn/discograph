@@ -1413,7 +1413,7 @@
 
     function dg_network_tick(e) {
         dg.network.tick += 1;
-        console.log("tick: ", dg.network.tick);
+        // console.log("tick: ", dg.network.tick);
         var k = 1.0; //e.alpha * 5;
         if (dg.network.data.json) {
             var centerNode = dg.network.data.nodeMap.get(dg.network.data.json.center.key);
@@ -1521,17 +1521,21 @@
     }
 
     function dg_svg_print(width, height) {
+        dg_show_message("info", "Print start");
         var svgNode = d3.select("#svg").node();
-        console.log("SVG node: ", svgNode);
 
         var svgString = dg_svg_getSVGString(svgNode);
-        console.log("SVG str: ", svgString);
         dg_svg_string2Image(svgString, 2 * width, 2 * height, 'png', saveBlob); // passes Blob and filesize String to the callback
 
         function saveBlob(dataBlob, filesize) {
-            console.log("Save SVG blob");
             // Call FileSaver.js function
-            saveAs(dataBlob, 'Discograph2 exported to PNG.png');
+            var entityKey = dg.network.pageData.selectedNodeKey;
+            var node = dg.network.data.nodeMap.get(entityKey);
+            saveAs(dataBlob, "Discograph2 - " + node.name + ".png");
+
+            dg_clear_messages(10);
+            dg_show_message("success", "Print complete");
+            dg_clear_messages(10000);
         }
     }
 
@@ -2583,6 +2587,25 @@
             dg.dimensions[0] / 2,
             dg.dimensions[1] / 2,
         ];
+    }
+
+    function dg_show_message(type, message) {
+        var text = [
+            '<div class="alert alert-' + type + ' alert-dismissible" role="alert">',
+            '<button type="button" class="close" data-dismiss="alert" aria-label="Close">',
+            '<span aria-hidden="true">&times;</span>',
+            '</button>',
+            message,
+            '</div>'
+        ].join('');
+        $('#flash').append(text);
+    }
+
+    function dg_clear_messages(delay) {
+        setTimeout(
+            function() {
+                $('#flash').empty();
+            }, delay);
     }
     if (typeof define === "function" && define.amd) define(dg);
     else if (typeof module === "object" && module.exports) module.exports = dg;

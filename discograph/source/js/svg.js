@@ -73,17 +73,21 @@ function dg_svg_setupDefs() {
 }
 
 function dg_svg_print(width, height) {
+    dg_show_message("info", "Print start");
     var svgNode = d3.select("#svg").node();
-        console.log("SVG node: ", svgNode);
 
     var svgString = dg_svg_getSVGString(svgNode);
-    console.log("SVG str: ", svgString);
 	dg_svg_string2Image(svgString, 2 * width, 2 * height, 'png', saveBlob); // passes Blob and filesize String to the callback
 
 	function saveBlob( dataBlob, filesize ){
-	    console.log("Save SVG blob");
 	    // Call FileSaver.js function
-		saveAs(dataBlob, 'Discograph2 exported to PNG.png');
+	    var entityKey = dg.network.pageData.selectedNodeKey;
+	    var node = dg.network.data.nodeMap.get(entityKey);
+		saveAs(dataBlob, "Discograph2 - " + node.name + ".png");
+
+		dg_clear_messages(10);
+		dg_show_message("success", "Print complete");
+		dg_clear_messages(10000);
 	}
 }
 

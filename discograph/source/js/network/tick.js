@@ -97,7 +97,7 @@ function dg_network_translate(d) {
 
 function dg_network_tick(e) {
     dg.network.tick += 1;
-    console.log("tick: ", dg.network.tick);
+    // console.log("tick: ", dg.network.tick);
     var k = 1.0; //e.alpha * 5;
     if (dg.network.data.json) {
         var centerNode = dg.network.data.nodeMap.get(dg.network.data.json.center.key);
