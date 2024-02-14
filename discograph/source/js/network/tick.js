@@ -1,7 +1,5 @@
 NODE_INNER_RADIUS = 8
 NODE_OUTER_RADIUS = 11
-//NODE_INNER_RADIUS = 9
-//NODE_OUTER_RADIUS = 12
 
 function dg_network_getRadius(d) {
     var boost1 = d.distance === 0 ? 10 : d.distance === 1 ? 5 : 0;

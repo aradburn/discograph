@@ -480,9 +480,9 @@ function dg_network_start() {
     $('#network-running')
                 .addClass('glyphicon-animate glyphicon-refresh');
     dg.network.layers.link.selectAll('.link')
-        .classed('noninteractive', true);
+        .classed('noninteractive', false);
     dg.network.layers.node.selectAll('.node')
-        .classed('noninteractive', true);
+        .classed('noninteractive', false);
 }
 
 function dg_network_end(event) {

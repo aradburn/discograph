@@ -717,9 +717,9 @@
         $('#network-running')
             .addClass('glyphicon-animate glyphicon-refresh');
         dg.network.layers.link.selectAll('.link')
-            .classed('noninteractive', true);
+            .classed('noninteractive', false);
         dg.network.layers.node.selectAll('.node')
-            .classed('noninteractive', true);
+            .classed('noninteractive', false);
     }
 
     function dg_network_end(event) {
@@ -1317,8 +1317,6 @@
 
     NODE_INNER_RADIUS = 8
     NODE_OUTER_RADIUS = 11
-    //NODE_INNER_RADIUS = 9
-    //NODE_OUTER_RADIUS = 12
 
     function dg_network_getRadius(d) {
         var boost1 = d.distance === 0 ? 10 : d.distance === 1 ? 5 : 0;
