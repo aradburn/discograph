@@ -71,7 +71,7 @@ var DiscographFsm = machina.Fsm.extend({
         }));
         $('#svg').on('mousedown', function(event) {
             if (self.state == 'viewing-network') {
-                self.selectEntity(null);
+                // ### TODO self.selectEntity(null);
             } else if (self.state == 'viewing-radial') {
                 self.showNetwork();
             }

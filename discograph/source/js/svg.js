@@ -73,7 +73,7 @@ function dg_svg_setupDefs() {
 }
 
 function dg_svg_print(width, height) {
-    dg_show_message("info", "Print start");
+    dg_show_message("info", "Saving image to disk, please wait...");
     var svgNode = d3.select("#svg").node();
 
     var svgString = dg_svg_getSVGString(svgNode);
@@ -86,7 +86,7 @@ function dg_svg_print(width, height) {
 		saveAs(dataBlob, "Discograph2 - " + node.name + ".png");
 
 		dg_clear_messages(10);
-		dg_show_message("success", "Print complete");
+		dg_show_message("success", "Saving image complete");
 		dg_clear_messages(10000);
 	}
 }
@@ -94,7 +94,6 @@ function dg_svg_print(width, height) {
 function dg_svg_getSVGString(svgNode) {
 	svgNode.setAttribute('xlink', 'http://www.w3.org/1999/xlink');
 	var cssStyleText = getCSSStyles(svgNode);
-	console.log("final cssStyleText: ", cssStyleText);
 	appendCSS(cssStyleText, svgNode);
 
 	var serializer = new XMLSerializer();
@@ -112,7 +111,6 @@ function dg_svg_getSVGString(svgNode) {
 		for (var c = 0; c < parentElement.classList.length; c++)
 				if ( !contains('.' + parentElement.classList[c], selectorTextArr) )
 					selectorTextArr.push('.' + parentElement.classList[c]);
-console.log("selectorTextArr: ", selectorTextArr);
 		// Add Children element Ids and Classes to the list
 		var nodes = parentElement.getElementsByTagName("*");
 		for (var i = 0; i < nodes.length; i++) {
@@ -121,21 +119,18 @@ console.log("selectorTextArr: ", selectorTextArr);
 				selectorTextArr.push('#' + id);
 
 			var classes = nodes[i].classList;
-//			console.log("nodes[i]: ", nodes[i]);
 
             // .nodeClass
 			for (var c = 0; c < classes.length; c++) {
 			    var selector = '.' + classes[c];
 				if (!contains(selector, selectorTextArr)) {
 					selectorTextArr.push(selector);
-					console.log("add1: ", selector);
 			    }
 			    // nodeName.nodeClass
 			    if (nodes[i].nodeName) {
 				    var selector = nodes[i].nodeName + '.' + classes[c];
 					if (!contains(selector, selectorTextArr)) {
 				        selectorTextArr.push(selector);
-					    console.log("add2: ", selector);
 			        }
                 }
             }
@@ -146,14 +141,12 @@ console.log("selectorTextArr: ", selectorTextArr);
 			    var selector = '#' + parentId + ' .' + classes[c];
 				if (parentId && !contains(selector, selectorTextArr) ) {
 					selectorTextArr.push(selector);
-					console.log("add3: ", selector);
 				}
 				// #parent nodeName.nodeClass
 			    if (nodes[i].nodeName) {
 				    var selector = '#' + parentId + " " + nodes[i].nodeName + '.' + classes[c];
 					if (!contains(selector, selectorTextArr)) {
 				        selectorTextArr.push(selector);
-					    console.log("add4: ", selector);
 			        }
                 }
 			}
@@ -166,13 +159,11 @@ console.log("selectorTextArr: ", selectorTextArr);
 			        var selector = '#' + parentId + ' .' + classes[c];
     				if (parentId && !contains(selector, selectorTextArr) ) {
 	    				selectorTextArr.push(selector);
-		    			console.log("add5: ", selector);
 			    	}
 			    	if (nodes[i].nodeName) {
 				        var selector = '#' + parentId + " " + nodes[i].nodeName + '.' + classes[c];
 					    if (!contains(selector, selectorTextArr)) {
 				            selectorTextArr.push(selector);
-					        console.log("add6: ", selector);
 			            }
                     }
 			    }
@@ -190,14 +181,12 @@ console.log("selectorTextArr: ", selectorTextArr);
 			            var selector = '.' + parentClasses[pc];
         				if (!contains(selector, selectorTextArr)) {
 		        			selectorTextArr.push(selector);
-				        	console.log("add7: ", selector);
 			            }
          			    // No nodeClass + nodeName
 		        	    if (nodes[i].nodeName) {
 				            var selector = '.' + parentClasses[pc] + ' ' + nodes[i].nodeName;
 					        if (!contains(selector, selectorTextArr)) {
 				                selectorTextArr.push(selector);
-					            console.log("add8: ", selector);
 			                }
 			            }
 
@@ -205,14 +194,12 @@ console.log("selectorTextArr: ", selectorTextArr);
 			            var selector = '.' + parentClasses[pc] + ' .' + classes[c];
         				if (!contains(selector, selectorTextArr)) {
 		        			selectorTextArr.push(selector);
-				        	console.log("add9: ", selector);
 			            }
          			    // Parent class + nodeName.nodeClass
 		        	    if (nodes[i].nodeName) {
 				            var selector = '.' + parentClasses[pc] + ' ' + nodes[i].nodeName + '.' + classes[c];
 					        if (!contains(selector, selectorTextArr)) {
 				                selectorTextArr.push(selector);
-					            console.log("add10: ", selector);
 			                }
 			            }
 
@@ -220,14 +207,12 @@ console.log("selectorTextArr: ", selectorTextArr);
 			            selector = '#' + parentParentId + ' .' + parentClasses[pc];
     				    if (parentParentId && !contains(selector, selectorTextArr) ) {
 	    				    selectorTextArr.push(selector);
-		    			    console.log("add11: ", selector);
 			    	    }
 			    	    // ParentParentID + Parent class + nodeName
 			            if (parentParentId && nodes[i].nodeName) {
 				            var selector = '#' + parentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName;
 					        if (!contains(selector, selectorTextArr)) {
 				                selectorTextArr.push(selector);
-					            console.log("add12: ", selector);
 			                }
                         }
 
@@ -235,14 +220,12 @@ console.log("selectorTextArr: ", selectorTextArr);
 			            selector = '#' + parentParentId + ' .' + parentClasses[pc] + ' .' + classes[c];
     				    if (parentParentId && !contains(selector, selectorTextArr) ) {
 	    				    selectorTextArr.push(selector);
-		    			    console.log("add11: ", selector);
 			    	    }
 			    	    // ParentParentID + Parent class + nodeName.nodeClass
 			            if (parentParentId && nodes[i].nodeName) {
 				            var selector = '#' + parentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName + '.' + classes[c];
 					        if (!contains(selector, selectorTextArr)) {
 				                selectorTextArr.push(selector);
-					            console.log("add12: ", selector);
 			                }
                         }
 
@@ -252,13 +235,11 @@ console.log("selectorTextArr: ", selectorTextArr);
                             selector = '#' + parentParentParentId + ' .' + parentClasses[pc];
                             if (parentParentParentId && !contains(selector, selectorTextArr) ) {
                                 selectorTextArr.push(selector);
-                                console.log("add11: ", selector);
                             }
                             if (parentParentParentId && nodes[i].nodeName) {
                                 var selector = '#' + parentParentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName;
                                 if (!contains(selector, selectorTextArr)) {
                                     selectorTextArr.push(selector);
-                                    console.log("add12: ", selector);
                                 }
                             }
                         }
@@ -269,13 +250,11 @@ console.log("selectorTextArr: ", selectorTextArr);
                             selector = '#' + parentParentParentId + ' .' + parentClasses[pc] + ' .' + classes[c];
                             if (parentParentParentId && !contains(selector, selectorTextArr) ) {
                                 selectorTextArr.push(selector);
-                                console.log("add11: ", selector);
                             }
                             if (parentParentParentId && nodes[i].nodeName) {
                                 var selector = '#' + parentParentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName + '.' + classes[c];
                                 if (!contains(selector, selectorTextArr)) {
                                     selectorTextArr.push(selector);
-                                    console.log("add12: ", selector);
                                 }
                             }
                         }
@@ -283,7 +262,6 @@ console.log("selectorTextArr: ", selectorTextArr);
                 }
             }
 		}
-console.log("selectorTextArr: ", selectorTextArr);
 
 		// Extract CSS Rules
 		var extractedCSSText = "";
@@ -301,11 +279,8 @@ console.log("selectorTextArr: ", selectorTextArr);
 			var cssRules = s.cssRules;
 
 			for (var r = 0; r < cssRules.length; r++) {
-			//console.log("cssRules[r].selectorText: ", cssRules[r].selectorText);
 				if (contains(cssRules[r].selectorText, selectorTextArr)) {
 					extractedCSSText += cssRules[r].cssText + "\n";
-					console.log("add cssRules[r].cssText: ", cssRules[r].cssText);
-					//console.log("extractedCSSText: ", extractedCSSText);
 			    }
 			}
 		}

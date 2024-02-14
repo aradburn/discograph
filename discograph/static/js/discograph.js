@@ -302,25 +302,8 @@
     function dg_network_setupForceLayout() {
         console.log("dg_network_setupForceLayout");
         return d3.forceSimulation(dg.network.pageData.nodes)
-
             .force("collide", d3.forceCollide().radius(d => d.radius + COLLIDE_BUFFER).iterations(COLLIDE_ITERATIONS))
-            //        .force("collide", d3.forceCollide().radius(d => Math.pow(dg_network_getOuterRadius(d) - 10, COLLIDE_RADIUS_POWER) + COLLIDE_OVERLAP).iterations(COLLIDE_ITERATIONS))
-            //        .force("charge", d3.forceManyBody())
-            //        .force("charge", d3.forceManyBody().strength(d => d.isIntermediate ? 0 : Math.sqrt(d.radius) * NODE_STRENGTH))
-            //        .force("charge", d3.forceManyBody().strength(NODE_STRENGTH).distanceMax(DISTANCE_MAX).theta(THETA))
             .force("charge", d3.forceManyBody().strength(nodeStrength).distanceMax(DISTANCE_MAX).theta(THETA))
-
-
-
-
-            //        .force("charge", d3.forceManyBody().strength(d => Math.sqrt(dg_network_getOuterRadius(d)) * NODE_STRENGTH).distanceMax(DISTANCE_MAX).theta(THETA))
-
-            //        .force("magnetic", d3.forceMagnetic().charge(d => d.isIntermediate ? 0 : d.radius * d.distance * NODE_STRENGTH).polarity(false).strength(1.0))
-
-            //        .force("charge", d3.forceManyBody().strength(d => Math.sqrt(d.radius) * NODE_STRENGTH))
-            //        .force("gravity", d3.forceManyBody().strength(GRAVITY))
-            //        .force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).strength(LINK_STRENGTH).iterations(LINK_ITERATIONS))
-
             .force("bbox", dg_network_bbox_force)
             .on("tick", dg_network_tick)
             .on("end", dg_network_end)
@@ -335,11 +318,11 @@
         var nodeData = dg.network.pageData.nodes.filter(function(d) {
             return (!d.isIntermediate) && (d.pages.indexOf(dg.network.pageData.currentPage) != -1);
         })
-        console.log("nodeData: ", nodeData);
+        // console.log("nodeData: ", nodeData);
         var linkData = dg.network.pageData.links.filter(function(d) {
             return (!d.isSpline) && (d.pages.indexOf(dg.network.pageData.currentPage) != -1);
         })
-        console.log("linkData: ", linkData);
+        // console.log("linkData: ", linkData);
 
         dg.network.selections.halo = dg.network.layers.halo.selectAll(".node");
         dg.network.selections.halo = dg.network.selections.halo.data(nodeData, keyFunc);
@@ -385,14 +368,8 @@
 
         // Restart simulation
         console.log("Updating forceLayout");
-        console.log("dg.network.pageData.nodes: ", dg.network.pageData.nodes);
+        // console.log("dg.network.pageData.nodes: ", dg.network.pageData.nodes);
         dg.network.forceLayout.nodes(dg.network.pageData.nodes);
-        //    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance))
-        //    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).strength(LINK_STRENGTH))
-        //    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).strength(LINK_STRENGTH).iterations(LINK_ITERATIONS))
-
-        //    dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2));
-        //    dg.network.forceLayout.force("y", d3.forceY(dg.dimensions[1] / 2));
 
         if (nodeData.length > 16 && nodeData.length < 500) {
             dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2).strength(gravityStrength));
@@ -511,6 +488,10 @@
                 oldNode.missing = newNode.missing;
                 oldNode.missingByPage = newNode.missingByPage;
                 oldNode.pages = newNode.pages;
+                var dx = (random() * 2.0 - 1.0) * LINK_DISTANCE * oldNode.distance
+                var dy = (random() * 2.0 - 1.0) * LINK_DISTANCE * oldNode.distance
+                oldNode.x = dg.network.newNodeCoords[0] + dx;
+                oldNode.y = dg.network.newNodeCoords[1] + dy;
             } else {
                 var dx = (random() * 2.0 - 1.0) * LINK_DISTANCE * newNode.distance
                 var dy = (random() * 2.0 - 1.0) * LINK_DISTANCE * newNode.distance
@@ -672,8 +653,6 @@
 
     // Reheat the simulation when drag starts, and fix the subject position.
     function dg_network_dragstarted(event) {
-        console.log("dragstart: ", event);
-
         event.subject.fx = event.subject.x;
         event.subject.fy = event.subject.y;
         event.subject.dragx = event.subject.x;
@@ -685,7 +664,6 @@
 
     // Update the subject (dragged node) position during drag.
     function dg_network_dragged(event) {
-        console.log("dragged: ", event);
         event.subject.fx = event.x;
         event.subject.fy = event.y;
         if (event.subject.dragx != event.subject.x ||
@@ -699,7 +677,6 @@
     // Restore the target alpha so the simulation cools after dragging ends.
     // Unfix the subject position now that it’s no longer being dragged.
     function dg_network_dragended(event) {
-        console.log("dragend: ", event);
         if (event.subject.dragx == event.subject.x &&
             event.subject.dragy == event.subject.y)
             return;
@@ -1040,8 +1017,6 @@
 
     function dg_network_onNodeUpdate(nodeUpdate) {
         nodeUpdate.selectAll(".outer")
-            //        .transition()
-            //        .duration(NODE_UPDATE_TRANSITION_TIME)
             .attr("class", function(d) {
                 var classes = [
                     "outer",
@@ -1050,8 +1025,6 @@
                 return classes.join(" ");
             })
         nodeUpdate.selectAll(".inner")
-            //        .transition()
-            //        .duration(NODE_UPDATE_TRANSITION_TIME)
             .attr("class", function(d) {
                 var classes = [
                     "inner",
@@ -1063,35 +1036,6 @@
             .style("opacity", function(d) {
                 return d.missing > 0 ? 1 : 0;
             });
-
-        //    nodeUpdate.selectAll(".more").each(function(d, i) {
-        //        var prevMissing = Boolean(d.hasMissing);
-        //        var prevMissingByPage = Boolean(d.hasMissingByPage);
-        //        var currMissing = Boolean(d.missing);
-        //        if (!d.missingByPage) {
-        //            var currMissingByPage = false;
-        //        } else {
-        //            var currMissingByPage = Boolean(
-        //                d.missingByPage[dg.network.pageData.currentPage]
-        //                );
-        //        }
-        //        d3.select(this)
-        //            .transition()
-        //            .duration(NODE_UPDATE_TRANSITION_TIME)
-        //            .style('opacity', function(d) {
-        //                return (currMissing || currMissingByPage) ? 1 : 0;
-        //                })
-        //            .attrTween('transform', function(d) {
-        //                var start = prevMissingByPage ? 45 : 0;
-        //                var stop = currMissingByPage ? 45 : 0;
-        //                return d3.interpolateString(
-        //                    "rotate(" + start + ")",
-        //                    "rotate(" + stop + ")"
-        //                    );
-        //                });
-        //        d.hasMissing = currMissing;
-        //        d.hasMissingByPage = currMissingByPage;
-        //    });
     }
 
     function dg_network_onNodeMouseOver(event, d) {
@@ -1111,18 +1055,14 @@
     function dg_network_onNodeMouseDown(event, d) {
         var thisTime = d3.now();
         var lastTime = d.lastClickTime;
-        //    console.log("lastTime: ", lastTime);
-        //    console.log("thisTime: ", thisTime);
         d.lastClickTime = thisTime;
         if (!lastTime || (thisTime - lastTime) < 700) {
-            //    console.log("mousedown single click");
             $(window).trigger({
                 type: 'discograph:select-entity',
                 entityKey: d.key,
                 fixed: true,
             });
         } else if ((thisTime - lastTime) < 700) {
-            //    console.log("mousedown double click");
             $(window).trigger({
                 type: 'discograph:request-network',
                 entityKey: d.key,
@@ -1133,7 +1073,6 @@
     }
 
     function dg_network_onNodeMouseDoubleClick(event, d) {
-        //    console.log("mousedown double click");
         nodeToolTip.hide(d);
         linkToolTip.hide();
         $(window).trigger({
@@ -1145,7 +1084,6 @@
     }
 
     function dg_network_onNodeTouchStart(event, d) {
-        //console.log("touchstart ", d);
         var thisTime = $.now();
         var lastTime = d.lastTouchTime;
         d.lastTouchTime = thisTime;
@@ -1521,7 +1459,7 @@
     }
 
     function dg_svg_print(width, height) {
-        dg_show_message("info", "Print start");
+        dg_show_message("info", "Saving image to disk, please wait...");
         var svgNode = d3.select("#svg").node();
 
         var svgString = dg_svg_getSVGString(svgNode);
@@ -1534,7 +1472,7 @@
             saveAs(dataBlob, "Discograph2 - " + node.name + ".png");
 
             dg_clear_messages(10);
-            dg_show_message("success", "Print complete");
+            dg_show_message("success", "Saving image complete");
             dg_clear_messages(10000);
         }
     }
@@ -1542,7 +1480,6 @@
     function dg_svg_getSVGString(svgNode) {
         svgNode.setAttribute('xlink', 'http://www.w3.org/1999/xlink');
         var cssStyleText = getCSSStyles(svgNode);
-        console.log("final cssStyleText: ", cssStyleText);
         appendCSS(cssStyleText, svgNode);
 
         var serializer = new XMLSerializer();
@@ -1560,7 +1497,6 @@
             for (var c = 0; c < parentElement.classList.length; c++)
                 if (!contains('.' + parentElement.classList[c], selectorTextArr))
                     selectorTextArr.push('.' + parentElement.classList[c]);
-            console.log("selectorTextArr: ", selectorTextArr);
             // Add Children element Ids and Classes to the list
             var nodes = parentElement.getElementsByTagName("*");
             for (var i = 0; i < nodes.length; i++) {
@@ -1569,21 +1505,18 @@
                     selectorTextArr.push('#' + id);
 
                 var classes = nodes[i].classList;
-                //			console.log("nodes[i]: ", nodes[i]);
 
                 // .nodeClass
                 for (var c = 0; c < classes.length; c++) {
                     var selector = '.' + classes[c];
                     if (!contains(selector, selectorTextArr)) {
                         selectorTextArr.push(selector);
-                        console.log("add1: ", selector);
                     }
                     // nodeName.nodeClass
                     if (nodes[i].nodeName) {
                         var selector = nodes[i].nodeName + '.' + classes[c];
                         if (!contains(selector, selectorTextArr)) {
                             selectorTextArr.push(selector);
-                            console.log("add2: ", selector);
                         }
                     }
                 }
@@ -1594,14 +1527,12 @@
                     var selector = '#' + parentId + ' .' + classes[c];
                     if (parentId && !contains(selector, selectorTextArr)) {
                         selectorTextArr.push(selector);
-                        console.log("add3: ", selector);
                     }
                     // #parent nodeName.nodeClass
                     if (nodes[i].nodeName) {
                         var selector = '#' + parentId + " " + nodes[i].nodeName + '.' + classes[c];
                         if (!contains(selector, selectorTextArr)) {
                             selectorTextArr.push(selector);
-                            console.log("add4: ", selector);
                         }
                     }
                 }
@@ -1614,13 +1545,11 @@
                         var selector = '#' + parentId + ' .' + classes[c];
                         if (parentId && !contains(selector, selectorTextArr)) {
                             selectorTextArr.push(selector);
-                            console.log("add5: ", selector);
                         }
                         if (nodes[i].nodeName) {
                             var selector = '#' + parentId + " " + nodes[i].nodeName + '.' + classes[c];
                             if (!contains(selector, selectorTextArr)) {
                                 selectorTextArr.push(selector);
-                                console.log("add6: ", selector);
                             }
                         }
                     }
@@ -1638,14 +1567,12 @@
                             var selector = '.' + parentClasses[pc];
                             if (!contains(selector, selectorTextArr)) {
                                 selectorTextArr.push(selector);
-                                console.log("add7: ", selector);
                             }
                             // No nodeClass + nodeName
                             if (nodes[i].nodeName) {
                                 var selector = '.' + parentClasses[pc] + ' ' + nodes[i].nodeName;
                                 if (!contains(selector, selectorTextArr)) {
                                     selectorTextArr.push(selector);
-                                    console.log("add8: ", selector);
                                 }
                             }
 
@@ -1653,14 +1580,12 @@
                             var selector = '.' + parentClasses[pc] + ' .' + classes[c];
                             if (!contains(selector, selectorTextArr)) {
                                 selectorTextArr.push(selector);
-                                console.log("add9: ", selector);
                             }
                             // Parent class + nodeName.nodeClass
                             if (nodes[i].nodeName) {
                                 var selector = '.' + parentClasses[pc] + ' ' + nodes[i].nodeName + '.' + classes[c];
                                 if (!contains(selector, selectorTextArr)) {
                                     selectorTextArr.push(selector);
-                                    console.log("add10: ", selector);
                                 }
                             }
 
@@ -1668,14 +1593,12 @@
                             selector = '#' + parentParentId + ' .' + parentClasses[pc];
                             if (parentParentId && !contains(selector, selectorTextArr)) {
                                 selectorTextArr.push(selector);
-                                console.log("add11: ", selector);
                             }
                             // ParentParentID + Parent class + nodeName
                             if (parentParentId && nodes[i].nodeName) {
                                 var selector = '#' + parentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName;
                                 if (!contains(selector, selectorTextArr)) {
                                     selectorTextArr.push(selector);
-                                    console.log("add12: ", selector);
                                 }
                             }
 
@@ -1683,14 +1606,12 @@
                             selector = '#' + parentParentId + ' .' + parentClasses[pc] + ' .' + classes[c];
                             if (parentParentId && !contains(selector, selectorTextArr)) {
                                 selectorTextArr.push(selector);
-                                console.log("add11: ", selector);
                             }
                             // ParentParentID + Parent class + nodeName.nodeClass
                             if (parentParentId && nodes[i].nodeName) {
                                 var selector = '#' + parentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName + '.' + classes[c];
                                 if (!contains(selector, selectorTextArr)) {
                                     selectorTextArr.push(selector);
-                                    console.log("add12: ", selector);
                                 }
                             }
 
@@ -1700,13 +1621,11 @@
                                 selector = '#' + parentParentParentId + ' .' + parentClasses[pc];
                                 if (parentParentParentId && !contains(selector, selectorTextArr)) {
                                     selectorTextArr.push(selector);
-                                    console.log("add11: ", selector);
                                 }
                                 if (parentParentParentId && nodes[i].nodeName) {
                                     var selector = '#' + parentParentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName;
                                     if (!contains(selector, selectorTextArr)) {
                                         selectorTextArr.push(selector);
-                                        console.log("add12: ", selector);
                                     }
                                 }
                             }
@@ -1717,13 +1636,11 @@
                                 selector = '#' + parentParentParentId + ' .' + parentClasses[pc] + ' .' + classes[c];
                                 if (parentParentParentId && !contains(selector, selectorTextArr)) {
                                     selectorTextArr.push(selector);
-                                    console.log("add11: ", selector);
                                 }
                                 if (parentParentParentId && nodes[i].nodeName) {
                                     var selector = '#' + parentParentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName + '.' + classes[c];
                                     if (!contains(selector, selectorTextArr)) {
                                         selectorTextArr.push(selector);
-                                        console.log("add12: ", selector);
                                     }
                                 }
                             }
@@ -1731,7 +1648,6 @@
                     }
                 }
             }
-            console.log("selectorTextArr: ", selectorTextArr);
 
             // Extract CSS Rules
             var extractedCSSText = "";
@@ -1749,11 +1665,8 @@
                 var cssRules = s.cssRules;
 
                 for (var r = 0; r < cssRules.length; r++) {
-                    //console.log("cssRules[r].selectorText: ", cssRules[r].selectorText);
                     if (contains(cssRules[r].selectorText, selectorTextArr)) {
                         extractedCSSText += cssRules[r].cssText + "\n";
-                        console.log("add cssRules[r].cssText: ", cssRules[r].cssText);
-                        //console.log("extractedCSSText: ", extractedCSSText);
                     }
                 }
             }
@@ -2073,7 +1986,7 @@
             }));
             $('#svg').on('mousedown', function(event) {
                 if (self.state == 'viewing-network') {
-                    self.selectEntity(null);
+                    // ### TODO self.selectEntity(null);
                 } else if (self.state == 'viewing-radial') {
                     self.showNetwork();
                 }

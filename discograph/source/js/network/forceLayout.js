@@ -75,25 +75,8 @@ function gravityStrength(d, i) {
 function dg_network_setupForceLayout() {
     console.log("dg_network_setupForceLayout");
     return d3.forceSimulation(dg.network.pageData.nodes)
-
         .force("collide", d3.forceCollide().radius(d => d.radius + COLLIDE_BUFFER).iterations(COLLIDE_ITERATIONS))
-//        .force("collide", d3.forceCollide().radius(d => Math.pow(dg_network_getOuterRadius(d) - 10, COLLIDE_RADIUS_POWER) + COLLIDE_OVERLAP).iterations(COLLIDE_ITERATIONS))
-//        .force("charge", d3.forceManyBody())
-//        .force("charge", d3.forceManyBody().strength(d => d.isIntermediate ? 0 : Math.sqrt(d.radius) * NODE_STRENGTH))
-//        .force("charge", d3.forceManyBody().strength(NODE_STRENGTH).distanceMax(DISTANCE_MAX).theta(THETA))
         .force("charge", d3.forceManyBody().strength(nodeStrength).distanceMax(DISTANCE_MAX).theta(THETA))
-
-
-
-
-//        .force("charge", d3.forceManyBody().strength(d => Math.sqrt(dg_network_getOuterRadius(d)) * NODE_STRENGTH).distanceMax(DISTANCE_MAX).theta(THETA))
-
-//        .force("magnetic", d3.forceMagnetic().charge(d => d.isIntermediate ? 0 : d.radius * d.distance * NODE_STRENGTH).polarity(false).strength(1.0))
-
-//        .force("charge", d3.forceManyBody().strength(d => Math.sqrt(d.radius) * NODE_STRENGTH))
-//        .force("gravity", d3.forceManyBody().strength(GRAVITY))
-//        .force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).strength(LINK_STRENGTH).iterations(LINK_ITERATIONS))
-
         .force("bbox", dg_network_bbox_force)
         .on("tick", dg_network_tick)
         .on("end", dg_network_end)
@@ -106,11 +89,11 @@ function dg_network_startForceLayout() {
     var nodeData = dg.network.pageData.nodes.filter(function(d) {
         return (!d.isIntermediate) && (d.pages.indexOf(dg.network.pageData.currentPage) != -1);
     })
-    console.log("nodeData: ", nodeData);
+    // console.log("nodeData: ", nodeData);
     var linkData = dg.network.pageData.links.filter(function(d) {
         return (!d.isSpline) && (d.pages.indexOf(dg.network.pageData.currentPage) != -1);
     })
-    console.log("linkData: ", linkData);
+    // console.log("linkData: ", linkData);
 
     dg.network.selections.halo = dg.network.layers.halo.selectAll(".node");
     dg.network.selections.halo = dg.network.selections.halo.data(nodeData, keyFunc);
@@ -148,14 +131,8 @@ function dg_network_startForceLayout() {
 
     // Restart simulation
     console.log("Updating forceLayout");
-    console.log("dg.network.pageData.nodes: ", dg.network.pageData.nodes);
+    // console.log("dg.network.pageData.nodes: ", dg.network.pageData.nodes);
     dg.network.forceLayout.nodes(dg.network.pageData.nodes);
-//    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance))
-//    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).strength(LINK_STRENGTH))
-//    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).strength(LINK_STRENGTH).iterations(LINK_ITERATIONS))
-
-//    dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2));
-//    dg.network.forceLayout.force("y", d3.forceY(dg.dimensions[1] / 2));
 
     if (nodeData.length > 16 && nodeData.length < 500) {
         dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2).strength(gravityStrength));
@@ -274,6 +251,10 @@ function dg_network_processJson(json) {
             oldNode.missing = newNode.missing;
             oldNode.missingByPage = newNode.missingByPage;
             oldNode.pages = newNode.pages;
+            var dx = (random() * 2.0 - 1.0) * LINK_DISTANCE * oldNode.distance
+            var dy = (random() * 2.0 - 1.0) * LINK_DISTANCE * oldNode.distance
+            oldNode.x = dg.network.newNodeCoords[0] + dx;
+            oldNode.y = dg.network.newNodeCoords[1] + dy;
         } else {
             var dx = (random() * 2.0 - 1.0) * LINK_DISTANCE * newNode.distance
             var dy = (random() * 2.0 - 1.0) * LINK_DISTANCE * newNode.distance
@@ -326,7 +307,7 @@ function dg_network_processJson(json) {
     dg_network_prune(2, 100)
     dg_network_prune(2, 100000)
 
-console.log("final nodes: ", dg.network.data.nodeMap);
+    console.log("final nodes: ", dg.network.data.nodeMap);
 }
 
 function dg_network_prune(maxDist, minLinks) {
@@ -435,8 +416,6 @@ function dg_network_bbox_force() {
 
 // Reheat the simulation when drag starts, and fix the subject position.
 function dg_network_dragstarted(event) {
-    console.log("dragstart: ", event);
-
     event.subject.fx = event.subject.x;
     event.subject.fy = event.subject.y;
     event.subject.dragx = event.subject.x;
@@ -448,7 +427,6 @@ function dg_network_dragstarted(event) {
 
 // Update the subject (dragged node) position during drag.
 function dg_network_dragged(event) {
-    console.log("dragged: ", event);
     event.subject.fx = event.x;
     event.subject.fy = event.y;
     if (event.subject.dragx != event.subject.x ||
@@ -462,7 +440,6 @@ function dg_network_dragged(event) {
 // Restore the target alpha so the simulation cools after dragging ends.
 // Unfix the subject position now that it’s no longer being dragged.
 function dg_network_dragended(event) {
-    console.log("dragend: ", event);
     if (event.subject.dragx == event.subject.x &&
         event.subject.dragy == event.subject.y)
         return;

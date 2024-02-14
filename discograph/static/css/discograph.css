@@ -117,17 +117,17 @@ form .clear,
 #networkLayer .link path.distance-0 {
   opacity: 0.6;
   stroke-width: 4;
-  stroke: #700;
+  /*    stroke: #700;*/
 }
 #networkLayer .link path.distance-1 {
   stroke-width: 3;
-  stroke: #300;
+  /*    stroke: #300;*/
 }
 #networkLayer .link path.distance-2 {
-  stroke-width: 1;
+  stroke-width: 2;
 }
 #networkLayer .link path.distance-3 {
-  stroke-width: 1;
+  stroke-width: 2;
 }
 #networkLayer .link text {
   cursor: help;

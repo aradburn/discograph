@@ -130,8 +130,6 @@ function dg_network_onNodeExit(nodeExit) {
 
 function dg_network_onNodeUpdate(nodeUpdate) {
     nodeUpdate.selectAll(".outer")
-//        .transition()
-//        .duration(NODE_UPDATE_TRANSITION_TIME)
         .attr("class", function(d) {
             var classes = [
                 "outer",
@@ -140,8 +138,6 @@ function dg_network_onNodeUpdate(nodeUpdate) {
             return classes.join(" ");
         })
     nodeUpdate.selectAll(".inner")
-//        .transition()
-//        .duration(NODE_UPDATE_TRANSITION_TIME)
         .attr("class", function(d) {
             var classes = [
                 "inner",
@@ -151,35 +147,6 @@ function dg_network_onNodeUpdate(nodeUpdate) {
         })
     nodeUpdate.selectAll(".more")
         .style("opacity", function(d) {return d.missing > 0 ? 1 : 0; });
-
-//    nodeUpdate.selectAll(".more").each(function(d, i) {
-//        var prevMissing = Boolean(d.hasMissing);
-//        var prevMissingByPage = Boolean(d.hasMissingByPage);
-//        var currMissing = Boolean(d.missing);
-//        if (!d.missingByPage) {
-//            var currMissingByPage = false;
-//        } else {
-//            var currMissingByPage = Boolean(
-//                d.missingByPage[dg.network.pageData.currentPage]
-//                );
-//        }
-//        d3.select(this)
-//            .transition()
-//            .duration(NODE_UPDATE_TRANSITION_TIME)
-//            .style('opacity', function(d) {
-//                return (currMissing || currMissingByPage) ? 1 : 0;
-//                })
-//            .attrTween('transform', function(d) {
-//                var start = prevMissingByPage ? 45 : 0;
-//                var stop = currMissingByPage ? 45 : 0;
-//                return d3.interpolateString(
-//                    "rotate(" + start + ")",
-//                    "rotate(" + stop + ")"
-//                    );
-//                });
-//        d.hasMissing = currMissing;
-//        d.hasMissingByPage = currMissingByPage;
-//    });
 }
 
 function dg_network_onNodeMouseOver(event, d) {
@@ -199,18 +166,14 @@ function dg_network_onNodeMouseOver(event, d) {
 function dg_network_onNodeMouseDown(event, d) {
     var thisTime = d3.now();
     var lastTime = d.lastClickTime;
-//    console.log("lastTime: ", lastTime);
-//    console.log("thisTime: ", thisTime);
     d.lastClickTime = thisTime;
     if (!lastTime || (thisTime - lastTime) < 700) {
-//    console.log("mousedown single click");
         $(window).trigger({
             type: 'discograph:select-entity',
             entityKey: d.key,
             fixed: true,
         });
     } else if ((thisTime - lastTime) < 700) {
-//    console.log("mousedown double click");
         $(window).trigger({
             type: 'discograph:request-network',
             entityKey: d.key,
@@ -221,7 +184,6 @@ function dg_network_onNodeMouseDown(event, d) {
 }
 
 function dg_network_onNodeMouseDoubleClick(event, d) {
-//    console.log("mousedown double click");
     nodeToolTip.hide(d);
     linkToolTip.hide();
     $(window).trigger({
@@ -233,7 +195,6 @@ function dg_network_onNodeMouseDoubleClick(event, d) {
 }
 
 function dg_network_onNodeTouchStart(event, d) {
-//console.log("touchstart ", d);
     var thisTime = $.now();
     var lastTime = d.lastTouchTime;
     d.lastTouchTime = thisTime;
