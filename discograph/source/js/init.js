@@ -90,6 +90,7 @@ function dg_window_init() {
         (w.innerHeight|| e.clientHeight|| g.clientHeight) * VIEWPORT_SIZE_MULTIPLIER,
     ];
     console.log("window dimensions: ", dg.dimensions);
+    // All nodes start at center of the screen
     dg.network.newNodeCoords = [
         dg.dimensions[0] / 2,
         dg.dimensions[1] / 2,

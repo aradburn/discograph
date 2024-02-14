@@ -280,14 +280,14 @@
 
     THETA = 0.9; // defaults to 0.9
     ALPHA = 1.0
-    ALPHA_DECAY = 0.05
-    VELOCITY_DECAY = 0.3; // like friction, defaults to 0.4. less velocity decay may converge on a better solution, but risks numerical instabilities and oscillation.
+    ALPHA_DECAY = 0.03
+    VELOCITY_DECAY = 0.24; // like friction, defaults to 0.4. less velocity decay may converge on a better solution, but risks numerical instabilities and oscillation.
 
     LINK_STRENGTH = 1.8
     LINK_DISTANCE_ALIAS = 20
     LINK_DISTANCE_RELEASED_ON = 200
-    LINK_DISTANCE = 200
-    LINK_DISTANCE_RANDOM = 100
+    LINK_DISTANCE = 180
+    LINK_DISTANCE_RANDOM = 50
     LINK_ITERATIONS = 3
 
     MAX_NODES_BEFORE_PRUNING = 600
@@ -302,19 +302,25 @@
             if (d.role == 'Released On') {
                 return LINK_DISTANCE_RELEASED_ON / 2;
             }
-            return d.distance < 2 ? LINK_DISTANCE / 2 : LINK_DISTANCE / 10;
+            return d.distance < 1 ? LINK_DISTANCE / 2 : LINK_DISTANCE / 10;
         } else if (d.role == 'Alias') {
             return LINK_DISTANCE_ALIAS;
         } else if (d.role == 'Released On') {
             return LINK_DISTANCE_RELEASED_ON;
         } else {
-            return LINK_DISTANCE + (random() * LINK_DISTANCE_RANDOM);
+            //        console.log("d.source: ", d.source);
+            //        console.log("d.target: ", d.target);
+            var dist = d.source.distance == 0 || d.target.distance == 0 || d.source.distance == 3 || d.target.distance == 3 ? 1.0 : (d.source.distance + d.target.distance) / 2.0
+            return LINK_DISTANCE;
+            //        return LINK_DISTANCE * dist + (random() * LINK_DISTANCE_RANDOM * dist);
         }
     }
 
     function nodeStrength(d, i) {
         if (d.distance) {
-            return d.distance == 0 ? 3 * NODE_STRENGTH : d.distance == 1 ? 2.5 * NODE_STRENGTH : NODE_STRENGTH;
+            var dist = 4 - d.distance;
+            return dist * NODE_STRENGTH;
+            //        return d.distance == 0 ? 3 * NODE_STRENGTH : d.distance == 1 ? 2.5 * NODE_STRENGTH : NODE_STRENGTH;
         } else if (d.isIntermediate) {
             return Math.hypot(d.x - dg.dimensions[0] / 2, d.y - dg.dimensions[1] / 2) <= 300 ? 3 * NODE_STRENGTH : NODE_STRENGTH / 2;
         } else {
@@ -326,7 +332,7 @@
         if (d.distance) {
             var maxDimension = Math.max(dg.dimensions[0], dg.dimensions[1]);
             var dist = 3 - d.distance;
-            var scaling = dist / 7.0;
+            var scaling = dist / 5.0;
             var radialDistance = (maxDimension - Math.hypot(d.x - dg.dimensions[0] / 2, d.y - dg.dimensions[1] / 2)) / maxDimension;
             var g = radialDistance * scaling;
             return g;
@@ -437,11 +443,11 @@
             dg.network.forceLayout.force("x", null);
             dg.network.forceLayout.force("y", null);
         }
-        if (linkData.length > 16 && linkData.length < 500) {
-            dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).iterations(LINK_ITERATIONS));
-        } else {
-            dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(d => linkDistance(d) / 10.0).iterations(LINK_ITERATIONS));
-        }
+        //    if (linkData.length > 16 && linkData.length < 500) {
+        dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).iterations(LINK_ITERATIONS));
+        //    } else {
+        //        dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(d => linkDistance(d) / 10.0).iterations(LINK_ITERATIONS));
+        //    }
 
         dg_network_forceLayout_restart();
     }
@@ -548,8 +554,10 @@
                 oldNode.missingByPage = newNode.missingByPage;
                 oldNode.pages = newNode.pages;
             } else {
-                newNode.x = dg.network.newNodeCoords[0] + (random() * LINK_DISTANCE * 2.0) - LINK_DISTANCE;
-                newNode.y = dg.network.newNodeCoords[1] + (random() * LINK_DISTANCE * 2.0) - LINK_DISTANCE;
+                var dx = (random() * 2.0 - 1.0) * LINK_DISTANCE * newNode.distance
+                var dy = (random() * 2.0 - 1.0) * LINK_DISTANCE * newNode.distance
+                newNode.x = dg.network.newNodeCoords[0] + dx;
+                newNode.y = dg.network.newNodeCoords[1] + dy;
                 dg.network.data.nodeMap.set(key, newNode);
             }
         });
@@ -2606,6 +2614,7 @@
             (w.innerHeight || e.clientHeight || g.clientHeight) * VIEWPORT_SIZE_MULTIPLIER,
         ];
         console.log("window dimensions: ", dg.dimensions);
+        // All nodes start at center of the screen
         dg.network.newNodeCoords = [
             dg.dimensions[0] / 2,
             dg.dimensions[1] / 2,
