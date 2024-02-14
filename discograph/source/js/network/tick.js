@@ -102,8 +102,8 @@ function dg_network_tick(e) {
     if (dg.network.data.json) {
         var centerNode = dg.network.data.nodeMap.get(dg.network.data.json.center.key);
         if (!centerNode.fixed) {
-            var dx = ((dg.dimensions[0] / 2) - centerNode.x) * k;
-            var dy = ((dg.dimensions[1] / 2) - centerNode.y) * k;
+            var dx = ((dg.svg_dimensions[0] / 2) - centerNode.x) * k;
+            var dy = ((dg.svg_dimensions[1] / 2) - centerNode.y) * k;
             centerNode.x += dx;
             centerNode.y += dy;
         }

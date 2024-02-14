@@ -360,6 +360,7 @@ form .clear,
 }
 /* TOOLTIPS */
 .d3-node-tooltip {
+  transform: scale(0.8);
   line-height: 0.8em;
   font-size: 1em;
   padding: 2px 4px;
@@ -381,6 +382,7 @@ form .clear,
   line-height: 1.4em;
 }
 .d3-link-tooltip {
+  transform: scale(0.8);
   line-height: 0.8em;
   font-size: 1em;
   padding: 0px;

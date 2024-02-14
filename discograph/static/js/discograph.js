@@ -26,9 +26,9 @@
             .attr('id', 'loadingLayer')
             .attr('class', 'centered')
             .attr('transform', 'translate(' +
-                dg.dimensions[0] / 2 +
+                dg.dimensions[0] * SVG_SCALING_MULTIPLIER / 2 +
                 ',' +
-                dg.dimensions[1] / 2 +
+                dg.dimensions[1] * SVG_SCALING_MULTIPLIER / 2 +
                 ')'
             );
         dg.loading.arc = d3.arc()
@@ -280,7 +280,7 @@
             return dist * NODE_STRENGTH;
             //        return d.distance == 0 ? 3 * NODE_STRENGTH : d.distance == 1 ? 2.5 * NODE_STRENGTH : NODE_STRENGTH;
         } else if (d.isIntermediate) {
-            return Math.hypot(d.x - dg.dimensions[0] / 2, d.y - dg.dimensions[1] / 2) <= 300 ? 3 * NODE_STRENGTH : NODE_STRENGTH / 2;
+            return Math.hypot(d.x - dg.svg_dimensions[0] / 2, d.y - dg.svg_dimensions[1] / 2) <= 300 ? 3 * NODE_STRENGTH : NODE_STRENGTH / 2;
         } else {
             return 0;
         }
@@ -288,10 +288,10 @@
 
     function gravityStrength(d, i) {
         if (d.distance) {
-            var maxDimension = Math.max(dg.dimensions[0], dg.dimensions[1]);
+            var maxDimension = Math.max(dg.svg_dimensions[0], dg.svg_dimensions[1]);
             var dist = 3 - d.distance;
             var scaling = dist / 5.0;
-            var radialDistance = (maxDimension - Math.hypot(d.x - dg.dimensions[0] / 2, d.y - dg.dimensions[1] / 2)) / maxDimension;
+            var radialDistance = (maxDimension - Math.hypot(d.x - dg.svg_dimensions[0] / 2, d.y - dg.svg_dimensions[1] / 2)) / maxDimension;
             var g = radialDistance * scaling;
             return g;
         } else {
@@ -372,8 +372,8 @@
         dg.network.forceLayout.nodes(dg.network.pageData.nodes);
 
         if (nodeData.length > 16 && nodeData.length < 500) {
-            dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2).strength(gravityStrength));
-            dg.network.forceLayout.force("y", d3.forceY(dg.dimensions[1] / 2).strength(gravityStrength));
+            dg.network.forceLayout.force("x", d3.forceX(dg.svg_dimensions[0] / 2).strength(gravityStrength));
+            dg.network.forceLayout.force("y", d3.forceY(dg.svg_dimensions[1] / 2).strength(gravityStrength));
         } else {
             dg.network.forceLayout.force("x", null);
             dg.network.forceLayout.force("y", null);
@@ -392,25 +392,9 @@
             alpha = ALPHA;
         }
 
-        //    dg.network.forceLayout.force("x", null);
-        //    dg.network.forceLayout.force("y", null);
-        //    dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2).strength(CENTER_STRENGTH));
-        //    dg.network.forceLayout.force("y", d3.forceY(dg.dimensions[1] / 2).strength(CENTER_STRENGTH));
-        //  dg.network.forceLayout.force("x", d3.forceX(dg.dimensions[0] / 2).strength(d => (4 - d.distance) * CENTER_STRENGTH))
-        //  dg.network.forceLayout.force("y", d3.forceY(dg.dimensions[1] / 2).strength(d => (4 - d.distance) * CENTER_STRENGTH))
-        //        .force("center", d3.forceCenter(dg.dimensions[0] / 2, dg.dimensions[1] / 2))
-        //        .force("center", d3.forceCenter(dg.dimensions[0] / 2, dg.dimensions[1] / 2).strength(CENTER_STRENGTH))
-        //    dg.network.forceLayout.force("radial",
-        //        d3.forceRadial()
-        //            .radius(Math.max(dg.dimensions[0] / 2, dg.dimensions[1] / 2))
-        //            .x(dg.dimensions[0] / 2)
-        //            .y(dg.dimensions[1] / 2)
-        //            .strength(d => d.distance == 3 ? RADIAL_STRENGTH : 0)
-        //    )
         dg_network_start();
         dg.network.forceLayout
-            .force("center", d3.forceCenter(dg.dimensions[0] / 2, dg.dimensions[1] / 2))
-            //        .force("center", d3.forceCenter(dg.dimensions[0] / 2, dg.dimensions[1] / 2).strength(CENTER_STRENGTH))
+            .force("center", d3.forceCenter(dg.svg_dimensions[0] / 2, dg.svg_dimensions[1] / 2))
             .alpha(alpha).alphaDecay(ALPHA_DECAY).velocityDecay(VELOCITY_DECAY).restart();
     }
 
@@ -632,9 +616,9 @@
         dg.network.data.nodeMap.forEach(node => {
 
             var minX = 20 + node.radius;
-            var maxX = dg.dimensions[0] - 100 - node.radius;
+            var maxX = dg.svg_dimensions[0] - 100 - node.radius;
             var minY = 100 + node.radius;
-            var maxY = dg.dimensions[1] - 100 - node.radius;
+            var maxY = dg.svg_dimensions[1] - 100 - node.radius;
             if (node.x < minX) {
                 node.x = minX;
             }
@@ -1356,8 +1340,8 @@
         if (dg.network.data.json) {
             var centerNode = dg.network.data.nodeMap.get(dg.network.data.json.center.key);
             if (!centerNode.fixed) {
-                var dx = ((dg.dimensions[0] / 2) - centerNode.x) * k;
-                var dy = ((dg.dimensions[1] / 2) - centerNode.y) * k;
+                var dx = ((dg.svg_dimensions[0] / 2) - centerNode.x) * k;
+                var dy = ((dg.svg_dimensions[1] / 2) - centerNode.y) * k;
                 centerNode.x += dx;
                 centerNode.y += dy;
             }
@@ -1401,7 +1385,9 @@
         // Setup window dimensions on SVG element
         d3.select("#svg")
             .attr("width", dg.dimensions[0])
-            .attr("height", dg.dimensions[1]);
+            .attr("height", dg.dimensions[1])
+            .attr("viewBox", "0 0 " + dg.svg_dimensions[0] + " " + dg.svg_dimensions[1])
+            .attr("preserveAspectRatio", "none");
     }
 
     function dg_svg_setupDefs() {
@@ -2404,6 +2390,7 @@
         },
     });
     VIEWPORT_SIZE_MULTIPLIER = 3;
+    SVG_SCALING_MULTIPLIER = 120.0 / 100.0
 
     $(document).ready(function() {
         dg_window_init();
@@ -2431,7 +2418,7 @@
         });
         $('#print').on("click touchstart", function(event) {
             event.preventDefault();
-            dg_svg_print(dg.dimensions[0], dg.dimensions[1]);
+            dg_svg_print(dg.svg_dimensions[0], dg.svg_dimensions[1]);
         });
         $('#paging .next a').on("click", function(event) {
             $(this).trigger({
@@ -2490,16 +2477,25 @@
             d = document,
             e = d.documentElement,
             g = d.getElementsByTagName('body')[0];
+
         dg.dimensions = [
             (w.innerWidth || e.clientWidth || g.clientWidth) * VIEWPORT_SIZE_MULTIPLIER,
             (w.innerHeight || e.clientHeight || g.clientHeight) * VIEWPORT_SIZE_MULTIPLIER,
         ];
         console.log("window dimensions: ", dg.dimensions);
+
+        dg.svg_dimensions = [
+            dg.dimensions[0] * SVG_SCALING_MULTIPLIER,
+            dg.dimensions[1] * SVG_SCALING_MULTIPLIER,
+        ];
+        console.log("svg dimensions: ", dg.svg_dimensions);
+
         // All nodes start at center of the screen
         dg.network.newNodeCoords = [
-            dg.dimensions[0] / 2,
-            dg.dimensions[1] / 2,
+            dg.svg_dimensions[0] / 2,
+            dg.svg_dimensions[1] / 2,
         ];
+        console.log("newNodeCoords: ", dg.network.newNodeCoords);
     }
 
     function dg_show_message(type, message) {
