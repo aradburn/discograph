@@ -75,8 +75,9 @@ def route__api__random():
         entity_type, entity_id = database.db_helper.get_random_entity(
             roles=original_roles,
         )
+        log.debug(f"    Found: {entity_type}-{entity_id}")
     except Exception as e:
         log.error(f"{e}")
-    log.debug(f"    Found: {entity_type}-{entity_id}")
+
     data = {f"center": f"{entity_type.name.lower()}-{entity_id}"}
     return jsonify(data)

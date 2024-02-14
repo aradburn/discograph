@@ -103,6 +103,17 @@ def handle_error_500(error):
 
 def main():
     setup_logging()
+    log.info("")
+    log.info("")
+    log.info("######  #   # #   ####   ####   ####   ####    ##   #####  #    # ")
+    log.info("#     # # #      #    # #    # #    # #    #  #  #  #    # #    # ")
+    log.info("#     # #  ####  #      #    # #      #    # #    # #    # ###### ")
+    log.info("#     # #      # #      #    # #  ### #####  ###### #####  #    # ")
+    log.info("#     # # #    # #    # #    # #    # #   #  #    # #      #    # ")
+    log.info("######  #  ####   ####   ####   ####  #    # #    # #      #    # ")
+    log.info("")
+    log.info("")
+
     # app.config.from_object('discograph.config.CockroachDevelopmentConfiguration')
     # app.config.from_object('discograph.config.PostgresDevelopmentConfiguration')
     app.config.from_object("discograph.config.PostgresProductionConfiguration")

@@ -1,8 +1,11 @@
 import enum
+import logging
 import os
 import tempfile
 
 from dotenv import load_dotenv, find_dotenv, dotenv_values
+
+log = logging.getLogger(__name__)
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(APP_DIR, ".."))
@@ -38,6 +41,9 @@ class Configuration(object):
 
 
 class PostgresProductionConfiguration(Configuration):
+    log.info("PostgresProductionConfiguration")
+    log.info(f"DATABASE_HOST: {os.getenv('DATABASE_HOST')}")
+    log.info(f"DATABASE_NAME: {os.getenv('DATABASE_NAME')}")
     PRODUCTION = True
     DEBUG = True
     TESTING = False
@@ -47,7 +53,7 @@ class PostgresProductionConfiguration(Configuration):
     POSTGRES_DATABASE_HOST = os.getenv("DATABASE_HOST")
     POSTGRES_DATABASE_PORT = os.getenv("DATABASE_PORT")
     POSTGRES_DATABASE_NAME = os.getenv("DATABASE_NAME")
-    APPLICATION_ROOT = "http://discograph.org"
+    APPLICATION_ROOT = "https://discograph.azurewebsites.net/"
     THREADING_MODEL = ThreadingModel.PROCESS
     CACHE_TYPE = CacheType.FILESYSTEM
 
