@@ -1387,7 +1387,8 @@
             .attr("width", dg.dimensions[0])
             .attr("height", dg.dimensions[1])
             .attr("viewBox", "0 0 " + dg.svg_dimensions[0] + " " + dg.svg_dimensions[1])
-            .attr("preserveAspectRatio", "none");
+            .attr("preserveAspectRatio", "none")
+            .attr("transform", "scale(" + 1.0 / dg.dpr + ")");
     }
 
     function dg_svg_setupDefs() {
@@ -2390,7 +2391,7 @@
         },
     });
     VIEWPORT_SIZE_MULTIPLIER = 3;
-    SVG_SCALING_MULTIPLIER = 120.0 / 100.0
+    SVG_SCALING_MULTIPLIER = 0.8
 
     $(document).ready(function() {
         dg_window_init();
@@ -2461,14 +2462,22 @@
     });
 
     function dg_svg_container_setup() {
-        var windowWidth = dg.dimensions[0] / VIEWPORT_SIZE_MULTIPLIER;
-        var windowHeight = dg.dimensions[1] / VIEWPORT_SIZE_MULTIPLIER;
         var navTopHeight = $('#nav-top').height();
         var navBottomHeight = $('#nav-bottom').height();
-        $('#svg-container').width(windowWidth);
-        $('#svg-container').height(windowHeight - navBottomHeight);
-        $('#svg-container').scrollLeft((VIEWPORT_SIZE_MULTIPLIER - 1) * windowWidth / 2);
-        $('#svg-container').scrollTop((VIEWPORT_SIZE_MULTIPLIER - 1) * windowHeight / 2);
+
+        var containerWidth = Math.floor(dg.dimensions[0] / (VIEWPORT_SIZE_MULTIPLIER * dg.dpr));
+        var containerHeight = Math.floor(dg.dimensions[1] / (VIEWPORT_SIZE_MULTIPLIER * dg.dpr));
+        console.log("svg_container dimensions: ", containerWidth, containerHeight);
+
+        $('#svg-container').width(containerWidth);
+        $('#svg-container').height(containerHeight - navBottomHeight);
+
+        // Set the initial scroll bars so that the viewport is in the centre of the larger svg canvas
+        var containerOffsetX = (VIEWPORT_SIZE_MULTIPLIER * dg.dpr - 1) * containerWidth / 2;
+        var containerOffsetY = (VIEWPORT_SIZE_MULTIPLIER * dg.dpr - 1) * containerHeight / 2;
+        $('#svg-container').scrollLeft(containerOffsetX);
+        $('#svg-container').scrollTop(containerOffsetY);
+        console.log("svg_container scroll offsets: ", containerOffsetX, containerOffsetY);
     }
 
     function dg_window_init() {
@@ -2477,10 +2486,12 @@
             d = document,
             e = d.documentElement,
             g = d.getElementsByTagName('body')[0];
+        dg.dpr = w.devicePixelRatio;
+        console.log("window devicePixelRatio: ", dg.dpr);
 
         dg.dimensions = [
-            (w.innerWidth || e.clientWidth || g.clientWidth) * VIEWPORT_SIZE_MULTIPLIER,
-            (w.innerHeight || e.clientHeight || g.clientHeight) * VIEWPORT_SIZE_MULTIPLIER,
+            Math.floor((w.innerWidth || e.clientWidth || g.clientWidth) * VIEWPORT_SIZE_MULTIPLIER * dg.dpr),
+            Math.floor((w.innerHeight || e.clientHeight || g.clientHeight) * VIEWPORT_SIZE_MULTIPLIER * dg.dpr),
         ];
         console.log("window dimensions: ", dg.dimensions);
 
