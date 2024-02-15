@@ -27,7 +27,6 @@ default_roles = (
 
 @blueprint.route("/")
 def route__index():
-    is_a_return_visitor = request.cookies.get("is_a_return_visitor")
     initial_json = "var dgData = null;"
     # noinspection PyUnresolvedReferences
     on_mobile = request.MOBILE
@@ -44,7 +43,6 @@ def route__index():
         "index.html",
         application_url=app.config["APPLICATION_ROOT"],
         initial_json=initial_json,
-        is_a_return_visitor=is_a_return_visitor,
         multiselect_mapping=multiselect_mapping,
         og_title="Discograph2",
         og_url=url,
@@ -54,7 +52,6 @@ def route__index():
         title="Discograph2",
     )
     response = make_response(rendered_template)
-    response.set_cookie("is_a_return_visitor", "true")
     return response
 
 
@@ -88,7 +85,6 @@ def route__entity_type__entity_id(entity_type, entity_id):
     )
     initial_json = f"var dgData = {initial_json};"
     entity_name = data["center"]["name"]
-    is_a_return_visitor = request.cookies.get("is_a_return_visitor")
     key = f"{entity_type.name.lower()}-{entity_id}"
     # url = '/{}/{}'.format(entity_type, entity_id)
     url = url_for(
@@ -103,10 +99,9 @@ def route__entity_type__entity_id(entity_type, entity_id):
         "index.html",
         application_url=app.config["APPLICATION_ROOT"],
         initial_json=initial_json,
-        is_a_return_visitor=is_a_return_visitor,
         key=key,
         multiselect_mapping=multiselect_mapping,
-        og_title=f"Discograph2: The \"{entity_name}\" network",
+        og_title=f'Discograph2: The "{entity_name}" network',
         og_url=url,
         # on_mobile=on_mobile,
         original_roles=original_roles,
@@ -114,5 +109,4 @@ def route__entity_type__entity_id(entity_type, entity_id):
         title=title,
     )
     response = make_response(rendered_template)
-    response.set_cookie("is_a_return_visitor", "true")
     return response
