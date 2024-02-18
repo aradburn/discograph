@@ -18,7 +18,7 @@ class CockroachTestCase(unittest.TestCase):
         config = vars(CockroachTestConfiguration)
         try:
             database.setup_database(config)
-        except Exception as e:
+        except Exception:
             raise SkipTest("Cannot connect to Cockroach Database")
         setup_cache(config)
 
