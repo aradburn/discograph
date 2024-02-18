@@ -16,7 +16,6 @@ from playhouse.sqlite_ext import SqliteExtDatabase
 from discograph.config import DatabaseType, ThreadingModel
 from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.database_helper import DatabaseHelper
-from discograph.library.discogs_model import database_proxy
 
 log = logging.getLogger(__name__)
 
@@ -40,6 +39,7 @@ def setup_database(config, bootstrap=True):
     # Based on configuration, use a different database.
     if config["DATABASE"] == DatabaseType.POSTGRES:
         from discograph.library.postgres.postgres_helper import PostgresHelper
+        from discograph.library.discogs_model import database_proxy
 
         log.info("")
         log.info("Using Postgres Database")
@@ -138,7 +138,9 @@ def setup_database(config, bootstrap=True):
             Bootstrapper.is_test = True
 
         if bootstrap:
-            from discograph.library.postgres.postgres_bootstrapper import PostgresBootstrapper
+            from discograph.library.postgres.postgres_bootstrapper import (
+                PostgresBootstrapper,
+            )
 
             PostgresBootstrapper.bootstrap_models()
 
@@ -150,6 +152,7 @@ def setup_database(config, bootstrap=True):
 
     elif config["DATABASE"] == DatabaseType.SQLITE:
         from discograph.library.sqlite.sqlite_helper import SqliteHelper
+        from discograph.library.discogs_model import database_proxy
 
         log.info("Using Sqlite Database")
         db_helper = SqliteHelper
@@ -185,6 +188,7 @@ def setup_database(config, bootstrap=True):
             SqliteBootstrapper.bootstrap_models()
     elif config["DATABASE"] == DatabaseType.COCKROACH:
         from discograph.library.cockroach.cockroach_helper import CockroachHelper
+        from discograph.library.discogs_model import database_proxy
 
         log.info("Using Cockroach Database")
         db_helper = CockroachHelper
@@ -225,7 +229,9 @@ def setup_database(config, bootstrap=True):
         )
 
         if bootstrap:
-            from discograph.library.cockroach.cockroach_bootstrapper import CockroachBootstrapper
+            from discograph.library.cockroach.cockroach_bootstrapper import (
+                CockroachBootstrapper,
+            )
 
             CockroachBootstrapper.bootstrap_models()
 

@@ -1,7 +1,7 @@
 from discograph import utils
 from discograph.library import EntityType
 from discograph.library.cockroach.cockroach_entity import CockroachEntity
-from .cockroach_test_case import CockroachTestCase
+from tests.integration.library.cockroach.cockroach_test_case import CockroachTestCase
 
 
 class TestStructuralRolesToRelations(CockroachTestCase):
@@ -33,4 +33,4 @@ class TestStructuralRolesToRelations(CockroachTestCase):
              }
              """
         )
-        assert actual == expected
+        self.assertEqual(expected, actual)

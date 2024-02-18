@@ -121,7 +121,7 @@ class TestPostgresRelease(PostgresTestCase):
         }
         """
         )
-        assert actual == expected
+        self.assertEqual(expected, actual)
 
     # noinspection PyUnusedLocal
     def test_02(self):
@@ -275,4 +275,4 @@ class TestPostgresRelease(PostgresTestCase):
         }
         """
         )
-        assert actual == expected
+        self.assertEqual(expected, actual)

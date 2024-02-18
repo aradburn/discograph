@@ -7,7 +7,7 @@ from discograph.library.cockroach.cockroach_entity import CockroachEntity
 from discograph.library.cockroach.cockroach_relation_grapher import (
     CockroachRelationGrapher,
 )
-from .cockroach_test_case import CockroachTestCase
+from tests.integration.library.cockroach.cockroach_test_case import CockroachTestCase
 
 log = logging.getLogger(__name__)
 
@@ -197,7 +197,7 @@ class TestCockroachRelationGrapher(CockroachTestCase):
             }
         """
         )
-        assert actual == expected
+        self.assertEqual(expected, actual)
 
     def test___call___02(self):
         artist = CockroachEntity.get(
@@ -368,7 +368,7 @@ class TestCockroachRelationGrapher(CockroachTestCase):
             }
         """
         )
-        assert actual == expected
+        self.assertEqual(expected, actual)
 
     def test___call___03(self):
         artist = CockroachEntity.get(
@@ -539,7 +539,7 @@ class TestCockroachRelationGrapher(CockroachTestCase):
             }
         """
         )
-        assert actual == expected
+        self.assertEqual(expected, actual)
 
     def test___call___04(self):
         """
@@ -829,7 +829,7 @@ class TestCockroachRelationGrapher(CockroachTestCase):
             }
         """
         )
-        assert actual == expected
+        self.assertEqual(expected, actual)
 
     def test___call___05(self):
         artist = CockroachEntity.get(
@@ -843,4 +843,4 @@ class TestCockroachRelationGrapher(CockroachTestCase):
             roles=roles,
         )
         network = grapher.__call__()  # Should not error.
-        assert network is not None
+        self.assertIsNotNone(network)

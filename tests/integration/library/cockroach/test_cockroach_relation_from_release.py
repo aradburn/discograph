@@ -5,7 +5,7 @@ from discograph.library import EntityType
 from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.cockroach.cockroach_relation import CockroachRelation
 from discograph.library.cockroach.cockroach_release import CockroachRelease
-from .cockroach_test_case import CockroachTestCase
+from tests.integration.library.cockroach.cockroach_test_case import CockroachTestCase
 
 
 class TestCockroachRelationFromRelease(CockroachTestCase):
@@ -53,7 +53,7 @@ class TestCockroachRelationFromRelease(CockroachTestCase):
                 "year": 1994,
             },
         ]
-        assert actual == expected
+        self.assertEqual(expected, actual)
 
     def test_02(self):
         source = utils.normalize(
@@ -197,7 +197,7 @@ class TestCockroachRelationFromRelease(CockroachTestCase):
                 "year": 1999,
             },
         ]
-        assert actual == expected
+        self.assertEqual(expected, actual)
 
     def test_03(self):
         source = utils.normalize(
@@ -432,7 +432,7 @@ class TestCockroachRelationFromRelease(CockroachTestCase):
                 "year": 1995,
             },
         ]
-        assert actual == expected
+        self.assertEqual(expected, actual)
 
     def test_04(self):
         source = utils.normalize(
@@ -815,7 +815,7 @@ class TestCockroachRelationFromRelease(CockroachTestCase):
                 "year": 2000,
             },
         ]
-        assert actual == expected
+        self.assertEqual(expected, actual)
 
     def test_05(self):
         source = utils.normalize(
@@ -1738,4 +1738,4 @@ class TestCockroachRelationFromRelease(CockroachTestCase):
                 "year": 1999,
             },
         ]
-        assert actual == expected
+        self.assertEqual(expected, actual)

@@ -40,4 +40,4 @@ class TestSqliteEntityStructuralRolesToRelations(SqliteTestCase):
             }
             """
         )
-        assert actual == expected
+        self.assertEqual(expected, actual)

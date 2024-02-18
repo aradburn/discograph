@@ -56,7 +56,7 @@ class TestPostgresRelationFromRelease(PostgresTestCase):
                 "year": 1994,
             },
         ]
-        assert actual == expected
+        self.assertEqual(expected, actual)
 
     def test_02(self):
         source = utils.normalize(
@@ -200,7 +200,7 @@ class TestPostgresRelationFromRelease(PostgresTestCase):
                 "year": 1999,
             },
         ]
-        assert actual == expected
+        self.assertEqual(expected, actual)
 
     def test_03(self):
         source = utils.normalize(
@@ -435,7 +435,7 @@ class TestPostgresRelationFromRelease(PostgresTestCase):
                 "year": 1995,
             },
         ]
-        assert actual == expected
+        self.assertEqual(expected, actual)
 
     def test_04(self):
         source = utils.normalize(
@@ -818,7 +818,7 @@ class TestPostgresRelationFromRelease(PostgresTestCase):
                 "year": 2000,
             },
         ]
-        assert actual == expected
+        self.assertEqual(expected, actual)
 
     def test_05(self):
         source = utils.normalize(
@@ -1741,4 +1741,4 @@ class TestPostgresRelationFromRelease(PostgresTestCase):
                 "year": 1999,
             },
         ]
-        assert actual == expected
+        self.assertEqual(expected, actual)

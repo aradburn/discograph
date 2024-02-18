@@ -1,7 +1,7 @@
 from discograph import utils
 from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.cockroach.cockroach_release import CockroachRelease
-from .cockroach_test_case import CockroachTestCase
+from tests.integration.library.cockroach.cockroach_test_case import CockroachTestCase
 
 
 class TestCockroachRelease(CockroachTestCase):
@@ -118,7 +118,7 @@ class TestCockroachRelease(CockroachTestCase):
         }
         """
         )
-        assert actual == expected
+        self.assertEqual(expected, actual)
 
     # noinspection PyUnusedLocal
     def test_02(self):
@@ -272,4 +272,4 @@ class TestCockroachRelease(CockroachTestCase):
         }
         """
         )
-        assert actual == expected
+        self.assertEqual(expected, actual)

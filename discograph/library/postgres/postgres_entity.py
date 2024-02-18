@@ -23,7 +23,7 @@ class PostgresEntity(Entity):
                 self,
                 exclude=[
                     PostgresEntity.random,
-                    # PostgresEntity.relation_counts,
+                    PostgresEntity.relation_counts,
                     PostgresEntity.search_content,
                 ],
             ),

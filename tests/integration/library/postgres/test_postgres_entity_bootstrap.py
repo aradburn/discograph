@@ -19,7 +19,6 @@ class TestPostgresEntityBootstrap(unittest.TestCase):
         log.info("cleanup temp postgres DB")
         database.shutdown_database()
 
-    # noinspection PyPep8
     def test_bootstrap_pass_one_01(self):
         PostgresEntity.drop_table(True)
         PostgresEntity.create_table(True)

@@ -9,7 +9,7 @@ import peewee
 
 from discograph.library import EntityType, CreditRole
 from discograph.library.bootstrapper import Bootstrapper
-from discograph.library.discogs_model import DiscogsModel, database_proxy
+from discograph.library.discogs_model import DiscogsModel
 from discograph.library.enum_field import EnumField
 
 log = logging.getLogger(__name__)
@@ -40,6 +40,7 @@ class Relation(DiscogsModel):
             total_count = len(self.indices)
 
             from discograph.database import bootstrap_database
+            from discograph.library.discogs_model import database_proxy
 
             if bootstrap_database:
                 database_proxy.initialize(bootstrap_database)

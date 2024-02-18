@@ -13,7 +13,6 @@ from discograph.library import EntityType
 from discograph.library.enum_field import EnumField
 from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.discogs_model import DiscogsModel, database_proxy
-from discograph.library.models.relation import Relation
 
 
 log = logging.getLogger(__name__)
@@ -440,7 +439,7 @@ class Entity(DiscogsModel):
                 data["metadata"][key] = data.pop(key)
         if "name" in data and data.get("name"):
             search_content = data.get("name")
-            # TODO
+            # TODO fix string search
             data["search_content"] = cls.string_to_tsvector(search_content)
         if element.tag == "artist":
             data["entity_type"] = EntityType.ARTIST
@@ -647,7 +646,7 @@ class Entity(DiscogsModel):
     @classmethod
     def create_relation(
         cls, entity_one_type, entity_one_id, entity_two_type, entity_two_id, role
-    ) -> Relation:
+    ):
         pass
 
     # PUBLIC PROPERTIES

@@ -200,7 +200,7 @@ class TestPostgresRelationGrapher(PostgresTestCase):
             }
         """
         )
-        assert actual == expected
+        self.assertEqual(expected, actual)
 
     def test___call___02(self):
         artist = PostgresEntity.get(
@@ -371,7 +371,7 @@ class TestPostgresRelationGrapher(PostgresTestCase):
             }
         """
         )
-        assert actual == expected
+        self.assertEqual(expected, actual)
 
     def test___call___03(self):
         artist = PostgresEntity.get(
@@ -542,7 +542,7 @@ class TestPostgresRelationGrapher(PostgresTestCase):
             }
         """
         )
-        assert actual == expected
+        self.assertEqual(expected, actual)
 
     def test___call___04(self):
         """
@@ -832,7 +832,7 @@ class TestPostgresRelationGrapher(PostgresTestCase):
             }
         """
         )
-        assert actual == expected
+        self.assertEqual(expected, actual)
 
     def test___call___05(self):
         artist = PostgresEntity.get(
@@ -846,4 +846,4 @@ class TestPostgresRelationGrapher(PostgresTestCase):
             roles=roles,
         )
         network = grapher.__call__()  # Should not error.
-        assert network is not None
+        self.assertIsNotNone(network)

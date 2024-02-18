@@ -36,4 +36,4 @@ class TestStructuralRolesToRelations(PostgresTestCase):
              }
              """
         )
-        assert actual == expected
+        self.assertEqual(expected, actual)
