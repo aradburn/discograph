@@ -347,7 +347,7 @@ class Relation(DiscogsModel):
         entity_id: int,
         entity_type: EntityType = EntityType.ARTIST,
         roles=None,
-        year=None,
+        # year=None,
         query_only=False,
     ):
         where_clause = (cls.entity_one_id == entity_id) & (
