@@ -1,7 +1,5 @@
 import logging.config
 
-from discograph.config import LOGGING_FILE, LOGGING_ERROR_FILE, LOGGING_DEBUG_FILE
-
 LOGGING_CONFIG = {
     "version": 1,
     "disable_existing_loggers": False,
