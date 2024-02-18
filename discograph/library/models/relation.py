@@ -83,7 +83,7 @@ class Relation(DiscogsModel):
     # PEEWEE META
 
     class Meta:
-        db_table = "relations"
+        table_name = "relations"
         primary_key = peewee.CompositeKey(
             "entity_one_type",
             "entity_one_id",

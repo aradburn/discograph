@@ -25,7 +25,7 @@ class SqliteMaster(DiscogsModel):
     # PEEWEE META
 
     class Meta:
-        db_table = "masters"
+        table_name = "masters"
 
     # PUBLIC METHODS
 

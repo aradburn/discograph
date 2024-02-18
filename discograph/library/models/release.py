@@ -71,7 +71,7 @@ class Release(DiscogsModel):
     # PEEWEE META
 
     class Meta:
-        db_table = "releases"
+        table_name = "releases"
 
     # PUBLIC METHODS
 
