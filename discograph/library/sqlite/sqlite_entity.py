@@ -50,6 +50,7 @@ class SqliteEntity(Entity):
         # Transliterate the unicode string into a plain ASCII string
         search_string = unidecode(search_string, "preserve")
         search_string = ",".join(search_string.split())
+        log.error(f"Search not impmemented: {search_string}")
         query = []
         # TODO FTS5 search table
         # query = (
