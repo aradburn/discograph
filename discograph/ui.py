@@ -10,7 +10,8 @@ from flask import url_for
 
 import discograph.utils
 from discograph import database, exceptions
-from discograph.library import CreditRole, EntityType
+from discograph.library.credit_role import CreditRole
+from discograph.library.entity_type import EntityType
 
 log = logging.getLogger(__name__)
 

@@ -1,20 +1,156 @@
 import logging
+import os
+import pathlib
 import random
+import shutil
 
-from discograph.library import EntityType, CreditRole
-from discograph.library.database_helper import DatabaseHelper
+import psycopg2
+from peewee import Database
+from pg_temp import TempDB
+from playhouse import pool
+
+from discograph.config import Configuration
+from discograph.library.credit_role import CreditRole
+from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.discogs_model import DiscogsModel
+from discograph.library.entity_type import EntityType
 from discograph.library.postgres.postgres_entity import PostgresEntity
 from discograph.library.postgres.postgres_relation import PostgresRelation
 from discograph.library.postgres.postgres_relation_grapher import (
     PostgresRelationGrapher,
 )
 
-
 log = logging.getLogger(__name__)
 
 
 class PostgresHelper(DatabaseHelper):
+    postgres_db: TempDB
+    _is_test: bool = False
+
+    @staticmethod
+    def setup_database(config: Configuration) -> Database:
+        if config["PRODUCTION"]:
+            log.info("**************************************")
+            log.info("* Using Production Postgres Database *")
+            log.info("**************************************")
+            log.info("")
+
+            # Create a database instance that will manage the connection and execute queries
+            database = pool.PooledPostgresqlExtDatabase(
+                config["POSTGRES_DATABASE_NAME"],
+                host=config["POSTGRES_DATABASE_HOST"],
+                port=config["POSTGRES_DATABASE_PORT"],
+                user=config["POSTGRES_DATABASE_USERNAME"],
+                password=config["POSTGRES_DATABASE_PASSWORD"],
+                max_connections=40,
+                timeout=300,  # 5 minutes.
+                stale_timeout=300,  # 5 minutes.
+            )
+
+            # with database.connection_context():
+            # database.execute_sql("SET auto_explain.log_analyze TO on;")
+            # database.execute_sql("SET auto_explain.log_min_duration TO 500;")
+            # database.execute_sql("CREATE EXTENSION pg_stat_statements;")
+
+        else:
+            log.info("Using Postgres Database")
+
+            dirname = config["POSTGRES_DATA"]
+            pg_data_dir = os.path.join(dirname, "data")
+
+            data_path = pathlib.Path(pg_data_dir)
+            # pg_data_path = pathlib.Path(pg_data_dir)
+            # if config['TESTING']:
+            #     data_path.rmdir()
+            data_path.parent.mkdir(parents=True, exist_ok=True)
+
+            options = {
+                "work_mem": "500MB",
+                "maintenance_work_mem": "500MB",
+                "effective_cache_size": "4GB",
+                "max_connections": 34,
+                "shared_buffers": "2GB",
+                # "log_min_duration_statement": 5000,
+                # "shared_preload_libraries": 'pg_stat_statements',
+                # "session_preload_libraries": 'auto_explain',
+            }
+            PostgresHelper.postgres_db = TempDB(
+                verbosity=0,
+                databases=[config["POSTGRES_DATABASE_NAME"]],
+                initdb=config["POSTGRES_ROOT"] + "/bin/initdb",
+                postgres=config["POSTGRES_ROOT"] + "/bin/postgres",
+                psql=config["POSTGRES_ROOT"] + "/bin/psql",
+                createuser=config["POSTGRES_ROOT"] + "/bin/createuser",
+                dirname=dirname,
+                options=options,
+            )
+
+            # Create a database instance that will manage the connection and execute queries
+            database = pool.PooledPostgresqlExtDatabase(
+                config["POSTGRES_DATABASE_NAME"],
+                host=PostgresHelper.postgres_db.pg_socket_dir,
+                user=PostgresHelper.postgres_db.current_user,
+                max_connections=8,
+            )
+
+            if config["TESTING"]:
+                PostgresHelper._is_test = True
+
+        # if config["TESTING"]:
+        #     Bootstrapper.is_test = True
+
+        # if bootstrap:
+        #     from discograph.library.postgres.postgres_bootstrapper import (
+        #         PostgresBootstrapper,
+        #     )
+        #
+        #     PostgresBootstrapper.load_models()
+
+        return database
+
+    @staticmethod
+    def shutdown_database():
+        log.info("Shutting down database")
+        if PostgresHelper.postgres_db is not None:
+            log.info("Cleaning up Postgres Database")
+            PostgresHelper.postgres_db.cleanup()
+            if PostgresHelper._is_test:
+                log.info(f"Delete data dir: {PostgresHelper.postgres_db.pg_data_dir}")
+                shutil.rmtree(PostgresHelper.postgres_db.pg_data_dir)
+                log.info(
+                    f"Delete socket dir: {PostgresHelper.postgres_db.pg_socket_dir}"
+                )
+                shutil.rmtree(PostgresHelper.postgres_db.pg_socket_dir)
+            PostgresHelper.postgres_db = None
+        # if bootstrap_database is not None:
+        #     bootstrap_database = None
+
+    @staticmethod
+    def check_connection(config, database):
+        try:
+            log.info("Check Postgres database connection...")
+
+            if config["PRODUCTION"]:
+                connection = psycopg2.connect(
+                    user=config["POSTGRES_DATABASE_USERNAME"],
+                    password=config["POSTGRES_DATABASE_PASSWORD"],
+                    host=config["POSTGRES_DATABASE_HOST"],
+                    port=config["POSTGRES_DATABASE_PORT"],
+                    database=config["POSTGRES_DATABASE_NAME"],
+                )
+                cursor = connection.cursor()
+            else:
+                cursor = database.cursor()
+
+            cursor.execute("SELECT version();")
+            record = cursor.fetchone()
+
+            log.info(f"Database Version: {record}")
+
+            log.info("Database connected OK.")
+        except psycopg2.Error as e:
+            log.exception("Error: %s" % e)
+
     @staticmethod
     def get_entity(entity_type: EntityType, entity_id: int):
         where_clause = PostgresEntity.entity_id == entity_id
@@ -149,7 +285,7 @@ class PostgresHelper(DatabaseHelper):
 
     @staticmethod
     def parse_request_args(args):
-        from discograph.utils import args_roles_pattern
+        from discograph.utils import ARG_ROLES_REGEX
 
         year = None
         roles = set()
@@ -164,7 +300,7 @@ class PostgresHelper(DatabaseHelper):
                         year = int(year)
                 finally:
                     pass
-            elif args_roles_pattern.match(key):
+            elif ARG_ROLES_REGEX.match(key):
                 value = args.getlist(key)
                 for role in value:
                     if role in CreditRole.all_credit_roles:
@@ -174,10 +310,10 @@ class PostgresHelper(DatabaseHelper):
 
     @staticmethod
     def search_entities(search_string):
-        from discograph.utils import urlify_pattern
+        from discograph.utils import URLIFY_REGEX
         from discograph.library.cache.cache_manager import cache
 
-        cache_key = f"discograph:/api/search/{urlify_pattern.sub('+', search_string)}"
+        cache_key = f"discograph:/api/search/{URLIFY_REGEX.sub('+', search_string)}"
         log.debug(f"  get cache_key: {cache_key}")
         data = cache.get(cache_key)
         if data is not None:

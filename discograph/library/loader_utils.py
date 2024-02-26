@@ -4,6 +4,7 @@ import gzip
 import logging
 import os
 import re
+from typing import Optional
 from xml.dom import minidom
 from xml.etree import ElementTree
 
@@ -11,18 +12,18 @@ from xml.etree import ElementTree
 log = logging.getLogger(__name__)
 
 
-class Bootstrapper(object):
-    # CLASS VARIABLES
+class LoaderUtils:
+    # CLASS CONSTANTS
 
-    date_regex = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
-    date_no_dashes_regex = re.compile(r"^(\d{4})(\d{2})(\d{2})$")
-    year_regex = re.compile(r"^\d\d\d\d$")
-    is_test = False
+    DATE_REGEX = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
+    DATE_NO_DASHES_REGEX = re.compile(r"^(\d{4})(\d{2})(\d{2})$")
+    YEAR_REGEX = re.compile(r"^\d\d\d\d$")
 
-    # PUBLIC METHODS
+    # PUBLIC STATIC METHODS
 
     @staticmethod
-    def get_xml_path(tag, test=False):
+    def get_xml_path(tag: str, date: str = ""):
+        # Date in the format yyyymmdd, use test_yyyymmdd for test data
         data_directory = os.path.abspath(
             os.path.join(
                 os.path.abspath(os.path.dirname(__file__)),
@@ -30,10 +31,7 @@ class Bootstrapper(object):
                 "data",
             )
         )
-        if Bootstrapper.is_test or test:
-            glob_pattern = f"discogs_test_{tag}s.xml.gz"
-        else:
-            glob_pattern = f"discogs_2*_{tag}s.xml.gz"
+        glob_pattern = f"discogs_{date}_{tag}s.xml.gz"
         log.debug(f"data_directory: {data_directory}")
         log.debug(f"glob_pattern: {glob_pattern}")
         # with contextmanagers.TemporaryDirectoryChange(data_directory):
@@ -55,25 +53,25 @@ class Bootstrapper(object):
             yield element
 
     @staticmethod
-    def parse_release_date(date_string):
+    def parse_release_date(date_string: Optional[str]):
         # empty string
         if not date_string:
             return None
         # yyyy-mm-dd
-        match = Bootstrapper.date_regex.match(date_string)
+        match = LoaderUtils.DATE_REGEX.match(date_string)
         if match:
             year, month, day = match.groups()
-            return Bootstrapper.validate_release_date(year, month, day)
+            return LoaderUtils.validate_release_date(year, month, day)
         # yyyymmdd
-        match = Bootstrapper.date_no_dashes_regex.match(date_string)
+        match = LoaderUtils.DATE_NO_DASHES_REGEX.match(date_string)
         if match:
             year, month, day = match.groups()
-            return Bootstrapper.validate_release_date(year, month, day)
+            return LoaderUtils.validate_release_date(year, month, day)
         # yyyy
-        match = Bootstrapper.year_regex.match(date_string)
+        match = LoaderUtils.YEAR_REGEX.match(date_string)
         if match:
             year, month, day = match.group(), "1", "1"
-            return Bootstrapper.validate_release_date(year, month, day)
+            return LoaderUtils.validate_release_date(year, month, day)
         # other: "?", "????", "None", "Unknown"
         return None
 
@@ -82,7 +80,7 @@ class Bootstrapper(object):
         if element is None:
             return None
         date_string = element.text.strip()
-        return Bootstrapper.parse_release_date(date_string)
+        return LoaderUtils.parse_release_date(date_string)
 
     @staticmethod
     def element_to_integer(element):
@@ -103,15 +101,15 @@ class Bootstrapper(object):
         return None
 
     @staticmethod
-    def get_iterator(tag):
-        file_path = Bootstrapper.get_xml_path(tag)
+    def get_iterator(tag: str, date: str):
+        file_path = LoaderUtils.get_xml_path(tag, date)
         file_pointer = gzip.GzipFile(file_path, "r")
-        iterator = Bootstrapper.iterparse(file_pointer, tag)
-        iterator = Bootstrapper.clean_elements(iterator)
+        iterator = LoaderUtils.iterparse(file_pointer, tag)
+        iterator = LoaderUtils.clean_elements(iterator)
         return iterator
 
     @staticmethod
-    def iterparse(source, tag):
+    def iterparse(source, tag: str):
         context = ElementTree.iterparse(source, events=("start", "end"))
         context = iter(context)
         _, root = next(context)

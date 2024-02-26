@@ -5,15 +5,13 @@ import sys
 
 import peewee
 
-import discograph.config
-import discograph.database
-import discograph.utils
 from discograph import utils
-from discograph.library import EntityType
+from discograph.library.database.database_loader import DatabaseLoader
+from discograph.library.discogs_model import DiscogsModel
+from discograph.library.entity_type import EntityType
 from discograph.library.enum_field import EnumField
-from discograph.library.bootstrapper import Bootstrapper
-from discograph.library.discogs_model import DiscogsModel, database_proxy
-
+from discograph.library.loader_utils import LoaderUtils
+from discograph.library.models.relation import Relation
 
 log = logging.getLogger(__name__)
 
@@ -23,7 +21,7 @@ class Entity(DiscogsModel):
 
     _strip_pattern = re.compile(r"(\(\d+\)|[^(\w\s)]+)")
 
-    class BootstrapPassTwoWorker(multiprocessing.Process):
+    class LoaderPassTwoWorker(multiprocessing.Process):
         def __init__(self, model_class, entity_type: EntityType, indices):
             super().__init__()
             self.model_class = model_class
@@ -38,10 +36,22 @@ class Entity(DiscogsModel):
             count = 0
             total_count = len(self.indices)
 
-            from discograph.database import bootstrap_database
+            # from discograph.database import bootstrap_database
+            from discograph.library.database.database_proxy import database_proxy
 
-            if bootstrap_database:
-                database_proxy.initialize(bootstrap_database)
+            # from discograph.library.database.database_helper import DatabaseHelper
+            #
+            # print(f"DatabaseHelper.database: {DatabaseHelper.database}")
+            # print(
+            #     f"DatabaseHelper.database.is_closed: {DatabaseHelper.database.is_closed()}"
+            # )
+            # DatabaseHelper.database.close()
+            # db_helper.bind_models(DatabaseHelper.database)
+
+            # if bootstrap_database:
+            #     database_proxy.initialize(bootstrap_database)
+            database_proxy.initialize(DatabaseLoader.loader_database)
+
             with DiscogsModel.connection_context():
                 for i, entity_id in enumerate(self.indices):
                     max_attempts = 10
@@ -52,7 +62,7 @@ class Entity(DiscogsModel):
                             with DiscogsModel.atomic():
                                 progress = float(i) / total_count
                                 try:
-                                    self.model_class.bootstrap_pass_two_single(
+                                    self.model_class.loader_pass_two_single(
                                         entity_type=self.entity_type,
                                         entity_id=entity_id,
                                         annotation=proc_number,
@@ -81,7 +91,7 @@ class Entity(DiscogsModel):
                             error = True
             log.info(f"[{proc_name}] processed {count} of {total_count}")
 
-    class BootstrapPassThreeWorker(multiprocessing.Process):
+    class LoaderPassThreeWorker(multiprocessing.Process):
         def __init__(self, model_class, entity_type: EntityType, indices):
             super().__init__()
             self.model_class = model_class
@@ -101,16 +111,18 @@ class Entity(DiscogsModel):
             count = 0
             total_count = len(self.indices)
 
-            from discograph.database import bootstrap_database
+            from discograph.library.database.database_proxy import database_proxy
 
-            if bootstrap_database:
-                database_proxy.initialize(bootstrap_database)
+            # if bootstrap_database:
+            #     database_proxy.initialize(bootstrap_database)
+            database_proxy.initialize(DatabaseLoader.loader_database)
+
             with DiscogsModel.connection_context():
                 for i, entity_id in enumerate(self.indices):
                     with DiscogsModel.atomic():
                         progress = float(i) / total_count
                         try:
-                            self.model_class.bootstrap_pass_three_single(
+                            self.model_class.loader_pass_three_single(
                                 relation_class,
                                 entity_type=self.entity_type,
                                 entity_id=entity_id,
@@ -147,25 +159,27 @@ class Entity(DiscogsModel):
 
     # PUBLIC METHODS
 
-    @classmethod
-    def bootstrap(cls):
-        cls.drop_table(True)
-        cls.create_table()
-        cls.bootstrap_pass_one()
-        cls.bootstrap_pass_two()
+    # @classmethod
+    # def bootstrap(cls):
+    #     cls.drop_table(True)
+    #     cls.create_table()
+    #     cls.bootstrap_pass_one()
+    #     cls.bootstrap_pass_two()
 
     @classmethod
-    def bootstrap_pass_one(cls, **kwargs):
-        DiscogsModel.bootstrap_pass_one(
-            cls,
-            "artist",
+    def loader_pass_one(cls, date: str):
+        DiscogsModel.loader_pass_one_manager(
+            model_class=cls,
+            date=date,
+            xml_tag="artist",
             id_attr="entity_id",
             name_attr="name",
             skip_without=["name"],
         )
-        DiscogsModel.bootstrap_pass_one(
-            cls,
-            "label",
+        DiscogsModel.loader_pass_one_manager(
+            model_class=cls,
+            date=date,
+            xml_tag="label",
             id_attr="entity_id",
             name_attr="name",
             skip_without=["name"],
@@ -189,21 +203,23 @@ class Entity(DiscogsModel):
 
     @classmethod
     def get_indices(cls, entity_type: EntityType):
+        from discograph.database import get_concurrency_count
+
         query = cls.select(cls.entity_id)
         query = query.where(cls.entity_type == entity_type)
         query = query.order_by(cls.entity_id)
         query = query.tuples()
         all_ids = tuple(_[0] for _ in query)
-        num_chunks = discograph.database.get_concurrency_count()
+        num_chunks = get_concurrency_count()
         return utils.split_tuple(num_chunks, all_ids)
 
     @classmethod
-    def bootstrap_pass_two(cls, **kwargs):
+    def loader_pass_two(cls, **kwargs):
         log.debug("entity bootstrap pass two - artist")
         entity_type: EntityType = EntityType.ARTIST
         indices = cls.get_indices(entity_type)
 
-        workers = [cls.BootstrapPassTwoWorker(cls, entity_type, x) for x in indices]
+        workers = [cls.LoaderPassTwoWorker(cls, entity_type, x) for x in indices]
         log.debug(f"entity bootstrap pass two - artist start {len(workers)} workers")
         for worker in workers:
             worker.start()
@@ -219,7 +235,7 @@ class Entity(DiscogsModel):
         entity_type: EntityType = EntityType.LABEL
         indices = cls.get_indices(entity_type)
 
-        workers = [cls.BootstrapPassTwoWorker(cls, entity_type, x) for x in indices]
+        workers = [cls.LoaderPassTwoWorker(cls, entity_type, x) for x in indices]
         log.debug(f"entity bootstrap pass two - label start {len(workers)} workers")
         for worker in workers:
             worker.start()
@@ -230,41 +246,45 @@ class Entity(DiscogsModel):
                 # raise Exception("Error in worker process")
         for worker in workers:
             worker.terminate()
-        log.debug("entity bootstrap pass two - done")
+        log.debug("entity loader pass two - done")
 
     @classmethod
-    def bootstrap_pass_three(cls):
-        log.debug("entity bootstrap pass three")
+    def loader_pass_three(cls):
+        log.debug("entity loader pass three")
 
         entity_type: EntityType = EntityType.ARTIST
         indices = cls.get_indices(entity_type)
-        workers = [cls.BootstrapPassThreeWorker(cls, entity_type, x) for x in indices]
-        log.debug(f"entity bootstrap pass three - artist start {len(workers)} workers")
+        workers = [cls.LoaderPassThreeWorker(cls, entity_type, x) for x in indices]
+        log.debug(f"entity loader pass three - artist start {len(workers)} workers")
         for worker in workers:
             worker.start()
         for worker in workers:
             worker.join()
             if worker.exitcode > 0:
-                log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
+                log.debug(
+                    f"entity loader worker {worker.name} exitcode: {worker.exitcode}"
+                )
                 # raise Exception("Error in worker process")
         for worker in workers:
             worker.terminate()
         entity_type: EntityType = EntityType.LABEL
         indices = cls.get_indices(entity_type)
-        workers = [cls.BootstrapPassThreeWorker(cls, entity_type, _) for _ in indices]
-        log.debug(f"entity bootstrap pass three - label start {len(workers)} workers")
+        workers = [cls.LoaderPassThreeWorker(cls, entity_type, _) for _ in indices]
+        log.debug(f"entity loader pass three - label start {len(workers)} workers")
         for worker in workers:
             worker.start()
         for worker in workers:
             worker.join()
             if worker.exitcode > 0:
-                log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
+                log.debug(
+                    f"entity loader worker {worker.name} exitcode: {worker.exitcode}"
+                )
                 # raise Exception("Error in worker process")
         for worker in workers:
             worker.terminate()
 
     @classmethod
-    def bootstrap_pass_two_single(
+    def loader_pass_two_single(
         cls,
         entity_type: EntityType,
         entity_id: int,
@@ -282,19 +302,19 @@ class Entity(DiscogsModel):
         corpus = corpus or {}
         changed = document.resolve_references(corpus)
         if changed:
-            log.debug(
-                f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
-                + f"          (id:{(document.entity_type, document.entity_id)}): {document.name}"
-            )
+            # log.debug(
+            #     f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
+            #     + f"          (id:{(document.entity_type, document.entity_id)}): {document.name}"
+            # )
             document.save()
-        else:
-            log.debug(
-                f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
-                + f"[SKIPPED] (id:{(document.entity_type, document.entity_id)}): {document.name}"
-            )
+        # else:
+        #     log.debug(
+        #         f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
+        #         + f"[SKIPPED] (id:{(document.entity_type, document.entity_id)}): {document.name}"
+        #     )
 
     @classmethod
-    def bootstrap_pass_three_single(
+    def loader_pass_three_single(
         cls,
         relation_class,
         entity_type: EntityType,
@@ -339,10 +359,10 @@ class Entity(DiscogsModel):
             return
         document.relation_counts = _relation_counts
         document.save()
-        log.debug(
-            f"{cls.__name__.upper()} (Pass 3) {progress:.3%} [{annotation}]\t"
-            + f"(id:{(document.entity_type, document.entity_id)}) {document.name}: {len(_relation_counts)}"
-        )
+        # log.debug(
+        #     f"{cls.__name__.upper()} (Pass 3) {progress:.3%} [{annotation}]\t"
+        #     + f"(id:{(document.entity_type, document.entity_id)}) {document.name}: {len(_relation_counts)}"
+        # )
 
     @classmethod
     def element_to_names(cls, names):
@@ -646,7 +666,7 @@ class Entity(DiscogsModel):
     @classmethod
     def create_relation(
         cls, entity_one_type, entity_one_id, entity_two_type, entity_two_id, role
-    ):
+    ) -> Relation:
         pass
 
     # PUBLIC PROPERTIES
@@ -678,15 +698,15 @@ class Entity(DiscogsModel):
 
 Entity._tags_to_fields_mapping = {
     "aliases": ("aliases", Entity.element_to_names),
-    "contact_info": ("contact_info", Bootstrapper.element_to_string),
+    "contact_info": ("contact_info", LoaderUtils.element_to_string),
     "groups": ("groups", Entity.element_to_names),
-    "id": ("entity_id", Bootstrapper.element_to_integer),
+    "id": ("entity_id", LoaderUtils.element_to_integer),
     "members": ("members", Entity.element_to_names_and_ids),
-    "name": ("name", Bootstrapper.element_to_string),
-    "namevariations": ("name_variations", Bootstrapper.element_to_strings),
+    "name": ("name", LoaderUtils.element_to_string),
+    "namevariations": ("name_variations", LoaderUtils.element_to_strings),
     "parentLabel": ("parent_label", Entity.element_to_parent_label),
-    "profile": ("profile", Bootstrapper.element_to_string),
-    "realname": ("real_name", Bootstrapper.element_to_string),
+    "profile": ("profile", LoaderUtils.element_to_string),
+    "realname": ("real_name", LoaderUtils.element_to_string),
     "sublabels": ("sublabels", Entity.element_to_sublabels),
-    "urls": ("urls", Bootstrapper.element_to_strings),
+    "urls": ("urls", LoaderUtils.element_to_strings),
 }

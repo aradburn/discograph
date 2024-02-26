@@ -1,19 +1,63 @@
 import logging
 import random
 
-from discograph.library import EntityType, CreditRole
+import peewee
+from peewee import Database
+from playhouse.cockroachdb import PooledCockroachDatabase
+
+from discograph.config import Configuration
 from discograph.library.cockroach.cockroach_entity import CockroachEntity
 from discograph.library.cockroach.cockroach_relation import CockroachRelation
 from discograph.library.cockroach.cockroach_relation_grapher import (
     CockroachRelationGrapher,
 )
-from discograph.library.database_helper import DatabaseHelper
+from discograph.library.credit_role import CreditRole
+from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.discogs_model import DiscogsModel
+from discograph.library.entity_type import EntityType
 
 log = logging.getLogger(__name__)
 
 
 class CockroachHelper(DatabaseHelper):
+    @staticmethod
+    def setup_database(config: Configuration) -> Database:
+        log.info("Using Cockroach Database")
+
+        database = PooledCockroachDatabase(
+            config["COCKROACH_DATABASE_NAME"],
+            user="root",
+            host="localhost",
+            # sslmode='verify-full',
+            # sslrootcert='/opt/cockroachdb/certs/ca.crt',
+            # sslcert='/opt/cockroachdb/certs/client.root.crt',
+            # sslkey='/opt/cockroachdb/certs/client.root.key',
+            max_connections=8,
+        )
+
+        return database
+
+    @staticmethod
+    def shutdown_database():
+        pass
+
+    @staticmethod
+    def check_connection(config: Configuration, database: Database):
+        try:
+            log.info("Check Postgres database connection...")
+
+            cursor = database.cursor()
+            cursor.execute("SELECT 1")
+
+            log.info("Database connected OK.")
+        except peewee.OperationalError as e:
+            log.exception(f"Error in check_connection: {e}")
+            raise e
+
+    # @staticmethod
+    # def bind_models(database: Database):
+    #     database.bind([CockroachEntity, CockroachRelation, CockroachRelease])
+
     @staticmethod
     def get_entity(entity_type: EntityType, entity_id: int):
         where_clause = CockroachEntity.entity_id == entity_id
@@ -121,7 +165,7 @@ class CockroachHelper(DatabaseHelper):
 
     @staticmethod
     def parse_request_args(args):
-        from discograph.utils import args_roles_pattern
+        from discograph.utils import ARG_ROLES_REGEX
 
         year = None
         roles = set()
@@ -136,7 +180,7 @@ class CockroachHelper(DatabaseHelper):
                         year = int(year)
                 finally:
                     pass
-            elif args_roles_pattern.match(key):
+            elif ARG_ROLES_REGEX.match(key):
                 value = args.getlist(key)
                 for role in value:
                     if role in CreditRole.all_credit_roles:
@@ -146,10 +190,10 @@ class CockroachHelper(DatabaseHelper):
 
     @staticmethod
     def search_entities(search_string):
-        from discograph.utils import urlify_pattern
+        from discograph.utils import URLIFY_REGEX
         from discograph.library.cache.cache_manager import cache
 
-        cache_key = f"discograph:/api/search/{urlify_pattern.sub('+', search_string)}"
+        cache_key = f"discograph:/api/search/{URLIFY_REGEX.sub('+', search_string)}"
         log.debug(f"  get cache_key: {cache_key}")
         data = cache.get(cache_key)
         if data is not None:

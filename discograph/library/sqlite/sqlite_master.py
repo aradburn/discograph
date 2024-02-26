@@ -3,8 +3,8 @@ import logging
 import peewee
 from playhouse import sqlite_ext
 
-from discograph.library.bootstrapper import Bootstrapper
 from discograph.library.discogs_model import DiscogsModel
+from discograph.library.loader_utils import LoaderUtils
 from discograph.library.sqlite.sqlite_release import SqliteRelease
 
 
@@ -29,11 +29,11 @@ class SqliteMaster(DiscogsModel):
 
     # PUBLIC METHODS
 
-    @classmethod
-    def bootstrap(cls):
-        cls.drop_table(True)
-        cls.create_table()
-        cls.bootstrap_pass_one()
+    # @classmethod
+    # def bootstrap(cls):
+    #     cls.drop_table(True)
+    #     cls.create_table()
+    #     cls.bootstrap_pass_one()
 
     @classmethod
     def from_element(cls, element):
@@ -42,9 +42,10 @@ class SqliteMaster(DiscogsModel):
         return cls(**data)
 
     @classmethod
-    def bootstrap_pass_one(cls, **kwargs):
-        DiscogsModel.bootstrap_pass_one(
+    def loader_pass_one(cls, date: str):
+        DiscogsModel.loader_pass_one_manager(
             model_class=cls,
+            date=date,
             xml_tag="master",
             name_attr="title",
             skip_without=["title"],
@@ -53,9 +54,9 @@ class SqliteMaster(DiscogsModel):
 
 SqliteMaster._tags_to_fields_mapping = {
     "artists": ("artists", SqliteRelease.element_to_artist_credits),
-    "genres": ("genres", Bootstrapper.element_to_strings),
-    "main_release": ("main_release_id", Bootstrapper.element_to_integer),
-    "styles": ("styles", Bootstrapper.element_to_strings),
-    "title": ("title", Bootstrapper.element_to_string),
-    "year": ("year", Bootstrapper.element_to_integer),
+    "genres": ("genres", LoaderUtils.element_to_strings),
+    "main_release": ("main_release_id", LoaderUtils.element_to_integer),
+    "styles": ("styles", LoaderUtils.element_to_strings),
+    "title": ("title", LoaderUtils.element_to_string),
+    "year": ("year", LoaderUtils.element_to_integer),
 }

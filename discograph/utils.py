@@ -1,16 +1,18 @@
+import json
 import math
 import re
 import textwrap
+from typing import Dict, List
 
 from toolz import partition_all
 
-urlify_pattern = re.compile(r"\s+", re.MULTILINE)
-args_roles_pattern = re.compile(r"^roles(\[\d*\])?$")
+from discograph.library.credit_role import CreditRole
+
+URLIFY_REGEX = re.compile(r"\s+", re.MULTILINE)
+ARG_ROLES_REGEX = re.compile(r"^roles(\[\d*\])?$")
 
 
 def parse_request_args(args):
-    from discograph.library import CreditRole
-
     year = None
     roles = set()
     for key in args:
@@ -24,7 +26,7 @@ def parse_request_args(args):
                     year = int(year)
             finally:
                 pass
-        elif args_roles_pattern.match(key):
+        elif ARG_ROLES_REGEX.match(key):
             value = args.getlist(key)
             for role in value:
                 if role in CreditRole.all_credit_roles:
@@ -90,4 +92,39 @@ def normalize(argument: str, indent: int | str | None = None) -> str:
             if line:
                 lines[i] = f"{indent_string}{line}"
         string = "\n".join(lines)
+    if not string.endswith("\n"):
+        string += "\n"
     return string
+
+
+def normalize_dict(obj: Dict) -> str:
+    s = normalize(json.dumps(obj, indent=4, sort_keys=True, default=str))
+    return s
+
+
+def normalize_dict_list(list_obj: List[Dict]) -> str:
+    return (
+        "[\n"
+        + ",\n".join(
+            textwrap.indent(
+                strip_trailing_newline(
+                    normalize(json.dumps(_, indent=4, sort_keys=True, default=str))
+                ),
+                "    ",
+            )
+            for _ in list_obj
+        )
+        + "\n]\n"
+    )
+
+
+def normalize_str_list(list_obj: List[str]) -> str:
+    return "[\n" + ",\n".join(textwrap.indent(_, "    ") for _ in list_obj) + "\n]\n"
+
+
+def strip_input(input_str: str) -> str:
+    return textwrap.dedent(input_str).replace("\n", "", 1)
+
+
+def strip_trailing_newline(input_str: str) -> str:
+    return input_str.removesuffix("\n")

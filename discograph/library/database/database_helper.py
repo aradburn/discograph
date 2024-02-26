@@ -1,9 +1,14 @@
 from abc import ABC, abstractmethod
 
-from discograph.library import EntityType
+from peewee import Database
+
+from discograph.config import Configuration
+from discograph.library.entity_type import EntityType
 
 
 class DatabaseHelper(ABC):
+    database: Database
+
     MAX_NODES = 400
     MAX_NODES_MOBILE = 25
 
@@ -13,6 +18,26 @@ class DatabaseHelper(ABC):
 
     LINK_RATIO = 10
     # was 3
+
+    @staticmethod
+    @abstractmethod
+    def setup_database(config: Configuration) -> Database:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def shutdown_database():
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def check_connection(config: Configuration, database: Database):
+        pass
+
+    # @staticmethod
+    # @abstractmethod
+    # def bind_models(database: Database):
+    #     pass
 
     @staticmethod
     @abstractmethod

@@ -1,18 +1,60 @@
 import logging
+import pathlib
 import random
 
-from discograph.library import EntityType, CreditRole
-from discograph.library.database_helper import DatabaseHelper
+from peewee import Database
+from playhouse.sqlite_ext import SqliteExtDatabase
+
+from discograph.config import Configuration
+from discograph.library.credit_role import CreditRole
+from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.discogs_model import DiscogsModel
+from discograph.library.entity_type import EntityType
 from discograph.library.sqlite.sqlite_entity import SqliteEntity
 from discograph.library.sqlite.sqlite_relation import SqliteRelation
 from discograph.library.sqlite.sqlite_relation_grapher import SqliteRelationGrapher
-
 
 log = logging.getLogger(__name__)
 
 
 class SqliteHelper(DatabaseHelper):
+    @staticmethod
+    def setup_database(config: Configuration) -> Database:
+        log.info("Using Sqlite Database")
+
+        target_path = pathlib.Path(config["SQLITE_DATABASE_NAME"])
+        target_parent = target_path.parent
+        target_parent.mkdir(parents=True, exist_ok=True)
+        log.info(f"Sqlite Database: {target_path}")
+
+        database = SqliteExtDatabase(
+            config["SQLITE_DATABASE_NAME"],
+            pragmas={
+                "journal_mode": "wal",
+                # 'check_same_thread': False,
+                # 'journal_mode': 'off',
+                "synchronous": 0,
+                "cache_size": 1000000,
+                # 'locking_mode': 'exclusive',
+                "temp_store": "memory",
+            },
+            timeout=20,
+        )
+
+        return database
+
+    @staticmethod
+    def shutdown_database():
+        pass
+
+    @staticmethod
+    def check_connection(config: Configuration, database: Database):
+        pass
+
+    # @staticmethod
+    # def bind_models(database: Database):
+    #     database.bind([SqliteEntity, SqliteRelation, SqliteRelease])
+
     @staticmethod
     def get_entity(entity_type: EntityType, entity_id: int):
         assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
@@ -127,7 +169,7 @@ class SqliteHelper(DatabaseHelper):
 
     @staticmethod
     def parse_request_args(args):
-        from discograph.utils import args_roles_pattern
+        from discograph.utils import ARG_ROLES_REGEX
 
         year = None
         roles = set()
@@ -142,7 +184,7 @@ class SqliteHelper(DatabaseHelper):
                         year = int(year)
                 finally:
                     pass
-            elif args_roles_pattern.match(key):
+            elif ARG_ROLES_REGEX.match(key):
                 value = args.getlist(key)
                 for role in value:
                     if role in CreditRole.all_credit_roles:
@@ -152,10 +194,10 @@ class SqliteHelper(DatabaseHelper):
 
     @staticmethod
     def search_entities(search_string):
-        from discograph.utils import urlify_pattern
+        from discograph.utils import URLIFY_REGEX
         from discograph.library.cache.cache_manager import cache
 
-        cache_key = f"discograph:/api/search/{urlify_pattern.sub('+', search_string)}"
+        cache_key = f"discograph:/api/search/{URLIFY_REGEX.sub('+', search_string)}"
         log.debug(f"  get cache_key: {cache_key}")
         data = cache.get(cache_key)
         if data is not None:

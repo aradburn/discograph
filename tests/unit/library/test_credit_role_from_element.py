@@ -1,7 +1,7 @@
 import unittest
 from xml.etree import ElementTree
 
-from discograph.library import CreditRole
+from discograph.library.credit_role import CreditRole
 
 
 class TestCreditRoleFromElement(unittest.TestCase):

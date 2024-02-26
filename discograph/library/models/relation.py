@@ -7,9 +7,10 @@ import sys
 
 import peewee
 
-from discograph.library import EntityType, CreditRole
-from discograph.library.bootstrapper import Bootstrapper
+from discograph.library.credit_role import CreditRole
+from discograph.library.database.database_loader import DatabaseLoader
 from discograph.library.discogs_model import DiscogsModel
+from discograph.library.entity_type import EntityType
 from discograph.library.enum_field import EnumField
 
 log = logging.getLogger(__name__)
@@ -18,7 +19,7 @@ log = logging.getLogger(__name__)
 class Relation(DiscogsModel):
     # CLASS VARIABLES
 
-    class BootstrapPassOneWorker(multiprocessing.Process):
+    class LoaderPassOneWorker(multiprocessing.Process):
         corpus = {}
 
         def __init__(self, model_class, indices):
@@ -39,15 +40,19 @@ class Relation(DiscogsModel):
             count = 0
             total_count = len(self.indices)
 
-            from discograph.database import bootstrap_database
-            from discograph.library.discogs_model import database_proxy
+            from discograph.library.database.database_proxy import database_proxy
 
-            if bootstrap_database:
-                database_proxy.initialize(bootstrap_database)
+            # from discograph.database import bootstrap_database
+            # from discograph.library.discogs_model import database_proxy
+            #
+            # if bootstrap_database:
+            #     database_proxy.initialize(bootstrap_database)
+            database_proxy.initialize(DatabaseLoader.loader_database)
+
             with DiscogsModel.connection_context():
                 for release_id in self.indices:
                     try:
-                        self.model_class.bootstrap_pass_one_inner(
+                        self.model_class.loader_pass_one_inner(
                             release_class,
                             release_id,
                             self.corpus,
@@ -59,7 +64,7 @@ class Relation(DiscogsModel):
                                 f"[{proc_name}] processed {count} of {total_count}"
                             )
                     except peewee.PeeweeException:
-                        log.exception("Error in BootstrapPassOneWorker")
+                        log.exception("Error in LoaderPassOneWorker")
             log.info(f"[{proc_name}] processed {count} of {total_count}")
 
     aggregate_roles = (
@@ -136,15 +141,15 @@ class Relation(DiscogsModel):
             data["pages"] = tuple(sorted(self.pages))
         return data
 
-    @classmethod
-    def bootstrap(cls):
-        cls.drop_table(True)
-        cls.create_table()
-        cls.bootstrap_pass_one()
+    # @classmethod
+    # def bootstrap(cls):
+    #     cls.drop_table(True)
+    #     cls.create_table()
+    #     cls.bootstrap_pass_one()
 
     @classmethod
-    def bootstrap_pass_one(cls, **kwargs):
-        log.debug("relation bootstrap pass one")
+    def loader_pass_one(cls, date: str):
+        log.debug("relation loader pass one")
         relation_class_name = cls.__qualname__
         relation_module_name = cls.__module__
         release_class_name = relation_class_name.replace("Relation", "Release")
@@ -152,21 +157,23 @@ class Relation(DiscogsModel):
         release_class = getattr(sys.modules[release_module_name], release_class_name)
 
         indices = release_class.get_indices()
-        workers = [cls.BootstrapPassOneWorker(cls, _) for _ in indices]
-        log.debug(f"relation bootstrap pass one - start {len(workers)} workers")
+        workers = [cls.LoaderPassOneWorker(cls, _) for _ in indices]
+        log.debug(f"relation loader pass one - start {len(workers)} workers")
         for worker in workers:
             worker.start()
         for worker in workers:
             worker.join()
             if worker.exitcode > 0:
-                log.debug(f"worker.exitcode: {worker.exitcode}")
+                log.debug(
+                    f"relation loader worker {worker.name} exitcode: {worker.exitcode}"
+                )
                 # raise Exception("Error in worker process")
         for worker in workers:
             worker.terminate()
 
     # noinspection PyUnusedLocal
     @classmethod
-    def bootstrap_pass_one_inner(cls, release_cls, release_id, corpus, annotation=""):
+    def loader_pass_one_inner(cls, release_cls, release_id, corpus, annotation=""):
         document = None
         with DiscogsModel.atomic():
             query = release_cls.select().where(release_cls.id == release_id)
@@ -175,11 +182,11 @@ class Relation(DiscogsModel):
             document = query.get()
 
         relations = cls.from_release(document)
-        if Bootstrapper.is_test:
-            log.debug(
-                f"{cls.__name__.upper()} (Pass 1) [{annotation}]\t"
-                + f"(id:{document.id})\t[{len(relations)}] {document.title}"
-            )
+        # if Bootstrapper.is_test:
+        #     log.debug(
+        #         f"{cls.__name__.upper()} (Pass 1) [{annotation}]\t"
+        #         + f"(id:{document.id})\t[{len(relations)}] {document.title}"
+        #     )
         for relation in relations:
             with DiscogsModel.atomic():
                 instance, created = cls.get_or_create(
@@ -494,7 +501,7 @@ class Relation(DiscogsModel):
         return self.entity_two_type, self.entity_two_id
 
     @property
-    def json_entity_one_key(self):
+    def json_entity_one_key(self) -> str:
         if self.entity_one_type == EntityType.ARTIST:
             return f"artist-{self.entity_one_id}"
         elif self.entity_one_type == EntityType.LABEL:
@@ -502,7 +509,7 @@ class Relation(DiscogsModel):
         raise ValueError(self.entity_one_key)
 
     @property
-    def json_entity_two_key(self):
+    def json_entity_two_key(self) -> str:
         if self.entity_two_type == EntityType.ARTIST:
             return f"artist-{self.entity_two_id}"
         elif self.entity_two_type == EntityType.LABEL:
@@ -510,7 +517,7 @@ class Relation(DiscogsModel):
         raise ValueError(self.entity_two_key)
 
     @property
-    def link_key(self):
+    def link_key(self) -> str:
         source = self.json_entity_one_key
         target = self.json_entity_two_key
         role = self.word_pattern.sub("-", str(self.role)).lower()

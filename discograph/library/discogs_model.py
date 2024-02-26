@@ -5,18 +5,14 @@ import multiprocessing
 import pprint
 import random
 
-import peewee
-from peewee import Model, FloatField, DatabaseProxy, DataError, fn
+from peewee import Model, FloatField, DataError, fn, PeeweeException
 from playhouse.shortcuts import model_to_dict
 
-import discograph.config
-import discograph.database
-import discograph.utils
-from discograph.library.bootstrapper import Bootstrapper
+from discograph.database import get_concurrency_count
+from discograph.library.database.database_loader import DatabaseLoader
+from discograph.library.loader_utils import LoaderUtils
 
 log = logging.getLogger(__name__)
-
-database_proxy = DatabaseProxy()  # Create a proxy for the database.
 
 
 class DiscogsModel(Model):
@@ -32,14 +28,15 @@ class DiscogsModel(Model):
 
         def run(self):
             proc_name = self.name
-            from discograph.database import bootstrap_database
+            from discograph.library.database.database_proxy import database_proxy
 
-            if bootstrap_database:
-                database_proxy.initialize(bootstrap_database)
+            # if bootstrap_database:
+            #     database_proxy.initialize(bootstrap_database)
+            database_proxy.initialize(DatabaseLoader.loader_database)
             with DiscogsModel.connection_context():
                 try:
                     self.model_class.bulk_create(self.bulk_inserts)
-                except peewee.PeeweeException:
+                except PeeweeException:
                     log.exception("Error in bootstrap_pass_one worker")
             log.info(f"[{proc_name}] inserted_count: {self.inserted_count}")
 
@@ -50,6 +47,10 @@ class DiscogsModel(Model):
     # PEEWEE META
 
     class Meta:
+        from discograph.library.database.database_proxy import database_proxy
+
+        # DO NOT use the Peewee thread-safe metadata implementation.
+        # model_metadata_class = ThreadSafeDatabaseMetadata
         database = database_proxy
 
     # SPECIAL METHODS
@@ -61,16 +62,26 @@ class DiscogsModel(Model):
         return str(self)
 
     @classmethod
-    def bootstrap_pass_one(
-        cls, model_class, xml_tag, id_attr="id", name_attr="name", skip_without=None
+    def loader_pass_one(cls, date: str):
+        pass
+
+    @classmethod
+    def loader_pass_one_manager(
+        cls,
+        model_class,
+        date: str = "",
+        xml_tag: str = "",
+        id_attr: str = "id",
+        name_attr: str = "name",
+        skip_without=None,
     ):
         # Pass one.
         initial_count = len(model_class)
         inserted_count = 0
-        xml_path = Bootstrapper.get_xml_path(xml_tag)
+        xml_path = LoaderUtils.get_xml_path(xml_tag, date)
         log.info(f"Loading data from {xml_path}")
         with gzip.GzipFile(xml_path, "r") as file_pointer:
-            iterator = Bootstrapper.iterparse(file_pointer, xml_tag)
+            iterator = LoaderUtils.iterparse(file_pointer, xml_tag)
             bulk_inserts = []
             workers = []
             for i, element in enumerate(iterator):
@@ -88,7 +99,7 @@ class DiscogsModel(Model):
                     # log.debug(f"new_instance: {new_instance}", flush=True)
                     bulk_inserts.append(new_instance)
                     inserted_count += 1
-                    if discograph.database.get_concurrency_count() > 1:
+                    if get_concurrency_count() > 1:
                         # Can do multi threading
                         if len(bulk_inserts) >= DiscogsModel.BULK_INSERT_BATCH_SIZE:
                             worker = cls.insert_bulk(
@@ -97,7 +108,7 @@ class DiscogsModel(Model):
                             worker.start()
                             workers.append(worker)
                             bulk_inserts.clear()
-                        if len(workers) > discograph.database.get_concurrency_count():
+                        if len(workers) > get_concurrency_count():
                             worker = workers.pop(0)
                             log.debug(f"wait for worker {len(workers)} in list")
                             worker.join()
@@ -136,7 +147,7 @@ class DiscogsModel(Model):
                 with DiscogsModel.atomic():
                     try:
                         model_class.bulk_create(bulk_inserts)
-                    except peewee.PeeweeException as e:
+                    except PeeweeException as e:
                         log.exception("Error in bootstrap_pass_one")
                         raise e
             updated_count = len(model_class) - initial_count
@@ -150,7 +161,7 @@ class DiscogsModel(Model):
         return worker
 
     @classmethod
-    def bootstrap_pass_two(cls, model_class, name_attr="name"):
+    def loader_pass_two(cls, model_class, name_attr="name"):
         corpus = {}
         maximum_id = model_class.select(fn.Max(model_class.id)).scalar()
         for i in range(1, maximum_id + 1):
@@ -173,22 +184,32 @@ class DiscogsModel(Model):
 
     @staticmethod
     def database():
+        from discograph.library.database.database_proxy import database_proxy
+
         return database_proxy
 
     @staticmethod
     def connect():
+        from discograph.library.database.database_proxy import database_proxy
+
         database_proxy.connect()
 
     @staticmethod
     def close():
+        from discograph.library.database.database_proxy import database_proxy
+
         database_proxy.close()
 
     @staticmethod
     def connection_context():
+        from discograph.library.database.database_proxy import database_proxy
+
         return database_proxy.connection_context()
 
     @staticmethod
     def atomic():
+        from discograph.library.database.database_proxy import database_proxy
+
         return database_proxy.atomic()
 
     @classmethod

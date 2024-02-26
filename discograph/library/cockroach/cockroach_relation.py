@@ -1,7 +1,7 @@
 import peewee
 from playhouse.cockroachdb import JSONField
 
-from discograph.library import EntityType
+from discograph.library.entity_type import EntityType
 from discograph.library.enum_field import EnumField
 from discograph.library.models.relation import Relation
 

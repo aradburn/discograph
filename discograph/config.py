@@ -1,7 +1,9 @@
+import collections
 import enum
 import logging
 import os
 import tempfile
+from copy import deepcopy
 
 from dotenv import load_dotenv, find_dotenv, dotenv_values
 
@@ -36,8 +38,23 @@ class CacheType(enum.Enum):
     REDIS = 3
 
 
-class Configuration(object):
-    pass
+class Configuration(collections.abc.Mapping):
+    def __init__(self, data):
+        config_data = {
+            key: value
+            for key, value in data.items()
+            if not key.startswith("_") and not callable(key)
+        }
+        self._data = deepcopy(config_data)
+
+    def __getitem__(self, key):
+        return self._data[key]
+
+    def __len__(self):
+        return len(self._data)
+
+    def __iter__(self):
+        return iter(self._data)
 
 
 class PostgresProductionConfiguration(Configuration):
@@ -54,6 +71,9 @@ class PostgresProductionConfiguration(Configuration):
     THREADING_MODEL = ThreadingModel.PROCESS
     CACHE_TYPE = CacheType.FILESYSTEM
 
+    def __init__(self):
+        super().__init__(vars(PostgresProductionConfiguration))
+
 
 class PostgresDevelopmentConfiguration(Configuration):
     PRODUCTION = False
@@ -66,6 +86,9 @@ class PostgresDevelopmentConfiguration(Configuration):
     APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.PROCESS
     CACHE_TYPE = CacheType.FILESYSTEM
+
+    def __init__(self):
+        super().__init__(vars(PostgresDevelopmentConfiguration))
 
 
 class PostgresTestConfiguration(Configuration):
@@ -80,6 +103,9 @@ class PostgresTestConfiguration(Configuration):
     THREADING_MODEL = ThreadingModel.PROCESS
     CACHE_TYPE = CacheType.MEMORY
 
+    def __init__(self):
+        super().__init__(vars(PostgresTestConfiguration))
+
 
 class SqliteDevelopmentConfiguration(Configuration):
     PRODUCTION = False
@@ -92,6 +118,9 @@ class SqliteDevelopmentConfiguration(Configuration):
     APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.THREAD
     CACHE_TYPE = CacheType.FILESYSTEM
+
+    def __init__(self):
+        super().__init__(vars(SqliteDevelopmentConfiguration))
 
 
 class SqliteTestConfiguration(Configuration):
@@ -106,6 +135,9 @@ class SqliteTestConfiguration(Configuration):
     THREADING_MODEL = ThreadingModel.THREAD
     CACHE_TYPE = CacheType.MEMORY
 
+    def __init__(self):
+        super().__init__(vars(SqliteTestConfiguration))
+
 
 class CockroachDevelopmentConfiguration(Configuration):
     PRODUCTION = False
@@ -117,6 +149,9 @@ class CockroachDevelopmentConfiguration(Configuration):
     THREADING_MODEL = ThreadingModel.PROCESS
     CACHE_TYPE = CacheType.FILESYSTEM
 
+    def __init__(self):
+        super().__init__(vars(CockroachDevelopmentConfiguration))
+
 
 class CockroachTestConfiguration(Configuration):
     PRODUCTION = False
@@ -127,3 +162,6 @@ class CockroachTestConfiguration(Configuration):
     APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.PROCESS
     CACHE_TYPE = CacheType.MEMORY
+
+    def __init__(self):
+        super().__init__(vars(CockroachTestConfiguration))

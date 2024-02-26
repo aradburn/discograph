@@ -6,10 +6,11 @@ from playhouse.cockroachdb import JSONField
 from playhouse.shortcuts import model_to_dict
 from unidecode import unidecode
 
-from discograph.library import EntityType
+from discograph.library.entity_type import EntityType
 from discograph.library.enum_field import EnumField
 from discograph.library.cockroach.cockroach_relation import CockroachRelation
 from discograph.library.models.entity import Entity
+from discograph.library.models.relation import Relation
 
 
 class CockroachEntity(Entity):
@@ -72,7 +73,7 @@ class CockroachEntity(Entity):
     @classmethod
     def create_relation(
         cls, entity_one_type, entity_one_id, entity_two_type, entity_two_id, role
-    ):
+    ) -> Relation:
         return CockroachRelation(
             entity_one_type=entity_one_type,
             entity_one_id=entity_one_id,

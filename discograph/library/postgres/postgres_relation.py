@@ -3,7 +3,7 @@ import logging
 import peewee
 from playhouse import postgres_ext
 
-from discograph.library import EntityType
+from discograph.library.entity_type import EntityType
 from discograph.library.enum_field import EnumField
 from discograph.library.models.relation import Relation
 

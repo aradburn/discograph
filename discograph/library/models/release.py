@@ -4,12 +4,10 @@ import sys
 
 import peewee
 
-import discograph.config
-import discograph.database
-import discograph.utils
 from discograph import utils
-from discograph.library.bootstrapper import Bootstrapper
-from discograph.library.discogs_model import DiscogsModel, database_proxy
+from discograph.library.database.database_loader import DatabaseLoader
+from discograph.library.discogs_model import DiscogsModel
+from discograph.library.loader_utils import LoaderUtils
 
 log = logging.getLogger(__name__)
 
@@ -23,7 +21,7 @@ class Release(DiscogsModel):
 
     _tracks_mapping = {}
 
-    class BootstrapPassTwoWorker(multiprocessing.Process):
+    class LoaderPassTwoWorker(multiprocessing.Process):
         def __init__(self, model_class, indices):
             super().__init__()
             self.model_class = model_class
@@ -33,16 +31,19 @@ class Release(DiscogsModel):
             proc_name = self.name
             corpus = {}
             total = len(self.indices)
-            from discograph.database import bootstrap_database
+            # from discograph.database import bootstrap_database
+            from discograph.library.database.database_proxy import database_proxy
 
-            if bootstrap_database:
-                database_proxy.initialize(bootstrap_database)
+            # if bootstrap_database:
+            #     database_proxy.initialize(bootstrap_database)
+            database_proxy.initialize(DatabaseLoader.loader_database)
+
             with DiscogsModel.connection_context():
                 for i, release_id in enumerate(self.indices):
                     with DiscogsModel.atomic():
                         progress = float(i) / total
                         try:
-                            self.model_class.bootstrap_pass_two_single(
+                            self.model_class.loader_pass_two_single(
                                 release_id=release_id,
                                 annotation=proc_name,
                                 corpus=corpus,
@@ -75,18 +76,19 @@ class Release(DiscogsModel):
 
     # PUBLIC METHODS
 
-    @classmethod
-    def bootstrap(cls):
-        cls.drop_table(True)
-        cls.create_table()
-        cls.bootstrap_pass_one()
-        cls.bootstrap_pass_two()
+    # @classmethod
+    # def bootstrap(cls):
+    #     cls.drop_table(True)
+    #     cls.create_table()
+    #     cls.bootstrap_pass_one()
+    #     cls.bootstrap_pass_two()
 
     @classmethod
-    def bootstrap_pass_one(cls, **kwargs):
+    def loader_pass_one(cls, date: str):
         log.debug("release bootstrap pass one")
-        DiscogsModel.bootstrap_pass_one(
+        DiscogsModel.loader_pass_one_manager(
             model_class=cls,
+            date=date,
             xml_tag="release",
             name_attr="title",
             skip_without=["title"],
@@ -94,11 +96,13 @@ class Release(DiscogsModel):
 
     @classmethod
     def get_indices(cls):
+        from discograph.database import get_concurrency_count
+
         query = cls.select(cls.id)
         query = query.order_by(cls.id)
         query = query.tuples()
         all_ids = tuple(_[0] for _ in query)
-        num_chunks = discograph.database.get_concurrency_count()
+        num_chunks = get_concurrency_count()
         return utils.split_tuple(num_chunks, all_ids)
 
     @classmethod
@@ -110,25 +114,27 @@ class Release(DiscogsModel):
             yield release
 
     @classmethod
-    def bootstrap_pass_two(cls, **kwargs):
-        log.debug("release bootstrap pass two")
+    def loader_pass_two(cls, **kwargs):
+        log.debug("release loader pass two")
         indices = cls.get_indices()
 
-        workers = [cls.BootstrapPassTwoWorker(cls, x) for x in indices]
-        log.debug(f"release bootstrap pass two - start {len(workers)} workers")
+        workers = [cls.LoaderPassTwoWorker(cls, x) for x in indices]
+        log.debug(f"release loader pass two - start {len(workers)} workers")
         for worker in workers:
             worker.start()
         for worker in workers:
             worker.join()
             if worker.exitcode > 0:
-                log.debug(f"worker.exitcode: {worker.exitcode}")
+                log.debug(
+                    f"release loader worker {worker.name} exitcode: {worker.exitcode}"
+                )
                 # raise Exception("Error in worker process")
         for worker in workers:
             worker.terminate()
-        log.debug("release bootstrap pass two - done")
+        log.debug("release loader pass two - done")
 
     @classmethod
-    def bootstrap_pass_two_single(
+    def loader_pass_two_single(
         cls,
         release_id,
         annotation="",
@@ -141,18 +147,18 @@ class Release(DiscogsModel):
         document = query.get()
         changed = document.resolve_references(corpus)
         if not changed:
-            if Bootstrapper.is_test:
-                log.debug(
-                    f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
-                    + f"[SKIPPED] (id:{document.id}): {document.title}"
-                )
+            # if Bootstrapper.is_test:
+            #     log.debug(
+            #         f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
+            #         + f"[SKIPPED] (id:{document.id}): {document.title}"
+            #     )
             return
         document.save()
-        if Bootstrapper.is_test:
-            log.debug(
-                f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
-                + f"          (id:{document.id}): {document.title}"
-            )
+        # if Bootstrapper.is_test:
+        #     log.debug(
+        #         f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
+        #         + f"          (id:{document.id}): {document.title}"
+        #     )
 
     @classmethod
     def element_to_artist_credits(cls, element):
@@ -196,7 +202,7 @@ class Release(DiscogsModel):
                 document["text"] = sub_element.get("text")
             if len(sub_element):
                 sub_element = sub_element[0]
-                descriptions = Bootstrapper.element_to_strings(sub_element)
+                descriptions = LoaderUtils.element_to_strings(sub_element)
                 document["descriptions"] = descriptions
             result.append(document)
         return result
@@ -336,40 +342,40 @@ class Release(DiscogsModel):
 Release._tags_to_fields_mapping = {
     "artists": ("artists", Release.element_to_artist_credits),
     "companies": ("companies", Release.element_to_company_credits),
-    "country": ("country", Bootstrapper.element_to_string),
+    "country": ("country", LoaderUtils.element_to_string),
     "extraartists": ("extra_artists", Release.element_to_artist_credits),
     "formats": ("formats", Release.element_to_formats),
-    "genres": ("genres", Bootstrapper.element_to_strings),
+    "genres": ("genres", LoaderUtils.element_to_strings),
     "identifiers": ("identifiers", Release.element_to_identifiers),
     "labels": ("labels", Release.element_to_label_credits),
-    "master_id": ("master_id", Bootstrapper.element_to_integer),
-    "released": ("release_date", Bootstrapper.element_to_datetime),
-    "styles": ("styles", Bootstrapper.element_to_strings),
-    "title": ("title", Bootstrapper.element_to_string),
+    "master_id": ("master_id", LoaderUtils.element_to_integer),
+    "released": ("release_date", LoaderUtils.element_to_datetime),
+    "styles": ("styles", LoaderUtils.element_to_strings),
+    "title": ("title", LoaderUtils.element_to_string),
     "tracklist": ("tracklist", Release.element_to_tracks),
 }
 
 Release._artists_mapping = {
-    "id": ("id", Bootstrapper.element_to_integer),
-    "name": ("name", Bootstrapper.element_to_string),
-    "anv": ("anv", Bootstrapper.element_to_string),
-    "join": ("join", Bootstrapper.element_to_string),
+    "id": ("id", LoaderUtils.element_to_integer),
+    "name": ("name", LoaderUtils.element_to_string),
+    "anv": ("anv", LoaderUtils.element_to_string),
+    "join": ("join", LoaderUtils.element_to_string),
     "role": ("roles", Release.element_to_roles),
-    "tracks": ("tracks", Bootstrapper.element_to_string),
+    "tracks": ("tracks", LoaderUtils.element_to_string),
 }
 
 Release._companies_mapping = {
-    "id": ("id", Bootstrapper.element_to_integer),
-    "name": ("name", Bootstrapper.element_to_string),
-    "catno": ("catalog_number", Bootstrapper.element_to_string),
-    "entity_type": ("entity_type", Bootstrapper.element_to_integer),
-    "entity_type_name": ("entity_type_name", Bootstrapper.element_to_string),
+    "id": ("id", LoaderUtils.element_to_integer),
+    "name": ("name", LoaderUtils.element_to_string),
+    "catno": ("catalog_number", LoaderUtils.element_to_string),
+    "entity_type": ("entity_type", LoaderUtils.element_to_integer),
+    "entity_type_name": ("entity_type_name", LoaderUtils.element_to_string),
 }
 
 Release._tracks_mapping = {
-    "position": ("position", Bootstrapper.element_to_string),
-    "title": ("title", Bootstrapper.element_to_string),
-    "duration": ("duration", Bootstrapper.element_to_string),
+    "position": ("position", LoaderUtils.element_to_string),
+    "title": ("title", LoaderUtils.element_to_string),
+    "duration": ("duration", LoaderUtils.element_to_string),
     "artists": ("artists", Release.element_to_artist_credits),
     "extraartists": ("extra_artists", Release.element_to_artist_credits),
 }

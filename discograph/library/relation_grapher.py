@@ -4,8 +4,9 @@ import logging
 import re
 from abc import abstractmethod, ABC
 
-from discograph.library import CreditRole, EntityType
-from discograph.library.database_helper import DatabaseHelper
+from discograph.library.credit_role import CreditRole
+from discograph.library.database.database_helper import DatabaseHelper
+from discograph.library.entity_type import EntityType
 from discograph.library.trellis_node import TrellisNode
 
 log = logging.getLogger(__name__)

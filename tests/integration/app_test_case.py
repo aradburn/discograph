@@ -1,31 +1,33 @@
 import logging
-import unittest
 
 from discograph import database
 from discograph.app import setup_application, shutdown_application
-from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.config import PostgresTestConfiguration
+from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
+from discograph.library.postgres.postgres_entity import PostgresEntity
+from discograph.library.postgres.postgres_relation import PostgresRelation
+from discograph.library.postgres.postgres_relation_grapher import (
+    PostgresRelationGrapher,
+)
+from discograph.library.postgres.postgres_release import PostgresRelease
 from discograph.logging_config import setup_logging, shutdown_logging
+from tests.integration.library.database.database_test_case import DatabaseTestCase
 
 log = logging.getLogger(__name__)
 
 
-class AppTestCase(unittest.TestCase):
+class AppTestCase(DatabaseTestCase):
     @classmethod
     def setUpClass(cls):
-        setup_logging(is_testing=True)
-        log.info("setup temp postgres DB")
-        # Note this currently has to be postgres because of string searches
-        config = vars(PostgresTestConfiguration)
-        setup_cache(config)
-        database.setup_database(config)
+        DatabaseTestCase._config = PostgresTestConfiguration()
+        DatabaseTestCase.entity = PostgresEntity
+        DatabaseTestCase.relation = PostgresRelation
+        DatabaseTestCase.release = PostgresRelease
+        DatabaseTestCase.relation_grapher = PostgresRelationGrapher
+        super().setUpClass()
         setup_application()
 
     @classmethod
     def tearDownClass(cls):
-        # release resources
-        log.info("cleanup temp postgres DB")
         shutdown_application()
-        database.shutdown_database()
-        shutdown_cache()
-        shutdown_logging()
+        super().tearDownClass()
