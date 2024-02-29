@@ -4,12 +4,12 @@ import sys
 
 from discograph.config import DatabaseType, ThreadingModel
 from discograph.library.database.database_helper import DatabaseHelper
-from discograph.library.database.database_loader import DatabaseLoader
+from discograph.library.database.database_worker import DatabaseWorker
 
 log = logging.getLogger(__name__)
 
 db_helper: DatabaseHelper
-db_loader: DatabaseLoader
+db_worker: DatabaseWorker
 
 # noinspection PyTypeChecker
 threading_model: ThreadingModel = None
@@ -17,7 +17,7 @@ threading_model: ThreadingModel = None
 
 def setup_database(config):
     global db_helper
-    global db_loader
+    global db_worker
     global threading_model
 
     threading_model = config["THREADING_MODEL"]
@@ -25,12 +25,12 @@ def setup_database(config):
     # Based on configuration, use a different database.
     if config["DATABASE"] == DatabaseType.POSTGRES:
         from discograph.library.postgres.postgres_helper import PostgresHelper
-        from discograph.library.postgres.postgres_loader import PostgresLoader
+        from discograph.library.postgres.postgres_worker import PostgresWorker
 
         # from discograph.library.discogs_model import database_proxy
 
         db_helper = PostgresHelper
-        db_loader = PostgresLoader
+        db_worker = PostgresWorker
         # threading_model = config["THREADING_MODEL"]
 
         # if config["PRODUCTION"]:
@@ -132,13 +132,13 @@ def setup_database(config):
 
     elif config["DATABASE"] == DatabaseType.SQLITE:
         from discograph.library.sqlite.sqlite_helper import SqliteHelper
-        from discograph.library.sqlite.sqlite_loader import SqliteLoader
+        from discograph.library.sqlite.sqlite_worker import SqliteWorker
 
         # from discograph.library.discogs_model import database_proxy
 
         # log.info("Using Sqlite Database")
         db_helper = SqliteHelper
-        db_loader = SqliteLoader
+        db_worker = SqliteWorker
 
         # threading_model = config["THREADING_MODEL"]
 
@@ -174,12 +174,12 @@ def setup_database(config):
         #     SqliteBootstrapper.load_models()
     elif config["DATABASE"] == DatabaseType.COCKROACH:
         from discograph.library.cockroach.cockroach_helper import CockroachHelper
-        from discograph.library.cockroach.cockroach_loader import CockroachLoader
+        from discograph.library.cockroach.cockroach_worker import CockroachWorker
 
         # from discograph.library.discogs_model import database_proxy
 
         db_helper = CockroachHelper
-        db_loader = CockroachLoader
+        db_worker = CockroachWorker
 
         # threading_model = config["THREADING_MODEL"]
 
@@ -233,8 +233,8 @@ def setup_database(config):
     DatabaseHelper.database = database
     # db_helper.bind_models(database)
 
-    loader_database = db_loader.setup_loader_database(config)
-    DatabaseLoader.loader_database = loader_database
+    worker_database = db_worker.setup_worker_database(config)
+    DatabaseWorker.worker_database = worker_database
 
     # Configure the proxy database to use the database specified in config.
     database_proxy.initialize(database)
@@ -250,7 +250,7 @@ def setup_database(config):
 def shutdown_database():
     # global postgres_db, bootstrap_database
 
-    db_loader.shutdown_loader_database()
+    db_worker.shutdown_worker_database()
     db_helper.shutdown_database()
     # log.info("Shutting down database")
     # if postgres_db is not None:

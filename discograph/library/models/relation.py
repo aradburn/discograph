@@ -8,7 +8,7 @@ import sys
 import peewee
 
 from discograph.library.credit_role import CreditRole
-from discograph.library.database.database_loader import DatabaseLoader
+from discograph.library.database.database_worker import DatabaseWorker
 from discograph.library.discogs_model import DiscogsModel
 from discograph.library.entity_type import EntityType
 from discograph.library.enum_field import EnumField
@@ -47,7 +47,7 @@ class Relation(DiscogsModel):
             #
             # if bootstrap_database:
             #     database_proxy.initialize(bootstrap_database)
-            database_proxy.initialize(DatabaseLoader.loader_database)
+            database_proxy.initialize(DatabaseWorker.worker_database)
 
             with DiscogsModel.connection_context():
                 for release_id in self.indices:
@@ -175,7 +175,7 @@ class Relation(DiscogsModel):
     @classmethod
     def loader_pass_one_inner(cls, release_cls, release_id, corpus, annotation=""):
         try:
-            log.debug(f"loader_pass_one ({annotation}): {release_id}")
+            # log.debug(f"loader_pass_one ({annotation}): {release_id}")
             release = release_cls.get_by_id(release_id)
         except peewee.DoesNotExist:
             log.debug(f"            loader_pass_one_inner id not found: {release_id}")
@@ -212,7 +212,6 @@ class Relation(DiscogsModel):
     @classmethod
     def create_or_update_relation(cls, relation):
         with DiscogsModel.atomic():
-            # log.debug("loader_pass_one_inner relation update")
             try:
                 instance = (
                     cls.select()
@@ -253,14 +252,10 @@ class Relation(DiscogsModel):
             if "release_id" in relation:
                 release_id: str = str(relation["release_id"])
                 year = relation.get("year")
-                # if not instance.releases:
-                #     instance.releases = {}
-                # log.debug(f"instance.releases: {instance.releases}")
                 if release_id not in instance.releases:
                     instance.releases[release_id] = year
-                    log.debug(f"updated .releases: {instance.releases}")
+                    log.debug(f"relation updated releases: {instance}")
                     is_dirty = True
-            # log.debug(f"is_dirty: {is_dirty}")
             if is_dirty:
                 instance.save()
 

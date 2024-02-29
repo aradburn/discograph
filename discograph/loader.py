@@ -35,7 +35,7 @@ def loader_main():
     atexit.register(shutdown_cache)
     atexit.register(shutdown_database)
     # Run the test update process
-    database.db_loader.update_tables("20230801")
+    database.db_helper.update_tables("20230801")
 
 
 if __name__ == "__main__":

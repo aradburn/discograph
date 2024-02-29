@@ -52,23 +52,94 @@ class SqliteHelper(DatabaseHelper):
         pass
 
     @staticmethod
+    def load_tables(date: str):
+        from discograph.library.sqlite.sqlite_entity import SqliteEntity
+        from discograph.library.sqlite.sqlite_relation import SqliteRelation
+        from discograph.library.sqlite.sqlite_release import SqliteRelease
+
+        log.info("Load Sqlite tables")
+
+        log.debug("Load entity pass 1")
+        SqliteEntity.loader_pass_one(date)
+
+        log.debug("Load release pass 1")
+        SqliteRelease.loader_pass_one(date)
+
+        log.debug("Load entity pass 2")
+        SqliteEntity.loader_pass_two()
+
+        log.debug("Load release pass 2")
+        SqliteRelease.loader_pass_two()
+
+        log.debug("Load relation pass 1")
+        SqliteRelation.loader_pass_one(date)
+
+        log.debug("Load entity pass 3")
+        SqliteEntity.loader_pass_three()
+
+        log.info("Load Sqlite done.")
+
+    @staticmethod
+    def update_tables(date: str):
+        from discograph.library.sqlite.sqlite_entity import SqliteEntity
+        from discograph.library.sqlite.sqlite_relation import SqliteRelation
+        from discograph.library.sqlite.sqlite_release import SqliteRelease
+
+        log.info("Update Sqlite tables")
+
+        log.debug("Update entity pass 1")
+        SqliteEntity.updater_pass_one(date)
+
+        log.debug("Update release pass 1")
+        SqliteRelease.updater_pass_one(date)
+
+        log.debug("Update entity pass 2")
+        SqliteEntity.loader_pass_two()
+
+        log.debug("Update release pass 2")
+        SqliteRelease.loader_pass_two()
+
+        log.debug("Update relation pass 1")
+        SqliteRelation.loader_pass_one(date)
+
+        log.debug("Update entity pass 3")
+        SqliteEntity.loader_pass_three()
+
+        log.info("Update Sqlite done.")
+
+    @staticmethod
+    def create_tables():
+        from discograph.library.sqlite.sqlite_entity import SqliteEntity
+        from discograph.library.sqlite.sqlite_relation import SqliteRelation
+        from discograph.library.sqlite.sqlite_release import SqliteRelease
+
+        log.info("Create Sqlite tables")
+
+        # Set parameter to True so that the create table query
+        # will include an IF NOT EXISTS clause.
+        SqliteEntity.create_table(True)
+        SqliteRelease.create_table(True)
+        SqliteRelation.create_table(True)
+
+    @staticmethod
+    def drop_tables():
+        from discograph.library.sqlite.sqlite_entity import SqliteEntity
+        from discograph.library.sqlite.sqlite_relation import SqliteRelation
+        from discograph.library.sqlite.sqlite_release import SqliteRelease
+
+        log.info("Drop Sqlite tables")
+
+        SqliteEntity.drop_table(True)
+        SqliteRelease.drop_table(True)
+        SqliteRelation.drop_table(True)
+
+    @staticmethod
     def get_entity(entity_type: EntityType, entity_id: int):
         where_clause = SqliteEntity.entity_id == entity_id
         where_clause &= SqliteEntity.entity_type == entity_type
         with DiscogsModel.connection_context():
             query = SqliteEntity.select().where(where_clause)
             return query.get_or_none()
-
-    # @staticmethod
-    # def get_entity(entity_type: EntityType, entity_id: int):
-    #     assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
-    #     where_clause = SqliteEntity.entity_id == entity_id
-    #     where_clause &= SqliteEntity.entity_type == entity_type
-    #     with DiscogsModel.connection_context():
-    #         query = SqliteEntity.select().where(where_clause)
-    #         if not query.count():
-    #             return None
-    #         return query.get()
 
     @staticmethod
     def get_network(

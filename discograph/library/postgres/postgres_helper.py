@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 
 
 class PostgresHelper(DatabaseHelper):
-    postgres_db: TempDB
+    postgres_test_db: TempDB = None
     _is_test: bool = False
 
     @staticmethod
@@ -75,7 +75,7 @@ class PostgresHelper(DatabaseHelper):
                     # "shared_preload_libraries": 'pg_stat_statements',
                     # "session_preload_libraries": 'auto_explain',
                 }
-                PostgresHelper.postgres_db = TempDB(
+                PostgresHelper.postgres_test_db = TempDB(
                     verbosity=0,
                     databases=[config["POSTGRES_DATABASE_NAME"]],
                     initdb=config["POSTGRES_ROOT"] + "/bin/initdb",
@@ -89,13 +89,15 @@ class PostgresHelper(DatabaseHelper):
                 # Create a database instance that will manage the connection and execute queries
                 database = pool.PooledPostgresqlExtDatabase(
                     config["POSTGRES_DATABASE_NAME"],
-                    host=PostgresHelper.postgres_db.pg_socket_dir,
-                    user=PostgresHelper.postgres_db.current_user,
+                    host=PostgresHelper.postgres_test_db.pg_socket_dir,
+                    user=PostgresHelper.postgres_test_db.current_user,
                     max_connections=8,
                 )
 
                 PostgresHelper._is_test = True
             else:
+                log.info("Using Postgres Development Database")
+
                 # Create a database instance that will manage the connection and execute queries
                 database = pool.PooledPostgresqlExtDatabase(
                     config["POSTGRES_DATABASE_NAME"],
@@ -108,34 +110,23 @@ class PostgresHelper(DatabaseHelper):
                     stale_timeout=300,  # 5 minutes.
                 )
 
-        # if config["TESTING"]:
-        #     Bootstrapper.is_test = True
-
-        # if bootstrap:
-        #     from discograph.library.postgres.postgres_bootstrapper import (
-        #         PostgresBootstrapper,
-        #     )
-        #
-        #     PostgresBootstrapper.load_models()
-
         return database
 
     @staticmethod
     def shutdown_database():
         log.info("Shutting down database")
-        if PostgresHelper.postgres_db is not None:
-            log.info("Cleaning up Postgres Database")
-            PostgresHelper.postgres_db.cleanup()
-            if PostgresHelper._is_test:
-                log.info(f"Delete data dir: {PostgresHelper.postgres_db.pg_data_dir}")
-                shutil.rmtree(PostgresHelper.postgres_db.pg_data_dir)
-                log.info(
-                    f"Delete socket dir: {PostgresHelper.postgres_db.pg_socket_dir}"
-                )
-                shutil.rmtree(PostgresHelper.postgres_db.pg_socket_dir)
-            PostgresHelper.postgres_db = None
-        # if bootstrap_database is not None:
-        #     bootstrap_database = None
+        if PostgresHelper._is_test and PostgresHelper.postgres_test_db is not None:
+            log.info("Cleaning up Postgres Test Database")
+            PostgresHelper.postgres_test_db.cleanup()
+
+            log.info(f"Delete data dir: {PostgresHelper.postgres_test_db.pg_data_dir}")
+            shutil.rmtree(PostgresHelper.postgres_test_db.pg_data_dir)
+            log.info(
+                f"Delete socket dir: {PostgresHelper.postgres_test_db.pg_socket_dir}"
+            )
+            shutil.rmtree(PostgresHelper.postgres_test_db.pg_socket_dir)
+            PostgresHelper.postgres_test_db = None
+            PostgresHelper._is_test = False
 
     @staticmethod
     def check_connection(config, database):
@@ -163,22 +154,152 @@ class PostgresHelper(DatabaseHelper):
             log.exception("Error: %s" % e)
 
     @staticmethod
+    def load_tables(date: str):
+        from discograph.library.postgres.postgres_entity import PostgresEntity
+        from discograph.library.postgres.postgres_relation import PostgresRelation
+        from discograph.library.postgres.postgres_release import PostgresRelease
+
+        with DiscogsModel.connection_context():
+            log.info("Load Postgres tables")
+
+            log.debug("Load entity pass 1")
+            PostgresEntity.loader_pass_one(date)
+
+            log.debug("Load entity analyze")
+            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE postgresentity;")
+
+            log.debug("Load release pass 1")
+            PostgresRelease.loader_pass_one(date)
+
+            log.debug("Load release analyze")
+            PostgresRelease.database().execute_sql(
+                "VACUUM FULL ANALYZE postgresrelease;"
+            )
+
+            log.debug("Load entity pass 2")
+            PostgresEntity.loader_pass_two()
+
+            log.debug("Load release pass 2")
+            PostgresRelease.loader_pass_two()
+
+            log.debug("Load relation pass 1")
+            PostgresRelation.loader_pass_one(date)
+
+            log.debug("Load relation analyze")
+            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE postgresentity;")
+            PostgresRelease.database().execute_sql(
+                "VACUUM FULL ANALYZE postgresrelease;"
+            )
+            PostgresRelation.database().execute_sql(
+                "VACUUM FULL ANALYZE postgresrelation;"
+            )
+
+            log.debug("Load entity pass 3")
+            PostgresEntity.loader_pass_three()
+
+            log.debug("Load final vacuum analyze")
+            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE postgresentity;")
+            PostgresRelease.database().execute_sql(
+                "VACUUM FULL ANALYZE postgresrelease;"
+            )
+            PostgresRelation.database().execute_sql(
+                "VACUUM FULL ANALYZE postgresrelation;"
+            )
+
+            log.info("Load Postgres done.")
+
+    @staticmethod
+    def update_tables(date: str):
+        from discograph.library.postgres.postgres_entity import PostgresEntity
+        from discograph.library.postgres.postgres_relation import PostgresRelation
+        from discograph.library.postgres.postgres_release import PostgresRelease
+
+        with DiscogsModel.connection_context():
+            log.info(f"Update Postgres tables: {date}")
+
+            log.debug("Update entity pass 1")
+            PostgresEntity.updater_pass_one(date)
+
+            log.debug("Update entity analyze")
+            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE postgresentity;")
+
+            log.debug("Update release pass 1")
+            PostgresRelease.updater_pass_one(date)
+
+            log.debug("Update release analyze")
+            PostgresRelease.database().execute_sql(
+                "VACUUM FULL ANALYZE postgresrelease;"
+            )
+
+            log.debug("Update entity pass 2")
+            PostgresEntity.loader_pass_two()
+
+            log.debug("Update release pass 2")
+            PostgresRelease.loader_pass_two()
+
+            # db_logger = logging.getLogger("peewee")
+            # db_logger.setLevel(logging.DEBUG)
+
+            log.debug("Update relation pass 1")
+            PostgresRelation.loader_pass_one(date)
+
+            # db_logger = logging.getLogger("peewee")
+            # db_logger.setLevel(logging.INFO)
+
+            log.debug("Update relation analyze")
+            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE postgresentity;")
+            PostgresRelease.database().execute_sql(
+                "VACUUM FULL ANALYZE postgresrelease;"
+            )
+            PostgresRelation.database().execute_sql(
+                "VACUUM FULL ANALYZE postgresrelation;"
+            )
+
+            log.debug("Update entity pass 3")
+            PostgresEntity.loader_pass_three()
+
+            log.debug("Update final vacuum analyze")
+            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE postgresentity;")
+            PostgresRelease.database().execute_sql(
+                "VACUUM FULL ANALYZE postgresrelease;"
+            )
+            PostgresRelation.database().execute_sql(
+                "VACUUM FULL ANALYZE postgresrelation;"
+            )
+
+            log.info("Update Postgres done.")
+
+    @staticmethod
+    def create_tables():
+        from discograph.library.postgres.postgres_entity import PostgresEntity
+        from discograph.library.postgres.postgres_relation import PostgresRelation
+        from discograph.library.postgres.postgres_release import PostgresRelease
+
+        log.info("Create Postgres tables")
+        # Set parameter to True so that the create table query
+        # will include an IF NOT EXISTS clause.
+        PostgresEntity.create_table(True)
+        PostgresRelease.create_table(True)
+        PostgresRelation.create_table(True)
+
+    @staticmethod
+    def drop_tables():
+        from discograph.library.postgres.postgres_entity import PostgresEntity
+        from discograph.library.postgres.postgres_relation import PostgresRelation
+        from discograph.library.postgres.postgres_release import PostgresRelease
+
+        log.info("Drop Postgres tables")
+        PostgresEntity.drop_table(True)
+        PostgresRelease.drop_table(True)
+        PostgresRelation.drop_table(True)
+
+    @staticmethod
     def get_entity(entity_type: EntityType, entity_id: int):
         where_clause = PostgresEntity.entity_id == entity_id
         where_clause &= PostgresEntity.entity_type == entity_type
         with DiscogsModel.connection_context():
             query = PostgresEntity.select().where(where_clause)
             return query.get_or_none()
-
-    # @staticmethod
-    # def get_entity(entity_type: EntityType, entity_id: int):
-    #     where_clause = PostgresEntity.entity_id == entity_id
-    #     where_clause &= PostgresEntity.entity_type == entity_type
-    #     with DiscogsModel.connection_context():
-    #         query = PostgresEntity.select().where(where_clause)
-    #         if not query.count():
-    #             return None
-    #         return query.get()
 
     @staticmethod
     def get_network(

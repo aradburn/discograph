@@ -5,11 +5,11 @@ import multiprocessing
 import pprint
 import random
 
-from peewee import Model, FloatField, DataError, fn, PeeweeException
+from peewee import Model, FloatField, DataError, PeeweeException
 from playhouse.shortcuts import model_to_dict
 
 from discograph.database import get_concurrency_count
-from discograph.library.database.database_loader import DatabaseLoader
+from discograph.library.database.database_worker import DatabaseWorker
 from discograph.library.loader_utils import LoaderUtils
 
 log = logging.getLogger(__name__)
@@ -30,9 +30,7 @@ class DiscogsModel(Model):
             proc_name = self.name
             from discograph.library.database.database_proxy import database_proxy
 
-            # if bootstrap_database:
-            #     database_proxy.initialize(bootstrap_database)
-            database_proxy.initialize(DatabaseLoader.loader_database)
+            database_proxy.initialize(DatabaseWorker.worker_database)
             with DiscogsModel.connection_context():
                 try:
                     self.model_class.bulk_create(self.bulk_inserts)

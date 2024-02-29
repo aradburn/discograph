@@ -8,7 +8,7 @@ import sys
 import peewee
 
 from discograph import utils
-from discograph.library.database.database_loader import DatabaseLoader
+from discograph.library.database.database_worker import DatabaseWorker
 from discograph.library.discogs_model import DiscogsModel
 from discograph.library.loader_utils import LoaderUtils
 
@@ -34,12 +34,9 @@ class Release(DiscogsModel):
             proc_name = self.name
             corpus = {}
             total = len(self.indices)
-            # from discograph.database import bootstrap_database
             from discograph.library.database.database_proxy import database_proxy
 
-            # if bootstrap_database:
-            #     database_proxy.initialize(bootstrap_database)
-            database_proxy.initialize(DatabaseLoader.loader_database)
+            database_proxy.initialize(DatabaseWorker.worker_database)
 
             with DiscogsModel.connection_context():
                 for i, release_id in enumerate(self.indices):

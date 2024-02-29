@@ -10,7 +10,7 @@ import peewee
 from deepdiff import DeepDiff
 
 from discograph import utils
-from discograph.library.database.database_loader import DatabaseLoader
+from discograph.library.database.database_worker import DatabaseWorker
 from discograph.library.discogs_model import DiscogsModel
 from discograph.library.entity_type import EntityType
 from discograph.library.enum_field import EnumField
@@ -54,7 +54,7 @@ class Entity(DiscogsModel):
 
             # if bootstrap_database:
             #     database_proxy.initialize(bootstrap_database)
-            database_proxy.initialize(DatabaseLoader.loader_database)
+            database_proxy.initialize(DatabaseWorker.worker_database)
 
             with DiscogsModel.connection_context():
                 for i, entity_id in enumerate(self.indices):
@@ -119,7 +119,7 @@ class Entity(DiscogsModel):
 
             # if bootstrap_database:
             #     database_proxy.initialize(bootstrap_database)
-            database_proxy.initialize(DatabaseLoader.loader_database)
+            database_proxy.initialize(DatabaseWorker.worker_database)
 
             with DiscogsModel.connection_context():
                 for i, entity_id in enumerate(self.indices):
@@ -781,7 +781,7 @@ class Entity(DiscogsModel):
             )
             corpus[key] = query.get().entity_id
         except peewee.DoesNotExist:
-            log.debug(f"            update_corpus name not found: {entity_name}")
+            log.info(f"            update_corpus key not found: {key}")
             pass
         # log.debug(f"            update_corpus key: {key} value: {corpus[key]}")
         # log.debug(f"            corpus after : {corpus}")

@@ -55,22 +55,109 @@ class CockroachHelper(DatabaseHelper):
             raise e
 
     @staticmethod
+    def load_tables(date: str):
+        from discograph.library.cockroach.cockroach_entity import CockroachEntity
+        from discograph.library.cockroach.cockroach_relation import CockroachRelation
+        from discograph.library.cockroach.cockroach_release import CockroachRelease
+
+        log.info("Load CockroachDB tables")
+
+        log.debug("Load entity pass 1")
+        CockroachEntity.loader_pass_one(date)
+
+        log.debug("Load release pass 1")
+        CockroachRelease.loader_pass_one(date)
+
+        log.debug("Load entity pass 2")
+        CockroachEntity.loader_pass_two()
+
+        log.debug("Load release pass 2")
+        CockroachRelease.loader_pass_two()
+
+        log.debug("Load relation pass 1")
+        CockroachRelation.loader_pass_one(date)
+
+        log.debug("Load entity pass 3")
+        CockroachEntity.loader_pass_three()
+
+        log.info("Load CockroachDB done.")
+
+    @staticmethod
+    def update_tables(date: str):
+        from discograph.library.cockroach.cockroach_entity import CockroachEntity
+        from discograph.library.cockroach.cockroach_relation import CockroachRelation
+        from discograph.library.cockroach.cockroach_release import CockroachRelease
+
+        log.info("Update CockroachDB tables")
+
+        log.debug("Update entity pass 1")
+        CockroachEntity.updater_pass_one(date)
+
+        log.debug("Update release pass 1")
+        CockroachRelease.updater_pass_one(date)
+
+        log.debug("Update entity pass 2")
+        CockroachEntity.loader_pass_two()
+
+        log.debug("Update release pass 2")
+        CockroachRelease.loader_pass_two()
+
+        log.debug("Update relation pass 1")
+        CockroachRelation.loader_pass_one(date)
+
+        log.debug("Update entity pass 3")
+        CockroachEntity.loader_pass_three()
+
+        log.info("Update CockroachDB done.")
+
+    @staticmethod
+    def create_tables():
+        from discograph.library.cockroach.cockroach_entity import CockroachEntity
+        from discograph.library.cockroach.cockroach_relation import CockroachRelation
+        from discograph.library.cockroach.cockroach_release import CockroachRelease
+
+        log.info("Create CockroachDB tables")
+
+        # Set parameter to True so that the create table query
+        # will include an IF NOT EXISTS clause.
+        log.debug("Create entity add index 1")
+        entity_idx1 = CockroachEntity.index(
+            CockroachEntity.entity_type, CockroachEntity.name
+        )
+        CockroachEntity.add_index(entity_idx1)
+        log.debug("Create entity add index 2")
+        entity_idx2 = CockroachEntity.index(CockroachEntity.name)
+        CockroachEntity.add_index(entity_idx2)
+        log.debug("Create entity add index 3")
+        entity_idx3 = CockroachEntity.index(CockroachEntity.search_content)
+        CockroachEntity.add_index(entity_idx3)
+
+        CockroachEntity.create_table(True)
+        CockroachRelease.create_table(True)
+        CockroachRelation.create_table(True)
+
+    @staticmethod
+    def drop_tables():
+        from discograph.library.cockroach.cockroach_entity import CockroachEntity
+        from discograph.library.cockroach.cockroach_relation import CockroachRelation
+        from discograph.library.cockroach.cockroach_release import CockroachRelease
+
+        log.info("Drop CockroachDB tables")
+
+        try:
+            CockroachEntity.drop_table(True)
+            CockroachRelease.drop_table(True)
+            CockroachRelation.drop_table(True)
+        except peewee.OperationalError:
+            log.error("Cannot connect to Cockroach Database")
+
+    @staticmethod
     def get_entity(entity_type: EntityType, entity_id: int):
         where_clause = CockroachEntity.entity_id == entity_id
         where_clause &= CockroachEntity.entity_type == entity_type
         with DiscogsModel.connection_context():
             query = CockroachEntity.select().where(where_clause)
             return query.get_or_none()
-
-    # @staticmethod
-    # def get_entity(entity_type: EntityType, entity_id: int):
-    #     where_clause = CockroachEntity.entity_id == entity_id
-    #     where_clause &= CockroachEntity.entity_type == entity_type
-    #     with DiscogsModel.connection_context():
-    #         query = CockroachEntity.select().where(where_clause)
-    #         if not query.count():
-    #             return None
-    #         return query.get()
 
     @staticmethod
     def get_network(

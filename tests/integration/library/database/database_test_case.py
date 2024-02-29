@@ -48,9 +48,9 @@ class DatabaseTestCase(unittest.TestCase):
             else:
                 # db_logger = logging.getLogger("peewee")
                 # db_logger.setLevel(logging.DEBUG)
-                database.db_loader.drop_tables()
-                database.db_loader.create_tables()
-                database.db_loader.load_tables("test")
+                database.db_helper.drop_tables()
+                database.db_helper.create_tables()
+                database.db_helper.load_tables("test")
 
     @classmethod
     def tearDownClass(cls):

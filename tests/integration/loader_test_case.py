@@ -25,7 +25,7 @@ class LoaderTestCase(DatabaseTestCase):
         # db_logger = logging.getLogger("peewee")
         # db_logger.setLevel(logging.DEBUG)
         # Run the test update process
-        database.db_loader.update_tables("testupdate")
+        database.db_helper.update_tables("testupdate")
 
     @classmethod
     def tearDownClass(cls):

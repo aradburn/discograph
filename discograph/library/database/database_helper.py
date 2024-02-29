@@ -34,10 +34,25 @@ class DatabaseHelper(ABC):
     def check_connection(config: Configuration, database: Database):
         pass
 
-    # @staticmethod
-    # @abstractmethod
-    # def bind_models(database: Database):
-    #     pass
+    @staticmethod
+    @abstractmethod
+    def load_tables(date: str):
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def update_tables(date: str):
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def create_tables():
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def drop_tables():
+        pass
 
     @staticmethod
     @abstractmethod
