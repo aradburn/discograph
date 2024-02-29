@@ -46,6 +46,8 @@ class DatabaseTestCase(unittest.TestCase):
             except (peewee.OperationalError, psycopg2.OperationalError):
                 log.error("Error in database setup")
             else:
+                # db_logger = logging.getLogger("peewee")
+                # db_logger.setLevel(logging.DEBUG)
                 database.db_loader.drop_tables()
                 database.db_loader.create_tables()
                 database.db_loader.load_tables("test")

@@ -5,14 +5,6 @@ from tests.integration.app_test_case import AppTestCase
 
 
 class TestAPI(AppTestCase):
-    # @classmethod
-    # def setUpClass(cls):
-    #     super(TestAPI, cls).setUpClass()
-    #
-    # @classmethod
-    # def tearDownClass(cls):
-    #     super(TestAPI, cls).tearDownClass()
-
     def setUp(self):
         self.app = app.test_client()
 

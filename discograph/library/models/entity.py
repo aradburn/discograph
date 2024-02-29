@@ -1,9 +1,13 @@
+import gzip
 import logging
 import multiprocessing
+import pprint
+import random
 import re
 import sys
 
 import peewee
+from deepdiff import DeepDiff
 
 from discograph import utils
 from discograph.library.database.database_loader import DatabaseLoader
@@ -168,6 +172,7 @@ class Entity(DiscogsModel):
 
     @classmethod
     def loader_pass_one(cls, date: str):
+        log.debug("entity loader pass one - artist")
         DiscogsModel.loader_pass_one_manager(
             model_class=cls,
             date=date,
@@ -176,6 +181,7 @@ class Entity(DiscogsModel):
             name_attr="name",
             skip_without=["name"],
         )
+        log.debug("entity loader pass one - label")
         DiscogsModel.loader_pass_one_manager(
             model_class=cls,
             date=date,
@@ -184,6 +190,106 @@ class Entity(DiscogsModel):
             name_attr="name",
             skip_without=["name"],
         )
+
+    @classmethod
+    def updater_pass_one(cls, date: str):
+        log.debug("entity updater pass one - artist")
+        Entity.updater_pass_one_manager(
+            model_class=cls,
+            date=date,
+            xml_tag="artist",
+            id_attr="entity_id",
+            name_attr="name",
+            skip_without=["name"],
+        )
+        log.debug("entity updater pass one - label")
+        Entity.updater_pass_one_manager(
+            model_class=cls,
+            date=date,
+            xml_tag="label",
+            id_attr="entity_id",
+            name_attr="name",
+            skip_without=["name"],
+        )
+
+    @classmethod
+    def updater_pass_one_manager(
+        cls,
+        model_class,
+        date: str = "",
+        xml_tag: str = "",
+        id_attr: str = "id",
+        name_attr: str = "name",
+        skip_without=None,
+    ):
+        # Updater pass one.
+        initial_count = len(model_class)
+        updated_count = 0
+        xml_path = LoaderUtils.get_xml_path(xml_tag, date)
+        log.info(f"Loading update data from {xml_path}")
+        with gzip.GzipFile(xml_path, "r") as file_pointer:
+            iterator = LoaderUtils.iterparse(file_pointer, xml_tag)
+            for i, element in enumerate(iterator):
+                data = None
+                try:
+                    data = model_class.tags_to_fields(element)
+                    if skip_without:
+                        if any(not data.get(_) for _ in skip_without):
+                            continue
+                    if element.get("id"):
+                        data["id"] = element.get("id")
+                    data["random"] = random.random()
+                    # log.debug(f"{data}")
+                    updated_entity = model_class(model_class, **data)
+                    # log.debug(f"new_instance: {new_instance}", flush=True)
+                    with DiscogsModel.atomic():
+                        try:
+                            # log.debug(
+                            #     f"update: {data['entity_id']}-{data['entity_type']}"
+                            # )
+                            # query = model_class.select().where(
+                            #     model_class.entity_id == data["entity_id"],
+                            #     model_class.entity_type == data["entity_type"],
+                            # )
+                            # if not query.count():
+                            #     log.error("Entity to be updated not found")
+                            #     return
+                            # old_entity = query.get()
+                            pk = (data["entity_type"], data["entity_id"])
+                            old_entity = model_class.get_by_id(pk)
+                            differences = DeepDiff(
+                                old_entity,
+                                updated_entity,
+                                exclude_paths=[
+                                    "search_content",
+                                    "relation_counts",
+                                    "random",
+                                    "dirty_fields",
+                                    "_dirty",
+                                ],
+                                ignore_numeric_type_changes=True,
+                            )
+                            diff = pprint.pformat(differences)
+                            if diff != "{}":
+                                # log.debug(f"diff: {diff}")
+                                q = model_class.update(**data).where(
+                                    model_class.entity_id == data["entity_id"],
+                                    model_class.entity_type == data["entity_type"],
+                                )
+                                q.execute()  # Execute the query.
+                                updated_count += 1
+                        except peewee.PeeweeException as e:
+                            log.exception("Error in updater_pass_one")
+                            raise e
+
+                    # if updated_count >= 1000000:
+                    #     break
+
+                except peewee.DataError as e:
+                    log.exception("Error in updater_pass_one", pprint.pformat(data))
+                    raise e
+
+            log.debug(f"updated_count: {updated_count}")
 
     @classmethod
     def get_entity_iterator(cls, entity_type: EntityType):
@@ -215,12 +321,12 @@ class Entity(DiscogsModel):
 
     @classmethod
     def loader_pass_two(cls, **kwargs):
-        log.debug("entity bootstrap pass two - artist")
+        log.debug("entity loader pass two - artist")
         entity_type: EntityType = EntityType.ARTIST
         indices = cls.get_indices(entity_type)
 
         workers = [cls.LoaderPassTwoWorker(cls, entity_type, x) for x in indices]
-        log.debug(f"entity bootstrap pass two - artist start {len(workers)} workers")
+        log.debug(f"entity loader pass two - artist start {len(workers)} workers")
         for worker in workers:
             worker.start()
         for worker in workers:
@@ -231,12 +337,12 @@ class Entity(DiscogsModel):
         for worker in workers:
             worker.terminate()
 
-        log.debug("entity bootstrap pass two - label")
+        log.debug("entity loader pass two - label")
         entity_type: EntityType = EntityType.LABEL
         indices = cls.get_indices(entity_type)
 
         workers = [cls.LoaderPassTwoWorker(cls, entity_type, x) for x in indices]
-        log.debug(f"entity bootstrap pass two - label start {len(workers)} workers")
+        log.debug(f"entity loader pass two - label start {len(workers)} workers")
         for worker in workers:
             worker.start()
         for worker in workers:
@@ -292,26 +398,36 @@ class Entity(DiscogsModel):
         corpus=None,
         progress=None,
     ):
-        query = cls.select().where(
-            cls.entity_id == entity_id,
-            cls.entity_type == entity_type,
-        )
-        if not query.count():
-            return
-        document = query.get()
+        pk = (entity_type, entity_id)
+        entity = cls.get_by_id(pk)
         corpus = corpus or {}
-        changed = document.resolve_references(corpus)
+        changed = entity.resolve_references(corpus)
         if changed:
             # log.debug(
             #     f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
             #     + f"          (id:{(document.entity_type, document.entity_id)}): {document.name}"
             # )
-            document.save()
-        # else:
-        #     log.debug(
-        #         f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
-        #         + f"[SKIPPED] (id:{(document.entity_type, document.entity_id)}): {document.name}"
-        #     )
+            entity.save()
+        # query = cls.select().where(
+        #     cls.entity_id == entity_id,
+        #     cls.entity_type == entity_type,
+        # )
+        # if not query.count():
+        #     return
+        # document = query.get()
+        # corpus = corpus or {}
+        # changed = document.resolve_references(corpus)
+        # if changed:
+        #     # log.debug(
+        #     #     f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
+        #     #     + f"          (id:{(document.entity_type, document.entity_id)}): {document.name}"
+        #     # )
+        #     document.save()
+        # # else:
+        # #     log.debug(
+        # #         f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
+        # #         + f"[SKIPPED] (id:{(document.entity_type, document.entity_id)}): {document.name}"
+        # #     )
 
     @classmethod
     def loader_pass_three_single(
@@ -322,47 +438,51 @@ class Entity(DiscogsModel):
         annotation="",
         progress=None,
     ):
-        query = cls.select(
-            cls.entity_id,
-            cls.entity_type,
-            cls.name,
-            cls.relation_counts,
-        ).where(
-            cls.entity_id == entity_id,
-            cls.entity_type == entity_type,
-        )
-        if not query.count():
-            return
-        document = query.get()
-        entity_id = document.entity_id
-        where_clause = (relation_class.entity_one_type == entity_type) & (
-            relation_class.entity_one_id == entity_id
-        )
-        where_clause |= (relation_class.entity_two_type == entity_type) & (
-            relation_class.entity_two_id == entity_id
-        )
-        query = relation_class.select().where(where_clause)
-        _relation_counts = {}
-        for relation in query:
-            if relation.role not in _relation_counts:
-                _relation_counts[relation.role] = set()
-            key = (
-                relation.entity_one_type,
-                relation.entity_one_id,
-                relation.entity_two_type,
-                relation.entity_two_id,
+        try:
+            query = cls.select(
+                cls.entity_id,
+                cls.entity_type,
+                cls.name,
+                cls.relation_counts,
+            ).where(
+                cls.entity_id == entity_id,
+                cls.entity_type == entity_type,
             )
-            _relation_counts[relation.role].add(key)
-        for role, keys in _relation_counts.items():
-            _relation_counts[role] = len(keys)
-        if not _relation_counts:
-            return
-        document.relation_counts = _relation_counts
-        document.save()
-        # log.debug(
-        #     f"{cls.__name__.upper()} (Pass 3) {progress:.3%} [{annotation}]\t"
-        #     + f"(id:{(document.entity_type, document.entity_id)}) {document.name}: {len(_relation_counts)}"
-        # )
+            # if not query.count():
+            #     return
+            document = query.get()
+        except peewee.DoesNotExist:
+            log.debug(f"loader_pass_three_single {entity_id} does not exist")
+        else:
+            entity_id = document.entity_id
+            where_clause = (relation_class.entity_one_type == entity_type) & (
+                relation_class.entity_one_id == entity_id
+            )
+            where_clause |= (relation_class.entity_two_type == entity_type) & (
+                relation_class.entity_two_id == entity_id
+            )
+            query = relation_class.select().where(where_clause)
+            _relation_counts = {}
+            for relation in query:
+                if relation.role not in _relation_counts:
+                    _relation_counts[relation.role] = set()
+                key = (
+                    relation.entity_one_type,
+                    relation.entity_one_id,
+                    relation.entity_two_type,
+                    relation.entity_two_id,
+                )
+                _relation_counts[relation.role].add(key)
+            for role, keys in _relation_counts.items():
+                _relation_counts[role] = len(keys)
+            if not _relation_counts:
+                return
+            document.relation_counts = _relation_counts
+            document.save()
+            # log.debug(
+            #     f"{cls.__name__.upper()} (Pass 3) {progress:.3%} [{annotation}]\t"
+            #     + f"(id:{(document.entity_type, document.entity_id)}) {document.name}: {len(_relation_counts)}"
+            # )
 
     @classmethod
     def element_to_names(cls, names):
@@ -653,15 +773,33 @@ class Entity(DiscogsModel):
         # log.debug(f"            corpus before: {corpus}")
         if key in corpus:
             return
-        entity_type, entity_name = key
-        query = cls.select().where(
-            cls.entity_type == entity_type,
-            cls.name == entity_name,
-        )
-        if query.count():
+        try:
+            entity_type, entity_name = key
+            query = cls.select().where(
+                cls.entity_type == entity_type,
+                cls.name == entity_name,
+            )
             corpus[key] = query.get().entity_id
-            # log.debug(f"            update_corpus key: {key} value: {corpus[key]}")
+        except peewee.DoesNotExist:
+            log.debug(f"            update_corpus name not found: {entity_name}")
+            pass
+        # log.debug(f"            update_corpus key: {key} value: {corpus[key]}")
         # log.debug(f"            corpus after : {corpus}")
+
+    # @classmethod
+    # def update_corpus(cls, corpus, key):
+    #     # log.debug(f"            corpus before: {corpus}")
+    #     if key in corpus:
+    #         return
+    #     entity_type, entity_name = key
+    #     query = cls.select().where(
+    #         cls.entity_type == entity_type,
+    #         cls.name == entity_name,
+    #     )
+    #     if query.count():
+    #         corpus[key] = query.get().entity_id
+    #         # log.debug(f"            update_corpus key: {key} value: {corpus[key]}")
+    #     # log.debug(f"            corpus after : {corpus}")
 
     @classmethod
     def create_relation(

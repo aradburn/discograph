@@ -19,7 +19,7 @@ class DiscogsModel(Model):
     BULK_INSERT_BATCH_SIZE = 1000
     _tags_to_fields_mapping: dict = None
 
-    class BootstrapPassOneWorker(multiprocessing.Process):
+    class LoaderPassOneWorker(multiprocessing.Process):
         def __init__(self, model_class, bulk_inserts, inserted_count):
             super().__init__()
             self.model_class = model_class
@@ -56,7 +56,12 @@ class DiscogsModel(Model):
     # SPECIAL METHODS
 
     def __format__(self, format_specification=""):
-        return json.dumps(model_to_dict(self), indent=4, sort_keys=True, default=str)
+        return json.dumps(
+            model_to_dict(self, exclude=["random"]),
+            indent=4,
+            sort_keys=True,
+            default=str,
+        )
 
     def __repr__(self):
         return str(self)
@@ -75,7 +80,7 @@ class DiscogsModel(Model):
         name_attr: str = "name",
         skip_without=None,
     ):
-        # Pass one.
+        # Loader pass one.
         initial_count = len(model_class)
         inserted_count = 0
         xml_path = LoaderUtils.get_xml_path(xml_tag, date)
@@ -118,7 +123,7 @@ class DiscogsModel(Model):
                                 )
                                 # raise Exception("Error in worker process")
                             worker.terminate()
-                    # if inserted_count >= 1000000:
+                    # if inserted_count >= 10:
                     #     break
                     # document = model_class.create(**data)
                     # template = "{} (Pass 1) (idx:{}) (id:{}): {}"
@@ -130,7 +135,7 @@ class DiscogsModel(Model):
                     # )
                     # log.debug(message)
                 except DataError as e:
-                    log.exception("Error in bootstrap_pass_one", pprint.pformat(data))
+                    log.exception("Error in loader_pass_one", pprint.pformat(data))
                     # traceback.print_exc()
                     raise e
             while len(workers) > 0:
@@ -148,7 +153,7 @@ class DiscogsModel(Model):
                     try:
                         model_class.bulk_create(bulk_inserts)
                     except PeeweeException as e:
-                        log.exception("Error in bootstrap_pass_one")
+                        log.exception("Error in loader_pass_one")
                         raise e
             updated_count = len(model_class) - initial_count
             log.debug(f"inserted_count: {inserted_count}")
@@ -157,30 +162,49 @@ class DiscogsModel(Model):
 
     @classmethod
     def insert_bulk(cls, model_class, bulk_inserts, inserted_count):
-        worker = cls.BootstrapPassOneWorker(model_class, bulk_inserts, inserted_count)
+        worker = cls.LoaderPassOneWorker(model_class, bulk_inserts, inserted_count)
         return worker
 
     @classmethod
+    def updater_pass_one(cls, date: str):
+        pass
+
+    @classmethod
+    def updater_pass_one_manager(
+        cls,
+        model_class,
+        date: str = "",
+        xml_tag: str = "",
+        id_attr: str = "id",
+        name_attr: str = "name",
+        skip_without=None,
+    ):
+        pass
+
+    @classmethod
     def loader_pass_two(cls, model_class, name_attr="name"):
-        corpus = {}
-        maximum_id = model_class.select(fn.Max(model_class.id)).scalar()
-        for i in range(1, maximum_id + 1):
-            query = model_class.select().where(model_class.id == i)
-            if not query.count():
-                continue
-            document = list(query)[0]
-            changed = document.resolve_references(corpus)
-            if changed:
-                log.debug(
-                    f"{model_class.__name__.upper()}           (Pass 2) (id:{document.id}):\t"
-                    + f"{getattr(document, name_attr)}"
-                )
-                document.save()
-            else:
-                log.debug(
-                    f"{model_class.__name__.upper()} [SKIPPED] (Pass 2) (id:{document.id}):\t"
-                    + f"{getattr(document, name_attr)}"
-                )
+        pass
+
+        # log.info("!!!!!!!!!!!!!!!!!!!!!!!")
+        # corpus = {}
+        # maximum_id = model_class.select(fn.Max(model_class.id)).scalar()
+        # for i in range(1, maximum_id + 1):
+        #     query = model_class.select().where(model_class.id == i)
+        #     if not query.count():
+        #         continue
+        #     document = list(query)[0]
+        #     changed = document.resolve_references(corpus)
+        #     if changed:
+        #         log.debug(
+        #             f"{model_class.__name__.upper()}           (Pass 2) (id:{document.id}):\t"
+        #             + f"{getattr(document, name_attr)}"
+        #         )
+        #         document.save()
+        #     else:
+        #         log.debug(
+        #             f"{model_class.__name__.upper()} [SKIPPED] (Pass 2) (id:{document.id}):\t"
+        #             + f"{getattr(document, name_attr)}"
+        #         )
 
     @staticmethod
     def database():

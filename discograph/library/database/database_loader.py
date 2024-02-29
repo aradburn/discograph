@@ -25,6 +25,11 @@ class DatabaseLoader(ABC):
 
     @staticmethod
     @abstractmethod
+    def update_tables(date: str):
+        pass
+
+    @staticmethod
+    @abstractmethod
     def create_tables():
         pass
 

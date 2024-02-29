@@ -53,48 +53,60 @@ class PostgresHelper(DatabaseHelper):
             # database.execute_sql("CREATE EXTENSION pg_stat_statements;")
 
         else:
-            log.info("Using Postgres Database")
-
-            dirname = config["POSTGRES_DATA"]
-            pg_data_dir = os.path.join(dirname, "data")
-
-            data_path = pathlib.Path(pg_data_dir)
-            # pg_data_path = pathlib.Path(pg_data_dir)
-            # if config['TESTING']:
-            #     data_path.rmdir()
-            data_path.parent.mkdir(parents=True, exist_ok=True)
-
-            options = {
-                "work_mem": "500MB",
-                "maintenance_work_mem": "500MB",
-                "effective_cache_size": "4GB",
-                "max_connections": 34,
-                "shared_buffers": "2GB",
-                # "log_min_duration_statement": 5000,
-                # "shared_preload_libraries": 'pg_stat_statements',
-                # "session_preload_libraries": 'auto_explain',
-            }
-            PostgresHelper.postgres_db = TempDB(
-                verbosity=0,
-                databases=[config["POSTGRES_DATABASE_NAME"]],
-                initdb=config["POSTGRES_ROOT"] + "/bin/initdb",
-                postgres=config["POSTGRES_ROOT"] + "/bin/postgres",
-                psql=config["POSTGRES_ROOT"] + "/bin/psql",
-                createuser=config["POSTGRES_ROOT"] + "/bin/createuser",
-                dirname=dirname,
-                options=options,
-            )
-
-            # Create a database instance that will manage the connection and execute queries
-            database = pool.PooledPostgresqlExtDatabase(
-                config["POSTGRES_DATABASE_NAME"],
-                host=PostgresHelper.postgres_db.pg_socket_dir,
-                user=PostgresHelper.postgres_db.current_user,
-                max_connections=8,
-            )
-
             if config["TESTING"]:
+                log.info("Using Postgres Test Database")
+
+                dirname = config["POSTGRES_DATA"]
+                pg_data_dir = os.path.join(dirname, "data")
+
+                data_path = pathlib.Path(pg_data_dir)
+                # pg_data_path = pathlib.Path(pg_data_dir)
+                # if config['TESTING']:
+                #     data_path.rmdir()
+                data_path.parent.mkdir(parents=True, exist_ok=True)
+
+                options = {
+                    "work_mem": "500MB",
+                    "maintenance_work_mem": "500MB",
+                    "effective_cache_size": "4GB",
+                    "max_connections": 34,
+                    "shared_buffers": "2GB",
+                    # "log_min_duration_statement": 5000,
+                    # "shared_preload_libraries": 'pg_stat_statements',
+                    # "session_preload_libraries": 'auto_explain',
+                }
+                PostgresHelper.postgres_db = TempDB(
+                    verbosity=0,
+                    databases=[config["POSTGRES_DATABASE_NAME"]],
+                    initdb=config["POSTGRES_ROOT"] + "/bin/initdb",
+                    postgres=config["POSTGRES_ROOT"] + "/bin/postgres",
+                    psql=config["POSTGRES_ROOT"] + "/bin/psql",
+                    createuser=config["POSTGRES_ROOT"] + "/bin/createuser",
+                    dirname=dirname,
+                    options=options,
+                )
+
+                # Create a database instance that will manage the connection and execute queries
+                database = pool.PooledPostgresqlExtDatabase(
+                    config["POSTGRES_DATABASE_NAME"],
+                    host=PostgresHelper.postgres_db.pg_socket_dir,
+                    user=PostgresHelper.postgres_db.current_user,
+                    max_connections=8,
+                )
+
                 PostgresHelper._is_test = True
+            else:
+                # Create a database instance that will manage the connection and execute queries
+                database = pool.PooledPostgresqlExtDatabase(
+                    config["POSTGRES_DATABASE_NAME"],
+                    host=config["POSTGRES_DATABASE_HOST"],
+                    port=config["POSTGRES_DATABASE_PORT"],
+                    user=config["POSTGRES_DATABASE_USERNAME"],
+                    password=config["POSTGRES_DATABASE_PASSWORD"],
+                    max_connections=40,
+                    timeout=300,  # 5 minutes.
+                    stale_timeout=300,  # 5 minutes.
+                )
 
         # if config["TESTING"]:
         #     Bootstrapper.is_test = True
@@ -130,7 +142,7 @@ class PostgresHelper(DatabaseHelper):
         try:
             log.info("Check Postgres database connection...")
 
-            if config["PRODUCTION"]:
+            if config["PRODUCTION"] or config["TESTING"] is False:
                 connection = psycopg2.connect(
                     user=config["POSTGRES_DATABASE_USERNAME"],
                     password=config["POSTGRES_DATABASE_PASSWORD"],
@@ -141,7 +153,6 @@ class PostgresHelper(DatabaseHelper):
                 cursor = connection.cursor()
             else:
                 cursor = database.cursor()
-
             cursor.execute("SELECT version();")
             record = cursor.fetchone()
 
@@ -157,9 +168,17 @@ class PostgresHelper(DatabaseHelper):
         where_clause &= PostgresEntity.entity_type == entity_type
         with DiscogsModel.connection_context():
             query = PostgresEntity.select().where(where_clause)
-            if not query.count():
-                return None
-            return query.get()
+            return query.get_or_none()
+
+    # @staticmethod
+    # def get_entity(entity_type: EntityType, entity_id: int):
+    #     where_clause = PostgresEntity.entity_id == entity_id
+    #     where_clause &= PostgresEntity.entity_type == entity_type
+    #     with DiscogsModel.connection_context():
+    #         query = PostgresEntity.select().where(where_clause)
+    #         if not query.count():
+    #             return None
+    #         return query.get()
 
     @staticmethod
     def get_network(

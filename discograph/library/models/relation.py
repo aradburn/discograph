@@ -174,37 +174,94 @@ class Relation(DiscogsModel):
     # noinspection PyUnusedLocal
     @classmethod
     def loader_pass_one_inner(cls, release_cls, release_id, corpus, annotation=""):
-        document = None
-        with DiscogsModel.atomic():
-            query = release_cls.select().where(release_cls.id == release_id)
-            if not query.count():
-                return
-            document = query.get()
+        try:
+            log.debug(f"loader_pass_one ({annotation}): {release_id}")
+            release = release_cls.get_by_id(release_id)
+        except peewee.DoesNotExist:
+            log.debug(f"            loader_pass_one_inner id not found: {release_id}")
+            pass
+        else:
+            # document = None
+            # with DiscogsModel.atomic():
+            #     query = release_cls.select().where(release_cls.id == release_id)
+            #     if not query.count():
+            #         return
+            #     document = query.get()
 
-        relations = cls.from_release(document)
-        # if Bootstrapper.is_test:
-        #     log.debug(
-        #         f"{cls.__name__.upper()} (Pass 1) [{annotation}]\t"
-        #         + f"(id:{document.id})\t[{len(relations)}] {document.title}"
-        #     )
-        for relation in relations:
-            with DiscogsModel.atomic():
-                instance, created = cls.get_or_create(
+            relations = cls.from_release(release)
+            # if Bootstrapper.is_test:
+            #     log.debug(
+            #         f"{cls.__name__.upper()} (Pass 1) [{annotation}]\t"
+            #         + f"(id:{document.id})\t[{len(relations)}] {document.title}"
+            #     )
+            for relation in relations:
+                # log.debug(f"  loader_pass_one ({annotation}): {relation}")
+                max_attempts = 10
+                error = True
+                while error and max_attempts != 0:
+                    error = False
+                    try:
+                        cls.create_or_update_relation(relation)
+                    except peewee.PeeweeException:
+                        log.debug(
+                            f"Database record locked in updating relation {max_attempts} goes left"
+                        )
+                        max_attempts -= 1
+                        error = True
+
+    @classmethod
+    def create_or_update_relation(cls, relation):
+        with DiscogsModel.atomic():
+            # log.debug("loader_pass_one_inner relation update")
+            try:
+                instance = (
+                    cls.select()
+                    .where(
+                        (cls.entity_one_type == relation["entity_one_type"])
+                        & (cls.entity_one_id == relation["entity_one_id"])
+                        & (cls.entity_two_type == relation["entity_two_type"])
+                        & (cls.entity_two_id == relation["entity_two_id"])
+                        & (cls.role == relation["role"])
+                    )
+                    .for_update(nowait=True)
+                    .get()
+                )
+            except peewee.DoesNotExist:
+                # Create a new Relation
+                cls.create(
                     entity_one_type=relation["entity_one_type"],
                     entity_one_id=relation["entity_one_id"],
                     entity_two_type=relation["entity_two_type"],
                     entity_two_id=relation["entity_two_id"],
                     role=relation["role"],
+                    releases={},
+                    random=random.random(),
                 )
-                if created:
-                    instance.releases = {}
-                    instance.random = random.random()
-                if "release_id" in relation:
-                    release_id = relation["release_id"]
-                    year = relation.get("year")
-                    if not instance.releases:
-                        instance.releases = {}
+                instance = (
+                    cls.select()
+                    .where(
+                        (cls.entity_one_type == relation["entity_one_type"])
+                        & (cls.entity_one_id == relation["entity_one_id"])
+                        & (cls.entity_two_type == relation["entity_two_type"])
+                        & (cls.entity_two_id == relation["entity_two_id"])
+                        & (cls.role == relation["role"])
+                    )
+                    .for_update(nowait=True)
+                    .get()
+                )
+            is_dirty = False
+            if "release_id" in relation:
+                release_id: str = str(relation["release_id"])
+                year = relation.get("year")
+                # if not instance.releases:
+                #     instance.releases = {}
+                # log.debug(f"instance.releases: {instance.releases}")
+                if release_id not in instance.releases:
                     instance.releases[release_id] = year
+                    log.debug(f"updated .releases: {instance.releases}")
+                    is_dirty = True
+            # log.debug(f"is_dirty: {is_dirty}")
+            if is_dirty:
                 instance.save()
 
     @classmethod
@@ -273,7 +330,9 @@ class Relation(DiscogsModel):
                 entity_two = track_artist
                 triples.add((entity_one, role, entity_two))
         triples = sorted(triples)
+        # log.debug(f"      triples: {triples}")
         relations = cls.from_triples(triples, release=release)
+        # log.debug(f"      relations: {relations}")
         return relations
 
     @classmethod

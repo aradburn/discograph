@@ -1,4 +1,5 @@
 import logging
+import sys
 
 from peewee import Database
 from playhouse.postgres_ext import PostgresqlExtDatabase
@@ -30,14 +31,26 @@ class PostgresLoader(DatabaseLoader):
             #     autoconnect=False,
             # )
         else:
-            log.info("Using Postgres Database")
+            if config["TESTING"]:
+                log.info("Using Postgres Test Database")
 
-            loader_database = PostgresqlExtDatabase(
-                config["POSTGRES_DATABASE_NAME"],
-                host=PostgresHelper.postgres_db.pg_socket_dir,
-                user=PostgresHelper.postgres_db.current_user,
-                autoconnect=False,
-            )
+                loader_database = PostgresqlExtDatabase(
+                    config["POSTGRES_DATABASE_NAME"],
+                    host=PostgresHelper.postgres_db.pg_socket_dir,
+                    user=PostgresHelper.postgres_db.current_user,
+                    autoconnect=False,
+                )
+            else:
+                log.info("Using Postgres Dev Database")
+
+                loader_database = PostgresqlExtDatabase(
+                    config["POSTGRES_DATABASE_NAME"],
+                    host=config["POSTGRES_DATABASE_HOST"],
+                    port=config["POSTGRES_DATABASE_PORT"],
+                    user=config["POSTGRES_DATABASE_USERNAME"],
+                    password=config["POSTGRES_DATABASE_PASSWORD"],
+                    autoconnect=False,
+                )
 
         # with loader_database.connection_context():
         #     loader_database.execute_sql("SET auto_explain.log_analyze TO on;")
@@ -81,6 +94,67 @@ class PostgresLoader(DatabaseLoader):
 
             log.debug("relation pass 1")
             PostgresRelation.loader_pass_one(date)
+
+            log.debug("relation analyze")
+            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE postgresentity;")
+            PostgresRelease.database().execute_sql(
+                "VACUUM FULL ANALYZE postgresrelease;"
+            )
+            PostgresRelation.database().execute_sql(
+                "VACUUM FULL ANALYZE postgresrelation;"
+            )
+
+            log.debug("entity pass 3")
+            PostgresEntity.loader_pass_three()
+
+            log.debug("final vacuum analyze")
+            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE postgresentity;")
+            PostgresRelease.database().execute_sql(
+                "VACUUM FULL ANALYZE postgresrelease;"
+            )
+            PostgresRelation.database().execute_sql(
+                "VACUUM FULL ANALYZE postgresrelation;"
+            )
+
+            log.info("Postgres loading done.")
+
+    @staticmethod
+    def update_tables(date: str):
+        from discograph.library.postgres.postgres_entity import PostgresEntity
+        from discograph.library.postgres.postgres_relation import PostgresRelation
+        from discograph.library.postgres.postgres_release import PostgresRelease
+
+        with DiscogsModel.connection_context():
+            log.info(f"Update Postgres tables: {date}")
+
+            log.debug("entity pass 1")
+            PostgresEntity.updater_pass_one(date)
+
+            log.debug("entity analyze")
+            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE postgresentity;")
+
+            log.debug("release pass 1")
+            PostgresRelease.updater_pass_one(date)
+
+            log.debug("release analyze")
+            PostgresRelease.database().execute_sql(
+                "VACUUM FULL ANALYZE postgresrelease;"
+            )
+
+            log.debug("entity pass 2")
+            PostgresEntity.loader_pass_two()
+
+            log.debug("release pass 2")
+            PostgresRelease.loader_pass_two()
+
+            # db_logger = logging.getLogger("peewee")
+            # db_logger.setLevel(logging.DEBUG)
+
+            log.debug("relation pass 1")
+            PostgresRelation.loader_pass_one(date)
+
+            # db_logger = logging.getLogger("peewee")
+            # db_logger.setLevel(logging.INFO)
 
             log.debug("relation analyze")
             PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE postgresentity;")

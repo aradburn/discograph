@@ -54,19 +54,23 @@ class CockroachHelper(DatabaseHelper):
             log.exception(f"Error in check_connection: {e}")
             raise e
 
-    # @staticmethod
-    # def bind_models(database: Database):
-    #     database.bind([CockroachEntity, CockroachRelation, CockroachRelease])
-
     @staticmethod
     def get_entity(entity_type: EntityType, entity_id: int):
         where_clause = CockroachEntity.entity_id == entity_id
         where_clause &= CockroachEntity.entity_type == entity_type
         with DiscogsModel.connection_context():
             query = CockroachEntity.select().where(where_clause)
-            if not query.count():
-                return None
-            return query.get()
+            return query.get_or_none()
+
+    # @staticmethod
+    # def get_entity(entity_type: EntityType, entity_id: int):
+    #     where_clause = CockroachEntity.entity_id == entity_id
+    #     where_clause &= CockroachEntity.entity_type == entity_type
+    #     with DiscogsModel.connection_context():
+    #         query = CockroachEntity.select().where(where_clause)
+    #         if not query.count():
+    #             return None
+    #         return query.get()
 
     @staticmethod
     def get_network(

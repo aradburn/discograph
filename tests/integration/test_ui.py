@@ -3,13 +3,6 @@ from tests.integration.app_test_case import AppTestCase
 
 
 class TestUI(AppTestCase):
-    # @classmethod
-    # def setUpClass(cls):
-    #     super(TestUI, cls).setUpClass()
-    #
-    # @classmethod
-    # def tearDownClass(cls):
-    #     super(TestUI, cls).tearDownClass()
 
     def setUp(self):
         self.app = app.test_client()

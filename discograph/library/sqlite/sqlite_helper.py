@@ -51,20 +51,24 @@ class SqliteHelper(DatabaseHelper):
     def check_connection(config: Configuration, database: Database):
         pass
 
-    # @staticmethod
-    # def bind_models(database: Database):
-    #     database.bind([SqliteEntity, SqliteRelation, SqliteRelease])
-
     @staticmethod
     def get_entity(entity_type: EntityType, entity_id: int):
-        assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
         where_clause = SqliteEntity.entity_id == entity_id
         where_clause &= SqliteEntity.entity_type == entity_type
         with DiscogsModel.connection_context():
             query = SqliteEntity.select().where(where_clause)
-            if not query.count():
-                return None
-            return query.get()
+            return query.get_or_none()
+
+    # @staticmethod
+    # def get_entity(entity_type: EntityType, entity_id: int):
+    #     assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
+    #     where_clause = SqliteEntity.entity_id == entity_id
+    #     where_clause &= SqliteEntity.entity_type == entity_type
+    #     with DiscogsModel.connection_context():
+    #         query = SqliteEntity.select().where(where_clause)
+    #         if not query.count():
+    #             return None
+    #         return query.get()
 
     @staticmethod
     def get_network(
