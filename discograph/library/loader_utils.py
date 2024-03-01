@@ -131,15 +131,13 @@ class LoaderUtils:
         return reparsed.toprettyxml(indent="    ")
 
     @staticmethod
-    def validate_release_date(year: str, month: str, day: str):
+    def validate_release_date(year_str: str, month_str: str, day_str: str):
         try:
-            year = int(year)
-            if month.isdigit():
-                month = int(month)
+            year = int(year_str)
+            month = int(month_str)
+            day = int(day_str)
             if month < 1:
                 month = 1
-            if day.isdigit():
-                day = int(day)
             if day < 1:
                 day = 1
             if 12 < month:
@@ -148,6 +146,6 @@ class LoaderUtils:
             day_offset = day - 1
             date = date + datetime.timedelta(days=day_offset)
         except ValueError:
-            log.exception("BAD DATE:", year, month, day)
+            log.error(f"BAD DATE: {year_str},{month_str},{day_str}")
             date = None
         return date

@@ -164,7 +164,7 @@ class Relation(DiscogsModel):
         for worker in workers:
             worker.join()
             if worker.exitcode > 0:
-                log.debug(
+                log.error(
                     f"relation loader worker {worker.name} exitcode: {worker.exitcode}"
                 )
                 # raise Exception("Error in worker process")
@@ -181,15 +181,7 @@ class Relation(DiscogsModel):
             log.debug(f"            loader_pass_one_inner id not found: {release_id}")
             pass
         else:
-            # document = None
-            # with DiscogsModel.atomic():
-            #     query = release_cls.select().where(release_cls.id == release_id)
-            #     if not query.count():
-            #         return
-            #     document = query.get()
-
             relations = cls.from_release(release)
-            # if Bootstrapper.is_test:
             #     log.debug(
             #         f"{cls.__name__.upper()} (Pass 1) [{annotation}]\t"
             #         + f"(id:{document.id})\t[{len(relations)}] {document.title}"
@@ -254,7 +246,7 @@ class Relation(DiscogsModel):
                 year = relation.get("year")
                 if release_id not in instance.releases:
                     instance.releases[release_id] = year
-                    log.debug(f"relation updated releases: {instance}")
+                    # log.debug(f"relation updated releases: {instance}")
                     is_dirty = True
             if is_dirty:
                 instance.save()

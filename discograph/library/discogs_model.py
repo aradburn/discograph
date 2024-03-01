@@ -17,6 +17,7 @@ log = logging.getLogger(__name__)
 
 class DiscogsModel(Model):
     BULK_INSERT_BATCH_SIZE = 1000
+    BULK_UPDATE_BATCH_SIZE = 1000
     _tags_to_fields_mapping: dict = None
 
     class LoaderPassOneWorker(multiprocessing.Process):

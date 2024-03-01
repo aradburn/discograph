@@ -10,6 +10,7 @@ import peewee
 from deepdiff import DeepDiff
 
 from discograph import utils
+from discograph.database import get_concurrency_count
 from discograph.library.database.database_worker import DatabaseWorker
 from discograph.library.discogs_model import DiscogsModel
 from discograph.library.entity_type import EntityType
@@ -117,8 +118,6 @@ class Entity(DiscogsModel):
 
             from discograph.library.database.database_proxy import database_proxy
 
-            # if bootstrap_database:
-            #     database_proxy.initialize(bootstrap_database)
             database_proxy.initialize(DatabaseWorker.worker_database)
 
             with DiscogsModel.connection_context():
@@ -144,6 +143,81 @@ class Entity(DiscogsModel):
                             )
             log.info(f"[{proc_name}] processed {count} of {total_count}")
 
+    class UpdaterPassOneWorker(multiprocessing.Process):
+        def __init__(self, model_class, bulk_updates, processed_count):
+            super().__init__()
+            self.model_class = model_class
+            self.bulk_updates = bulk_updates
+            self.processed_count = processed_count
+
+        def run(self):
+            proc_name = self.name
+            from discograph.library.database.database_proxy import database_proxy
+
+            database_proxy.initialize(DatabaseWorker.worker_database)
+
+            updated_count = 0
+            with DiscogsModel.connection_context():
+                for i, updated_entity in enumerate(self.bulk_updates):
+                    with DiscogsModel.atomic():
+                        try:
+                            # log.debug(
+                            #     f"update: {data['entity_id']}-{data['entity_type']}"
+                            # )
+                            pk = (updated_entity.entity_type, updated_entity.entity_id)
+                            old_entity = self.model_class.get_by_id(pk)
+                            differences = DeepDiff(
+                                old_entity,
+                                updated_entity,
+                                include_paths=[
+                                    "name",
+                                    "metadata",
+                                ],
+                                # exclude_paths=[
+                                #     "entity_type",
+                                #     "entity_id",
+                                #     "search_content",
+                                #     "relation_counts",
+                                #     "random",
+                                #     "entities",
+                                #     "dirty_fields",
+                                #     "_dirty",
+                                # ],
+                                ignore_numeric_type_changes=True,
+                            )
+                            diff = pprint.pformat(differences)
+                            if diff != "{}":
+                                log.debug(f"diff: {diff}")
+                                # differences2 = DeepDiff(
+                                #     old_entity.entities,
+                                #     updated_entity.entities,
+                                #     ignore_numeric_type_changes=True,
+                                # )
+                                # diff2 = pprint.pformat(differences2)
+                                # if diff2 != "{}":
+                                #     log.debug(f"entities diff: {diff2}")
+                                # Update entity apart from the entities field
+                                q = self.model_class.update(
+                                    {
+                                        self.model_class.name: updated_entity.name,
+                                        self.model_class.metadata: updated_entity.metadata,
+                                    }
+                                ).where(
+                                    self.model_class.entity_id
+                                    == updated_entity.entity_id,
+                                    self.model_class.entity_type
+                                    == updated_entity.entity_type,
+                                )
+                                q.execute()  # Execute the query.
+                                updated_count += 1
+                        except peewee.PeeweeException as e:
+                            log.exception("Error in updater_pass_one")
+                            raise e
+
+            log.info(
+                f"[{proc_name}] processed_count: {self.processed_count}, updated: {updated_count}"
+            )
+
     # PEEWEE FIELDS
 
     entity_id: peewee.IntegerField
@@ -162,13 +236,6 @@ class Entity(DiscogsModel):
         indexes = ((("entity_type", "name"), False),)
 
     # PUBLIC METHODS
-
-    # @classmethod
-    # def bootstrap(cls):
-    #     cls.drop_table(True)
-    #     cls.create_table()
-    #     cls.bootstrap_pass_one()
-    #     cls.bootstrap_pass_two()
 
     @classmethod
     def loader_pass_one(cls, date: str):
@@ -223,12 +290,14 @@ class Entity(DiscogsModel):
         skip_without=None,
     ):
         # Updater pass one.
-        initial_count = len(model_class)
-        updated_count = 0
+        # initial_count = len(model_class)
+        processed_count = 0
         xml_path = LoaderUtils.get_xml_path(xml_tag, date)
         log.info(f"Loading update data from {xml_path}")
         with gzip.GzipFile(xml_path, "r") as file_pointer:
             iterator = LoaderUtils.iterparse(file_pointer, xml_tag)
+            bulk_updates = []
+            workers = []
             for i, element in enumerate(iterator):
                 data = None
                 try:
@@ -241,55 +310,65 @@ class Entity(DiscogsModel):
                     data["random"] = random.random()
                     # log.debug(f"{data}")
                     updated_entity = model_class(model_class, **data)
-                    # log.debug(f"new_instance: {new_instance}", flush=True)
-                    with DiscogsModel.atomic():
-                        try:
-                            # log.debug(
-                            #     f"update: {data['entity_id']}-{data['entity_type']}"
-                            # )
-                            # query = model_class.select().where(
-                            #     model_class.entity_id == data["entity_id"],
-                            #     model_class.entity_type == data["entity_type"],
-                            # )
-                            # if not query.count():
-                            #     log.error("Entity to be updated not found")
-                            #     return
-                            # old_entity = query.get()
-                            pk = (data["entity_type"], data["entity_id"])
-                            old_entity = model_class.get_by_id(pk)
-                            differences = DeepDiff(
-                                old_entity,
-                                updated_entity,
-                                exclude_paths=[
-                                    "search_content",
-                                    "relation_counts",
-                                    "random",
-                                    "dirty_fields",
-                                    "_dirty",
-                                ],
-                                ignore_numeric_type_changes=True,
+                    bulk_updates.append(updated_entity)
+                    processed_count += 1
+                    # log.debug(f"updated_entity: {updated_entity}")
+                    if get_concurrency_count() > 1:
+                        # Can do multi threading
+                        if len(bulk_updates) >= DiscogsModel.BULK_UPDATE_BATCH_SIZE:
+                            worker = cls.update_bulk(
+                                model_class, bulk_updates, processed_count
                             )
-                            diff = pprint.pformat(differences)
-                            if diff != "{}":
-                                # log.debug(f"diff: {diff}")
-                                q = model_class.update(**data).where(
-                                    model_class.entity_id == data["entity_id"],
-                                    model_class.entity_type == data["entity_type"],
+                            worker.start()
+                            workers.append(worker)
+                            bulk_updates.clear()
+                        if len(workers) > get_concurrency_count():
+                            worker = workers.pop(0)
+                            # log.debug(f"wait for worker {len(workers)} in list")
+                            worker.join()
+                            if worker.exitcode > 0:
+                                log.error(
+                                    f"worker {worker.name} exitcode: {worker.exitcode}"
                                 )
-                                q.execute()  # Execute the query.
-                                updated_count += 1
-                        except peewee.PeeweeException as e:
-                            log.exception("Error in updater_pass_one")
-                            raise e
-
-                    # if updated_count >= 1000000:
+                                # raise Exception("Error in worker process")
+                            worker.terminate()
+                    # if inserted_count >= 10:
                     #     break
-
+                    # document = model_class.create(**data)
+                    # template = "{} (Pass 1) (idx:{}) (id:{}): {}"
+                    # message = template.format(
+                    #     model_class.__name__.upper(),
+                    #     i,
+                    #     getattr(document, id_attr),
+                    #     getattr(document, name_attr),
+                    # )
+                    # log.debug(message)
                 except peewee.DataError as e:
                     log.exception("Error in updater_pass_one", pprint.pformat(data))
+                    # traceback.print_exc()
                     raise e
 
-            log.debug(f"updated_count: {updated_count}")
+            if len(bulk_updates) > 0:
+                worker = cls.update_bulk(model_class, bulk_updates, processed_count)
+                worker.start()
+                workers.append(worker)
+                bulk_updates.clear()
+
+            while len(workers) > 0:
+                worker = workers.pop(0)
+                # log.debug(
+                #     f"wait for worker {worker.name} - {len(workers)} left in list"
+                # )
+                worker.join()
+                if worker.exitcode > 0:
+                    log.error(f"worker {worker.name} exitcode: {worker.exitcode}")
+                    # raise Exception("Error in worker process")
+                worker.terminate()
+
+    @classmethod
+    def update_bulk(cls, model_class, bulk_updates, processed_count):
+        worker = cls.UpdaterPassOneWorker(model_class, bulk_updates, processed_count)
+        return worker
 
     @classmethod
     def get_entity_iterator(cls, entity_type: EntityType):
@@ -770,36 +849,38 @@ class Entity(DiscogsModel):
 
     @classmethod
     def update_corpus(cls, corpus, key):
+        from discograph.library.cache.cache_manager import cache
+
         # log.debug(f"            corpus before: {corpus}")
         if key in corpus:
             return
-        try:
-            entity_type, entity_name = key
-            query = cls.select().where(
-                cls.entity_type == entity_type,
-                cls.name == entity_name,
-            )
-            corpus[key] = query.get().entity_id
-        except peewee.DoesNotExist:
-            log.info(f"            update_corpus key not found: {key}")
-            pass
-        # log.debug(f"            update_corpus key: {key} value: {corpus[key]}")
-        # log.debug(f"            corpus after : {corpus}")
 
-    # @classmethod
-    # def update_corpus(cls, corpus, key):
-    #     # log.debug(f"            corpus before: {corpus}")
-    #     if key in corpus:
-    #         return
-    #     entity_type, entity_name = key
-    #     query = cls.select().where(
-    #         cls.entity_type == entity_type,
-    #         cls.name == entity_name,
-    #     )
-    #     if query.count():
-    #         corpus[key] = query.get().entity_id
-    #         # log.debug(f"            update_corpus key: {key} value: {corpus[key]}")
-    #     # log.debug(f"            corpus after : {corpus}")
+        entity_type, entity_name = key
+        key_str = f"{entity_type}-{entity_name}"
+        entity_id = cache.get(key_str)
+        # if entity_id is not None:
+        #     log.debug(f"cache hit for {key_str}")
+        if entity_id is None:
+            # log.debug(f"not cached, try db")
+            try:
+                query = cls.select().where(
+                    cls.entity_type == entity_type,
+                    cls.name == entity_name,
+                )
+                entity_id = query.get().entity_id
+
+                cache.set(key_str, entity_id)
+
+            except peewee.DoesNotExist:
+                log.info(f"            update_corpus key not found: {key}")
+                pass
+        if entity_id is not None:
+            # log.debug(f"            key: {key} new value: {entity_id}")
+            corpus[key] = entity_id
+            # log.debug(f"            update_corpus key: {key} value: {corpus[key]}")
+        # else:
+        #     log.debug(f"entity_id is None")
+        # log.debug(f"            corpus after : {corpus}")
 
     @classmethod
     def create_relation(

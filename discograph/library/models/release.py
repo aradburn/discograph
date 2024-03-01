@@ -6,11 +6,15 @@ import random
 import sys
 
 import peewee
+from deepdiff import DeepDiff
 
 from discograph import utils
+from discograph.database import get_concurrency_count
 from discograph.library.database.database_worker import DatabaseWorker
 from discograph.library.discogs_model import DiscogsModel
+from discograph.library.entity_type import EntityType
 from discograph.library.loader_utils import LoaderUtils
+from discograph.logging_config import LOGGING_TRACE
 
 log = logging.getLogger(__name__)
 
@@ -52,6 +56,102 @@ class Release(DiscogsModel):
                         except peewee.PeeweeException:
                             log.exception("ERROR:", release_id, proc_name)
 
+    class UpdaterPassOneWorker(multiprocessing.Process):
+        def __init__(self, model_class, bulk_updates, processed_count):
+            super().__init__()
+            self.model_class = model_class
+            self.bulk_updates = bulk_updates
+            self.processed_count = processed_count
+
+        def run(self):
+            proc_name = self.name
+            from discograph.library.database.database_proxy import database_proxy
+
+            database_proxy.initialize(DatabaseWorker.worker_database)
+
+            updated_count = 0
+            with DiscogsModel.connection_context():
+                for i, updated_release in enumerate(self.bulk_updates):
+                    with DiscogsModel.atomic():
+                        try:
+                            old_release = self.model_class.get_by_id(updated_release.id)
+
+                            differences = DeepDiff(
+                                old_release,
+                                updated_release,
+                                exclude_paths=[
+                                    "id",
+                                    "random",
+                                    "dirty_fields",
+                                    "_dirty",
+                                    "root.labels[0]['id']",
+                                    "root.labels[1]['id']",
+                                    "root.labels[2]['id']",
+                                    "root.labels[3]['id']",
+                                    "root.labels[4]['id']",
+                                    "root.labels[5]['id']",
+                                    "root.labels[6]['id']",
+                                    "root.labels[7]['id']",
+                                    "root.labels[8]['id']",
+                                    "root.labels[9]['id']",
+                                    "root.labels[10]['id']",
+                                    "root.labels[11]['id']",
+                                    "root.labels[12]['id']",
+                                    "root.labels[13]['id']",
+                                    "root.labels[14]['id']",
+                                    "root.labels[15]['id']",
+                                    "root.labels[16]['id']",
+                                    "root.labels[17]['id']",
+                                    "root.labels[18]['id']",
+                                    "root.labels[19]['id']",
+                                    "root.labels[20]['id']",
+                                ],
+                                ignore_numeric_type_changes=True,
+                            )
+                            diff = pprint.pformat(differences)
+                            if diff != "{}":
+                                log.debug(f"diff: {diff}")
+                                # log.debug(f"old_release: {old_release}")
+                                # log.debug(f"updated_release: {updated_release}")
+
+                                # differences2 = DeepDiff(
+                                #     old_entity.entities,
+                                #     updated_entity.entities,
+                                #     ignore_numeric_type_changes=True,
+                                # )
+                                # diff2 = pprint.pformat(differences2)
+                                # if diff2 != "{}":
+                                #     log.debug(f"entities diff: {diff2}")
+                                # Update release
+                                q = self.model_class.update(
+                                    {
+                                        self.model_class.id: updated_release.id,
+                                        self.model_class.artists: updated_release.artists,
+                                        self.model_class.companies: updated_release.companies,
+                                        self.model_class.country: updated_release.country,
+                                        self.model_class.extra_artists: updated_release.extra_artists,
+                                        self.model_class.formats: updated_release.formats,
+                                        self.model_class.genres: updated_release.genres,
+                                        self.model_class.identifiers: updated_release.identifiers,
+                                        self.model_class.labels: updated_release.labels,
+                                        self.model_class.master_id: updated_release.master_id,
+                                        self.model_class.notes: updated_release.notes,
+                                        self.model_class.release_date: updated_release.release_date,
+                                        self.model_class.styles: updated_release.styles,
+                                        self.model_class.title: updated_release.title,
+                                        self.model_class.tracklist: updated_release.tracklist,
+                                    }
+                                ).where(self.model_class.id == updated_release.id)
+                                q.execute()  # Execute the query.
+                                updated_count += 1
+                        except peewee.PeeweeException as e:
+                            log.exception("Error in updater_pass_one")
+                            raise e
+
+            log.info(
+                f"[{proc_name}] processed_count: {self.processed_count}, updated: {updated_count}"
+            )
+
     # PEEWEE FIELDS
     id: peewee.IntegerField
     artists: peewee.Field
@@ -75,13 +175,6 @@ class Release(DiscogsModel):
         table_name = "releases"
 
     # PUBLIC METHODS
-
-    # @classmethod
-    # def bootstrap(cls):
-    #     cls.drop_table(True)
-    #     cls.create_table()
-    #     cls.bootstrap_pass_one()
-    #     cls.bootstrap_pass_two()
 
     @classmethod
     def loader_pass_one(cls, date: str):
@@ -117,11 +210,13 @@ class Release(DiscogsModel):
     ):
         # Updater pass one.
         initial_count = len(model_class)
-        updated_count = 0
+        processed_count = 0
         xml_path = LoaderUtils.get_xml_path(xml_tag, date)
         log.info(f"Loading data from {xml_path}")
         with gzip.GzipFile(xml_path, "r") as file_pointer:
             iterator = LoaderUtils.iterparse(file_pointer, xml_tag)
+            bulk_updates = []
+            workers = []
             for i, element in enumerate(iterator):
                 data = None
                 try:
@@ -130,31 +225,67 @@ class Release(DiscogsModel):
                         if any(not data.get(_) for _ in skip_without):
                             continue
                     if element.get("id"):
-                        data["id"] = element.get("id")
-                    data["random"] = random.random()
-                    # log.debug(**data)
-                    # new_instance = model_class(model_class, **data)
-                    # log.debug(f"new_instance: {new_instance}", flush=True)
-                    with DiscogsModel.atomic():
-                        try:
-                            # log.debug(f"update: {data['id']}")
-                            q = model_class.update(**data).where(
-                                model_class.id == data["id"]
+                        data["id"] = int(element.get("id"))
+                    updated_release = model_class(model_class, **data)
+                    bulk_updates.append(updated_release)
+                    processed_count += 1
+                    # log.debug(f"updated_release: {updated_release}")
+                    if get_concurrency_count() > 1:
+                        # Can do multi threading
+                        if len(bulk_updates) >= DiscogsModel.BULK_UPDATE_BATCH_SIZE:
+                            worker = cls.update_bulk(
+                                model_class, bulk_updates, processed_count
                             )
-                            q.execute()  # Execute the query.
-                            updated_count += 1
-                        except peewee.PeeweeException as e:
-                            log.exception("Error in updater_pass_one")
-                            raise e
-
-                    # if updated_count >= 1000000:
+                            worker.start()
+                            workers.append(worker)
+                            bulk_updates.clear()
+                        if len(workers) > get_concurrency_count():
+                            worker = workers.pop(0)
+                            # log.debug(f"wait for worker {len(workers)} in list")
+                            worker.join()
+                            if worker.exitcode > 0:
+                                log.error(
+                                    f"worker {worker.name} exitcode: {worker.exitcode}"
+                                )
+                                # raise Exception("Error in worker process")
+                            worker.terminate()
+                    # if inserted_count >= 10:
                     #     break
-
+                    # document = model_class.create(**data)
+                    # template = "{} (Pass 1) (idx:{}) (id:{}): {}"
+                    # message = template.format(
+                    #     model_class.__name__.upper(),
+                    #     i,
+                    #     getattr(document, id_attr),
+                    #     getattr(document, name_attr),
+                    # )
+                    # log.debug(message)
                 except peewee.DataError as e:
                     log.exception("Error in updater_pass_one", pprint.pformat(data))
+                    # traceback.print_exc()
                     raise e
 
-            log.debug(f"updated_count: {updated_count}")
+            if len(bulk_updates) > 0:
+                worker = cls.update_bulk(model_class, bulk_updates, processed_count)
+                worker.start()
+                workers.append(worker)
+                bulk_updates.clear()
+
+            while len(workers) > 0:
+                worker = workers.pop(0)
+                # log.debug(
+                #     f"wait for worker {worker.name} - {len(workers)} left in list"
+                # )
+                worker.join()
+                if worker.exitcode > 0:
+                    log.error(f"worker {worker.name} exitcode: {worker.exitcode}")
+                    # raise Exception("Error in worker process")
+                worker.terminate()
+
+    @classmethod
+    def update_bulk(cls, model_class, bulk_updates, processed_count):
+        worker = cls.UpdaterPassOneWorker(model_class, bulk_updates, processed_count)
+        return worker
 
     @classmethod
     def get_indices(cls):
@@ -207,29 +338,17 @@ class Release(DiscogsModel):
         corpus = corpus or {}
         changed = release.resolve_references(corpus)
         if changed:
-            # log.debug(
-            #     f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
-            #     + f"          (id:{(document.entity_type, document.entity_id)}): {document.name}"
-            # )
+            if LOGGING_TRACE:
+                log.debug(
+                    f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
+                    + f"          (id:{release.id}): {release.title}"
+                )
             release.save()
-        # query = cls.select().where(cls.id == release_id)
-        # if not query.count():
-        #     return
-        # document = query.get()
-        # changed = document.resolve_references(corpus)
-        # if not changed:
-        #     # if Bootstrapper.is_test:
-        #     #     log.debug(
-        #     #         f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
-        #     #         + f"[SKIPPED] (id:{document.id}): {document.title}"
-        #     #     )
-        #     return
-        # document.save()
-        # # if Bootstrapper.is_test:
-        # #     log.debug(
-        # #         f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
-        # #         + f"          (id:{document.id}): {document.title}"
-        # #     )
+        elif LOGGING_TRACE:
+            log.debug(
+                f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
+                + f"[SKIPPED] (id:{release.id}): {release.title}"
+            )
 
     @classmethod
     def element_to_artist_credits(cls, element):
@@ -388,7 +507,7 @@ class Release(DiscogsModel):
         spurious_id = 0
         for entry in self.labels:
             name = entry["name"]
-            entity_key = (2, name)
+            entity_key = (EntityType.LABEL, name)
             if not spuriously:
                 release_class_name = self.__class__.__qualname__
                 release_module_name = self.__class__.__module__
