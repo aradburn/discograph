@@ -3,8 +3,8 @@ import os
 import tempfile
 
 from flask_caching import BaseCache, SimpleCache
+from flask_caching.backends.rediscache import RedisCache
 from flask_caching.backends.filesystemcache import FileSystemCache
-import fakeredis
 
 from discograph.config import CacheType
 
@@ -24,7 +24,7 @@ def setup_cache(config):
 
         case CacheType.FILESYSTEM:
             file_cache_path = os.path.join(tempfile.gettempdir(), "discograph", "cache")
-            file_cache_threshold = 1024 * 128
+            file_cache_threshold = 1024 * 1024 * 20
             file_cache_timeout = 60 * 60 * 24 * 7
             if not os.path.exists(file_cache_path):
                 os.makedirs(file_cache_path)
@@ -36,7 +36,15 @@ def setup_cache(config):
             log.info("Using filesystem cache")
 
         case CacheType.REDIS:
-            cache = fakeredis.FakeRedis()
+            cache = RedisCache(
+                host="localhost",
+                port=6379,
+                password=None,
+                db=0,
+                default_timeout=300,
+                key_prefix=None,
+            )
+            # cache = fakeredis.FakeRedis()
             # cache = RedisCache()
             log.info("Using Redis cache")
 
