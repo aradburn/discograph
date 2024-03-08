@@ -42,7 +42,6 @@ class PostgresEntity(Entity):
     relation_counts = postgres_ext.BinaryJSONField(null=True, index=False)
     metadata = postgres_ext.BinaryJSONField(null=True, index=False)
     entities = postgres_ext.BinaryJSONField(null=True, index=False)
-    # search_content = postgres_ext.TSVectorField(index=False)
     search_content = postgres_ext.TSVectorField(index=True)
 
     @classmethod

@@ -26,10 +26,8 @@ def loader_main():
     # log.info(f"DATABASE_HOST: {os.getenv('DISCOGRAPH_DATABASE_HOST')}")
     # log.info(f"DATABASE_NAME: {os.getenv('DISCOGRAPH_DATABASE_NAME')}")
     config = PostgresDevelopmentConfiguration()
-    # app.config.from_object(config)
     setup_cache(config)
     setup_database(config)
-    # setup_application()
     # Note reverse order (last in first out), logging is the last to be shutdown
     atexit.register(shutdown_logging)
     atexit.register(shutdown_cache)

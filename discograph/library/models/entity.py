@@ -517,6 +517,46 @@ class Entity(DiscogsModel):
         annotation="",
         progress=None,
     ):
+        _relation_counts = {}
+
+        where_clause = (relation_class.entity_one_type == entity_type) & (
+            relation_class.entity_one_id == entity_id
+        )
+        query = relation_class.select().where(where_clause)
+        for relation in query:
+            if relation.role not in _relation_counts:
+                _relation_counts[relation.role] = set()
+            key = (
+                relation.entity_one_type,
+                relation.entity_one_id,
+                relation.entity_two_type,
+                relation.entity_two_id,
+            )
+            _relation_counts[relation.role].add(key)
+        for role, keys in _relation_counts.items():
+            _relation_counts[role] = len(keys)
+
+        where_clause = (relation_class.entity_two_type == entity_type) & (
+            relation_class.entity_two_id == entity_id
+        )
+        query = relation_class.select().where(where_clause)
+        _relation_counts = {}
+        for relation in query:
+            if relation.role not in _relation_counts:
+                _relation_counts[relation.role] = set()
+            key = (
+                relation.entity_one_type,
+                relation.entity_one_id,
+                relation.entity_two_type,
+                relation.entity_two_id,
+            )
+            _relation_counts[relation.role].add(key)
+        for role, keys in _relation_counts.items():
+            _relation_counts[role] = len(keys)
+
+        if not _relation_counts:
+            return
+
         try:
             query = cls.select(
                 cls.entity_id,
@@ -530,38 +570,69 @@ class Entity(DiscogsModel):
             # if not query.count():
             #     return
             document = query.get()
-        except peewee.DoesNotExist:
-            log.debug(f"loader_pass_three_single {entity_id} does not exist")
-        else:
-            entity_id = document.entity_id
-            where_clause = (relation_class.entity_one_type == entity_type) & (
-                relation_class.entity_one_id == entity_id
-            )
-            where_clause |= (relation_class.entity_two_type == entity_type) & (
-                relation_class.entity_two_id == entity_id
-            )
-            query = relation_class.select().where(where_clause)
-            _relation_counts = {}
-            for relation in query:
-                if relation.role not in _relation_counts:
-                    _relation_counts[relation.role] = set()
-                key = (
-                    relation.entity_one_type,
-                    relation.entity_one_id,
-                    relation.entity_two_type,
-                    relation.entity_two_id,
-                )
-                _relation_counts[relation.role].add(key)
-            for role, keys in _relation_counts.items():
-                _relation_counts[role] = len(keys)
-            if not _relation_counts:
-                return
             document.relation_counts = _relation_counts
             document.save()
             # log.debug(
             #     f"{cls.__name__.upper()} (Pass 3) {progress:.3%} [{annotation}]\t"
             #     + f"(id:{(document.entity_type, document.entity_id)}) {document.name}: {len(_relation_counts)}"
             # )
+        except peewee.DoesNotExist:
+            log.debug(f"loader_pass_three_single {entity_id} does not exist")
+
+    # @classmethod
+    # def loader_pass_three_single(
+    #     cls,
+    #     relation_class,
+    #     entity_type: EntityType,
+    #     entity_id: int,
+    #     annotation="",
+    #     progress=None,
+    # ):
+    #     try:
+    #         query = cls.select(
+    #             cls.entity_id,
+    #             cls.entity_type,
+    #             cls.name,
+    #             cls.relation_counts,
+    #         ).where(
+    #             cls.entity_id == entity_id,
+    #             cls.entity_type == entity_type,
+    #         )
+    #         # if not query.count():
+    #         #     return
+    #         document = query.get()
+    #     except peewee.DoesNotExist:
+    #         log.debug(f"loader_pass_three_single {entity_id} does not exist")
+    #     else:
+    #         entity_id = document.entity_id
+    #         where_clause = (relation_class.entity_one_type == entity_type) & (
+    #             relation_class.entity_one_id == entity_id
+    #         )
+    #         where_clause |= (relation_class.entity_two_type == entity_type) & (
+    #             relation_class.entity_two_id == entity_id
+    #         )
+    #         query = relation_class.select().where(where_clause)
+    #         _relation_counts = {}
+    #         for relation in query:
+    #             if relation.role not in _relation_counts:
+    #                 _relation_counts[relation.role] = set()
+    #             key = (
+    #                 relation.entity_one_type,
+    #                 relation.entity_one_id,
+    #                 relation.entity_two_type,
+    #                 relation.entity_two_id,
+    #             )
+    #             _relation_counts[relation.role].add(key)
+    #         for role, keys in _relation_counts.items():
+    #             _relation_counts[role] = len(keys)
+    #         if not _relation_counts:
+    #             return
+    #         document.relation_counts = _relation_counts
+    #         document.save()
+    #         # log.debug(
+    #         #     f"{cls.__name__.upper()} (Pass 3) {progress:.3%} [{annotation}]\t"
+    #         #     + f"(id:{(document.entity_type, document.entity_id)}) {document.name}: {len(_relation_counts)}"
+    #         # )
 
     @classmethod
     def element_to_names(cls, names):
@@ -856,23 +927,35 @@ class Entity(DiscogsModel):
             return
 
         entity_type, entity_name = key
-        key_str = f"{entity_type}-{entity_name}"
+        # key_str = f"{entity_type}-{entity_name}"
+        key_str = f"{entity_name}-{entity_type}"
         entity_id = cache.get(key_str)
         # if entity_id is not None:
         #     log.debug(f"cache hit for {key_str}")
         if entity_id is None:
             # log.debug(f"not cached, try db")
             try:
-                query = cls.select().where(
+                query = cls.select(cls.entity_id).where(
                     cls.entity_type == entity_type,
                     cls.name == entity_name,
                 )
-                entity_id = query.get().entity_id
 
+                document = query.get()
+                entity_id = document.entity_id
                 cache.set(key_str, entity_id)
 
+                # query = cls.select().where(
+                #     cls.entity_type == entity_type,
+                #     cls.name == entity_name,
+                # )
+                # entity_id = query.get().entity_id
+                #
+                # cache.set(key_str, entity_id)
+
             except peewee.DoesNotExist:
-                log.info(f"            update_corpus key not found: {key}")
+                # log.info(f"            update_corpus key not found: {key}")
+                entity_id = None
+                cache.set(key_str, entity_id)
                 pass
         if entity_id is not None:
             # log.debug(f"            key: {key} new value: {entity_id}")

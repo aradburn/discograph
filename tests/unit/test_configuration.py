@@ -19,7 +19,7 @@ class TestConfiguration(unittest.TestCase):
 
     def test_SqliteTestConfiguration_get_database(self):
         config = SqliteTestConfiguration()
-        self.assertEquals(DatabaseType.SQLITE, config["DATABASE"])
+        self.assertEqual(DatabaseType.SQLITE, config["DATABASE"])
 
     def test_SqliteTestConfiguration_set(self):
         config = SqliteTestConfiguration()
@@ -41,7 +41,7 @@ class TestConfiguration(unittest.TestCase):
 
     def test_PostgresTestConfiguration_get_database(self):
         config = PostgresTestConfiguration()
-        self.assertEquals(DatabaseType.POSTGRES, config["DATABASE"])
+        self.assertEqual(DatabaseType.POSTGRES, config["DATABASE"])
 
     def test_PostgresTestConfiguration_set(self):
         config = PostgresTestConfiguration()
@@ -63,7 +63,7 @@ class TestConfiguration(unittest.TestCase):
 
     def test_PostgresProductionConfiguration_get_database(self):
         config = PostgresProductionConfiguration()
-        self.assertEquals(DatabaseType.POSTGRES, config["DATABASE"])
+        self.assertEqual(DatabaseType.POSTGRES, config["DATABASE"])
 
     def test_PostgresProductionConfiguration_set(self):
         config = PostgresProductionConfiguration()

@@ -2,7 +2,6 @@ import gzip
 import logging
 import multiprocessing
 import pprint
-import random
 import sys
 
 import peewee
@@ -209,7 +208,7 @@ class Release(DiscogsModel):
         skip_without=None,
     ):
         # Updater pass one.
-        initial_count = len(model_class)
+        # initial_count = len(model_class)
         processed_count = 0
         xml_path = LoaderUtils.get_xml_path(xml_tag, date)
         log.info(f"Loading data from {xml_path}")
@@ -288,14 +287,14 @@ class Release(DiscogsModel):
         return worker
 
     @classmethod
-    def get_indices(cls):
+    def get_indices(cls, multiplier=1):
         from discograph.database import get_concurrency_count
 
         query = cls.select(cls.id)
         query = query.order_by(cls.id)
         query = query.tuples()
         all_ids = tuple(_[0] for _ in query)
-        num_chunks = get_concurrency_count()
+        num_chunks = get_concurrency_count() * multiplier
         return utils.split_tuple(num_chunks, all_ids)
 
     @classmethod

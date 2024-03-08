@@ -1,11 +1,15 @@
 import itertools
 import logging
 import multiprocessing
+import pprint
 import random
 import re
 import sys
+import time
+from copy import deepcopy
 
 import peewee
+from deepdiff import DeepDiff
 
 from discograph.library.credit_role import CreditRole
 from discograph.library.database.database_worker import DatabaseWorker
@@ -188,7 +192,7 @@ class Relation(DiscogsModel):
             #     )
             for relation in relations:
                 # log.debug(f"  loader_pass_one ({annotation}): {relation}")
-                max_attempts = 10
+                max_attempts = 100
                 error = True
                 while error and max_attempts != 0:
                     error = False
@@ -200,56 +204,141 @@ class Relation(DiscogsModel):
                         )
                         max_attempts -= 1
                         error = True
+                        time.sleep(100 - max_attempts)
+                if error:
+                    log.debug(f"Error in updating relation: {relation}")
 
     @classmethod
     def create_or_update_relation(cls, relation):
         with DiscogsModel.atomic():
+            create_wanted = False
             try:
-                instance = (
-                    cls.select()
-                    .where(
+                existing_instance = (
+                    cls.select(cls.releases).where(
                         (cls.entity_one_type == relation["entity_one_type"])
                         & (cls.entity_one_id == relation["entity_one_id"])
                         & (cls.entity_two_type == relation["entity_two_type"])
                         & (cls.entity_two_id == relation["entity_two_id"])
                         & (cls.role == relation["role"])
                     )
-                    .for_update(nowait=True)
+                    # .for_update(nowait=True)
                     .get()
                 )
+                # log.debug(f"existing instance: {existing_instance}")
+                updated_instance = deepcopy(existing_instance)
             except peewee.DoesNotExist:
                 # Create a new Relation
+                updated_instance = cls()
+                updated_instance.releases = {}
+                # log.debug(f"new instance: {updated_instance}")
+                create_wanted = True
+            is_dirty = False
+            if "release_id" in relation:
+                release_id: str = str(relation["release_id"])
+                year = relation.get("year")
+                # if "releases" not in instance:
+                #     instance["releases"] = {}
+                # log.debug(f"before update instance: {updated_instance}")
+                if release_id not in updated_instance.releases:
+                    updated_instance.releases[release_id] = year
+                    # log.debug(f"relation updated releases: {updated_instance}")
+                    is_dirty = True
+            if create_wanted:
                 cls.create(
                     entity_one_type=relation["entity_one_type"],
                     entity_one_id=relation["entity_one_id"],
                     entity_two_type=relation["entity_two_type"],
                     entity_two_id=relation["entity_two_id"],
                     role=relation["role"],
-                    releases={},
+                    releases=updated_instance.releases,
                     random=random.random(),
                 )
-                instance = (
-                    cls.select()
-                    .where(
-                        (cls.entity_one_type == relation["entity_one_type"])
-                        & (cls.entity_one_id == relation["entity_one_id"])
-                        & (cls.entity_two_type == relation["entity_two_type"])
-                        & (cls.entity_two_id == relation["entity_two_id"])
-                        & (cls.role == relation["role"])
+            else:
+                if is_dirty:
+                    check_instance = (
+                        cls.select(cls.releases)
+                        .where(
+                            (cls.entity_one_type == relation["entity_one_type"])
+                            & (cls.entity_one_id == relation["entity_one_id"])
+                            & (cls.entity_two_type == relation["entity_two_type"])
+                            & (cls.entity_two_id == relation["entity_two_id"])
+                            & (cls.role == relation["role"])
+                        )
+                        .for_update(nowait=True)
+                        .get()
                     )
-                    .for_update(nowait=True)
-                    .get()
-                )
-            is_dirty = False
-            if "release_id" in relation:
-                release_id: str = str(relation["release_id"])
-                year = relation.get("year")
-                if release_id not in instance.releases:
-                    instance.releases[release_id] = year
-                    # log.debug(f"relation updated releases: {instance}")
-                    is_dirty = True
-            if is_dirty:
-                instance.save()
+                    differences = DeepDiff(
+                        existing_instance.releases, check_instance.releases
+                    )
+                    diff = pprint.pformat(differences)
+                    if diff != "{}":
+                        log.debug(f"diff: {diff}")
+                        raise peewee.PeeweeException("Record modified")
+                    else:
+                        cls.update({cls.releases: updated_instance.releases}).where(
+                            (cls.entity_one_type == relation["entity_one_type"])
+                            & (cls.entity_one_id == relation["entity_one_id"])
+                            & (cls.entity_two_type == relation["entity_two_type"])
+                            & (cls.entity_two_id == relation["entity_two_id"])
+                            & (cls.role == relation["role"])
+                        ).execute()
+
+    # @classmethod
+    # def create_or_update_relation(cls, relation):
+    #     with DiscogsModel.atomic():
+    #         try:
+    #             instance = (
+    #                 cls.select(cls.releases)
+    #                 .where(
+    #                     (cls.entity_one_type == relation["entity_one_type"])
+    #                     & (cls.entity_one_id == relation["entity_one_id"])
+    #                     & (cls.entity_two_type == relation["entity_two_type"])
+    #                     & (cls.entity_two_id == relation["entity_two_id"])
+    #                     & (cls.role == relation["role"])
+    #                 )
+    #                 .for_update(nowait=True)
+    #                 .get()
+    #             )
+    #         except peewee.DoesNotExist:
+    #             # Create a new Relation
+    #             cls.create(
+    #                 entity_one_type=relation["entity_one_type"],
+    #                 entity_one_id=relation["entity_one_id"],
+    #                 entity_two_type=relation["entity_two_type"],
+    #                 entity_two_id=relation["entity_two_id"],
+    #                 role=relation["role"],
+    #                 releases={},
+    #                 random=random.random(),
+    #             )
+    #             instance = (
+    #                 cls.select(cls.releases)
+    #                 .where(
+    #                     (cls.entity_one_type == relation["entity_one_type"])
+    #                     & (cls.entity_one_id == relation["entity_one_id"])
+    #                     & (cls.entity_two_type == relation["entity_two_type"])
+    #                     & (cls.entity_two_id == relation["entity_two_id"])
+    #                     & (cls.role == relation["role"])
+    #                 )
+    #                 .for_update(nowait=True)
+    #                 .get()
+    #             )
+    #         is_dirty = False
+    #         if "release_id" in relation:
+    #             release_id: str = str(relation["release_id"])
+    #             year = relation.get("year")
+    #             if release_id not in instance.releases:
+    #                 instance.releases[release_id] = year
+    #                 # log.debug(f"relation updated releases: {instance}")
+    #                 is_dirty = True
+    #         if is_dirty:
+    #             cls.update(cls.releases).where(
+    #                 (cls.entity_one_type == relation["entity_one_type"])
+    #                 & (cls.entity_one_id == relation["entity_one_id"])
+    #                 & (cls.entity_two_type == relation["entity_two_type"])
+    #                 & (cls.entity_two_id == relation["entity_two_id"])
+    #                 & (cls.role == relation["role"])
+    #             ).execute()
+    #             # instance.save()
 
     @classmethod
     def from_release(cls, release):

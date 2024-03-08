@@ -91,7 +91,7 @@ class PostgresDevelopmentConfiguration(Configuration):
     POSTGRES_DATABASE_NAME = "discograph"
     APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.PROCESS
-    CACHE_TYPE = CacheType.FILESYSTEM
+    CACHE_TYPE = CacheType.REDIS
 
     def __init__(self):
         super().__init__(vars(PostgresDevelopmentConfiguration))
