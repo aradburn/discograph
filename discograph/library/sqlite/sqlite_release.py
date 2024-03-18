@@ -27,3 +27,8 @@ class SqliteRelease(Release):
     styles = sqlite_ext.JSONField(null=True, index=False)
     title = peewee.TextField(index=False)
     tracklist = sqlite_ext.JSONField(null=True, index=False)
+
+    # PEEWEE META
+
+    class Meta:
+        table_name = "release"

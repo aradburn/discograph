@@ -231,9 +231,8 @@ class Entity(DiscogsModel):
     # PEEWEE META
 
     class Meta:
-        table_name = "entities"
+        table_name = "entity"
         primary_key = peewee.CompositeKey("entity_type", "entity_id")
-        indexes = ((("entity_type", "name"), False),)
 
     # PUBLIC METHODS
 

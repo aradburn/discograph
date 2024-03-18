@@ -166,15 +166,13 @@ class PostgresHelper(DatabaseHelper):
             PostgresEntity.loader_pass_one(date)
 
             log.debug("Load entity analyze")
-            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE postgresentity;")
+            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE entity;")
 
             log.debug("Load release pass 1")
             PostgresRelease.loader_pass_one(date)
 
             log.debug("Load release analyze")
-            PostgresRelease.database().execute_sql(
-                "VACUUM FULL ANALYZE postgresrelease;"
-            )
+            PostgresRelease.database().execute_sql("VACUUM FULL ANALYZE release;")
 
             log.debug("Load entity pass 2")
             PostgresEntity.loader_pass_two()
@@ -186,25 +184,17 @@ class PostgresHelper(DatabaseHelper):
             PostgresRelation.loader_pass_one(date)
 
             log.debug("Load relation analyze")
-            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE postgresentity;")
-            PostgresRelease.database().execute_sql(
-                "VACUUM FULL ANALYZE postgresrelease;"
-            )
-            PostgresRelation.database().execute_sql(
-                "VACUUM FULL ANALYZE postgresrelation;"
-            )
+            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE entity;")
+            PostgresRelease.database().execute_sql("VACUUM FULL ANALYZE release;")
+            PostgresRelation.database().execute_sql("VACUUM FULL ANALYZE relation;")
 
             log.debug("Load entity pass 3")
             PostgresEntity.loader_pass_three()
 
             log.debug("Load final vacuum analyze")
-            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE postgresentity;")
-            PostgresRelease.database().execute_sql(
-                "VACUUM FULL ANALYZE postgresrelease;"
-            )
-            PostgresRelation.database().execute_sql(
-                "VACUUM FULL ANALYZE postgresrelation;"
-            )
+            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE entity;")
+            PostgresRelease.database().execute_sql("VACUUM FULL ANALYZE release;")
+            PostgresRelation.database().execute_sql("VACUUM FULL ANALYZE relation;")
 
             log.info("Load Postgres done.")
 
@@ -221,15 +211,13 @@ class PostgresHelper(DatabaseHelper):
             PostgresEntity.updater_pass_one(date)
 
             log.debug("Update entity analyze")
-            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE postgresentity;")
+            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE entity;")
 
             log.debug("Update release pass 1")
             PostgresRelease.updater_pass_one(date)
 
             log.debug("Update release analyze")
-            PostgresRelease.database().execute_sql(
-                "VACUUM FULL ANALYZE postgresrelease;"
-            )
+            PostgresRelease.database().execute_sql("VACUUM FULL ANALYZE release;")
 
             log.debug("Update entity pass 2")
             PostgresEntity.loader_pass_two()
@@ -247,25 +235,17 @@ class PostgresHelper(DatabaseHelper):
             # db_logger.setLevel(logging.INFO)
 
             log.debug("Update relation analyze")
-            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE postgresentity;")
-            PostgresRelease.database().execute_sql(
-                "VACUUM FULL ANALYZE postgresrelease;"
-            )
-            PostgresRelation.database().execute_sql(
-                "VACUUM FULL ANALYZE postgresrelation;"
-            )
+            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE entity;")
+            PostgresRelease.database().execute_sql("VACUUM FULL ANALYZE release;")
+            PostgresRelation.database().execute_sql("VACUUM FULL ANALYZE relation;")
 
             log.debug("Update entity pass 3")
             PostgresEntity.loader_pass_three()
 
             log.debug("Update final vacuum analyze")
-            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE postgresentity;")
-            PostgresRelease.database().execute_sql(
-                "VACUUM FULL ANALYZE postgresrelease;"
-            )
-            PostgresRelation.database().execute_sql(
-                "VACUUM FULL ANALYZE postgresrelation;"
-            )
+            PostgresEntity.database().execute_sql("VACUUM FULL ANALYZE entity;")
+            PostgresRelease.database().execute_sql("VACUUM FULL ANALYZE release;")
+            PostgresRelation.database().execute_sql("VACUUM FULL ANALYZE relation;")
 
             log.info("Update Postgres done.")
 

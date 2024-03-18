@@ -17,11 +17,16 @@ class SqliteRelation(Relation):
     # PEEWEE FIELDS
 
     entity_one_type = EnumField(index=False, choices=EntityType)
-    entity_one_id = peewee.IntegerField(index=False)
+    entity_one_id = peewee.IntegerField(index=True)
     entity_two_type = EnumField(index=False, choices=EntityType)
-    entity_two_id = peewee.IntegerField(index=False)
+    entity_two_id = peewee.IntegerField(index=True)
     role = peewee.CharField(index=False)
     releases = sqlite_ext.JSONField(null=True, index=False)
+
+    # PEEWEE META
+
+    class Meta:
+        table_name = "relation"
 
     @classmethod
     def create_or_update_relation(cls, relation):

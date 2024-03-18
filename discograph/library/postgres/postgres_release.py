@@ -27,3 +27,8 @@ class PostgresRelease(Release):
     styles = postgres_ext.ArrayField(peewee.TextField, null=True, index=False)
     title = peewee.TextField(index=False)
     tracklist = postgres_ext.BinaryJSONField(null=True, index=False)
+
+    # PEEWEE META
+
+    class Meta:
+        table_name = "release"

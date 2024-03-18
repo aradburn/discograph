@@ -92,7 +92,7 @@ class Relation(DiscogsModel):
     # PEEWEE META
 
     class Meta:
-        table_name = "relations"
+        table_name = "relation"
         primary_key = peewee.CompositeKey(
             "entity_one_type",
             "entity_one_id",
@@ -100,21 +100,6 @@ class Relation(DiscogsModel):
             "entity_two_id",
             "role",
         )
-        # indexes = (
-        #     (('entity_one_type', 'entity_one_id'), False),
-        #     (('entity_two_type', 'entity_two_id'), False),
-        # )
-        # indexes = (
-        #     ((
-        #         'entity_one_type', 'entity_one_id',
-        #         'entity_two_type', 'entity_two_id',
-        #         'role'), True),
-        # )
-        #     ((
-        #         'entity_two_type', 'entity_two_id',
-        #         'entity_one_type', 'entity_one_id',
-        #         'role'), True),
-        #     )
 
     # PRIVATE METHODS
 

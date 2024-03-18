@@ -20,3 +20,21 @@ class PostgresRelation(Relation):
     entity_two_id = peewee.IntegerField(index=False)
     role = peewee.CharField(index=False)
     releases = postgres_ext.BinaryJSONField(index=False, null=True)
+
+    # PEEWEE META
+
+    class Meta:
+        table_name = "relation"
+
+
+# Create an index on entity_one_id
+idx_entity_one_id = PostgresRelation.index(
+    PostgresRelation.entity_one_id, unique=False, safe=True, using="hash"
+)
+PostgresRelation.add_index(idx_entity_one_id)
+
+# Create an index on entity_two_id
+idx_entity_two_id = PostgresRelation.index(
+    PostgresRelation.entity_two_id, unique=False, safe=True, using="hash"
+)
+PostgresRelation.add_index(idx_entity_two_id)

@@ -45,6 +45,11 @@ class SqliteEntity(Entity):
     entities = sqlite_ext.JSONField(null=True, index=False)
     search_content = sqlite_ext.SearchField()
 
+    # PEEWEE META
+
+    class Meta:
+        table_name = "entity"
+
     @classmethod
     def search_text(cls, search_string) -> List[SqliteEntity]:
         search_string = search_string.lower()

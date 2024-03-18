@@ -37,12 +37,16 @@ class PostgresEntity(Entity):
 
     entity_id = peewee.IntegerField(index=False)
     entity_type = EnumField(index=False, choices=EntityType)
-    # name = peewee.TextField(index=False)
     name = peewee.TextField(index=True)
     relation_counts = postgres_ext.BinaryJSONField(null=True, index=False)
     metadata = postgres_ext.BinaryJSONField(null=True, index=False)
     entities = postgres_ext.BinaryJSONField(null=True, index=False)
     search_content = postgres_ext.TSVectorField(index=True)
+
+    # PEEWEE META
+
+    class Meta:
+        table_name = "entity"
 
     @classmethod
     def search_text(cls, search_string):
