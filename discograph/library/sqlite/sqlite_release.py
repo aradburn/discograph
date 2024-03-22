@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 class SqliteRelease(Release):
     # PEEWEE FIELDS
 
-    id = peewee.IntegerField(primary_key=True)
+    # release_id = peewee.IntegerField(primary_key=True)
     artists = sqlite_ext.JSONField(null=True, index=False)
     companies = sqlite_ext.JSONField(null=True, index=False)
     country = peewee.TextField(null=True, index=False)
@@ -27,6 +27,7 @@ class SqliteRelease(Release):
     styles = sqlite_ext.JSONField(null=True, index=False)
     title = peewee.TextField(index=False)
     tracklist = sqlite_ext.JSONField(null=True, index=False)
+    random = peewee.FloatField(index=True, null=True)
 
     # PEEWEE META
 

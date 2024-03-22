@@ -6,8 +6,8 @@ from playhouse.cockroachdb import JSONField
 from playhouse.shortcuts import model_to_dict
 from unidecode import unidecode
 
-from discograph.library.entity_type import EntityType
-from discograph.library.enum_field import EnumField
+from discograph.library.fields.entity_type import EntityType
+from discograph.library.fields.enum_field import EnumField
 from discograph.library.cockroach.cockroach_relation import CockroachRelation
 from discograph.library.models.entity import Entity
 from discograph.library.models.relation import Relation
@@ -38,6 +38,7 @@ class CockroachEntity(Entity):
     metadata = JSONField(index=False, null=True)
     entities = JSONField(index=False, null=True)
     search_content = postgres_ext.TSVectorField(index=True)
+    random = peewee.FloatField(index=True, null=True)
 
     @classmethod
     def search_text(cls, search_string):

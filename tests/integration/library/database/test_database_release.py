@@ -128,13 +128,13 @@ class TestDatabaseRelease(DatabaseTestCase):
                 {"descriptions": ['12"', "EP"], "name": "Vinyl", "quantity": "1"}
             ],
             "genres": ["Electronic"],
-            "id": 103,
             "identifiers": None,
             "labels": [{"catalog_number": "NT006", "name": "Nordic Trax"}],
             "master_id": None,
             "notes": None,
             "random": None,
             "release_date": "1999-01-01 00:00:00",
+            "release_id": 103,
             "styles": ["Deep House"],
             "title": "The Necessary EP",
             "tracklist": [
@@ -225,7 +225,6 @@ class TestDatabaseRelease(DatabaseTestCase):
                 "genres": [
                     "Electronic"
                 ],
-                "id": 157,
                 "identifiers": [
                     {
                         "description": null,
@@ -253,6 +252,7 @@ class TestDatabaseRelease(DatabaseTestCase):
                 "notes": null,
                 "random": null,
                 "release_date": "1994-09-03 00:00:00",
+                "release_id": 157,
                 "styles": [
                     "Abstract",
                     "IDM",
@@ -323,7 +323,6 @@ class TestDatabaseRelease(DatabaseTestCase):
                 "genres": [
                     "Electronic"
                 ],
-                "id": 635,
                 "identifiers": [
                     {
                         "description": null,
@@ -346,6 +345,7 @@ class TestDatabaseRelease(DatabaseTestCase):
                 "notes": null,
                 "random": null,
                 "release_date": "1994-01-01 00:00:00",
+                "release_id": 635,
                 "styles": [
                     "Techno",
                     "Ambient"
@@ -433,8 +433,9 @@ class TestDatabaseRelease(DatabaseTestCase):
 
     def test_from_db_01(self):
         release_id = 157
-        release = DatabaseTestCase.release.get_by_id(release_id)
-        release.random = 0.0
+        release = DatabaseTestCase.release.read(release_id)
+        print(f"release: {release}")
+        release["random"] = 0.0
         actual = utils.normalize(format(release))
         expected_release = {
             "artists": [{"id": 41, "name": "Autechre"}],
@@ -467,7 +468,6 @@ class TestDatabaseRelease(DatabaseTestCase):
                 }
             ],
             "genres": ["Electronic"],
-            "id": 157,
             "identifiers": [
                 {"description": None, "type": "Barcode", "value": "5 021603 054066"},
                 {
@@ -488,6 +488,7 @@ class TestDatabaseRelease(DatabaseTestCase):
             "notes": None,
             "random": 0.0,
             "release_date": "1994-09-03 00:00:00",
+            "release_id": 157,
             "styles": ["Abstract", "IDM", "Experimental"],
             "title": "Anti EP",
             "tracklist": [
@@ -518,7 +519,6 @@ class TestDatabaseRelease(DatabaseTestCase):
             ],
             "formats": [{"descriptions": ["EP"], "name": "CD", "quantity": "1"}],
             "genres": ["Electronic"],
-            "id": 635,
             "identifiers": [
                 {"description": None, "type": "Barcode", "value": "5 018524 066308"},
                 {
@@ -532,6 +532,7 @@ class TestDatabaseRelease(DatabaseTestCase):
             "notes": None,
             "random": 0.0,
             "release_date": "1994-01-01 00:00:00",
+            "release_id": 635,
             "styles": ["Techno", "Ambient"],
             "title": "Colour Reform",
             "tracklist": [

@@ -4,8 +4,9 @@ import logging
 import multiprocessing
 import pprint
 import random
+from typing import List
 
-from peewee import Model, FloatField, DataError, PeeweeException
+from peewee import Model, DataError, PeeweeException
 from playhouse.shortcuts import model_to_dict
 
 from discograph.database import get_concurrency_count
@@ -21,10 +22,19 @@ class DiscogsModel(Model):
     _tags_to_fields_mapping: dict = None
 
     class LoaderPassOneWorker(multiprocessing.Process):
-        def __init__(self, model_class, bulk_inserts, inserted_count):
+        def __init__(
+            self,
+            model_class1,
+            bulk_inserts1,
+            model_class2,
+            bulk_inserts2,
+            inserted_count,
+        ):
             super().__init__()
-            self.model_class = model_class
-            self.bulk_inserts = bulk_inserts
+            self.model_class1 = model_class1
+            self.bulk_inserts1 = bulk_inserts1
+            self.model_class2 = model_class2
+            self.bulk_inserts2 = bulk_inserts2
             self.inserted_count = inserted_count
 
         def run(self):
@@ -34,14 +44,13 @@ class DiscogsModel(Model):
             database_proxy.initialize(DatabaseWorker.worker_database)
             with DiscogsModel.connection_context():
                 try:
-                    self.model_class.bulk_create(self.bulk_inserts)
+                    self.model_class1.bulk_create(self.bulk_inserts1)
+                    self.model_class2.bulk_create(self.bulk_inserts2)
                 except PeeweeException:
                     log.exception("Error in bootstrap_pass_one worker")
             log.info(f"[{proc_name}] inserted_count: {self.inserted_count}")
 
     # PEEWEE FIELDS
-
-    random = FloatField(index=True, null=True)
 
     # PEEWEE META
 
@@ -73,12 +82,14 @@ class DiscogsModel(Model):
     def loader_pass_one_manager(
         cls,
         model_class,
-        date: str = "",
-        xml_tag: str = "",
-        id_attr: str = "id",
-        name_attr: str = "name",
-        skip_without=None,
+        date: str,
+        xml_tag: str,
+        id_attr: str,
+        name_attr: str,
+        skip_without: List[str],
     ):
+        from discograph.library.models.release_genre import ReleaseGenre
+
         # Loader pass one.
         initial_count = len(model_class)
         inserted_count = 0
@@ -87,6 +98,7 @@ class DiscogsModel(Model):
         with gzip.GzipFile(xml_path, "r") as file_pointer:
             iterator = LoaderUtils.iterparse(file_pointer, xml_tag)
             bulk_inserts = []
+            bulk_release_genre_inserts = []
             workers = []
             for i, element in enumerate(iterator):
                 data = None
@@ -96,22 +108,41 @@ class DiscogsModel(Model):
                         if any(not data.get(_) for _ in skip_without):
                             continue
                     if element.get("id"):
-                        data["id"] = element.get("id")
+                        data[id_attr] = element.get("id")
                     data["random"] = random.random()
-                    # log.debug(**data)
-                    new_instance = model_class(model_class, **data)
-                    # log.debug(f"new_instance: {new_instance}", flush=True)
+                    log.debug(f"data: {data}")
+                    if "genres" in data:
+                        genres = data["genres"]
+                        log.debug(f"process genres: {genres}")
+                        del data["genres"]
+                        new_instance = model_class(model_class, **data)
+
+                        for genre in genres:
+                            new_release_genre_instance = ReleaseGenre(
+                                release_id=new_instance, genre_id=genre
+                            )
+                            bulk_release_genre_inserts.append(
+                                new_release_genre_instance
+                            )
+                    else:
+                        new_instance = model_class(model_class, **data)
+                    log.debug(f"new_instance: {new_instance}")
                     bulk_inserts.append(new_instance)
                     inserted_count += 1
                     if get_concurrency_count() > 1:
                         # Can do multi threading
                         if len(bulk_inserts) >= DiscogsModel.BULK_INSERT_BATCH_SIZE:
                             worker = cls.insert_bulk(
-                                model_class, bulk_inserts, inserted_count
+                                model_class,
+                                bulk_inserts,
+                                ReleaseGenre,
+                                bulk_release_genre_inserts,
+                                inserted_count,
                             )
                             worker.start()
                             workers.append(worker)
                             bulk_inserts.clear()
+                            bulk_release_genre_inserts.clear()
                         if len(workers) > get_concurrency_count():
                             worker = workers.pop(0)
                             log.debug(f"wait for worker {len(workers)} in list")
@@ -151,6 +182,7 @@ class DiscogsModel(Model):
                 with DiscogsModel.atomic():
                     try:
                         model_class.bulk_create(bulk_inserts)
+                        ReleaseGenre.bulk_create(bulk_release_genre_inserts)
                     except PeeweeException as e:
                         log.exception("Error in loader_pass_one")
                         raise e
@@ -160,8 +192,12 @@ class DiscogsModel(Model):
             assert inserted_count == updated_count
 
     @classmethod
-    def insert_bulk(cls, model_class, bulk_inserts, inserted_count):
-        worker = cls.LoaderPassOneWorker(model_class, bulk_inserts, inserted_count)
+    def insert_bulk(
+        cls, model_class1, bulk_inserts1, model_class2, bulk_inserts2, inserted_count
+    ):
+        worker = cls.LoaderPassOneWorker(
+            model_class1, bulk_inserts1, model_class2, bulk_inserts2, inserted_count
+        )
         return worker
 
     @classmethod
@@ -172,11 +208,11 @@ class DiscogsModel(Model):
     def updater_pass_one_manager(
         cls,
         model_class,
-        date: str = "",
-        xml_tag: str = "",
-        id_attr: str = "id",
-        name_attr: str = "name",
-        skip_without=None,
+        date: str,
+        xml_tag: str,
+        id_attr: str,
+        name_attr: str,
+        skip_without: List[str],
     ):
         pass
 
@@ -234,11 +270,6 @@ class DiscogsModel(Model):
         from discograph.library.database.database_proxy import database_proxy
 
         return database_proxy.atomic()
-
-    @classmethod
-    def get_random(cls):
-        n = random.random()
-        return cls.select().where(cls.random > n).order_by(cls.random).get()
 
     @classmethod
     def preprocess_data(cls, data, element):

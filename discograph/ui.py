@@ -10,8 +10,8 @@ from flask import url_for
 
 import discograph.utils
 from discograph import database, exceptions
-from discograph.library.credit_role import CreditRole
-from discograph.library.entity_type import EntityType
+from discograph.library.role_entry import RoleEntry
+from discograph.library.fields.entity_type import EntityType
 
 log = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ def route__index():
     original_roles, original_year = parsed_args
     if not original_roles:
         original_roles = default_roles
-    multiselect_mapping = CreditRole.get_multiselect_mapping()
+    multiselect_mapping = RoleEntry.get_multiselect_mapping()
     url = url_for(
         request.endpoint,
         roles=original_roles,
@@ -95,7 +95,7 @@ def route__entity_type__entity_id(entity_type, entity_id):
         roles=original_roles,
     )
     title = f"Discograph2: {entity_name}"
-    multiselect_mapping = CreditRole.get_multiselect_mapping()
+    multiselect_mapping = RoleEntry.get_multiselect_mapping()
     rendered_template = render_template(
         "index.html",
         application_url=app.config["APPLICATION_ROOT"],

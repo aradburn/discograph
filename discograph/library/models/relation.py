@@ -11,11 +11,11 @@ from copy import deepcopy
 import peewee
 from deepdiff import DeepDiff
 
-from discograph.library.credit_role import CreditRole
+from discograph.library.fields.role_type import RoleType
 from discograph.library.database.database_worker import DatabaseWorker
 from discograph.library.discogs_model import DiscogsModel
-from discograph.library.entity_type import EntityType
-from discograph.library.enum_field import EnumField
+from discograph.library.fields.entity_type import EntityType
+from discograph.library.fields.enum_field import EnumField
 
 log = logging.getLogger(__name__)
 
@@ -71,14 +71,6 @@ class Relation(DiscogsModel):
                         log.exception("Error in LoaderPassOneWorker")
             log.info(f"[{proc_name}] processed {count} of {total_count}")
 
-    aggregate_roles = (
-        "Compiled By",
-        "Curated By",
-        "DJ Mix",
-        "Hosted By",
-        "Presenter",
-    )
-
     word_pattern = re.compile(r"\s+")
 
     # PEEWEE FIELDS
@@ -86,8 +78,10 @@ class Relation(DiscogsModel):
     entity_one_id: peewee.IntegerField
     entity_two_type: EnumField
     entity_two_id: peewee.IntegerField
+    # role: peewee.ForeignKeyField
     role: peewee.CharField
     releases: peewee.Field
+    random: peewee.FloatField
 
     # PEEWEE META
 
@@ -345,9 +339,9 @@ class Relation(DiscogsModel):
         for entity_two, credit in iterator:
             for role in credit["roles"]:
                 role = role["name"]
-                if role not in CreditRole.all_credit_roles:
+                if role not in RoleType.role_definitions:
                     continue
-                elif role in cls.aggregate_roles:
+                elif role in RoleType.aggregate_roles:
                     if role not in aggregate_roles:
                         aggregate_roles[role] = []
                     aggregate_credit = (EntityType.ARTIST, credit["id"])
@@ -362,7 +356,7 @@ class Relation(DiscogsModel):
             iterator = itertools.product(artists, release.companies)
         for entity_one, company in iterator:
             role = company["entity_type_name"]
-            if role not in CreditRole.all_credit_roles:
+            if role not in RoleType.role_definitions:
                 continue
             entity_two = (EntityType.LABEL, company["id"])
             triples.add((entity_one, role, entity_two))
@@ -380,7 +374,7 @@ class Relation(DiscogsModel):
             for entity_two, credit in iterator:
                 for role in credit.get("roles", ()):
                     role = role["name"]
-                    if role not in CreditRole.all_credit_roles:
+                    if role not in RoleType.role_definitions:
                         continue
                     entity_one = (EntityType.ARTIST, credit["id"])
                     triples.add((entity_one, role, entity_two))
@@ -463,7 +457,7 @@ class Relation(DiscogsModel):
                 role=role,
             )
             if release is not None:
-                relation["release_id"] = release.id
+                relation["release_id"] = release.release_id
                 if release.release_date is not None:
                     relation["year"] = release.release_date.year
             relations.append(relation)

@@ -4,9 +4,9 @@ import logging
 import re
 from abc import abstractmethod, ABC
 
-from discograph.library.credit_role import CreditRole
+from discograph.library.fields.role_type import RoleType
 from discograph.library.database.database_helper import DatabaseHelper
-from discograph.library.entity_type import EntityType
+from discograph.library.fields.entity_type import EntityType
 from discograph.library.trellis_node import TrellisNode
 
 log = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ class RelationGrapher(ABC):
             elif not isinstance(roles, collections_abc.Iterable):
                 roles = (roles,)
             roles = tuple(roles)
-            assert all(_ in CreditRole.all_credit_roles for _ in roles)
+            assert all(_ in RoleType.role_definitions for _ in roles)
             for role in roles:
                 if role in ("Alias", "Sublabel Of", "Member Of"):
                     structural_roles.append(role)

@@ -5,6 +5,7 @@ import pprint
 import random
 import re
 import sys
+from typing import List
 
 import peewee
 from deepdiff import DeepDiff
@@ -13,8 +14,8 @@ from discograph import utils
 from discograph.database import get_concurrency_count
 from discograph.library.database.database_worker import DatabaseWorker
 from discograph.library.discogs_model import DiscogsModel
-from discograph.library.entity_type import EntityType
-from discograph.library.enum_field import EnumField
+from discograph.library.fields.entity_type import EntityType
+from discograph.library.fields.enum_field import EnumField
 from discograph.library.loader_utils import LoaderUtils
 from discograph.library.models.relation import Relation
 
@@ -227,6 +228,7 @@ class Entity(DiscogsModel):
     metadata: peewee.Field
     entities: peewee.Field
     search_content: peewee.Field
+    random: peewee.FloatField
 
     # PEEWEE META
 
@@ -243,7 +245,7 @@ class Entity(DiscogsModel):
             model_class=cls,
             date=date,
             xml_tag="artist",
-            id_attr="entity_id",
+            id_attr=cls.entity_id.name,
             name_attr="name",
             skip_without=["name"],
         )
@@ -252,7 +254,7 @@ class Entity(DiscogsModel):
             model_class=cls,
             date=date,
             xml_tag="label",
-            id_attr="entity_id",
+            id_attr=cls.entity_id.name,
             name_attr="name",
             skip_without=["name"],
         )
@@ -264,7 +266,7 @@ class Entity(DiscogsModel):
             model_class=cls,
             date=date,
             xml_tag="artist",
-            id_attr="entity_id",
+            id_attr=cls.entity_id.name,
             name_attr="name",
             skip_without=["name"],
         )
@@ -273,7 +275,7 @@ class Entity(DiscogsModel):
             model_class=cls,
             date=date,
             xml_tag="label",
-            id_attr="entity_id",
+            id_attr=cls.entity_id.name,
             name_attr="name",
             skip_without=["name"],
         )
@@ -282,11 +284,11 @@ class Entity(DiscogsModel):
     def updater_pass_one_manager(
         cls,
         model_class,
-        date: str = "",
-        xml_tag: str = "",
-        id_attr: str = "id",
-        name_attr: str = "name",
-        skip_without=None,
+        date: str,
+        xml_tag: str,
+        id_attr: str,
+        name_attr: str,
+        skip_without: List[str],
     ):
         # Updater pass one.
         # initial_count = len(model_class)
@@ -305,7 +307,7 @@ class Entity(DiscogsModel):
                         if any(not data.get(_) for _ in skip_without):
                             continue
                     if element.get("id"):
-                        data["id"] = element.get("id")
+                        data[id_attr] = element.get("id")
                     data["random"] = random.random()
                     # log.debug(f"{data}")
                     updated_entity = model_class(model_class, **data)
@@ -632,6 +634,11 @@ class Entity(DiscogsModel):
     #         #     f"{cls.__name__.upper()} (Pass 3) {progress:.3%} [{annotation}]\t"
     #         #     + f"(id:{(document.entity_type, document.entity_id)}) {document.name}: {len(_relation_counts)}"
     #         # )
+
+    @classmethod
+    def get_random(cls):
+        n = random.random()
+        return cls.select().where(cls.random > n).order_by(cls.random).get()
 
     @classmethod
     def element_to_names(cls, names):

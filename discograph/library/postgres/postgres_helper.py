@@ -10,10 +10,10 @@ from pg_temp import TempDB
 from playhouse import pool
 
 from discograph.config import Configuration
-from discograph.library.credit_role import CreditRole
 from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.discogs_model import DiscogsModel
-from discograph.library.entity_type import EntityType
+from discograph.library.fields.entity_type import EntityType
+from discograph.library.fields.role_type import RoleType
 from discograph.library.postgres.postgres_entity import PostgresEntity
 from discograph.library.postgres.postgres_relation import PostgresRelation
 from discograph.library.postgres.postgres_relation_grapher import (
@@ -158,9 +158,13 @@ class PostgresHelper(DatabaseHelper):
         from discograph.library.postgres.postgres_entity import PostgresEntity
         from discograph.library.postgres.postgres_relation import PostgresRelation
         from discograph.library.postgres.postgres_release import PostgresRelease
+        from discograph.library.models.role import Role
 
         with DiscogsModel.connection_context():
             log.info("Load Postgres tables")
+
+            log.debug("Load role pass 1")
+            Role.loader_pass_one(date)
 
             log.debug("Load entity pass 1")
             PostgresEntity.loader_pass_one(date)
@@ -249,29 +253,37 @@ class PostgresHelper(DatabaseHelper):
 
             log.info("Update Postgres done.")
 
-    @staticmethod
-    def create_tables():
+    @classmethod
+    def create_tables(cls):
         from discograph.library.postgres.postgres_entity import PostgresEntity
         from discograph.library.postgres.postgres_relation import PostgresRelation
         from discograph.library.postgres.postgres_release import PostgresRelease
 
         log.info("Create Postgres tables")
+        super().create_tables()
+
         # Set parameter to True so that the create table query
         # will include an IF NOT EXISTS clause.
         PostgresEntity.create_table(True)
         PostgresRelease.create_table(True)
         PostgresRelation.create_table(True)
 
-    @staticmethod
-    def drop_tables():
+        super().create_join_tables()
+
+    @classmethod
+    def drop_tables(cls):
         from discograph.library.postgres.postgres_entity import PostgresEntity
         from discograph.library.postgres.postgres_relation import PostgresRelation
         from discograph.library.postgres.postgres_release import PostgresRelease
 
         log.info("Drop Postgres tables")
+        super().drop_join_tables()
+
         PostgresEntity.drop_table(True)
         PostgresRelease.drop_table(True)
         PostgresRelation.drop_table(True)
+
+        super().drop_tables()
 
     @staticmethod
     def get_entity(entity_type: EntityType, entity_id: int):
@@ -393,7 +405,7 @@ class PostgresHelper(DatabaseHelper):
         )
         data = []
         for relation in query:
-            category = CreditRole.all_credit_roles[relation.role]
+            category = RoleType.role_definitions[relation.role]
             if category is None:
                 continue
             datum = {
@@ -423,7 +435,7 @@ class PostgresHelper(DatabaseHelper):
             elif ARG_ROLES_REGEX.match(key):
                 value = args.getlist(key)
                 for role in value:
-                    if role in CreditRole.all_credit_roles:
+                    if role in RoleType.role_definitions:
                         roles.add(role)
         roles = list(sorted(roles))
         return roles, year

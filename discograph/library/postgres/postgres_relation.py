@@ -3,8 +3,8 @@ import logging
 import peewee
 from playhouse import postgres_ext
 
-from discograph.library.entity_type import EntityType
-from discograph.library.enum_field import EnumField
+from discograph.library.fields.entity_type import EntityType
+from discograph.library.fields.enum_field import EnumField
 from discograph.library.models.relation import Relation
 
 
@@ -18,8 +18,10 @@ class PostgresRelation(Relation):
     entity_one_id = peewee.IntegerField(index=False)
     entity_two_type = EnumField(index=False, choices=EntityType)
     entity_two_id = peewee.IntegerField(index=False)
+    # role = peewee.ForeignKeyField()
     role = peewee.CharField(index=False)
     releases = postgres_ext.BinaryJSONField(index=False, null=True)
+    random = peewee.FloatField(index=True, null=True)
 
     # PEEWEE META
 

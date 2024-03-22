@@ -6,10 +6,10 @@ from peewee import Database
 from playhouse.sqlite_ext import SqliteExtDatabase
 
 from discograph.config import Configuration
-from discograph.library.credit_role import CreditRole
+from discograph.library.fields.role_type import RoleType
 from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.discogs_model import DiscogsModel
-from discograph.library.entity_type import EntityType
+from discograph.library.fields.entity_type import EntityType
 from discograph.library.sqlite.sqlite_entity import SqliteEntity
 from discograph.library.sqlite.sqlite_relation import SqliteRelation
 from discograph.library.sqlite.sqlite_relation_grapher import SqliteRelationGrapher
@@ -56,8 +56,12 @@ class SqliteHelper(DatabaseHelper):
         from discograph.library.sqlite.sqlite_entity import SqliteEntity
         from discograph.library.sqlite.sqlite_relation import SqliteRelation
         from discograph.library.sqlite.sqlite_release import SqliteRelease
+        from discograph.library.models.role import Role
 
         log.info("Load Sqlite tables")
+
+        log.debug("Load role pass 1")
+        Role.loader_pass_one(date)
 
         log.debug("Load entity pass 1")
         SqliteEntity.loader_pass_one(date)
@@ -107,13 +111,14 @@ class SqliteHelper(DatabaseHelper):
 
         log.info("Update Sqlite done.")
 
-    @staticmethod
-    def create_tables():
+    @classmethod
+    def create_tables(cls):
         from discograph.library.sqlite.sqlite_entity import SqliteEntity
         from discograph.library.sqlite.sqlite_relation import SqliteRelation
         from discograph.library.sqlite.sqlite_release import SqliteRelease
 
         log.info("Create Sqlite tables")
+        super().create_tables()
 
         # Set parameter to True so that the create table query
         # will include an IF NOT EXISTS clause.
@@ -121,17 +126,21 @@ class SqliteHelper(DatabaseHelper):
         SqliteRelease.create_table(True)
         SqliteRelation.create_table(True)
 
-    @staticmethod
-    def drop_tables():
+        super().create_join_tables()
+
+    @classmethod
+    def drop_tables(cls):
         from discograph.library.sqlite.sqlite_entity import SqliteEntity
         from discograph.library.sqlite.sqlite_relation import SqliteRelation
         from discograph.library.sqlite.sqlite_release import SqliteRelease
 
         log.info("Drop Sqlite tables")
+        super().drop_join_tables()
 
         SqliteEntity.drop_table(True)
         SqliteRelease.drop_table(True)
         SqliteRelation.drop_table(True)
+        super().drop_tables()
 
     @staticmethod
     def get_entity(entity_type: EntityType, entity_id: int):
@@ -232,7 +241,7 @@ class SqliteHelper(DatabaseHelper):
         )
         data = []
         for relation in query:
-            category = CreditRole.all_credit_roles[relation.role]
+            category = RoleType.role_definitions[relation.role]
             if category is None:
                 continue
             datum = {
@@ -262,7 +271,7 @@ class SqliteHelper(DatabaseHelper):
             elif ARG_ROLES_REGEX.match(key):
                 value = args.getlist(key)
                 for role in value:
-                    if role in CreditRole.all_credit_roles:
+                    if role in RoleType.role_definitions:
                         roles.add(role)
         roles = list(sorted(roles))
         return roles, year

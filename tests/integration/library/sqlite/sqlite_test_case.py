@@ -1,6 +1,7 @@
 import logging
 
 from discograph.config import SqliteTestConfiguration
+from discograph.library.models.role import Role
 from discograph.library.sqlite.sqlite_entity import SqliteEntity
 from discograph.library.sqlite.sqlite_relation import SqliteRelation
 from discograph.library.sqlite.sqlite_relation_grapher import SqliteRelationGrapher
@@ -17,6 +18,7 @@ class SqliteTestCase(DatabaseTestCase):
         DatabaseTestCase.entity = SqliteEntity
         DatabaseTestCase.relation = SqliteRelation
         DatabaseTestCase.release = SqliteRelease
+        DatabaseTestCase.role = Role
         DatabaseTestCase.relation_grapher = SqliteRelationGrapher
         super(SqliteTestCase, cls).setUpClass()
 

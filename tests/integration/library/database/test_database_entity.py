@@ -1,5 +1,5 @@
 from discograph import utils
-from discograph.library.entity_type import EntityType
+from discograph.library.fields.entity_type import EntityType
 from discograph.library.loader_utils import LoaderUtils
 from tests.integration.library.database.database_test_case import DatabaseTestCase
 

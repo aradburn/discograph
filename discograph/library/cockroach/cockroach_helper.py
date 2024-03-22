@@ -11,10 +11,10 @@ from discograph.library.cockroach.cockroach_relation import CockroachRelation
 from discograph.library.cockroach.cockroach_relation_grapher import (
     CockroachRelationGrapher,
 )
-from discograph.library.credit_role import CreditRole
+from discograph.library.fields.role_type import RoleType
 from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.discogs_model import DiscogsModel
-from discograph.library.entity_type import EntityType
+from discograph.library.fields.entity_type import EntityType
 
 log = logging.getLogger(__name__)
 
@@ -59,8 +59,12 @@ class CockroachHelper(DatabaseHelper):
         from discograph.library.cockroach.cockroach_entity import CockroachEntity
         from discograph.library.cockroach.cockroach_relation import CockroachRelation
         from discograph.library.cockroach.cockroach_release import CockroachRelease
+        from discograph.library.models.role import Role
 
         log.info("Load CockroachDB tables")
+
+        log.debug("Load role pass 1")
+        Role.loader_pass_one(date)
 
         log.debug("Load entity pass 1")
         CockroachEntity.loader_pass_one(date)
@@ -110,8 +114,8 @@ class CockroachHelper(DatabaseHelper):
 
         log.info("Update CockroachDB done.")
 
-    @staticmethod
-    def create_tables():
+    @classmethod
+    def create_tables(cls):
         from discograph.library.cockroach.cockroach_entity import CockroachEntity
         from discograph.library.cockroach.cockroach_relation import CockroachRelation
         from discograph.library.cockroach.cockroach_release import CockroachRelease
@@ -132,12 +136,16 @@ class CockroachHelper(DatabaseHelper):
         entity_idx3 = CockroachEntity.index(CockroachEntity.search_content)
         CockroachEntity.add_index(entity_idx3)
 
+        super().create_tables()
+
         CockroachEntity.create_table(True)
         CockroachRelease.create_table(True)
         CockroachRelation.create_table(True)
 
-    @staticmethod
-    def drop_tables():
+        super().create_join_tables()
+
+    @classmethod
+    def drop_tables(cls):
         from discograph.library.cockroach.cockroach_entity import CockroachEntity
         from discograph.library.cockroach.cockroach_relation import CockroachRelation
         from discograph.library.cockroach.cockroach_release import CockroachRelease
@@ -145,9 +153,13 @@ class CockroachHelper(DatabaseHelper):
         log.info("Drop CockroachDB tables")
 
         try:
+            super().drop_join_tables()
+
             CockroachEntity.drop_table(True)
             CockroachRelease.drop_table(True)
             CockroachRelation.drop_table(True)
+
+            super().drop_tables()
         except peewee.OperationalError:
             log.error("Cannot connect to Cockroach Database")
 
@@ -244,7 +256,7 @@ class CockroachHelper(DatabaseHelper):
         )
         data = []
         for relation in query:
-            category = CreditRole.all_credit_roles[relation.role]
+            category = RoleType.role_definitions[relation.role]
             if category is None:
                 continue
             datum = {
@@ -274,7 +286,7 @@ class CockroachHelper(DatabaseHelper):
             elif ARG_ROLES_REGEX.match(key):
                 value = args.getlist(key)
                 for role in value:
-                    if role in CreditRole.all_credit_roles:
+                    if role in RoleType.role_definitions:
                         roles.add(role)
         roles = list(sorted(roles))
         return roles, year

@@ -3,7 +3,7 @@ import enum
 import re
 
 
-class CreditRole(object):
+class RoleType:
     # CLASS VARIABLES
 
     class Category(enum.Enum):
@@ -23,6 +23,7 @@ class CreditRole(object):
         WRITING_AND_ARRANGEMENT = 14
 
     class Subcategory(enum.Enum):
+        NONE = 0
         DRUMS_AND_PERCUSSION = 1
         KEYBOARD = 2
         OTHER_MUSICAL = 3
@@ -39,6 +40,7 @@ class CreditRole(object):
         Category.CONDUCTING_AND_LEADING: "Conducting & Leading",
         Category.DJ_MIX: "DJ Mix",
         Category.FEATURING_AND_PRESENTING: "Featuring & Presenting",
+        Category.INSTRUMENTS: "Instruments",
         Category.MANAGEMENT: "Management",
         Category.PRODUCTION: "Production",
         Category.RELATION: "Structural Relationships",
@@ -50,6 +52,7 @@ class CreditRole(object):
     }
 
     subcategory_names = {
+        Subcategory.NONE: "None",
         Subcategory.DRUMS_AND_PERCUSSION: "Drums & Percussion",
         Subcategory.KEYBOARD: "Keyboard",
         Subcategory.OTHER_MUSICAL: "Other Musical",
@@ -59,7 +62,15 @@ class CreditRole(object):
         Subcategory.WIND_INSTRUMENTS: "Wind Instruments",
     }
 
-    all_credit_roles = collections.OrderedDict(
+    aggregate_roles = (
+        "Compiled By",
+        "Curated By",
+        "DJ Mix",
+        "Hosted By",
+        "Presenter",
+    )
+
+    role_definitions = collections.OrderedDict(
         [
             ("Alias", (Category.RELATION,)),
             ("Member Of", (Category.RELATION,)),
@@ -95,7 +106,7 @@ class CreditRole(object):
             ("Transcription By", (Category.WRITING_AND_ARRANGEMENT,)),
             ("Translated By", (Category.WRITING_AND_ARRANGEMENT,)),
             ("Words By", (Category.WRITING_AND_ARRANGEMENT,)),
-            ("Written-By", (Category.WRITING_AND_ARRANGEMENT,)),
+            ("Written By", (Category.WRITING_AND_ARRANGEMENT,)),
             ("Featuring", (Category.FEATURING_AND_PRESENTING,)),
             ("Hosted By", (Category.FEATURING_AND_PRESENTING,)),
             ("Presenter", (Category.FEATURING_AND_PRESENTING,)),
@@ -873,101 +884,3 @@ class CreditRole(object):
             ("Remixed At", (Category.COMPANIES,)),
         ]
     )
-
-    # INITIALIZER
-
-    def __init__(self, name=None, detail=None):
-        self._name = name
-        self._detail = detail
-
-    def __eq__(self, other):
-        return self._name == other.name and self._detail == other.detail
-
-    # PUBLIC METHODS
-
-    @classmethod
-    def from_element(cls, element):
-        credit_roles = []
-        if element is None or not element.text:
-            return credit_roles
-        current_text = ""
-        bracket_depth = 0
-        for character in element.text:
-            if character == "[":
-                bracket_depth += 1
-            elif character == "]":
-                bracket_depth -= 1
-            elif not bracket_depth and character == ",":
-                current_text = current_text.strip()
-                if current_text:
-                    credit_roles.append(cls.from_text(current_text))
-                current_text = ""
-                continue
-            current_text += character
-        current_text = current_text.strip()
-        if current_text:
-            credit_roles.append(cls.from_text(current_text))
-        return credit_roles
-
-    @classmethod
-    def from_text(cls, text):
-        name = ""
-        current_buffer = ""
-        details = []
-        had_detail = False
-        bracket_depth = 0
-        for character in text:
-            if character == "[":
-                bracket_depth += 1
-                if bracket_depth == 1 and not had_detail:
-                    name = current_buffer
-                    current_buffer = ""
-                    had_detail = True
-                elif 1 < bracket_depth:
-                    current_buffer += character
-            elif character == "]":
-                bracket_depth -= 1
-                if not bracket_depth:
-                    details.append(current_buffer)
-                    current_buffer = ""
-                else:
-                    current_buffer += character
-            else:
-                current_buffer += character
-        if current_buffer and not had_detail:
-            name = current_buffer
-        name = name.strip()
-        detail = ", ".join(_.strip() for _ in details)
-        detail = detail or None
-        return cls(name=name, detail=detail)
-
-    @classmethod
-    def get_multiselect_mapping(cls):
-        # excluded_roles = [
-        #    'Alias',
-        #    'Member Of',
-        #    ]
-        mapping = collections.OrderedDict()
-        for role, categories in sorted(cls.all_credit_roles.items()):
-            if categories is None:
-                continue
-            # if categories is None or role in excluded_roles:
-            #    continue
-            if len(categories) == 1:
-                category_name = cls.category_names[categories[0]]
-            else:
-                category_name = cls.subcategory_names[categories[1]]
-            if category_name not in mapping:
-                mapping[category_name] = []
-            mapping[category_name].append(role)
-        return mapping
-
-    # PUBLIC PROPERTIES
-
-    @property
-    def detail(self):
-        return self._detail
-
-    @property
-    def name(self):
-        return self._name

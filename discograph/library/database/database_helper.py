@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from peewee import Database
 
 from discograph.config import Configuration
-from discograph.library.entity_type import EntityType
+from discograph.library.fields.entity_type import EntityType
 
 
 class DatabaseHelper(ABC):
@@ -44,15 +44,39 @@ class DatabaseHelper(ABC):
     def update_tables(date: str):
         pass
 
-    @staticmethod
+    @classmethod
     @abstractmethod
-    def create_tables():
-        pass
+    def create_tables(cls):
+        from discograph.library.models.genre import Genre
+        from discograph.library.models.role import Role
 
-    @staticmethod
+        # Set parameter to True so that the create table query
+        # will include an IF NOT EXISTS clause.
+        Role.create_table(True)
+        Genre.create_table(True)
+
+    @classmethod
+    def create_join_tables(cls):
+        from discograph.library.models.release_genre import ReleaseGenre
+
+        # Set parameter to True so that the create table query
+        # will include an IF NOT EXISTS clause.
+        ReleaseGenre.create_table(True)
+
+    @classmethod
     @abstractmethod
-    def drop_tables():
-        pass
+    def drop_tables(cls):
+        from discograph.library.models.genre import Genre
+        from discograph.library.models.role import Role
+
+        Role.drop_table(True)
+        Genre.drop_table(True)
+
+    @classmethod
+    def drop_join_tables(cls):
+        from discograph.library.models.release_genre import ReleaseGenre
+
+        ReleaseGenre.drop_table(True)
 
     @staticmethod
     @abstractmethod

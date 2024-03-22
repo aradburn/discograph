@@ -6,7 +6,7 @@ from flask import request
 
 import discograph.utils
 from discograph import exceptions, database, decorators
-from discograph.library.entity_type import EntityType
+from discograph.library.fields.entity_type import EntityType
 
 log = logging.getLogger(__name__)
 

@@ -1,6 +1,7 @@
 import logging
 
 from discograph.config import PostgresTestConfiguration
+from discograph.library.models.role import Role
 from discograph.library.postgres.postgres_entity import PostgresEntity
 from discograph.library.postgres.postgres_relation import PostgresRelation
 from discograph.library.postgres.postgres_relation_grapher import (
@@ -19,6 +20,7 @@ class PostgresTestCase(DatabaseTestCase):
         DatabaseTestCase.entity = PostgresEntity
         DatabaseTestCase.relation = PostgresRelation
         DatabaseTestCase.release = PostgresRelease
+        DatabaseTestCase.role = Role
         DatabaseTestCase.relation_grapher = PostgresRelationGrapher
         super().setUpClass()
 

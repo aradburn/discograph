@@ -11,6 +11,7 @@ from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.library.models.entity import Entity
 from discograph.library.models.relation import Relation
 from discograph.library.models.release import Release
+from discograph.library.models.role import Role
 from discograph.library.relation_grapher import RelationGrapher
 from discograph.logging_config import setup_logging, shutdown_logging
 
@@ -22,6 +23,7 @@ class DatabaseTestCase(unittest.TestCase):
     entity: Type[Entity] = None
     relation: Type[Relation] = None
     release: Type[Release] = None
+    role: Type[Role] = None
     relation_grapher: Type[RelationGrapher] = None
 
     # noinspection PyPep8Naming

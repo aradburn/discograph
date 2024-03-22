@@ -7,8 +7,8 @@ from playhouse import postgres_ext
 from playhouse.shortcuts import model_to_dict
 from unidecode import unidecode
 
-from discograph.library.entity_type import EntityType
-from discograph.library.enum_field import EnumField
+from discograph.library.fields.entity_type import EntityType
+from discograph.library.fields.enum_field import EnumField
 from discograph.library.models.entity import Entity
 from discograph.library.models.relation import Relation
 from discograph.library.postgres.postgres_relation import PostgresRelation
@@ -42,6 +42,7 @@ class PostgresEntity(Entity):
     metadata = postgres_ext.BinaryJSONField(null=True, index=False)
     entities = postgres_ext.BinaryJSONField(null=True, index=False)
     search_content = postgres_ext.TSVectorField(index=True)
+    random = peewee.FloatField(index=True, null=True)
 
     # PEEWEE META
 

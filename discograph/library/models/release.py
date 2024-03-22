@@ -2,7 +2,9 @@ import gzip
 import logging
 import multiprocessing
 import pprint
+import random
 import sys
+from typing import List
 
 import peewee
 from deepdiff import DeepDiff
@@ -11,8 +13,9 @@ from discograph import utils
 from discograph.database import get_concurrency_count
 from discograph.library.database.database_worker import DatabaseWorker
 from discograph.library.discogs_model import DiscogsModel
-from discograph.library.entity_type import EntityType
+from discograph.library.fields.entity_type import EntityType
 from discograph.library.loader_utils import LoaderUtils
+from discograph.library.models.genre import Genre
 from discograph.logging_config import LOGGING_TRACE
 
 log = logging.getLogger(__name__)
@@ -73,7 +76,9 @@ class Release(DiscogsModel):
                 for i, updated_release in enumerate(self.bulk_updates):
                     with DiscogsModel.atomic():
                         try:
-                            old_release = self.model_class.get_by_id(updated_release.id)
+                            old_release = self.model_class.get_by_id(
+                                updated_release.release_id
+                            )
 
                             differences = DeepDiff(
                                 old_release,
@@ -124,7 +129,7 @@ class Release(DiscogsModel):
                                 # Update release
                                 q = self.model_class.update(
                                     {
-                                        self.model_class.id: updated_release.id,
+                                        self.model_class.release_id: updated_release.release_id,
                                         self.model_class.artists: updated_release.artists,
                                         self.model_class.companies: updated_release.companies,
                                         self.model_class.country: updated_release.country,
@@ -140,7 +145,10 @@ class Release(DiscogsModel):
                                         self.model_class.title: updated_release.title,
                                         self.model_class.tracklist: updated_release.tracklist,
                                     }
-                                ).where(self.model_class.id == updated_release.id)
+                                ).where(
+                                    self.model_class.release_id
+                                    == updated_release.release_id
+                                )
                                 q.execute()  # Execute the query.
                                 updated_count += 1
                         except peewee.PeeweeException as e:
@@ -152,13 +160,13 @@ class Release(DiscogsModel):
             )
 
     # PEEWEE FIELDS
-    id: peewee.IntegerField
+    release_id = peewee.IntegerField(primary_key=True)
     artists: peewee.Field
     companies: peewee.Field
     country: peewee.TextField
     extra_artists: peewee.Field
     formats: peewee.Field
-    genres: peewee.Field
+    # genres: peewee.Field
     identifiers: peewee.Field
     labels: peewee.Field
     master_id: peewee.IntegerField
@@ -167,6 +175,7 @@ class Release(DiscogsModel):
     styles: peewee.Field
     title: peewee.TextField
     tracklist: peewee.Field
+    random: peewee.FloatField
 
     # PEEWEE META
 
@@ -174,6 +183,20 @@ class Release(DiscogsModel):
         table_name = "release"
 
     # PUBLIC METHODS
+    @classmethod
+    def read(cls, release_id):
+        from discograph.library.models.release_genre import ReleaseGenre
+
+        query = (
+            cls.select(cls, Genre.genre_name.alias("genres"))
+            .join(ReleaseGenre, on=(cls.release_id == ReleaseGenre.release_id))
+            .join(Genre, on=(ReleaseGenre.genre_id == Genre.genre_id))
+            .where(cls.release_id == release_id)
+        )
+        log.debug(f"query: {query}")
+        for result in query.dicts():
+            log.debug(f"result: {result}")
+        return query.dicts().get()
 
     @classmethod
     def loader_pass_one(cls, date: str):
@@ -182,6 +205,7 @@ class Release(DiscogsModel):
             model_class=cls,
             date=date,
             xml_tag="release",
+            id_attr=cls.release_id.name,
             name_attr="title",
             skip_without=["title"],
         )
@@ -193,6 +217,7 @@ class Release(DiscogsModel):
             model_class=cls,
             date=date,
             xml_tag="release",
+            id_attr=cls.release_id.name,
             name_attr="title",
             skip_without=["title"],
         )
@@ -201,11 +226,11 @@ class Release(DiscogsModel):
     def updater_pass_one_manager(
         cls,
         model_class,
-        date: str = "",
-        xml_tag: str = "",
-        id_attr: str = "id",
-        name_attr: str = "name",
-        skip_without=None,
+        date: str,
+        xml_tag: str,
+        id_attr: str,
+        name_attr: str,
+        skip_without: List[str],
     ):
         # Updater pass one.
         # initial_count = len(model_class)
@@ -224,7 +249,7 @@ class Release(DiscogsModel):
                         if any(not data.get(_) for _ in skip_without):
                             continue
                     if element.get("id"):
-                        data["id"] = int(element.get("id"))
+                        data[id_attr] = int(element.get("id"))
                     updated_release = model_class(model_class, **data)
                     bulk_updates.append(updated_release)
                     processed_count += 1
@@ -290,8 +315,8 @@ class Release(DiscogsModel):
     def get_indices(cls, multiplier=1):
         from discograph.database import get_concurrency_count
 
-        query = cls.select(cls.id)
-        query = query.order_by(cls.id)
+        query = cls.select(cls.release_id)
+        query = query.order_by(cls.release_id)
         query = query.tuples()
         all_ids = tuple(_[0] for _ in query)
         num_chunks = get_concurrency_count() * multiplier
@@ -299,10 +324,10 @@ class Release(DiscogsModel):
 
     @classmethod
     def get_release_iterator(cls):
-        id_query = cls.select(cls.id)
+        id_query = cls.select(cls.release_id)
         for release in id_query:
-            release_id = release.id
-            release = cls.select().where(cls.id == release_id).get()
+            release_id = release.release_id
+            release = cls.select().where(cls.release_id == release_id).get()
             yield release
 
     @classmethod
@@ -340,14 +365,19 @@ class Release(DiscogsModel):
             if LOGGING_TRACE:
                 log.debug(
                     f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
-                    + f"          (id:{release.id}): {release.title}"
+                    + f"          (id:{release.release_id}): {release.title}"
                 )
             release.save()
         elif LOGGING_TRACE:
             log.debug(
                 f"{cls.__name__.upper()} (Pass 2) {progress:.3%} [{annotation}]\t"
-                + f"[SKIPPED] (id:{release.id}): {release.title}"
+                + f"[SKIPPED] (id:{release.release_id}): {release.title}"
             )
+
+    @classmethod
+    def get_random(cls):
+        n = random.random()
+        return cls.select().where(cls.random > n).order_by(cls.random).get()
 
     @classmethod
     def element_to_artist_credits(cls, element):
@@ -478,6 +508,7 @@ class Release(DiscogsModel):
         current_text = current_text.strip()
         if current_text:
             credit_roles.append(from_text(current_text))
+        log.debug(f"credit_roles: {credit_roles}")
         return credit_roles or None
 
     @classmethod
@@ -495,9 +526,20 @@ class Release(DiscogsModel):
         return result
 
     @classmethod
+    def element_to_genres(cls, element):
+        result = []
+        if element is None or not len(element):
+            return result
+        for sub_element in element:
+            genre_str = sub_element.text
+            genre = Genre.create_or_get(genre_str)
+            result.append(genre)
+        return result
+
+    @classmethod
     def from_element(cls, element):
         data = cls.tags_to_fields(element)
-        data["id"] = int(element.get("id"))
+        data[cls.release_id.name] = int(element.get("id"))
         # noinspection PyArgumentList
         return cls(**data)
 
@@ -534,7 +576,8 @@ Release._tags_to_fields_mapping = {
     "country": ("country", LoaderUtils.element_to_string),
     "extraartists": ("extra_artists", Release.element_to_artist_credits),
     "formats": ("formats", Release.element_to_formats),
-    "genres": ("genres", LoaderUtils.element_to_strings),
+    "genres": ("genres", Release.element_to_genres),
+    # "genres": ("genres", LoaderUtils.element_to_strings),
     "identifiers": ("identifiers", Release.element_to_identifiers),
     "labels": ("labels", Release.element_to_label_credits),
     "master_id": ("master_id", LoaderUtils.element_to_integer),

@@ -6,7 +6,7 @@ from typing import Dict, List
 
 from toolz import partition_all
 
-from discograph.library.credit_role import CreditRole
+from discograph.library.fields.role_type import RoleType
 
 URLIFY_REGEX = re.compile(r"\s+", re.MULTILINE)
 ARG_ROLES_REGEX = re.compile(r"^roles(\[\d*\])?$")
@@ -29,7 +29,7 @@ def parse_request_args(args):
         elif ARG_ROLES_REGEX.match(key):
             value = args.getlist(key)
             for role in value:
-                if role in CreditRole.all_credit_roles:
+                if role in RoleType.role_definitions:
                     roles.add(role)
     roles = list(sorted(roles))
     return roles, year

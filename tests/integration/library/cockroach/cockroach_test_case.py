@@ -11,6 +11,7 @@ from discograph.library.cockroach.cockroach_relation_grapher import (
     CockroachRelationGrapher,
 )
 from discograph.library.cockroach.cockroach_release import CockroachRelease
+from discograph.library.models.role import Role
 from tests.integration.library.database.database_test_case import DatabaseTestCase
 
 log = logging.getLogger(__name__)
@@ -23,6 +24,7 @@ class CockroachTestCase(DatabaseTestCase):
         DatabaseTestCase.entity = CockroachEntity
         DatabaseTestCase.relation = CockroachRelation
         DatabaseTestCase.release = CockroachRelease
+        DatabaseTestCase.role = Role
         DatabaseTestCase.relation_grapher = CockroachRelationGrapher
         try:
             super().setUpClass()

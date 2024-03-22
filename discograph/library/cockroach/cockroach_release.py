@@ -7,7 +7,7 @@ from discograph.library.models.release import Release
 class CockroachRelease(Release):
     # PEEWEE FIELDS
 
-    id = peewee.IntegerField(primary_key=True)
+    # release_id = peewee.IntegerField(primary_key=True)
     artists = JSONField(null=True, index=False)
     companies = JSONField(null=True, index=False)
     country = peewee.TextField(null=True, index=False)
@@ -22,3 +22,4 @@ class CockroachRelease(Release):
     styles = ArrayField(peewee.TextField, null=True, index=False)
     title = peewee.TextField(index=False)
     tracklist = JSONField(null=True, index=False)
+    random = peewee.FloatField(index=True, null=True)

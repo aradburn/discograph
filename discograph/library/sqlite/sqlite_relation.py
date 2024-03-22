@@ -5,8 +5,8 @@ import peewee
 from playhouse import sqlite_ext
 
 from discograph.library.discogs_model import DiscogsModel
-from discograph.library.entity_type import EntityType
-from discograph.library.enum_field import EnumField
+from discograph.library.fields.entity_type import EntityType
+from discograph.library.fields.enum_field import EnumField
 from discograph.library.models.relation import Relation
 
 
@@ -22,6 +22,7 @@ class SqliteRelation(Relation):
     entity_two_id = peewee.IntegerField(index=True)
     role = peewee.CharField(index=False)
     releases = sqlite_ext.JSONField(null=True, index=False)
+    random = peewee.FloatField(index=True, null=True)
 
     # PEEWEE META
 

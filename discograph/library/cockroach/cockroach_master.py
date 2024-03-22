@@ -42,6 +42,7 @@ class CockroachMaster(DiscogsModel):
             model_class=cls,
             date=date,
             xml_tag="master",
+            id_attr="id",
             name_attr="title",
             skip_without=["title"],
         )
