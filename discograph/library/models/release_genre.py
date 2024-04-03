@@ -1,26 +1,24 @@
 import logging
 
-import peewee
-
-from discograph.library.discogs_model import DiscogsModel
-from discograph.library.models.genre import Genre
-from discograph.library.models.release import Release
-
 log = logging.getLogger(__name__)
 
 
-class ReleaseGenre(DiscogsModel):
-    # CLASS VARIABLES
+# class ReleaseGenre(Base, LoaderBase):
+#     __tablename__ = "release_genre"
+#
+#     # COLUMNS
+#     release_id: Mapped[Integer] = mapped_column(
+#         Integer, ForeignKey("release.release_id")
+#     )
+#     genre_id: Mapped[Integer] = mapped_column(Integer, ForeignKey("genre.genre_id"))
+#
+#     genres = relationship("Genre", backref="release_genres")
+#
+#     __table_args__ = (
+#         PrimaryKeyConstraint(release_id, genre_id),
+#         {},
+#     )
 
-    # PEEWEE FIELDS
+# CLASS VARIABLES
 
-    release_id = peewee.ForeignKeyField(Release, field=Release.release_id)
-    genre_id = peewee.ForeignKeyField(Genre, field=Genre.genre_id)
-
-    # PEEWEE META
-
-    class Meta:
-        table_name = "release_genre"
-        primary_key = peewee.CompositeKey("release_id", "genre_id")
-
-    # PUBLIC METHODS
+# PUBLIC METHODS

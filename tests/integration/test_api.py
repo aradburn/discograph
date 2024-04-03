@@ -7,6 +7,7 @@ from tests.integration.app_test_case import AppTestCase
 class TestAPI(AppTestCase):
     def setUp(self):
         self.app = app.test_client()
+        app.debug = True
 
     def test_network_01(self):
         response = self.app.get("/api/artist/network/2239")
@@ -22,8 +23,10 @@ class TestAPI(AppTestCase):
 
     def test_search_01(self):
         response = self.app.get("/api/search/Morris")
+        print(f"response: {response}")
         assert response.status == "200 OK"
         actual = json.loads(response.data.decode("utf-8"))
+        print(f"actual: {actual}")
         expected = {
             "results": [
                 {"key": "artist-496270", "name": "Morris Gould"},

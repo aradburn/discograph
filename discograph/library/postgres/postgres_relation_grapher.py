@@ -1,6 +1,8 @@
 import itertools
 import logging
 
+from sqlalchemy.orm import Session
+
 from discograph.library.postgres.postgres_entity import PostgresEntity
 from discograph.library.postgres.postgres_relation import PostgresRelation
 from discograph.library.relation_grapher import RelationGrapher
@@ -28,17 +30,20 @@ class PostgresRelationGrapher(RelationGrapher):
     def __init__(
         self, center_entity, degree=3, link_ratio=None, max_nodes=None, roles=None
     ):
-        assert isinstance(center_entity, PostgresEntity)
+        from discograph.library.models.entity import Entity
+
+        assert isinstance(center_entity, Entity)
+        # assert isinstance(center_entity, PostgresEntity)
         super(PostgresRelationGrapher, self).__init__(
             center_entity, degree, link_ratio, max_nodes, roles
         )
 
     # SPECIAL METHODS
 
-    def __call__(self):
-        return super(PostgresRelationGrapher, self).__call__()
+    # def __call__(self, session: Session):
+    #     return super(PostgresRelationGrapher, self).__call__(session)
 
-    def _cross_reference(self, distance):
+    def cross_reference(self, session: Session, distance):
         # TODO: We don't need to test all nodes, only those missing credit role
         #       relations. That may significantly reduce the computational
         #       load.
@@ -61,18 +66,19 @@ class PostgresRelationGrapher(RelationGrapher):
         for lh_entities, rh_entities in iterator:
             log.debug(f"        lh: {len(lh_entities)} rh: {len(rh_entities)}")
             found = PostgresRelation.search_bimulti(
+                session,
                 lh_entities,
                 rh_entities,
                 roles=self.relational_roles,
             )
             relations.update(found)
-        self._process_relations(relations)
+        self.process_relations(relations)
         log.debug(
             f"        Cross-referenced: {len(self.nodes)} nodes / {len(self.links)} links"
         )
 
     @staticmethod
-    def _search_entities(entity_keys_to_visit):
+    def search_entities(session: Session, entity_keys_to_visit):
         log.debug(f"        Retrieving entities keys: {entity_keys_to_visit}")
         entities = []
         entity_keys_to_visit = list(entity_keys_to_visit)
@@ -80,12 +86,14 @@ class PostgresRelationGrapher(RelationGrapher):
         step = 1000
         for start in range(0, stop, step):
             entity_key_slice = entity_keys_to_visit[start : start + step]
-            found = PostgresEntity.search_multi(entity_key_slice)
+            found = PostgresEntity.search_multi(session, entity_key_slice)
             entities.extend(found)
             log.debug(f"            {start + 1}-{min(start + step, stop)} of {stop}")
         return entities
 
-    def _search_via_relational_roles(self, distance, provisional_roles, relations):
+    def search_via_relational_roles(
+        self, session: Session, distance, provisional_roles, relations: dict
+    ):
         for entity_key in sorted(self.entity_keys_to_visit):
             node = self.nodes.get(entity_key)
             if not node:
@@ -107,6 +115,7 @@ class PostgresRelationGrapher(RelationGrapher):
                 )
                 relations.update(
                     PostgresRelation.search_multi(
+                        session,
                         key_slice,
                         roles=provisional_roles,
                     )

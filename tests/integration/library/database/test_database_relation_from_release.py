@@ -3,6 +3,7 @@ from xml.etree import ElementTree
 from discograph import utils
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.loader_utils import LoaderUtils
+from discograph.utils import normalize_dict_list
 from tests.integration.library.database.database_test_case import DatabaseTestCase
 
 
@@ -11,8 +12,10 @@ class TestDatabaseRelationFromRelease(DatabaseTestCase):
         iterator = LoaderUtils.get_iterator("release", "test")
         release_element = next(iterator)
         release_document = DatabaseTestCase.release.from_element(release_element)
-        release_document.resolve_references({}, spuriously=True)
-        actual = DatabaseTestCase.relation.from_release(release_document)
+        with self.test_session.begin() as session:
+            release_document.resolve_references(session, {}, spuriously=True)
+            actual = DatabaseTestCase.relation.from_release(release_document)
+
         expected = [
             {
                 "entity_one_id": 41,
@@ -164,8 +167,10 @@ class TestDatabaseRelationFromRelease(DatabaseTestCase):
         )
         release_element = ElementTree.fromstring(source)
         release_document = DatabaseTestCase.release.from_element(release_element)
-        release_document.resolve_references({}, spuriously=True)
-        actual = DatabaseTestCase.relation.from_release(release_document)
+        with self.test_session.begin() as session:
+            release_document.resolve_references(session, {}, spuriously=True)
+            actual = DatabaseTestCase.relation.from_release(release_document)
+
         expected = [
             {
                 "entity_one_id": 195,
@@ -336,8 +341,10 @@ class TestDatabaseRelationFromRelease(DatabaseTestCase):
         )
         release_element = ElementTree.fromstring(source)
         release_document = DatabaseTestCase.release.from_element(release_element)
-        release_document.resolve_references({}, spuriously=True)
-        actual = DatabaseTestCase.relation.from_release(release_document)
+        with self.test_session.begin() as session:
+            release_document.resolve_references(session, {}, spuriously=True)
+            actual = DatabaseTestCase.relation.from_release(release_document)
+
         expected = [
             {
                 "entity_one_id": 22,
@@ -683,8 +690,9 @@ class TestDatabaseRelationFromRelease(DatabaseTestCase):
         )
         release_element = ElementTree.fromstring(source)
         release_document = DatabaseTestCase.release.from_element(release_element)
-        release_document.resolve_references({}, spuriously=True)
-        actual = DatabaseTestCase.relation.from_release(release_document)
+        with self.test_session.begin() as session:
+            release_document.resolve_references(session, {}, spuriously=True)
+            actual = DatabaseTestCase.relation.from_release(release_document)
         expected = [
             {
                 "entity_one_id": 64,
@@ -1381,8 +1389,15 @@ class TestDatabaseRelationFromRelease(DatabaseTestCase):
         )
         release_element = ElementTree.fromstring(source)
         release_document = DatabaseTestCase.release.from_element(release_element)
-        release_document.resolve_references({}, spuriously=True)
-        actual = DatabaseTestCase.relation.from_release(release_document)
+        print(f"release_document: {release_document}")
+        with self.test_session.begin() as session:
+            release_document.resolve_references(session, {}, spuriously=True)
+            print(f"release_document: {release_document}")
+            actual = normalize_dict_list(
+                DatabaseTestCase.relation.from_release(release_document)
+            )
+            print(f"actual: {actual}")
+
         expected = [
             {
                 "entity_one_id": 21,
@@ -1408,7 +1423,7 @@ class TestDatabaseRelationFromRelease(DatabaseTestCase):
                 "entity_two_id": 21,
                 "entity_two_type": EntityType.ARTIST,
                 "release_id": 3286,
-                "role": "Written-By",
+                "role": "Written By",
                 "year": 1999,
             },
             {
@@ -1462,7 +1477,7 @@ class TestDatabaseRelationFromRelease(DatabaseTestCase):
                 "entity_two_id": 21,
                 "entity_two_type": EntityType.ARTIST,
                 "release_id": 3286,
-                "role": "Written-By",
+                "role": "Written By",
                 "year": 1999,
             },
             {
@@ -1489,7 +1504,7 @@ class TestDatabaseRelationFromRelease(DatabaseTestCase):
                 "entity_two_id": 21,
                 "entity_two_type": EntityType.ARTIST,
                 "release_id": 3286,
-                "role": "Written-By",
+                "role": "Written By",
                 "year": 1999,
             },
             {
@@ -1552,7 +1567,7 @@ class TestDatabaseRelationFromRelease(DatabaseTestCase):
                 "entity_two_id": 21,
                 "entity_two_type": EntityType.ARTIST,
                 "release_id": 3286,
-                "role": "Written-By",
+                "role": "Written By",
                 "year": 1999,
             },
             {
@@ -1624,7 +1639,7 @@ class TestDatabaseRelationFromRelease(DatabaseTestCase):
                 "entity_two_id": 21,
                 "entity_two_type": EntityType.ARTIST,
                 "release_id": 3286,
-                "role": "Written-By",
+                "role": "Written By",
                 "year": 1999,
             },
             {
@@ -1736,4 +1751,5 @@ class TestDatabaseRelationFromRelease(DatabaseTestCase):
                 "year": 1999,
             },
         ]
-        self.assertEqual(expected, actual)
+        self.maxDiff = None
+        self.assertEqual(normalize_dict_list(expected), actual)

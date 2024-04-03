@@ -19,7 +19,7 @@ def setup_cache(config):
     # Based on configuration, use a different cache setup.
     match config["CACHE_TYPE"]:
         case CacheType.MEMORY:
-            cache = SimpleCache()
+            cache = SimpleCache(threshold=1000000, default_timeout=0)
             log.info("Using memory cache")
 
         case CacheType.FILESYSTEM:

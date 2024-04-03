@@ -1,5 +1,7 @@
 import logging
 
+from sqlalchemy import select
+
 from discograph import utils
 from discograph.library.fields.entity_type import EntityType
 from tests.integration.library.database.database_test_case import DatabaseTestCase
@@ -19,20 +21,24 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
     """
 
     def test___call___01(self):
-        log.debug(DatabaseTestCase.entity.database())
-        artist = DatabaseTestCase.entity.get(
-            entity_type=EntityType.ARTIST, name="Seefeel"
-        )
-        log.debug(f"artist: {artist}")
-        roles = ["Alias", "Member Of"]
-        grapher = DatabaseTestCase.relation_grapher(
-            artist,
-            degree=1,
-            roles=roles,
-        )
-        network = grapher.__call__()
-        actual = utils.normalize_dict(network)
-        log.debug(f"network: {actual}")
+        with self.test_session.begin() as session:
+            artist = session.scalars(
+                select(DatabaseTestCase.entity).where(
+                    (DatabaseTestCase.entity.entity_type == EntityType.ARTIST)
+                    & (DatabaseTestCase.entity.entity_name == "Seefeel")
+                )
+            ).one()
+            log.debug(f"artist: {artist}")
+            roles = ["Alias", "Member Of"]
+            grapher = DatabaseTestCase.relation_grapher(
+                center_entity=artist,
+                degree=1,
+                roles=roles,
+            )
+            network = grapher.get_relation_graph(session)
+            actual = utils.normalize_dict(network)
+            log.debug(f"network: {actual}")
+
         expected = utils.normalize(
             """
             {
@@ -192,20 +198,24 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
         self.assertEqual(expected, actual)
 
     def test___call___02(self):
-        artist = DatabaseTestCase.entity.get(
-            entity_type=EntityType.ARTIST, name="Justin Fletcher"
-        )
-        log.debug(f"artist: {artist}")
-        roles = ["Alias", "Member Of"]
-        grapher = DatabaseTestCase.relation_grapher(
-            artist,
-            degree=2,
-            max_nodes=5,
-            roles=roles,
-        )
-        network = grapher.__call__()
-        actual = utils.normalize_dict(network)
-        log.debug(f"network: {actual}")
+        with self.test_session.begin() as session:
+            artist = session.scalars(
+                select(DatabaseTestCase.entity).where(
+                    (DatabaseTestCase.entity.entity_type == EntityType.ARTIST)
+                    & (DatabaseTestCase.entity.entity_name == "Justin Fletcher")
+                )
+            ).one()
+            log.debug(f"artist: {artist}")
+            roles = ["Alias", "Member Of"]
+            grapher = DatabaseTestCase.relation_grapher(
+                center_entity=artist,
+                degree=2,
+                max_nodes=5,
+                roles=roles,
+            )
+            network = grapher.get_relation_graph(session)
+            actual = utils.normalize_dict(network)
+            log.debug(f"network: {actual}")
 
         expected = utils.normalize(
             """
@@ -366,18 +376,23 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
         self.assertEqual(expected, actual)
 
     def test___call___03(self):
-        artist = DatabaseTestCase.entity.get(
-            entity_type=EntityType.ARTIST, name="Justin Fletcher"
-        )
-        roles = ["Alias", "Member Of"]
-        grapher = DatabaseTestCase.relation_grapher(
-            artist,
-            degree=2,
-            link_ratio=2,
-            roles=roles,
-        )
-        network = grapher.__call__()
-        actual = utils.normalize_dict(network)
+        with self.test_session.begin() as session:
+            artist = session.scalars(
+                select(DatabaseTestCase.entity).where(
+                    (DatabaseTestCase.entity.entity_type == EntityType.ARTIST)
+                    & (DatabaseTestCase.entity.entity_name == "Justin Fletcher")
+                )
+            ).one()
+            roles = ["Alias", "Member Of"]
+            grapher = DatabaseTestCase.relation_grapher(
+                center_entity=artist,
+                degree=2,
+                link_ratio=2,
+                roles=roles,
+            )
+            network = grapher.get_relation_graph(session)
+            actual = utils.normalize_dict(network)
+
         expected = utils.normalize(
             """
             {
@@ -541,18 +556,22 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
         Missing count takes into account structural roles: members,
         aliases, groups, sublabels, parent labels, etc.
         """
-        artist = DatabaseTestCase.entity.get(
-            entity_type=EntityType.ARTIST,
-            entity_id=489350,
-        )
-        roles = ["Alias", "Member Of"]
-        grapher = DatabaseTestCase.relation_grapher(
-            artist,
-            degree=12,
-            roles=roles,
-        )
-        network = grapher.__call__()
-        actual = utils.normalize_dict(network)
+        with self.test_session.begin() as session:
+            artist = session.scalars(
+                select(DatabaseTestCase.entity).where(
+                    (DatabaseTestCase.entity.entity_type == EntityType.ARTIST)
+                    & (DatabaseTestCase.entity.entity_id == 489350)
+                )
+            ).one()
+            roles = ["Alias", "Member Of"]
+            grapher = DatabaseTestCase.relation_grapher(
+                center_entity=artist,
+                degree=12,
+                roles=roles,
+            )
+            network = grapher.get_relation_graph(session)
+            actual = utils.normalize_dict(network)
+
         expected = utils.normalize(
             """
             {
@@ -826,15 +845,18 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
         self.assertEqual(expected, actual)
 
     def test___call___05(self):
-        artist = DatabaseTestCase.entity.get(
-            entity_type=EntityType.LABEL,
-            name="Lab Studio, Berlin",
-        )
-        roles = ["Recorded At"]
-        grapher = DatabaseTestCase.relation_grapher(
-            artist,
-            degree=2,
-            roles=roles,
-        )
-        network = grapher.__call__()  # Should not error.
-        self.assertIsNotNone(network)
+        with self.test_session.begin() as session:
+            artist = session.scalars(
+                select(DatabaseTestCase.entity).where(
+                    (DatabaseTestCase.entity.entity_type == EntityType.LABEL)
+                    & (DatabaseTestCase.entity.entity_name == "Lab Studio, Berlin")
+                )
+            ).one()
+            roles = ["Recorded At"]
+            grapher = DatabaseTestCase.relation_grapher(
+                center_entity=artist,
+                degree=2,
+                roles=roles,
+            )
+            network = grapher.get_relation_graph(session)  # Should not error.
+            self.assertIsNotNone(network)

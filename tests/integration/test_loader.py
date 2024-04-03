@@ -6,14 +6,16 @@ from tests.integration.loader_test_case import LoaderTestCase
 
 class TestLoader(LoaderTestCase):
     def test_artist_record_updated(self):
-        pk = (EntityType.ARTIST, 20702)
-        entity = DatabaseTestCase.entity.get_by_id(pk)
-        actual = utils.normalize(format(entity))
+        pk = (20702, EntityType.ARTIST)
+        with self.test_session.begin() as session:
+            entity = session.get(DatabaseTestCase.entity, pk)
+            actual = utils.normalize(format(entity))
+
         expected_entity = {
             "entities": {"groups": {}},
             "entity_id": 20702,
             "entity_type": "EntityType.ARTIST",
-            "metadata": {
+            "entity_metadata": {
                 "name_variations": [
                     "L. Johnson",
                     "L. K. Johnson",
@@ -39,15 +41,19 @@ class TestLoader(LoaderTestCase):
                     "http://en.wikipedia.org/wiki/Linton_Kwesi_Johnson",
                 ],
             },
-            "name": "Linton Kwesi Johnson",
+            "entity_name": "Linton Kwesi Johnson",
+            "relation_counts": {"Compiled By": 1, "Compiled On": 1, "DJ Mix": 1},
+            "search_content": "linton kwesi johnson",
         }
         expected = utils.normalize_dict(expected_entity)
         self.assertEqual(expected, actual)
 
     def test_artist_record_not_updated(self):
-        pk = (EntityType.ARTIST, 2239)
-        entity = DatabaseTestCase.entity.get_by_id(pk)
-        actual = utils.normalize(format(entity))
+        pk = (2239, EntityType.ARTIST)
+        with self.test_session.begin() as session:
+            entity = session.get(DatabaseTestCase.entity, pk)
+            actual = utils.normalize(format(entity))
+
         expected_entity = {
             "entities": {
                 "members": {
@@ -60,7 +66,7 @@ class TestLoader(LoaderTestCase):
             },
             "entity_id": 2239,
             "entity_type": "EntityType.ARTIST",
-            "metadata": {
+            "entity_metadata": {
                 "profile": "British electronic/rock group formed in the early 1990s. "
                 + "They are currently signed to Warp Records.",
                 "real_name": "Sarah Peacock, Mark Clifford, Darren Seymour & Justin Fletcher",
@@ -73,20 +79,38 @@ class TestLoader(LoaderTestCase):
                     "http://www.seefeel.org",
                 ],
             },
-            "name": "Seefeel",
+            "entity_name": "Seefeel",
+            "relation_counts": {
+                "Compiled On": 15,
+                "Copyright (c)": 2,
+                "DJ Mix": 7,
+                "Design": 1,
+                "Designed At": 1,
+                "Film Director": 1,
+                "Performer": 1,
+                "Phonographic Copyright (p)": 2,
+                "Producer": 2,
+                "Published By": 1,
+                "Released On": 1,
+                "Remix": 6,
+                "Written By": 5,
+            },
+            "search_content": "seefeel",
         }
         expected = utils.normalize_dict(expected_entity)
         self.assertEqual(expected, actual)
 
     def test_label_record_updated(self):
-        pk = (EntityType.LABEL, 1)
-        entity = DatabaseTestCase.entity.get_by_id(pk)
-        actual = utils.normalize(format(entity))
+        pk = (1, EntityType.LABEL)
+        with self.test_session.begin() as session:
+            entity = session.get(DatabaseTestCase.entity, pk)
+            actual = utils.normalize(format(entity))
+
         expected_entity = {
             "entities": {},
             "entity_id": 1,
             "entity_type": "EntityType.LABEL",
-            "metadata": {
+            "entity_metadata": {
                 "profile": "(Test Update) Classic Techno label from Detroit, USA.\r\n"
                 + "[b]Label owner:[/b] [a=Carl Craig].\r\n",
                 "urls": [
@@ -97,36 +121,44 @@ class TestLoader(LoaderTestCase):
                     "http://soundcloud.com/planetedetroit",
                 ],
             },
-            "name": "Planet E (Test Update)",
+            "entity_name": "Planet E (Test Update)",
+            "relation_counts": {"Released On": 1},
+            "search_content": "planet e test update",
         }
         expected = utils.normalize_dict(expected_entity)
         self.assertEqual(expected, actual)
 
     def test_label_record_not_updated(self):
-        pk = (EntityType.LABEL, 264170)
-        entity = DatabaseTestCase.entity.get_by_id(pk)
-        actual = utils.normalize(format(entity))
+        pk = (264170, EntityType.LABEL)
+        with self.test_session.begin() as session:
+            entity = session.get(DatabaseTestCase.entity, pk)
+            actual = utils.normalize(format(entity))
+            print(f"actual: {actual}")
+
         expected_entity = {
             "entities": {},
             "entity_id": 264170,
             "entity_type": "EntityType.LABEL",
-            "metadata": {
+            "entity_metadata": {
                 "profile": "American mastering studio located in New Windsor, NY. \r\n\r\n"
                 + "Formally located at 2 Engle Street, Tenafly, New Jersey, "
                 + "operations were moved to New Windsor in 2005. "
                 + "Operated by Chief Engineer [a=Alan Douches].\n",
                 "urls": ["http://www.westwestsidemusic.com/"],
             },
-            "name": "West West Side Music",
+            "entity_name": "West West Side Music",
+            "relation_counts": {"Mastered At": 1},
+            "search_content": "west west side music",
         }
         expected = utils.normalize_dict(expected_entity)
         self.assertEqual(expected, actual)
 
     def test_release_updated(self):
         release_id = 157
-        release = DatabaseTestCase.release.get_by_id(release_id)
-        release.random = 0.0
-        actual = utils.normalize(format(release))
+        with self.test_session.begin() as session:
+            release = session.get(DatabaseTestCase.release, release_id)
+            actual = utils.normalize(format(release))
+
         expected_release = {
             "artists": [{"id": 41, "name": "Autechre"}, {"id": 49, "name": "Gescom"}],
             "companies": [],
@@ -158,7 +190,6 @@ class TestLoader(LoaderTestCase):
                 }
             ],
             "genres": ["Electronic", "(Test Update)"],
-            "id": 157,
             "identifiers": [
                 {"description": None, "type": "Barcode", "value": "5 021603 054066"},
                 {
@@ -177,8 +208,8 @@ class TestLoader(LoaderTestCase):
             ],
             "master_id": 1315,
             "notes": None,
-            "random": 0.0,
             "release_date": "1994-09-03 00:00:00",
+            "release_id": 157,
             "styles": ["Abstract", "IDM", "Experimental", "(Test Update)"],
             "title": "Anti EP",
             "tracklist": [
@@ -193,9 +224,10 @@ class TestLoader(LoaderTestCase):
 
     def test_release_not_updated(self):
         release_id = 635
-        release = DatabaseTestCase.release.get_by_id(release_id)
-        release.random = 0.0
-        actual = utils.normalize(format(release))
+        with self.test_session.begin() as session:
+            release = session.get(DatabaseTestCase.release, release_id)
+            actual = utils.normalize(format(release))
+
         expected_release = {
             "artists": [{"id": 939, "name": "Higher Intelligence Agency, The"}],
             "companies": [],
@@ -209,7 +241,6 @@ class TestLoader(LoaderTestCase):
             ],
             "formats": [{"descriptions": ["EP"], "name": "CD", "quantity": "1"}],
             "genres": ["Electronic"],
-            "id": 635,
             "identifiers": [
                 {"description": None, "type": "Barcode", "value": "5 018524 066308"},
                 {
@@ -221,8 +252,8 @@ class TestLoader(LoaderTestCase):
             "labels": [{"catalog_number": "HIACD2", "id": 233, "name": "Beyond"}],
             "master_id": 21103,
             "notes": None,
-            "random": 0.0,
             "release_date": "1994-01-01 00:00:00",
+            "release_id": 635,
             "styles": ["Techno", "Ambient"],
             "title": "Colour Reform",
             "tracklist": [
@@ -278,16 +309,16 @@ class TestLoader(LoaderTestCase):
         self.assertEqual(expected, actual)
 
     def test_relation_updated_01(self):
-        pk = (EntityType.ARTIST, 42, EntityType.ARTIST, 49, "Producer")
-        relation = DatabaseTestCase.relation.get_by_id(pk)
-        relation.random = 0.0
-        actual = utils.normalize(format(relation))
+        pk = (42, EntityType.ARTIST, 49, EntityType.ARTIST, "Producer")
+        with self.test_session.begin() as session:
+            relation = session.get(DatabaseTestCase.relation, pk)
+            actual = utils.normalize(format(relation))
+
         expected_relation = {
             "entity_one_id": 42,
             "entity_one_type": "EntityType.ARTIST",
             "entity_two_id": 49,
             "entity_two_type": "EntityType.ARTIST",
-            "random": 0.0,
             "releases": {"157": 1994},
             "role": "Producer",
         }
@@ -296,16 +327,16 @@ class TestLoader(LoaderTestCase):
         self.assertEqual(expected, actual)
 
     def test_relation_updated_02(self):
-        pk = (EntityType.ARTIST, 49, EntityType.LABEL, 23528, "Released On")
-        relation = DatabaseTestCase.relation.get_by_id(pk)
-        relation.random = 0.0
-        actual = utils.normalize(format(relation))
+        pk = (49, EntityType.ARTIST, 23528, EntityType.LABEL, "Released On")
+        with self.test_session.begin() as session:
+            relation = session.get(DatabaseTestCase.relation, pk)
+            actual = utils.normalize(format(relation))
+
         expected_relation = {
             "entity_one_id": 49,
             "entity_one_type": "EntityType.ARTIST",
             "entity_two_id": 23528,
             "entity_two_type": "EntityType.LABEL",
-            "random": 0.0,
             "releases": {"157": 1994, "162": 1996, "1829266": 2004},
             "role": "Released On",
         }
@@ -314,16 +345,16 @@ class TestLoader(LoaderTestCase):
         self.assertEqual(expected, actual)
 
     def test_relation_updated_03(self):
-        pk = (EntityType.ARTIST, 300407, EntityType.ARTIST, 49, "Producer")
-        relation = DatabaseTestCase.relation.get_by_id(pk)
-        relation.random = 0.0
-        actual = utils.normalize(format(relation))
+        pk = (300407, EntityType.ARTIST, 49, EntityType.ARTIST, "Producer")
+        with self.test_session.begin() as session:
+            relation = session.get(DatabaseTestCase.relation, pk)
+            actual = utils.normalize(format(relation))
+
         expected_relation = {
             "entity_one_id": 300407,
             "entity_one_type": "EntityType.ARTIST",
             "entity_two_id": 49,
             "entity_two_type": "EntityType.ARTIST",
-            "random": 0.0,
             "releases": {"157": 1994},
             "role": "Producer",
         }
@@ -332,16 +363,16 @@ class TestLoader(LoaderTestCase):
         self.assertEqual(expected, actual)
 
     def test_relation_updated_04(self):
-        pk = (EntityType.ARTIST, 445854, EntityType.ARTIST, 49, "Design")
-        relation = DatabaseTestCase.relation.get_by_id(pk)
-        relation.random = 0.0
-        actual = utils.normalize(format(relation))
+        pk = (445854, EntityType.ARTIST, 49, EntityType.ARTIST, "Design")
+        with self.test_session.begin() as session:
+            relation = session.get(DatabaseTestCase.relation, pk)
+            actual = utils.normalize(format(relation))
+
         expected_relation = {
             "entity_one_id": 445854,
             "entity_one_type": "EntityType.ARTIST",
             "entity_two_id": 49,
             "entity_two_type": "EntityType.ARTIST",
-            "random": 0.0,
             "releases": {"157": 1994},
             "role": "Design",
         }
@@ -350,16 +381,16 @@ class TestLoader(LoaderTestCase):
         self.assertEqual(expected, actual)
 
     def test_relation_not_updated_01(self):
-        pk = (EntityType.ARTIST, 42, EntityType.ARTIST, 41, "Producer")
-        relation = DatabaseTestCase.relation.get_by_id(pk)
-        relation.random = 0.0
-        actual = utils.normalize(format(relation))
+        pk = (42, EntityType.ARTIST, 41, EntityType.ARTIST, "Producer")
+        with self.test_session.begin() as session:
+            relation = session.get(DatabaseTestCase.relation, pk)
+            actual = utils.normalize(format(relation))
+
         expected_relation = {
             "entity_one_id": 42,
             "entity_one_type": "EntityType.ARTIST",
             "entity_two_id": 41,
             "entity_two_type": "EntityType.ARTIST",
-            "random": 0.0,
             "releases": {
                 "1000619": 2003,
                 "1054046": None,
@@ -441,16 +472,16 @@ class TestLoader(LoaderTestCase):
         self.assertEqual(expected, actual)
 
     def test_relation_not_updated_02(self):
-        pk = (EntityType.ARTIST, 21209, EntityType.ARTIST, 3771, "Compiled By")
-        relation = DatabaseTestCase.relation.get_by_id(pk)
-        relation.random = 0.0
-        actual = utils.normalize(format(relation))
+        pk = (21209, EntityType.ARTIST, 3771, EntityType.ARTIST, "Compiled By")
+        with self.test_session.begin() as session:
+            relation = session.get(DatabaseTestCase.relation, pk)
+            actual = utils.normalize(format(relation))
+
         expected_relation = {
             "entity_one_id": 21209,
             "entity_one_type": "EntityType.ARTIST",
             "entity_two_id": 3771,
             "entity_two_type": "EntityType.ARTIST",
-            "random": 0.0,
             "releases": {
                 "1112162": 1996,
                 "1112454": 1996,
@@ -464,16 +495,16 @@ class TestLoader(LoaderTestCase):
         self.assertEqual(expected, actual)
 
     def test_relation_not_updated_03(self):
-        pk = (EntityType.ARTIST, 335173, EntityType.ARTIST, 41, "Mastered By")
-        relation = DatabaseTestCase.relation.get_by_id(pk)
-        relation.random = 0.0
-        actual = utils.normalize(format(relation))
+        pk = (335173, EntityType.ARTIST, 41, EntityType.ARTIST, "Mastered By")
+        with self.test_session.begin() as session:
+            relation = session.get(DatabaseTestCase.relation, pk)
+            actual = utils.normalize(format(relation))
+
         expected_relation = {
             "entity_one_id": 335173,
             "entity_one_type": "EntityType.ARTIST",
             "entity_two_id": 41,
             "entity_two_type": "EntityType.ARTIST",
-            "random": 0.0,
             "releases": {
                 "1255104": 2008,
                 "1257383": 2008,

@@ -88,7 +88,7 @@ class PostgresDevelopmentConfiguration(Configuration):
     POSTGRES_DATABASE_PASSWORD = "discograph"
     POSTGRES_DATABASE_HOST = "localhost"
     POSTGRES_DATABASE_PORT = 5432
-    POSTGRES_DATABASE_NAME = "discograph"
+    POSTGRES_DATABASE_NAME = "discograph_dev"
     APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.PROCESS
     CACHE_TYPE = CacheType.REDIS

@@ -1,26 +1,73 @@
 import itertools
 import logging
 import multiprocessing
-import pprint
 import random
 import re
 import sys
 import time
-from copy import deepcopy
+from typing import cast
 
-import peewee
-from deepdiff import DeepDiff
+from sqlalchemy import (
+    PrimaryKeyConstraint,
+    JSON,
+    String,
+    Float,
+    select,
+    Index,
+)
+from sqlalchemy.exc import DatabaseError, NoResultFound, IntegrityError
+from sqlalchemy.orm import Mapped, mapped_column, scoped_session, Session
+from sqlalchemy.orm.attributes import flag_modified
 
-from discograph.library.fields.role_type import RoleType
-from discograph.library.database.database_worker import DatabaseWorker
-from discograph.library.discogs_model import DiscogsModel
+from discograph.library.database.database_helper import Base, DatabaseHelper
 from discograph.library.fields.entity_type import EntityType
-from discograph.library.fields.enum_field import EnumField
+from discograph.library.fields.int_enum import IntEnum
+from discograph.library.fields.role_type import RoleType
+from discograph.library.loader_base import LoaderBase
+from discograph.library.models.role import Role
+from discograph.logging_config import LOGGING_TRACE
 
 log = logging.getLogger(__name__)
 
 
-class Relation(DiscogsModel):
+class Relation(Base, LoaderBase):
+    __tablename__ = "relation"
+
+    # COLUMNS
+
+    entity_one_id: Mapped[int] = mapped_column(primary_key=True)
+    entity_one_type: Mapped[EntityType] = mapped_column(
+        IntEnum(EntityType),
+        primary_key=True,
+    )
+    entity_two_id: Mapped[int] = mapped_column(primary_key=True)
+    entity_two_type: Mapped[EntityType] = mapped_column(
+        IntEnum(EntityType),
+        primary_key=True,
+    )
+    role: Mapped[str] = mapped_column(String, primary_key=True)
+    releases: Mapped[dict | list] = mapped_column(type_=JSON, nullable=False)
+    random: Mapped[float] = mapped_column(Float)
+
+    __table_args__ = (
+        PrimaryKeyConstraint(
+            entity_one_id, entity_one_type, entity_two_id, entity_two_type, role
+        ),
+        Index(
+            "idx_entity_one_id",
+            entity_one_id,
+            postgresql_using="hash",
+            unique=False,
+        ),
+        Index(
+            "idx_entity_two_id",
+            entity_two_id,
+            postgresql_using="hash",
+            unique=False,
+        ),
+        {},
+    )
+
     # CLASS VARIABLES
 
     class LoaderPassOneWorker(multiprocessing.Process):
@@ -44,56 +91,49 @@ class Relation(DiscogsModel):
             count = 0
             total_count = len(self.indices)
 
-            from discograph.library.database.database_proxy import database_proxy
+            DatabaseHelper.initialize()
+            worker_session = scoped_session(DatabaseHelper.session_factory)
 
-            # from discograph.database import bootstrap_database
-            # from discograph.library.discogs_model import database_proxy
-            #
-            # if bootstrap_database:
-            #     database_proxy.initialize(bootstrap_database)
-            database_proxy.initialize(DatabaseWorker.worker_database)
-
-            with DiscogsModel.connection_context():
+            with worker_session() as session:
                 for release_id in self.indices:
-                    try:
-                        self.model_class.loader_pass_one_inner(
-                            release_class,
-                            release_id,
-                            self.corpus,
-                            annotation=proc_name,
-                        )
-                        count += 1
-                        if count % 1000 == 0:
-                            log.info(
-                                f"[{proc_name}] processed {count} of {total_count}"
+                    max_attempts = 100
+                    error = True
+                    while error and max_attempts != 0:
+                        error = False
+                        session.begin()
+                        try:
+                            self.model_class.loader_pass_one_inner(
+                                session,
+                                release_class,
+                                release_id,
+                                self.corpus,
+                                annotation=proc_name,
                             )
-                    except peewee.PeeweeException:
-                        log.exception("Error in LoaderPassOneWorker")
-            log.info(f"[{proc_name}] processed {count} of {total_count}")
+                            count += 1
+                            if count % 1000 == 0:
+                                log.info(
+                                    f"[{proc_name}] processed {count} of {total_count}"
+                                )
+                        except DatabaseError as e:
+                            log.debug(
+                                f"Database record locked in updating relation {max_attempts} goes left",
+                                e,
+                            )
+                            session.rollback()
+                            max_attempts -= 1
+                            error = True
+                            time.sleep(100 - max_attempts)
+                        else:
+                            session.commit()
+                    if error:
+                        log.debug(
+                            f"Error in updating relations for release: {release_id}"
+                        )
+                        # except DatabaseError:
+                        #     log.exception("Error in LoaderPassOneWorker")
+                log.info(f"[{proc_name}] processed {count} of {total_count}")
 
     word_pattern = re.compile(r"\s+")
-
-    # PEEWEE FIELDS
-    entity_one_type: EnumField
-    entity_one_id: peewee.IntegerField
-    entity_two_type: EnumField
-    entity_two_id: peewee.IntegerField
-    # role: peewee.ForeignKeyField
-    role: peewee.CharField
-    releases: peewee.Field
-    random: peewee.FloatField
-
-    # PEEWEE META
-
-    class Meta:
-        table_name = "relation"
-        primary_key = peewee.CompositeKey(
-            "entity_one_type",
-            "entity_one_id",
-            "entity_two_type",
-            "entity_two_id",
-            "role",
-        )
 
     # PRIVATE METHODS
 
@@ -124,266 +164,182 @@ class Relation(DiscogsModel):
             data["pages"] = tuple(sorted(self.pages))
         return data
 
-    # @classmethod
-    # def bootstrap(cls):
-    #     cls.drop_table(True)
-    #     cls.create_table()
-    #     cls.bootstrap_pass_one()
-
     @classmethod
     def loader_pass_one(cls, date: str):
         log.debug("relation loader pass one")
-        relation_class_name = cls.__qualname__
-        relation_module_name = cls.__module__
-        release_class_name = relation_class_name.replace("Relation", "Release")
-        release_module_name = relation_module_name.replace("relation", "release")
-        release_class = getattr(sys.modules[release_module_name], release_class_name)
-
-        indices = release_class.get_indices()
-        workers = [cls.LoaderPassOneWorker(cls, _) for _ in indices]
-        log.debug(f"relation loader pass one - start {len(workers)} workers")
-        for worker in workers:
-            worker.start()
-        for worker in workers:
-            worker.join()
-            if worker.exitcode > 0:
-                log.error(
-                    f"relation loader worker {worker.name} exitcode: {worker.exitcode}"
+        with DatabaseHelper.session_factory() as session:
+            with session.begin():
+                relation_class_name = cls.__qualname__
+                relation_module_name = cls.__module__
+                release_class_name = relation_class_name.replace("Relation", "Release")
+                release_module_name = relation_module_name.replace(
+                    "relation", "release"
                 )
-                # raise Exception("Error in worker process")
-        for worker in workers:
-            worker.terminate()
+                release_class = getattr(
+                    sys.modules[release_module_name], release_class_name
+                )
+
+                indices = release_class.get_chunked_release_ids(session)
+                workers = [cls.LoaderPassOneWorker(cls, _) for _ in indices]
+                log.debug(f"relation loader pass one - start {len(workers)} workers")
+                for worker in workers:
+                    worker.start()
+                for worker in workers:
+                    worker.join()
+                    if worker.exitcode > 0:
+                        log.error(
+                            f"relation loader worker {worker.name} exitcode: {worker.exitcode}"
+                        )
+                        # raise Exception("Error in worker process")
+                for worker in workers:
+                    worker.terminate()
 
     # noinspection PyUnusedLocal
     @classmethod
-    def loader_pass_one_inner(cls, release_cls, release_id, corpus, annotation=""):
+    def loader_pass_one_inner(
+        cls, session: Session, release_cls, release_id, corpus, annotation=""
+    ):
         try:
             # log.debug(f"loader_pass_one ({annotation}): {release_id}")
-            release = release_cls.get_by_id(release_id)
-        except peewee.DoesNotExist:
+            release = session.scalars(
+                select(release_cls).where(
+                    cast("ColumnElement[bool]", release_cls.release_id == release_id)
+                )
+            ).one()
+        except NoResultFound:
             log.debug(f"            loader_pass_one_inner id not found: {release_id}")
-            pass
         else:
             relations = cls.from_release(release)
-            #     log.debug(
-            #         f"{cls.__name__.upper()} (Pass 1) [{annotation}]\t"
-            #         + f"(id:{document.id})\t[{len(relations)}] {document.title}"
-            #     )
+            if LOGGING_TRACE:
+                log.debug(
+                    f"{cls.__name__.upper()} (Pass 1) [{annotation}]\t"
+                    + f"(id:{release.id})\t[{len(relations)}] {release.title}"
+                )
             for relation in relations:
                 # log.debug(f"  loader_pass_one ({annotation}): {relation}")
-                max_attempts = 100
-                error = True
-                while error and max_attempts != 0:
-                    error = False
-                    try:
-                        cls.create_or_update_relation(relation)
-                    except peewee.PeeweeException:
-                        log.debug(
-                            f"Database record locked in updating relation {max_attempts} goes left"
-                        )
-                        max_attempts -= 1
-                        error = True
-                        time.sleep(100 - max_attempts)
-                if error:
-                    log.debug(f"Error in updating relation: {relation}")
+                cls.create_relation(session, relation)
+                cls.update_relation(session, relation)
 
     @classmethod
-    def create_or_update_relation(cls, relation):
-        with DiscogsModel.atomic():
-            create_wanted = False
-            try:
-                existing_instance = (
-                    cls.select(cls.releases).where(
-                        (cls.entity_one_type == relation["entity_one_type"])
-                        & (cls.entity_one_id == relation["entity_one_id"])
-                        & (cls.entity_two_type == relation["entity_two_type"])
-                        & (cls.entity_two_id == relation["entity_two_id"])
-                        & (cls.role == relation["role"])
-                    )
-                    # .for_update(nowait=True)
-                    .get()
-                )
-                # log.debug(f"existing instance: {existing_instance}")
-                updated_instance = deepcopy(existing_instance)
-            except peewee.DoesNotExist:
-                # Create a new Relation
-                updated_instance = cls()
-                updated_instance.releases = {}
-                # log.debug(f"new instance: {updated_instance}")
-                create_wanted = True
-            is_dirty = False
-            if "release_id" in relation:
-                release_id: str = str(relation["release_id"])
-                year = relation.get("year")
-                # if "releases" not in instance:
-                #     instance["releases"] = {}
-                # log.debug(f"before update instance: {updated_instance}")
-                if release_id not in updated_instance.releases:
-                    updated_instance.releases[release_id] = year
-                    # log.debug(f"relation updated releases: {updated_instance}")
-                    is_dirty = True
-            if create_wanted:
-                cls.create(
-                    entity_one_type=relation["entity_one_type"],
-                    entity_one_id=relation["entity_one_id"],
-                    entity_two_type=relation["entity_two_type"],
-                    entity_two_id=relation["entity_two_id"],
-                    role=relation["role"],
-                    releases=updated_instance.releases,
-                    random=random.random(),
-                )
-            else:
-                if is_dirty:
-                    check_instance = (
-                        cls.select(cls.releases)
-                        .where(
-                            (cls.entity_one_type == relation["entity_one_type"])
-                            & (cls.entity_one_id == relation["entity_one_id"])
-                            & (cls.entity_two_type == relation["entity_two_type"])
-                            & (cls.entity_two_id == relation["entity_two_id"])
-                            & (cls.role == relation["role"])
-                        )
-                        .for_update(nowait=True)
-                        .get()
-                    )
-                    differences = DeepDiff(
-                        existing_instance.releases, check_instance.releases
-                    )
-                    diff = pprint.pformat(differences)
-                    if diff != "{}":
-                        log.debug(f"diff: {diff}")
-                        raise peewee.PeeweeException("Record modified")
-                    else:
-                        cls.update({cls.releases: updated_instance.releases}).where(
-                            (cls.entity_one_type == relation["entity_one_type"])
-                            & (cls.entity_one_id == relation["entity_one_id"])
-                            & (cls.entity_two_type == relation["entity_two_type"])
-                            & (cls.entity_two_id == relation["entity_two_id"])
-                            & (cls.role == relation["role"])
-                        ).execute()
+    def create_relation(cls, session: Session, relation):
+        try:
+            new_instance = cls(
+                entity_one_type=relation["entity_one_type"],
+                entity_one_id=relation["entity_one_id"],
+                entity_two_type=relation["entity_two_type"],
+                entity_two_id=relation["entity_two_id"],
+                role=relation["role"],
+                releases={},
+                random=random.random(),
+            )
+            # log.debug(f"new relation: {new_instance}")
+            session.add(new_instance)
+            session.commit()
+        except IntegrityError:
+            session.rollback()
 
-    # @classmethod
-    # def create_or_update_relation(cls, relation):
-    #     with DiscogsModel.atomic():
-    #         try:
-    #             instance = (
-    #                 cls.select(cls.releases)
-    #                 .where(
-    #                     (cls.entity_one_type == relation["entity_one_type"])
-    #                     & (cls.entity_one_id == relation["entity_one_id"])
-    #                     & (cls.entity_two_type == relation["entity_two_type"])
-    #                     & (cls.entity_two_id == relation["entity_two_id"])
-    #                     & (cls.role == relation["role"])
-    #                 )
-    #                 .for_update(nowait=True)
-    #                 .get()
-    #             )
-    #         except peewee.DoesNotExist:
-    #             # Create a new Relation
-    #             cls.create(
-    #                 entity_one_type=relation["entity_one_type"],
-    #                 entity_one_id=relation["entity_one_id"],
-    #                 entity_two_type=relation["entity_two_type"],
-    #                 entity_two_id=relation["entity_two_id"],
-    #                 role=relation["role"],
-    #                 releases={},
-    #                 random=random.random(),
-    #             )
-    #             instance = (
-    #                 cls.select(cls.releases)
-    #                 .where(
-    #                     (cls.entity_one_type == relation["entity_one_type"])
-    #                     & (cls.entity_one_id == relation["entity_one_id"])
-    #                     & (cls.entity_two_type == relation["entity_two_type"])
-    #                     & (cls.entity_two_id == relation["entity_two_id"])
-    #                     & (cls.role == relation["role"])
-    #                 )
-    #                 .for_update(nowait=True)
-    #                 .get()
-    #             )
-    #         is_dirty = False
-    #         if "release_id" in relation:
-    #             release_id: str = str(relation["release_id"])
-    #             year = relation.get("year")
-    #             if release_id not in instance.releases:
-    #                 instance.releases[release_id] = year
-    #                 # log.debug(f"relation updated releases: {instance}")
-    #                 is_dirty = True
-    #         if is_dirty:
-    #             cls.update(cls.releases).where(
-    #                 (cls.entity_one_type == relation["entity_one_type"])
-    #                 & (cls.entity_one_id == relation["entity_one_id"])
-    #                 & (cls.entity_two_type == relation["entity_two_type"])
-    #                 & (cls.entity_two_id == relation["entity_two_id"])
-    #                 & (cls.role == relation["role"])
-    #             ).execute()
-    #             # instance.save()
+    @classmethod
+    def update_relation(cls, session: Session, relation):
+        existing_instance = session.scalars(
+            select(cls)
+            .where(
+                (cls.entity_one_type == relation["entity_one_type"])
+                & (cls.entity_one_id == relation["entity_one_id"])
+                & (cls.entity_two_type == relation["entity_two_type"])
+                & (cls.entity_two_id == relation["entity_two_id"])
+                & (cls.role == relation["role"])
+            )
+            .with_for_update()
+        ).one()
+
+        if "release_id" in relation:
+            release_id: str = str(relation["release_id"])
+            # log.debug(f"before update instance: {updated_instance}")
+            if release_id not in existing_instance.releases:
+                existing_instance.releases[release_id] = relation.get("year")
+                # log.debug(f"relation updated releases: {existing_instance}")
+                flag_modified(existing_instance, cls.releases.key)
+                session.commit()
 
     @classmethod
     def from_release(cls, release):
+        # log.debug(f"      release: {release}")
         triples = set()
-        artists, labels, is_compilation = cls.get_release_setup(release)
+        artist_pks, label_pks, is_compilation = cls.get_release_setup(release)
         triples.update(
             cls.get_artist_label_relations(
-                artists,
-                labels,
+                artist_pks,
+                label_pks,
                 is_compilation,
             )
         )
         aggregate_roles = {}
 
         if is_compilation:
-            iterator = itertools.product(labels, release.extra_artists)
+            iterator = itertools.product(label_pks, release.extra_artists)
         else:
-            iterator = itertools.product(artists, release.extra_artists)
-        for entity_two, credit in iterator:
+            iterator = itertools.product(artist_pks, release.extra_artists)
+        for entity_two_pk, credit in iterator:
             for role in credit["roles"]:
                 role = role["name"]
                 if role not in RoleType.role_definitions:
+                    # log.debug(f"role not found: {role}")
+                    role = Role.normalize(role)
+                if role not in RoleType.role_definitions:
+                    log.debug(f"normalized role not found: {role}")
                     continue
                 elif role in RoleType.aggregate_roles:
                     if role not in aggregate_roles:
                         aggregate_roles[role] = []
-                    aggregate_credit = (EntityType.ARTIST, credit["id"])
+                    aggregate_credit = (credit["id"], EntityType.ARTIST)
                     aggregate_roles[role].append(aggregate_credit)
                     continue
-                entity_one = (EntityType.ARTIST, credit["id"])
-                triples.add((entity_one, role, entity_two))
+                entity_one_pk = (credit["id"], EntityType.ARTIST)
+                triples.add((entity_one_pk, role, entity_two_pk))
 
         if is_compilation:
-            iterator = itertools.product(labels, release.companies)
+            iterator = itertools.product(label_pks, release.companies)
         else:
-            iterator = itertools.product(artists, release.companies)
-        for entity_one, company in iterator:
+            iterator = itertools.product(artist_pks, release.companies)
+        for entity_one_pk, company in iterator:
             role = company["entity_type_name"]
             if role not in RoleType.role_definitions:
+                # log.debug(f"role not found: {role}")
+                role = Role.normalize(role)
+            if role not in RoleType.role_definitions:
+                log.debug(f"normalized role not found: {role}")
                 continue
-            entity_two = (EntityType.LABEL, company["id"])
-            triples.add((entity_one, role, entity_two))
+            entity_two_pk = (company["id"], EntityType.LABEL)
+            triples.add((entity_one_pk, role, entity_two_pk))
 
-        all_track_artists = set()
+        all_track_artist_pks = set()
         for track in release.tracklist:
-            track_artists = set(
-                (EntityType.ARTIST, _["id"]) for _ in track.get("artists", ())
+            track_artist_pks = set(
+                (_["id"], EntityType.ARTIST) for _ in track.get("artists", ())
             )
-            all_track_artists.update(track_artists)
+            all_track_artist_pks.update(track_artist_pks)
             if not track.get("extra_artists"):
                 continue
-            track_artists = track_artists or artists or labels
-            iterator = itertools.product(track_artists, track["extra_artists"])
-            for entity_two, credit in iterator:
+            track_artist_pks = track_artist_pks or artist_pks or label_pks
+            iterator = itertools.product(track_artist_pks, track["extra_artists"])
+            for entity_two_pk, credit in iterator:
                 for role in credit.get("roles", ()):
                     role = role["name"]
                     if role not in RoleType.role_definitions:
+                        # log.debug(f"role not found: {role}")
+                        role = Role.normalize(role)
+                    if role not in RoleType.role_definitions:
+                        log.debug(f"normalized role not found: {role}")
                         continue
-                    entity_one = (EntityType.ARTIST, credit["id"])
-                    triples.add((entity_one, role, entity_two))
+                    entity_one_pk = (credit["id"], EntityType.ARTIST)
+                    triples.add((entity_one_pk, role, entity_two_pk))
         for role, aggregate_artists in aggregate_roles.items():
-            iterator = itertools.product(all_track_artists, aggregate_artists)
-            for track_artist, aggregate_artist in iterator:
-                entity_one = aggregate_artist
-                entity_two = track_artist
-                triples.add((entity_one, role, entity_two))
+            iterator = itertools.product(all_track_artist_pks, aggregate_artists)
+            for track_artist_pk, aggregate_artist_pk in iterator:
+                entity_one_pk = aggregate_artist_pk
+                entity_two_pk = track_artist_pk
+                triples.add((entity_one_pk, role, entity_two_pk))
+        # log.debug(f"triples3: {triples}")
         triples = sorted(triples)
         # log.debug(f"      triples: {triples}")
         relations = cls.from_triples(triples, release=release)
@@ -391,64 +347,56 @@ class Relation(DiscogsModel):
         return relations
 
     @classmethod
-    def get_artist_label_relations(cls, artists, labels, is_compilation):
+    def get_artist_label_relations(
+        cls,
+        artist_pks: set[tuple[int, EntityType]],
+        label_pks: set[tuple[int, EntityType]],
+        is_compilation: bool,
+    ):
         triples = set()
-        iterator = itertools.product(artists, labels)
+        iterator = itertools.product(artist_pks, label_pks)
         if is_compilation:
             role = "Compiled On"
         else:
             role = "Released On"
-        for artist, label in iterator:
-            triples.add((artist, role, label))
+        for artist_pk, label_pk in iterator:
+            triples.add((artist_pk, role, label_pk))
         return triples
 
     @classmethod
-    def get_random(cls, roles=None):
-        n = random.random()
-        where_clause = cls.random > n
-        if roles:
-            where_clause &= cls.role.in_(roles)
-        query = cls.select().where(where_clause).order_by(cls.random, cls.role).limit(1)
-        log.debug("Query:", query)
-        while not query.count():
-            n = random.random()
-            where_clause = cls.random > n
-            if roles:
-                where_clause &= cls.role.in_(roles)
-            query = cls.select()
-            query = query.where(where_clause)
-            query = query.order_by(cls.random)
-            query = query.limit(1)
-            log.debug("get_random Query:", query)
-        return query.get()
-
-    @classmethod
-    def get_release_setup(cls, release):
+    def get_release_setup(
+        cls, release
+    ) -> tuple[set[tuple[int, EntityType]], set[tuple[int, EntityType]], bool]:
         is_compilation = False
-        artists = set((EntityType.ARTIST, _["id"]) for _ in release.artists)
-        labels = set(
-            (EntityType.LABEL, _.get("id")) for _ in release.labels if _.get("id")
+        # log.debug(f"get_release_setup release: {release}")
+        artist_pks: set[tuple[int, EntityType]] = set(
+            (_["id"], EntityType.ARTIST) for _ in release.artists
         )
-        if len(artists) == 1 and release.artists[0]["name"] == "Various":
+        # log.debug(f"get_release_setup artists: {artist_pks}")
+        label_pks: set[tuple[int, EntityType]] = set(
+            (_.get("id"), EntityType.LABEL) for _ in release.labels if _.get("id")
+        )
+        # log.debug(f"get_release_setup labels: {label_pks}")
+        if len(artist_pks) == 1 and release.artists[0]["name"] == "Various":
             is_compilation = True
-            artists.clear()
+            artist_pks.clear()
             for track in release.tracklist:
-                artists.update(
-                    (EntityType.ARTIST, _["id"]) for _ in track.get("artists", ())
+                artist_pks.update(
+                    (_["id"], EntityType.ARTIST) for _ in track.get("artists", ())
                 )
         # for format_ in release.formats:
         #    for description in format_.get('descriptions', ()):
         #        if description == 'Compilation':
         #            is_compilation = True
         #            break
-        return artists, labels, is_compilation
+        return artist_pks, label_pks, is_compilation
 
     @classmethod
     def from_triples(cls, triples, release=None):
         relations = []
-        for entity_one, role, entity_two in triples:
-            entity_one_type, entity_one_id = entity_one
-            entity_two_type, entity_two_id = entity_two
+        for entity_one_pk, role, entity_two_pk in triples:
+            entity_one_id, entity_one_type = entity_one_pk
+            entity_two_id, entity_two_type = entity_two_pk
             relation = dict(
                 entity_one_id=entity_one_id,
                 entity_one_type=entity_one_type,
@@ -488,21 +436,18 @@ class Relation(DiscogsModel):
         #     else:
         #         year_clause |= cls.year.between(year[0], year[1])
         #     where_clause &= year_clause
-        query = cls.select().where(where_clause)
-        if query_only:
-            return query
-        return list(query)
+        return where_clause
+        # relation = session.scalar(select(cls).where(where_clause))
+        # if query_only:
+        #     return relation
+        # return [relation]
 
     @classmethod
-    def search_multi(cls, entity_keys, roles=None):
+    def search_multi(cls, session: Session, entity_keys, roles=None):
         assert entity_keys
         artist_ids, label_ids = [], []
-        # noinspection PyTypeChecker
-        artist_where_clause: peewee.Expression = None
-        # noinspection PyTypeChecker
-        label_where_clause: peewee.Expression = None
-        # noinspection PyTypeChecker
-        where_clause: peewee.Expression = None
+        log.debug(f"entity_keys: {entity_keys}")
+        log.debug(f"roles: {roles}")
         for entity_type, entity_id in entity_keys:
             if entity_type == EntityType.ARTIST:
                 artist_ids.append(entity_id)
@@ -510,40 +455,57 @@ class Relation(DiscogsModel):
                 label_ids.append(entity_id)
         if artist_ids:
             artist_where_clause = (
-                (cls.entity_one_type == EntityType.ARTIST)
-                & (cls.entity_one_id.in_(artist_ids))
+                cast("ColumnElement[bool]", cls.entity_one_type == EntityType.ARTIST)
+                & cast("ColumnElement[bool]", cls.entity_one_id.in_(artist_ids))
             ) | (
-                (cls.entity_two_type == EntityType.ARTIST)
-                & (cls.entity_two_id.in_(artist_ids))
+                cast("ColumnElement[bool]", cls.entity_two_type == EntityType.ARTIST)
+                & cast("ColumnElement[bool]", cls.entity_two_id.in_(artist_ids))
             )
+        else:
+            artist_where_clause = None
         if label_ids:
             label_where_clause = (
-                (cls.entity_one_type == EntityType.LABEL)
-                & (cls.entity_one_id.in_(label_ids))
+                cast("ColumnElement[bool]", cls.entity_one_type == EntityType.LABEL)
+                & cast("ColumnElement[bool]", cls.entity_one_id.in_(label_ids))
             ) | (
-                (cls.entity_two_type == EntityType.LABEL)
-                & (cls.entity_two_id.in_(label_ids))
+                cast("ColumnElement[bool]", cls.entity_two_type == EntityType.LABEL)
+                & cast("ColumnElement[bool]", cls.entity_two_id.in_(label_ids))
             )
+        else:
+            label_where_clause = None
         if artist_ids and label_ids:
             where_clause = artist_where_clause | label_where_clause
         elif artist_ids:
             where_clause = artist_where_clause
         elif label_ids:
             where_clause = label_where_clause
+        else:
+            where_clause = None
         if roles:
-            where_clause &= cls.role.in_(roles)
-        query = cls.select().where(where_clause)
+            if where_clause:
+                where_clause = where_clause & (cls.role.in_(roles))
+            else:
+                where_clause = cls.role.in_(roles)
+        log.debug(f"where_clause: {where_clause}")
+
+        relation_results = session.scalars(select(cls).where(where_clause)).all()
         relations = {}
-        for relation in query:
+        for relation in relation_results:
             relations[relation.link_key] = relation
         return relations
 
     # noinspection PyUnusedLocal
     @classmethod
     def search_bimulti(
-        cls, lh_entities, rh_entities, roles=None, year=None, verbose=True
+        cls,
+        session: Session,
+        lh_entities,
+        rh_entities,
+        roles=None,
+        year=None,
+        verbose=True,
     ):
-        def build_query(_lh_type, _lh_ids, _rh_type, _rh_ids):
+        def build_query(_lh_type, _lh_ids, _rh_type, _rh_ids) -> cls:
             where_clause = cls.entity_one_type == _lh_type
             where_clause &= cls.entity_two_type == _rh_type
             where_clause &= cls.entity_one_id.in_(_lh_ids)
@@ -558,8 +520,8 @@ class Relation(DiscogsModel):
             #     else:
             #         year_clause |= cls.year.between(year[0], year[1])
             #     where_clause &= year_clause
-            _query = cls.select().where(where_clause)
-            return _query
+            relation_result = session.scalars(select(cls).where(where_clause)).one()
+            return relation_result
 
         lh_artist_ids = []
         lh_label_ids = []
@@ -575,44 +537,43 @@ class Relation(DiscogsModel):
                 rh_artist_ids.append(entity_id)
             else:
                 rh_label_ids.append(entity_id)
-        queries = []
+        relations = []
         if lh_artist_ids:
             lh_type, lh_ids = 1, lh_artist_ids
             if rh_artist_ids:
                 rh_type, rh_ids = 1, rh_artist_ids
-                query = build_query(lh_type, lh_ids, rh_type, rh_ids)
-                queries.append(query)
+                relation = build_query(lh_type, lh_ids, rh_type, rh_ids)
+                relations.append(relation)
             if rh_label_ids:
                 rh_type, rh_ids = 2, rh_label_ids
-                query = build_query(lh_type, lh_ids, rh_type, rh_ids)
-                queries.append(query)
+                relation = build_query(lh_type, lh_ids, rh_type, rh_ids)
+                relations.append(relation)
         if lh_label_ids:
             lh_type, lh_ids = 2, lh_label_ids
             if rh_artist_ids:
                 rh_type, rh_ids = 1, rh_artist_ids
-                query = build_query(lh_type, lh_ids, rh_type, rh_ids)
-                queries.append(query)
+                relation = build_query(lh_type, lh_ids, rh_type, rh_ids)
+                relations.append(relation)
             if rh_label_ids:
                 rh_type, rh_ids = 2, rh_label_ids
-                query = build_query(lh_type, lh_ids, rh_type, rh_ids)
-                queries.append(query)
-        relations = []
-        for query in queries:
-            log.debug(f"query: {query}")
-            relations.extend(query)
-        relations = {relation.link_key: relation for relation in relations}
-        log.debug(f"relations: {relations}")
-        return relations
+                relation = build_query(lh_type, lh_ids, rh_type, rh_ids)
+                relations.append(relation)
+        # for query in queries:
+        #     log.debug(f"search_bimulti query: {query}")
+        #     relations.extend(query)
+        relation_links = {relation.link_key: relation for relation in relations}
+        log.debug(f"relation_links: {relation_links}")
+        return relation_links
 
     # PUBLIC PROPERTIES
 
     @property
-    def entity_one_key(self):
-        return self.entity_one_type, self.entity_one_id
+    def entity_one_key(self) -> tuple[int, EntityType]:
+        return self.entity_one_id, self.entity_one_type
 
     @property
-    def entity_two_key(self):
-        return self.entity_two_type, self.entity_two_id
+    def entity_two_key(self) -> tuple[int, EntityType]:
+        return self.entity_two_id, self.entity_two_type
 
     @property
     def json_entity_one_key(self) -> str:
@@ -641,3 +602,19 @@ class Relation(DiscogsModel):
             target,
         ]
         return "-".join(str(_) for _ in pieces)
+
+    @classmethod
+    def get_random_relation(cls, session: Session, roles: list[str] = None):
+        while True:
+            n: float = random.random()
+            where_clause = cls.random > n
+            if roles:
+                where_clause &= cls.role.in_(roles)
+            relation = session.scalars(
+                select(cls).where(where_clause).order_by(cls.random, cls.role).limit(1)
+            ).one_or_none()
+            if relation:
+                break
+
+        log.debug(f"random relation: {relation}")
+        return relation

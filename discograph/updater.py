@@ -9,7 +9,7 @@ from discograph.logging_config import setup_logging, shutdown_logging
 log = logging.getLogger(__name__)
 
 
-def loader_main():
+def updater_main():
     from discograph.library.database.database_helper import DatabaseHelper
 
     setup_logging()
@@ -33,11 +33,9 @@ def loader_main():
     atexit.register(shutdown_logging)
     atexit.register(shutdown_cache)
     atexit.register(shutdown_database, config)
-    # Create tables
-    DatabaseHelper.db_helper.create_tables()
     # Run the test update process
-    DatabaseHelper.db_helper.load_tables("20230801")
+    DatabaseHelper.db_helper.update_tables("20230801")
 
 
 if __name__ == "__main__":
-    loader_main()
+    updater_main()

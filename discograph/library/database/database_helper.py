@@ -1,13 +1,28 @@
+import logging
 from abc import ABC, abstractmethod
+from typing import Type
 
-from peewee import Database
+from sqlalchemy import Engine, Index
+from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session, scoped_session
 
 from discograph.config import Configuration
 from discograph.library.fields.entity_type import EntityType
 
+log = logging.getLogger(__name__)
+
+
+class Base(DeclarativeBase):
+    pass
+
 
 class DatabaseHelper(ABC):
-    database: Database
+    engine: Engine | None = None
+    session_factory: sessionmaker | None = None
+    flask_db_session: scoped_session | None = None
+
+    db_helper: Type["DatabaseHelper"] | None = None
+    idx_entity_one_id: Index | None = None
+    idx_entity_two_id: Index | None = None
 
     MAX_NODES = 400
     MAX_NODES_MOBILE = 25
@@ -21,7 +36,7 @@ class DatabaseHelper(ABC):
 
     @staticmethod
     @abstractmethod
-    def setup_database(config: Configuration) -> Database:
+    def setup_database(config: Configuration) -> Engine:
         pass
 
     @staticmethod
@@ -29,9 +44,15 @@ class DatabaseHelper(ABC):
     def shutdown_database():
         pass
 
+    @classmethod
+    def initialize(cls):
+        """ensure the parent proc's database connections are not touched
+        in the new connection pool"""
+        cls.engine.dispose(close=False)
+
     @staticmethod
     @abstractmethod
-    def check_connection(config: Configuration, database: Database):
+    def check_connection(config: Configuration, engine: Engine):
         pass
 
     @staticmethod
@@ -46,61 +67,43 @@ class DatabaseHelper(ABC):
 
     @classmethod
     @abstractmethod
-    def create_tables(cls):
-        from discograph.library.models.genre import Genre
-        from discograph.library.models.role import Role
-
-        # Set parameter to True so that the create table query
-        # will include an IF NOT EXISTS clause.
-        Role.create_table(True)
-        Genre.create_table(True)
-
-    @classmethod
-    def create_join_tables(cls):
-        from discograph.library.models.release_genre import ReleaseGenre
-
-        # Set parameter to True so that the create table query
-        # will include an IF NOT EXISTS clause.
-        ReleaseGenre.create_table(True)
+    def create_tables(cls, tables=None):
+        Base.metadata.create_all(cls.engine, checkfirst=True, tables=tables)
 
     @classmethod
     @abstractmethod
     def drop_tables(cls):
-        from discograph.library.models.genre import Genre
-        from discograph.library.models.role import Role
-
-        Role.drop_table(True)
-        Genre.drop_table(True)
+        Base.metadata.drop_all(cls.engine, checkfirst=True)
 
     @classmethod
-    def drop_join_tables(cls):
-        from discograph.library.models.release_genre import ReleaseGenre
+    def get_entity(cls, session: Session, entity_id: int, entity_type: EntityType):
+        from discograph.library.models.entity import Entity
 
-        ReleaseGenre.drop_table(True)
-
-    @staticmethod
-    @abstractmethod
-    def get_entity(entity_type: EntityType, entity_id: int):
-        pass
+        pk = (entity_id, entity_type)
+        return session.get(Entity, pk)
 
     @staticmethod
     @abstractmethod
     def get_network(
-        entity_id: int, entity_type: EntityType, on_mobile=False, roles=None
+        session: Session,
+        entity_id: int,
+        entity_type: EntityType,
+        on_mobile=False,
+        roles=None,
     ):
         pass
 
     @staticmethod
     @abstractmethod
-    def get_random_entity(roles=None):
+    def get_random_entity(session: Session, roles=None) -> tuple[int, str]:
         pass
 
     @staticmethod
     @abstractmethod
-    def get_relations(entity_id: int, entity_type: EntityType):
+    def get_relations(session: Session, entity_id: int, entity_type: EntityType):
         pass
 
     @staticmethod
     @abstractmethod
-    def search_entities(search_string: str):
+    def search_entities(session: Session, search_string: str):
         pass

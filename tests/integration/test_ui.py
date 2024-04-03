@@ -3,9 +3,9 @@ from tests.integration.app_test_case import AppTestCase
 
 
 class TestUI(AppTestCase):
-
     def setUp(self):
         self.app = app.test_client()
+        app.debug = True
 
     def test_index(self):
         response = self.app.get("/")

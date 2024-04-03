@@ -1,35 +1,37 @@
 import logging
 import re
 
-import peewee
+from sqlalchemy import String, select
+from sqlalchemy.exc import NoResultFound
+from sqlalchemy.orm import Mapped, mapped_column, Session
 
-from discograph.library.discogs_model import DiscogsModel
+from discograph.library.database.database_helper import Base
+from discograph.library.loader_base import LoaderBase
 
 log = logging.getLogger(__name__)
 
 
-class Genre(DiscogsModel):
+class Genre(Base, LoaderBase):
+    __tablename__ = "genre"
+
+    # COLUMNS
+
+    genre_id: Mapped[int] = mapped_column(primary_key=True)
+    genre_name: Mapped[str] = mapped_column(String)
+
     # CLASS VARIABLES
-
-    # PEEWEE FIELDS
-
-    genre_id = peewee.AutoField()
-    genre_name = peewee.TextField()
-
-    # PEEWEE META
-
-    class Meta:
-        table_name = "genre"
 
     # PUBLIC METHODS
 
     @classmethod
-    def create_or_get(cls, name: str):
+    def create_or_get(cls, session: Session, name: str):
         try:
-            genre = cls.select().where(cls.genre_name == name).get()
+            genre = session.scalar(select(Genre).where(cls.genre_name == name))
             log.debug(f"genre existing: {genre}")
-        except peewee.DoesNotExist:
-            genre = cls.create(genre_name=name)
+        except NoResultFound:
+            genre = Genre(genre_name=name)
+            session.add(genre)
+            session.commit()
             log.debug(f"genre created: {genre}")
         return genre
 

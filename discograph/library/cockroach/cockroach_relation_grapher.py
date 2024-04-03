@@ -1,6 +1,8 @@
 import itertools
 import logging
 
+from sqlalchemy.orm import Session
+
 from discograph.library.cockroach.cockroach_entity import CockroachEntity
 from discograph.library.cockroach.cockroach_relation import CockroachRelation
 from discograph.library.relation_grapher import RelationGrapher
@@ -34,10 +36,10 @@ class CockroachRelationGrapher(RelationGrapher):
 
     # SPECIAL METHODS
 
-    def __call__(self):
-        return super(CockroachRelationGrapher, self).__call__()
+    # def __call__(self, session: Session):
+    #     return super(CockroachRelationGrapher, self).__call__(session)
 
-    def _cross_reference(self, distance):
+    def cross_reference(self, session: Session, distance):
         # TODO: We don't need to test all nodes, only those missing credit role
         #       relations. That may significantly reduce the computational
         #       load.
@@ -60,18 +62,19 @@ class CockroachRelationGrapher(RelationGrapher):
         for lh_entities, rh_entities in iterator:
             log.debug(f"        lh: {len(lh_entities)} rh: {len(rh_entities)}")
             found = CockroachRelation.search_bimulti(
+                session,
                 lh_entities,
                 rh_entities,
                 roles=self.relational_roles,
             )
             relations.update(found)
-        self._process_relations(relations)
+        self.process_relations(relations)
         log.debug(
             f"        Cross-referenced: {len(self.nodes)} nodes / {len(self.links)} links"
         )
 
     @staticmethod
-    def _search_entities(entity_keys_to_visit):
+    def search_entities(session: Session, entity_keys_to_visit):
         log.debug("        Retrieving entities")
         entities = []
         entity_keys_to_visit = list(entity_keys_to_visit)
@@ -79,12 +82,14 @@ class CockroachRelationGrapher(RelationGrapher):
         step = 1000
         for start in range(0, stop, step):
             entity_key_slice = entity_keys_to_visit[start : start + step]
-            found = CockroachEntity.search_multi(entity_key_slice)
+            found = CockroachEntity.search_multi(session, entity_key_slice)
             entities.extend(found)
             log.debug(f"            {start + 1}-{min(start + step, stop)} of {stop}")
         return entities
 
-    def _search_via_relational_roles(self, distance, provisional_roles, relations):
+    def search_via_relational_roles(
+        self, session: Session, distance, provisional_roles, relations: dict
+    ):
         for entity_key in sorted(self.entity_keys_to_visit):
             node = self.nodes.get(entity_key)
             if not node:
@@ -106,6 +111,7 @@ class CockroachRelationGrapher(RelationGrapher):
                 )
                 relations.update(
                     CockroachRelation.search_multi(
+                        session,
                         key_slice,
                         roles=provisional_roles,
                     )

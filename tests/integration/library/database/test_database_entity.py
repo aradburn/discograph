@@ -14,7 +14,7 @@ class TestDatabaseEntity(DatabaseTestCase):
             "entities": {"aliases": {}, "groups": {}},
             "entity_id": 3,
             "entity_type": "EntityType.ARTIST",
-            "metadata": {
+            "entity_metadata": {
                 "name_variations": [
                     "DJ Josh Wink",
                     "DJ Wink",
@@ -61,7 +61,8 @@ class TestDatabaseEntity(DatabaseTestCase):
                     "http://twitter.com/joshwink1",
                 ],
             },
-            "name": "Josh Wink",
+            "entity_name": "Josh Wink",
+            "search_content": "josh wink",
         }
         expected = utils.normalize_dict(expected_entity)
         self.assertEqual(expected, actual)
@@ -85,7 +86,7 @@ class TestDatabaseEntity(DatabaseTestCase):
             },
             "entity_id": 2239,
             "entity_type": "EntityType.ARTIST",
-            "metadata": {
+            "entity_metadata": {
                 "profile": "British electronic/rock group formed in the early 1990s. "
                 + "They are currently signed to Warp Records.",
                 "real_name": "Sarah Peacock, Mark Clifford, Darren Seymour & Justin Fletcher",
@@ -98,7 +99,8 @@ class TestDatabaseEntity(DatabaseTestCase):
                     "http://www.seefeel.org",
                 ],
             },
-            "name": "Seefeel",
+            "entity_name": "Seefeel",
+            "search_content": "seefeel",
         }
         expected = utils.normalize_dict(expected_entity)
         self.assertEqual(expected, actual)
@@ -112,7 +114,7 @@ class TestDatabaseEntity(DatabaseTestCase):
             "entities": {},
             "entity_id": 1,
             "entity_type": "EntityType.LABEL",
-            "metadata": {
+            "entity_metadata": {
                 "profile": "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a=Carl Craig].\r\n",
                 "urls": [
                     "http://www.planet-e.net/",
@@ -122,20 +124,23 @@ class TestDatabaseEntity(DatabaseTestCase):
                     "http://soundcloud.com/planetedetroit",
                 ],
             },
-            "name": "Planet E",
+            "entity_name": "Planet E",
+            "search_content": "planet e",
         }
         expected = utils.normalize_dict(expected_entity)
         self.assertEqual(expected, actual)
 
     def test_from_db_01(self):
-        pk = (EntityType.ARTIST, 3)
-        entity = DatabaseTestCase.entity.get_by_id(pk)
-        actual = utils.normalize(format(entity))
+        pk = (3, EntityType.ARTIST)
+        with self.test_session.begin() as session:
+            entity = session.get(DatabaseTestCase.entity, pk)
+            actual = utils.normalize(format(entity))
+
         expected_entity = {
             "entities": {"aliases": {}, "groups": {}},
             "entity_id": 3,
             "entity_type": "EntityType.ARTIST",
-            "metadata": {
+            "entity_metadata": {
                 "name_variations": [
                     "DJ Josh Wink",
                     "DJ Wink",
@@ -182,15 +187,25 @@ class TestDatabaseEntity(DatabaseTestCase):
                     "http://twitter.com/joshwink1",
                 ],
             },
-            "name": "Josh Wink",
+            "entity_name": "Josh Wink",
+            "relation_counts": {
+                "Featuring": 1,
+                "Producer": 3,
+                "Released On": 1,
+                "Remix": 1,
+                "Written By": 1,
+            },
+            "search_content": "josh wink",
         }
         expected = utils.normalize_dict(expected_entity)
         self.assertEqual(expected, actual)
 
     def test_from_db_02(self):
-        pk = (EntityType.ARTIST, 2239)
-        entity = DatabaseTestCase.entity.get_by_id(pk)
-        actual = utils.normalize(format(entity))
+        pk = (2239, EntityType.ARTIST)
+        with self.test_session.begin() as session:
+            entity = session.get(DatabaseTestCase.entity, pk)
+            actual = utils.normalize(format(entity))
+
         expected_entity = {
             "entities": {
                 "members": {
@@ -203,7 +218,7 @@ class TestDatabaseEntity(DatabaseTestCase):
             },
             "entity_id": 2239,
             "entity_type": "EntityType.ARTIST",
-            "metadata": {
+            "entity_metadata": {
                 "profile": "British electronic/rock group formed in the early 1990s. "
                 + "They are currently signed to Warp Records.",
                 "real_name": "Sarah Peacock, Mark Clifford, Darren Seymour & Justin Fletcher",
@@ -216,20 +231,38 @@ class TestDatabaseEntity(DatabaseTestCase):
                     "http://www.seefeel.org",
                 ],
             },
-            "name": "Seefeel",
+            "entity_name": "Seefeel",
+            "relation_counts": {
+                "Compiled On": 15,
+                "Copyright (c)": 2,
+                "DJ Mix": 7,
+                "Design": 1,
+                "Designed At": 1,
+                "Film Director": 1,
+                "Performer": 1,
+                "Phonographic Copyright (p)": 2,
+                "Producer": 2,
+                "Published By": 1,
+                "Released On": 1,
+                "Remix": 6,
+                "Written By": 5,
+            },
+            "search_content": "seefeel",
         }
         expected = utils.normalize_dict(expected_entity)
         self.assertEqual(expected, actual)
 
     def test_from_db_03(self):
-        pk = (EntityType.LABEL, 1)
-        entity = DatabaseTestCase.entity.get_by_id(pk)
-        actual = utils.normalize(format(entity))
+        pk = (1, EntityType.LABEL)
+        with self.test_session.begin() as session:
+            entity = session.get(DatabaseTestCase.entity, pk)
+            actual = utils.normalize(format(entity))
+
         expected_entity = {
             "entities": {},
             "entity_id": 1,
             "entity_type": "EntityType.LABEL",
-            "metadata": {
+            "entity_metadata": {
                 "profile": "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a=Carl Craig].\r\n",
                 "urls": [
                     "http://www.planet-e.net/",
@@ -239,7 +272,9 @@ class TestDatabaseEntity(DatabaseTestCase):
                     "http://soundcloud.com/planetedetroit",
                 ],
             },
-            "name": "Planet E",
+            "entity_name": "Planet E",
+            "relation_counts": {"Released On": 1},
+            "search_content": "planet e",
         }
         expected = utils.normalize_dict(expected_entity)
         self.assertEqual(expected, actual)

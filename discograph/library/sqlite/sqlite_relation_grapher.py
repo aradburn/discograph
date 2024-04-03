@@ -1,10 +1,12 @@
 import itertools
 import logging
+from typing import List
+
+from sqlalchemy.orm import Session
 
 from discograph.library.relation_grapher import RelationGrapher
 from discograph.library.sqlite.sqlite_entity import SqliteEntity
 from discograph.library.sqlite.sqlite_relation import SqliteRelation
-
 
 log = logging.getLogger(__name__)
 
@@ -35,10 +37,10 @@ class SqliteRelationGrapher(RelationGrapher):
 
     # SPECIAL METHODS
 
-    def __call__(self):
-        return super(SqliteRelationGrapher, self).__call__()
+    # def __call__(self, session: Session):
+    #     return super(SqliteRelationGrapher, self).__call__(session)
 
-    def _cross_reference(self, distance):
+    def cross_reference(self, session: Session, distance):
         # TODO: We don't need to test all nodes, only those missing credit role
         #       relations. That may significantly reduce the computational
         #       load.
@@ -61,18 +63,19 @@ class SqliteRelationGrapher(RelationGrapher):
         for lh_entities, rh_entities in iterator:
             log.debug(f"        lh: {len(lh_entities)} rh: {len(rh_entities)}")
             found = SqliteRelation.search_bimulti(
+                session,
                 lh_entities,
                 rh_entities,
                 roles=self.relational_roles,
             )
             relations.update(found)
-        self._process_relations(relations)
+        self.process_relations(relations)
         log.debug(
             f"        Cross-referenced: {len(self.nodes)} nodes / {len(self.links)} links"
         )
 
     @staticmethod
-    def _search_entities(entity_keys_to_visit):
+    def search_entities(session: Session, entity_keys_to_visit):
         log.debug(f"        Retrieving entities keys: {entity_keys_to_visit}")
         entities = []
         entity_keys_to_visit = list(entity_keys_to_visit)
@@ -80,12 +83,18 @@ class SqliteRelationGrapher(RelationGrapher):
         step = 1000
         for start in range(0, stop, step):
             entity_key_slice = entity_keys_to_visit[start : start + step]
-            found = SqliteEntity.search_multi(entity_key_slice)
+            found = SqliteEntity.search_multi(session, entity_key_slice)
             entities.extend(found)
             log.debug(f"            {start + 1}-{min(start + step, stop)} of {stop}")
         return entities
 
-    def _search_via_relational_roles(self, distance, provisional_roles, relations):
+    def search_via_relational_roles(
+        self,
+        session: Session,
+        distance: int,
+        provisional_roles: List[str],
+        relations: dict,
+    ):
         for entity_key in sorted(self.entity_keys_to_visit):
             node = self.nodes.get(entity_key)
             if not node:
@@ -107,6 +116,7 @@ class SqliteRelationGrapher(RelationGrapher):
                 )
                 relations.update(
                     SqliteRelation.search_multi(
+                        session,
                         key_slice,
                         roles=provisional_roles,
                     )

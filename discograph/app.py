@@ -10,14 +10,16 @@ from flask import render_template
 from flask import request
 from flask_compress import Compress
 from flask_mobility import Mobility
+from sqlalchemy.orm import scoped_session, sessionmaker
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from discograph import api
 from discograph import exceptions
 from discograph import ui
 from discograph.config import PostgresProductionConfiguration
-from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.database import setup_database, shutdown_database
+from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
+from discograph.library.database.database_helper import DatabaseHelper
 from discograph.logging_config import setup_logging, shutdown_logging
 
 log = logging.getLogger(__name__)
@@ -34,11 +36,19 @@ def setup_application():
     app.wsgi_app = ProxyFix(app.wsgi_app)
     Mobility(app)
     Compress(app)
+    DatabaseHelper.flask_db_session = scoped_session(
+        sessionmaker(autocommit=False, autoflush=False, bind=DatabaseHelper.engine)
+    )
 
 
 def shutdown_application():
     global app
     app = Flask(__name__)
+
+
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    DatabaseHelper.flask_db_session.remove()
 
 
 @app.after_request

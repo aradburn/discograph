@@ -2,14 +2,14 @@ import logging
 import pathlib
 import random
 
-from peewee import Database
-from playhouse.sqlite_ext import SqliteExtDatabase
+from sqlalchemy import Engine, create_engine, select, text
+from sqlalchemy.exc import DatabaseError
+from sqlalchemy.orm import Session
 
 from discograph.config import Configuration
-from discograph.library.fields.role_type import RoleType
 from discograph.library.database.database_helper import DatabaseHelper
-from discograph.library.discogs_model import DiscogsModel
 from discograph.library.fields.entity_type import EntityType
+from discograph.library.fields.role_type import RoleType
 from discograph.library.sqlite.sqlite_entity import SqliteEntity
 from discograph.library.sqlite.sqlite_relation import SqliteRelation
 from discograph.library.sqlite.sqlite_relation_grapher import SqliteRelationGrapher
@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 class SqliteHelper(DatabaseHelper):
     @staticmethod
-    def setup_database(config: Configuration) -> Database:
+    def setup_database(config: Configuration) -> Engine:
         log.info("Using Sqlite Database")
 
         target_path = pathlib.Path(config["SQLITE_DATABASE_NAME"])
@@ -27,29 +27,48 @@ class SqliteHelper(DatabaseHelper):
         target_parent.mkdir(parents=True, exist_ok=True)
         log.info(f"Sqlite Database: {target_path}")
 
-        database = SqliteExtDatabase(
-            config["SQLITE_DATABASE_NAME"],
-            pragmas={
-                "journal_mode": "wal",
-                # 'check_same_thread': False,
-                # 'journal_mode': 'off',
-                "synchronous": 0,
-                "cache_size": 1000000,
-                # 'locking_mode': 'exclusive',
-                "temp_store": "memory",
-            },
-            timeout=20,
-        )
+        engine = create_engine(f"sqlite:///{target_path}")
 
-        return database
+        # database = SqliteExtDatabase(
+        #     config["SQLITE_DATABASE_NAME"],
+        #     pragmas={
+        #         "journal_mode": "wal",
+        #         # 'check_same_thread': False,
+        #         # 'journal_mode': 'off',
+        #         "synchronous": 0,
+        #         "cache_size": 1000000,
+        #         # 'locking_mode': 'exclusive',
+        #         "temp_store": "memory",
+        #     },
+        #     timeout=20,
+        # )
+
+        return engine
 
     @staticmethod
     def shutdown_database():
-        pass
+        log.info("Shutting down database")
+        DatabaseHelper.engine.dispose()
 
     @staticmethod
-    def check_connection(config: Configuration, database: Database):
-        pass
+    def check_connection(config: Configuration, engine: Engine):
+        try:
+            log.info("Check Sqlite database connection...")
+
+            with engine.connect() as connection:
+                version = connection.execute(
+                    text("SELECT sqlite_version() AS version;")
+                )
+                log.info(f"Database Version: {version}")
+
+                connection.execute(text("pragma journal_mode=wal"))
+                connection.execute(text("pragma synchronous=0"))
+                connection.execute(text("pragma cache_size=10000000"))
+                connection.execute(text("pragma temp_store=memory"))
+
+            log.info("Database connected OK.")
+        except DatabaseError as e:
+            log.exception("Connection Error", e)
 
     @staticmethod
     def load_tables(date: str):
@@ -112,47 +131,30 @@ class SqliteHelper(DatabaseHelper):
         log.info("Update Sqlite done.")
 
     @classmethod
-    def create_tables(cls):
-        from discograph.library.sqlite.sqlite_entity import SqliteEntity
-        from discograph.library.sqlite.sqlite_relation import SqliteRelation
-        from discograph.library.sqlite.sqlite_release import SqliteRelease
-
+    def create_tables(cls, tables=None):
         log.info("Create Sqlite tables")
-        super().create_tables()
-
-        # Set parameter to True so that the create table query
-        # will include an IF NOT EXISTS clause.
-        SqliteEntity.create_table(True)
-        SqliteRelease.create_table(True)
-        SqliteRelation.create_table(True)
-
-        super().create_join_tables()
+        super().create_tables(tables=tables)
 
     @classmethod
     def drop_tables(cls):
-        from discograph.library.sqlite.sqlite_entity import SqliteEntity
-        from discograph.library.sqlite.sqlite_relation import SqliteRelation
-        from discograph.library.sqlite.sqlite_release import SqliteRelease
-
         log.info("Drop Sqlite tables")
-        super().drop_join_tables()
-
-        SqliteEntity.drop_table(True)
-        SqliteRelease.drop_table(True)
-        SqliteRelation.drop_table(True)
         super().drop_tables()
 
-    @staticmethod
-    def get_entity(entity_type: EntityType, entity_id: int):
-        where_clause = SqliteEntity.entity_id == entity_id
-        where_clause &= SqliteEntity.entity_type == entity_type
-        with DiscogsModel.connection_context():
-            query = SqliteEntity.select().where(where_clause)
-            return query.get_or_none()
+    # @staticmethod
+    # def get_entity(entity_type: EntityType, entity_id: int):
+    #     where_clause = SqliteEntity.entity_id == entity_id
+    #     where_clause &= SqliteEntity.entity_type == entity_type
+    #     with LoaderBase.connection_context():
+    #         query = SqliteEntity.select().where(where_clause)
+    #         return query.get_or_none()
 
     @staticmethod
     def get_network(
-        entity_id: int, entity_type: EntityType, on_mobile=False, roles=None
+        session: Session,
+        entity_id: int,
+        entity_type: EntityType,
+        on_mobile=False,
+        roles=None,
     ):
         from discograph.library.cache.cache_manager import cache
 
@@ -174,7 +176,7 @@ class SqliteHelper(DatabaseHelper):
         if data is not None:
             return data
         # entity_type = entity_name_types[entity_type]
-        entity = SqliteHelper.get_entity(entity_type, entity_id)
+        entity = SqliteHelper.get_entity(session, entity_id, entity_type)
         log.debug(f"entity: {entity}")
         if entity is None:
             return None
@@ -190,57 +192,81 @@ class SqliteHelper(DatabaseHelper):
             max_nodes=max_nodes,
             roles=roles,
         )
-        with DiscogsModel.connection_context():
-            data = relation_grapher()
+        data = relation_grapher.get_relation_graph(session)
         cache.set(cache_key, data)
         return data
 
     @staticmethod
-    def get_random_entity(roles=None):
+    def get_random_entity(session: Session, roles=None) -> tuple[int, str]:
         structural_roles = [
             "Alias",
             "Member Of",
             "Sublabel Of",
         ]
-        with DiscogsModel.connection_context():
-            if roles and any(_ not in structural_roles for _ in roles):
-                relation = SqliteRelation.get_random(roles=roles)
-                entity_choice = random.randint(1, 2)
-                if entity_choice == 1:
-                    entity_type = relation.entity_one_type
-                    entity_id = relation.entity_one_id
-                else:
-                    entity_type = relation.entity_two_type
-                    entity_id = relation.entity_two_id
+        if roles and any(_ not in structural_roles for _ in roles):
+            relation = SqliteRelation.get_random_relation(session, roles=roles)
+            entity_choice = random.randint(1, 2)
+            if entity_choice == 1:
+                entity_type = relation.entity_one_type
+                entity_id = relation.entity_one_id
             else:
-                entity = SqliteEntity.get_random()
-                entity_type, entity_id = entity.entity_type, entity.entity_id
+                entity_type = relation.entity_two_type
+                entity_id = relation.entity_two_id
+            log.debug("random link")
+        else:
+            counter = 0
+
+            while True:
+                entity: SqliteEntity = SqliteEntity.get_random_entity(session)
+                relation_counts = entity.relation_counts
+                entities = entity.entities
+                # log.debug(f"relation_counts: {relation_counts}")
+                counter = counter + 1
+                if (
+                    relation_counts is not None
+                    and (
+                        "Member Of" in relation_counts
+                        or "Alias" in relation_counts
+                        or "members" in entities
+                    )
+                    and entity.entity_type == EntityType.ARTIST
+                ):
+                    log.debug(f"random node: {entity}")
+                    break
+                if entity.entity_type == EntityType.LABEL:
+                    log.debug("random skip label")
+                    continue
+                if counter >= 1000:
+                    log.debug("random count expired")
+                    break
+
+            entity_id, entity_type = entity.entity_id, entity.entity_type
         assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
-        return entity_type, entity_id
+        return entity_id, entity_type
 
     @staticmethod
-    def get_relations(entity_id: int, entity_type: EntityType):
-        assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
-        # if isinstance(entity_type, str):
-        #     entity_type = entity_name_types[entity_type]
-        entity = SqliteHelper.get_entity(entity_type, entity_id)
+    def get_relations(session: Session, entity_id: int, entity_type: EntityType):
+        entity = SqliteHelper.get_entity(session, entity_id, entity_type)
         if entity is None:
             return None
-        with DiscogsModel.connection_context():
-            query = SqliteRelation.search(
-                entity_id=entity.entity_id,
-                entity_type=entity.entity_type,
-                query_only=True,
+        where_clause = SqliteRelation.search(
+            entity_id=entity.entity_id,
+            entity_type=entity.entity_type,
+            query_only=True,
+        )
+        relations = session.scalars(
+            select(SqliteRelation)
+            .where(where_clause)
+            .order_by(
+                SqliteRelation.role,
+                SqliteRelation.entity_one_id,
+                SqliteRelation.entity_one_type,
+                SqliteRelation.entity_two_id,
+                SqliteRelation.entity_two_type,
             )
-        query = query.order_by(
-            SqliteRelation.role,
-            SqliteRelation.entity_one_id,
-            SqliteRelation.entity_one_type,
-            SqliteRelation.entity_two_id,
-            SqliteRelation.entity_two_type,
         )
         data = []
-        for relation in query:
+        for relation in relations:
             category = RoleType.role_definitions[relation.role]
             if category is None:
                 continue
@@ -277,7 +303,8 @@ class SqliteHelper(DatabaseHelper):
         return roles, year
 
     @staticmethod
-    def search_entities(search_string):
+    def search_entities(session: Session, search_string):
+        from discograph.library.models.entity import Entity
         from discograph.utils import URLIFY_REGEX
         from discograph.library.cache.cache_manager import cache
 
@@ -289,18 +316,18 @@ class SqliteHelper(DatabaseHelper):
             for datum in data["results"]:
                 log.debug(f"    {datum}")
             return data
-        with DiscogsModel.connection_context():
-            query = SqliteEntity.search_text(search_string)
-            log.debug(f"query: {query}")
-            log.debug(f"{cache_key}: NOT CACHED")
-            data = []
-            for entity in query:
-                datum = dict(
-                    key=f"{entity.entity_type.name.lower()}-{entity.entity_id}",
-                    name=entity.name,
-                )
-                data.append(datum)
-                log.debug(f"    {datum}")
+        select_query = SqliteEntity.build_search_text_query(search_string)
+        log.debug(f"select_query: {select_query}")
+        entities = session.scalars(select(Entity).filter(select_query)).all()
+        log.debug(f"{cache_key}: NOT CACHED")
+        data = []
+        for entity in entities:
+            datum = dict(
+                key=entity.json_entity_key,
+                name=entity.entity_name,
+            )
+            data.append(datum)
+            log.debug(f"    {datum}")
         data = {"results": tuple(data)}
         log.debug(f"  set cache_key: {cache_key} data: {data}")
         cache.set(cache_key, data)

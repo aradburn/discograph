@@ -117,7 +117,9 @@ class TestDatabaseRelease(DatabaseTestCase):
         )
         release_element = ElementTree.fromstring(source)
         release = DatabaseTestCase.release.from_element(release_element)
+        print(f"release: {release}")
         actual = utils.normalize(format(release))
+        print(f"actual: {actual}")
 
         expected_release = {
             "artists": [{"id": 194, "name": "Various"}],
@@ -132,7 +134,6 @@ class TestDatabaseRelease(DatabaseTestCase):
             "labels": [{"catalog_number": "NT006", "name": "Nordic Trax"}],
             "master_id": None,
             "notes": None,
-            "random": None,
             "release_date": "1999-01-01 00:00:00",
             "release_id": 103,
             "styles": ["Deep House"],
@@ -250,7 +251,6 @@ class TestDatabaseRelease(DatabaseTestCase):
                 ],
                 "master_id": 1315,
                 "notes": null,
-                "random": null,
                 "release_date": "1994-09-03 00:00:00",
                 "release_id": 157,
                 "styles": [
@@ -343,7 +343,6 @@ class TestDatabaseRelease(DatabaseTestCase):
                 ],
                 "master_id": 21103,
                 "notes": null,
-                "random": null,
                 "release_date": "1994-01-01 00:00:00",
                 "release_id": 635,
                 "styles": [
@@ -433,10 +432,10 @@ class TestDatabaseRelease(DatabaseTestCase):
 
     def test_from_db_01(self):
         release_id = 157
-        release = DatabaseTestCase.release.read(release_id)
-        print(f"release: {release}")
-        release["random"] = 0.0
-        actual = utils.normalize(format(release))
+        with self.test_session.begin() as session:
+            release = session.get(DatabaseTestCase.release, release_id)
+            actual = utils.normalize(format(release))
+
         expected_release = {
             "artists": [{"id": 41, "name": "Autechre"}],
             "companies": [],
@@ -486,7 +485,6 @@ class TestDatabaseRelease(DatabaseTestCase):
             ],
             "master_id": 1315,
             "notes": None,
-            "random": 0.0,
             "release_date": "1994-09-03 00:00:00",
             "release_id": 157,
             "styles": ["Abstract", "IDM", "Experimental"],
@@ -503,9 +501,9 @@ class TestDatabaseRelease(DatabaseTestCase):
 
     def test_from_db_02(self):
         release_id = 635
-        release = DatabaseTestCase.release.get_by_id(release_id)
-        release.random = 0.0
-        actual = utils.normalize(format(release))
+        with self.test_session.begin() as session:
+            release = session.get(DatabaseTestCase.release, release_id)
+            actual = utils.normalize(format(release))
         expected_release = {
             "artists": [{"id": 939, "name": "Higher Intelligence Agency, The"}],
             "companies": [],
@@ -530,7 +528,6 @@ class TestDatabaseRelease(DatabaseTestCase):
             "labels": [{"catalog_number": "HIACD2", "id": 233, "name": "Beyond"}],
             "master_id": 21103,
             "notes": None,
-            "random": 0.0,
             "release_date": "1994-01-01 00:00:00",
             "release_id": 635,
             "styles": ["Techno", "Ambient"],

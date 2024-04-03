@@ -1,8 +1,7 @@
 import logging
 from unittest import SkipTest
 
-import peewee
-import psycopg2
+from sqlalchemy.exc import DatabaseError
 
 from discograph.config import CockroachTestConfiguration
 from discograph.library.cockroach.cockroach_entity import CockroachEntity
@@ -28,7 +27,7 @@ class CockroachTestCase(DatabaseTestCase):
         DatabaseTestCase.relation_grapher = CockroachRelationGrapher
         try:
             super().setUpClass()
-        except (psycopg2.OperationalError, peewee.OperationalError):
+        except DatabaseError:
             cls.tearDownClass()
         finally:
             raise SkipTest("Cannot connect to Cockroach Database")

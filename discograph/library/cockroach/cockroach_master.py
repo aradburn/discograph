@@ -1,26 +1,27 @@
-import peewee
-from playhouse.cockroachdb import JSONField, ArrayField
+import logging
 
 from discograph.library.cockroach.cockroach_release import CockroachRelease
-from discograph.library.discogs_model import DiscogsModel
+from discograph.library.loader_base import LoaderBase
 from discograph.library.loader_utils import LoaderUtils
 
+log = logging.getLogger(__name__)
 
-class CockroachMaster(DiscogsModel):
+
+class CockroachMaster(LoaderBase):
     # PEEWEE FIELDS
 
-    id = peewee.IntegerField(primary_key=True)
-    artists = JSONField(null=True)
-    genres = ArrayField(peewee.TextField, null=True)
-    main_release_id = peewee.IntegerField(null=True)
-    styles = ArrayField(peewee.TextField, null=True)
-    title = peewee.TextField()
-    year = peewee.IntegerField(null=True)
-
-    # PEEWEE META
-
-    class Meta:
-        table_name = "masters"
+    # id = peewee.IntegerField(primary_key=True)
+    # artists = JSONField(null=True)
+    # genres = ArrayField(peewee.TextField, null=True)
+    # main_release_id = peewee.IntegerField(null=True)
+    # styles = ArrayField(peewee.TextField, null=True)
+    # title = peewee.TextField()
+    # year = peewee.IntegerField(null=True)
+    #
+    # # PEEWEE META
+    #
+    # class Meta:
+    #     table_name = "masters"
 
     # PUBLIC METHODS
 
@@ -38,7 +39,7 @@ class CockroachMaster(DiscogsModel):
 
     @classmethod
     def loader_pass_one(cls, date: str):
-        DiscogsModel.loader_pass_one_manager(
+        LoaderBase.loader_pass_one_manager(
             model_class=cls,
             date=date,
             xml_tag="master",

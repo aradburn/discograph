@@ -101,6 +101,10 @@ class LoaderUtils:
         return None
 
     @staticmethod
+    def element_to_none(element):
+        return None
+
+    @staticmethod
     def get_iterator(tag: str, date: str):
         file_path = LoaderUtils.get_xml_path(tag, date)
         file_pointer = gzip.GzipFile(file_path, "r")

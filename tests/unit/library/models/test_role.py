@@ -81,3 +81,63 @@ class TestDatabaseRole(unittest.TestCase):
         expected_str = "Tar (Lute)"
         actual_str = Role.normalize(input_str)
         self.assertEqual(expected_str, actual_str)
+
+    def test_normalize_14(self):
+        input_str = "Written-By"
+        expected_str = "Written By"
+        actual_str = Role.normalize(input_str)
+        self.assertEqual(expected_str, actual_str)
+
+    def test_normalize_15(self):
+        input_str = "Written By"
+        expected_str = "Written By"
+        actual_str = Role.normalize(input_str)
+        self.assertEqual(expected_str, actual_str)
+
+    def test_normalize_16(self):
+        input_str = "Written-by"
+        expected_str = "Written By"
+        actual_str = Role.normalize(input_str)
+        self.assertEqual(expected_str, actual_str)
+
+    def test_normalize_17(self):
+        input_str = "A&R"
+        expected_str = "A&R"
+        actual_str = Role.normalize(input_str)
+        self.assertEqual(expected_str, actual_str)
+
+    def test_normalize_18(self):
+        input_str = "A&r"
+        expected_str = "A&R"
+        actual_str = Role.normalize(input_str)
+        self.assertEqual(expected_str, actual_str)
+
+    def test_normalize_19(self):
+        input_str = "CGI Artist"
+        expected_str = "CGI Artist"
+        actual_str = Role.normalize(input_str)
+        self.assertEqual(expected_str, actual_str)
+
+    def test_normalize_20(self):
+        input_str = "Cgi Artist"
+        expected_str = "CGI Artist"
+        actual_str = Role.normalize(input_str)
+        self.assertEqual(expected_str, actual_str)
+
+    def test_normalize_21(self):
+        input_str = "DJ Mix"
+        expected_str = "DJ Mix"
+        actual_str = Role.normalize(input_str)
+        self.assertEqual(expected_str, actual_str)
+
+    def test_normalize_22(self):
+        input_str = "Dj mix"
+        expected_str = "DJ Mix"
+        actual_str = Role.normalize(input_str)
+        self.assertEqual(expected_str, actual_str)
+
+    def test_normalize_23(self):
+        input_str = "Vibes"
+        expected_str = "Vibraphone"
+        actual_str = Role.normalize(input_str)
+        self.assertEqual(expected_str, actual_str)
