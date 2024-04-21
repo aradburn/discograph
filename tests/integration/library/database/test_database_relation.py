@@ -1,15 +1,29 @@
 from discograph import utils
+from discograph.library.database.relation_repository import RelationRepository
+from discograph.library.database.transaction import transaction
 from discograph.library.fields.entity_type import EntityType
 from tests.integration.library.database.database_test_case import DatabaseTestCase
 
 
 class TestDatabaseRelation(DatabaseTestCase):
     def test_from_db_01(self):
-        pk = (42, EntityType.ARTIST, 41, EntityType.ARTIST, "Producer")
-        with self.test_session.begin() as session:
-            relation = session.get(DatabaseTestCase.relation, pk)
-            actual = utils.normalize(format(relation))
+        # GIVEN
+        key = dict(
+            entity_one_id=42,
+            entity_one_type=EntityType.ARTIST,
+            entity_two_id=41,
+            entity_two_type=EntityType.ARTIST,
+            role="Producer",
+        )
 
+        # WHEN
+        with transaction():
+            relation = RelationRepository().find_by_key(key)
+            actual = utils.normalize_dict(
+                relation.model_dump(exclude={"relation_id", "random"})
+            )
+
+        # THEN
         expected_relation = {
             "entity_one_id": 42,
             "entity_one_type": "EntityType.ARTIST",
@@ -96,11 +110,23 @@ class TestDatabaseRelation(DatabaseTestCase):
         self.assertEqual(expected, actual)
 
     def test_from_db_02(self):
-        pk = (21209, EntityType.ARTIST, 3771, EntityType.ARTIST, "Compiled By")
-        with self.test_session.begin() as session:
-            relation = session.get(DatabaseTestCase.relation, pk)
-            actual = utils.normalize(format(relation))
+        # GIVEN
+        key = dict(
+            entity_one_id=21209,
+            entity_one_type=EntityType.ARTIST,
+            entity_two_id=3771,
+            entity_two_type=EntityType.ARTIST,
+            role="Compiled By",
+        )
 
+        # WHEN
+        with transaction():
+            relation = RelationRepository().find_by_key(key)
+            actual = utils.normalize_dict(
+                relation.model_dump(exclude={"relation_id", "random"})
+            )
+
+        # THEN
         expected_relation = {
             "entity_one_id": 21209,
             "entity_one_type": "EntityType.ARTIST",
@@ -119,10 +145,21 @@ class TestDatabaseRelation(DatabaseTestCase):
         self.assertEqual(expected, actual)
 
     def test_from_db_03(self):
-        pk = (335173, EntityType.ARTIST, 41, EntityType.ARTIST, "Mastered By")
-        with self.test_session.begin() as session:
-            relation = session.get(DatabaseTestCase.relation, pk)
-            actual = utils.normalize(format(relation))
+        # GIVEN
+        key = dict(
+            entity_one_id=335173,
+            entity_one_type=EntityType.ARTIST,
+            entity_two_id=41,
+            entity_two_type=EntityType.ARTIST,
+            role="Mastered By",
+        )
+
+        # WHEN
+        with transaction():
+            relation = RelationRepository().find_by_key(key)
+            actual = utils.normalize_dict(
+                relation.model_dump(exclude={"relation_id", "random"})
+            )
 
         expected_relation = {
             "entity_one_id": 335173,

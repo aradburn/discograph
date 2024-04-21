@@ -14,10 +14,10 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from discograph import api
-from discograph import exceptions
 from discograph import ui
 from discograph.config import PostgresProductionConfiguration
 from discograph.database import setup_database, shutdown_database
+from discograph.exceptions import NotFoundError, BaseError
 from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.library.database.database_helper import DatabaseHelper
 from discograph.logging_config import setup_logging, shutdown_logging
@@ -88,28 +88,20 @@ def handle_error(error):
 # noinspection PyUnusedLocal
 @app.errorhandler(404)
 def handle_error_404(error):
-    status_code = 404
-    error = exceptions.APIError(
-        message="Not Found",
-        status_code=status_code,
-    )
+    error = NotFoundError(message="Not Found")
     rendered_template = render_template("error.html", error=error)
     response = make_response(rendered_template)
-    response.status_code = status_code
+    response.status_code = error.status_code
     return response
 
 
 # noinspection PyUnusedLocal
 @app.errorhandler(500)
 def handle_error_500(error):
-    status_code = 500
-    error = exceptions.APIError(
-        message="Something Broke",
-        status_code=status_code,
-    )
+    error = BaseError(message="Something Broke")
     rendered_template = render_template("error.html", error=error)
     response = make_response(rendered_template)
-    response.status_code = status_code
+    response.status_code = error.status_code
     return response
 
 

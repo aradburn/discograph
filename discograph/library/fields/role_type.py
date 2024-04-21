@@ -1,10 +1,13 @@
 import collections
 import enum
 import re
+from typing import Dict
 
 
 class RoleType:
     # CLASS VARIABLES
+    role_name_to_role_id_lookup: Dict[str, int] = {}
+    role_id_to_role_name_lookup: Dict[int, str] = {}
 
     class Category(enum.Enum):
         ACTING_LITERARY_AND_SPOKEN = 1
@@ -82,10 +85,10 @@ class RoleType:
             # "Collaborated With": (Category.RELATION,)),
             ("Artwork By", (Category.VISUAL,)),
             # was ("Artwork By", None),
-            ("Executive Producer", None),
-            ("Other", None),
-            ("Photography", None),
-            ("Written By", None),
+            ("Executive Producer", (Category.PRODUCTION,)),
+            ("Other", (Category.RELATION,)),
+            ("Photography", (Category.VISUAL,)),
+            ("Written By", (Category.WRITING_AND_ARRANGEMENT,)),
             ("Adapted By", (Category.WRITING_AND_ARRANGEMENT,)),
             ("Arranged By", (Category.WRITING_AND_ARRANGEMENT,)),
             ("Cadenza", (Category.WRITING_AND_ARRANGEMENT,)),

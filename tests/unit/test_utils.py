@@ -1,6 +1,7 @@
 import unittest
 
 from discograph import utils
+from discograph.library.fields.entity_type import EntityType
 
 
 class TestUtils(unittest.TestCase):
@@ -110,9 +111,9 @@ class TestUtils(unittest.TestCase):
         input_dict = {
             "artist-430141-member-of-artist-307": {
                 "entity_one_id": 430141,
-                "entity_one_type": "EntityType.ARTIST",
+                "entity_one_type": EntityType.ARTIST,
                 "entity_two_id": 307,
-                "entity_two_type": "EntityType.ARTIST",
+                "entity_two_type": EntityType.ARTIST,
                 "role": "Member Of",
             },
             "artist-430141-member-of-artist-3603": {
@@ -121,10 +122,11 @@ class TestUtils(unittest.TestCase):
                 "entity_two_id": 3603,
                 "entity_two_type": "EntityType.ARTIST",
                 "role": "Member Of",
+                "random": None,
             },
         }
 
-        actual = utils.normalize_nested_dict(input_dict)
+        actual = utils.normalize_dict(input_dict)
         expected = """
             {
                 "artist-430141-member-of-artist-307": {
@@ -139,6 +141,7 @@ class TestUtils(unittest.TestCase):
                     "entity_one_type": "EntityType.ARTIST",
                     "entity_two_id": 3603,
                     "entity_two_type": "EntityType.ARTIST",
+                    "random": null,
                     "role": "Member Of"
                 }
             }

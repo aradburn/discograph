@@ -3,16 +3,16 @@ import unittest
 from typing import Type
 
 from sqlalchemy.exc import DatabaseError
-from sqlalchemy.orm import sessionmaker
 
 from discograph import database
 from discograph.config import Configuration
 from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.library.database.database_helper import DatabaseHelper
-from discograph.library.models.entity import Entity
-from discograph.library.models.relation import Relation
-from discograph.library.models.release import Release
-from discograph.library.models.role import Role
+from discograph.library.database.entity_table import EntityTable
+from discograph.library.database.relation_table import RelationTable
+from discograph.library.database.release_info_table import ReleaseInfoTable
+from discograph.library.database.release_table import ReleaseTable
+from discograph.library.database.role_table import RoleTable
 from discograph.library.relation_grapher import RelationGrapher
 from discograph.logging_config import setup_logging, shutdown_logging
 
@@ -22,12 +22,12 @@ log = logging.getLogger(__name__)
 class DatabaseTestCase(unittest.TestCase):
     _config: Configuration = None
     _db_helper: DatabaseHelper = None
-    entity: Entity = None
-    relation: Relation = None
-    release: Release = None
-    role: Role = None
+    # entity: EntityDB = None
+    # relation: RelationDB = None
+    # release: ReleaseDB = None
+    # role: RoleDB = None
     relation_grapher: Type[RelationGrapher] = None
-    test_session: sessionmaker = None
+    # test_session: sessionmaker = None
 
     # noinspection PyPep8Naming
     def __init__(self, methodName="runTest"):
@@ -54,7 +54,16 @@ class DatabaseTestCase(unittest.TestCase):
                 # db_logger = logging.getLogger("peewee")
                 # db_logger.setLevel(logging.DEBUG)
                 _db_helper.drop_tables()
-                _db_helper.create_tables()
+                # TODO remove parameters below when migrated
+                _db_helper.create_tables(
+                    tables=[
+                        RoleTable.__table__,
+                        EntityTable.__table__,
+                        RelationTable.__table__,
+                        ReleaseTable.__table__,
+                        ReleaseInfoTable.__table__,
+                    ]
+                )
                 _db_helper.load_tables("test")
 
     @classmethod
@@ -67,7 +76,7 @@ class DatabaseTestCase(unittest.TestCase):
             shutdown_logging()
 
     def setUp(self):
-        self.test_session = DatabaseHelper.session_factory
+        # self.test_session = DatabaseHelper.session_factory
 
         log.info("-------------------------------------------------------------------")
         log.info(f"Test {self.id()}")

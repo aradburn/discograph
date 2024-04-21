@@ -1,4 +1,4 @@
-class TrellisNode(object):
+class TrellisNode:
     __slots__ = (
         "_children",
         "_cluster",

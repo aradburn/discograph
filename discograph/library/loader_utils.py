@@ -53,7 +53,7 @@ class LoaderUtils:
             yield element
 
     @staticmethod
-    def parse_release_date(date_string: Optional[str]):
+    def parse_release_date(date_string: Optional[str]) -> Optional[datetime]:
         # empty string
         if not date_string:
             return None
@@ -135,7 +135,12 @@ class LoaderUtils:
         return reparsed.toprettyxml(indent="    ")
 
     @staticmethod
-    def validate_release_date(year_str: str, month_str: str, day_str: str):
+    def validate_release_date(
+        year_str: str, month_str: str, day_str: str
+    ) -> datetime.datetime:
+        # log.debug(f"year_str: {year_str}")
+        # log.debug(f"month_str: {month_str}")
+        # log.debug(f"day_str: {day_str}")
         try:
             year = int(year_str)
             month = int(month_str)
@@ -144,7 +149,7 @@ class LoaderUtils:
                 month = 1
             if day < 1:
                 day = 1
-            if 12 < month:
+            if month > 12 >= day:
                 day, month = month, day
             date = datetime.datetime(year, month, 1, 0, 0)
             day_offset = day - 1
@@ -152,4 +157,5 @@ class LoaderUtils:
         except ValueError:
             log.error(f"BAD DATE: {year_str},{month_str},{day_str}")
             date = None
+        # log.debug(f"date: {date}")
         return date

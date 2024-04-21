@@ -7,10 +7,9 @@ from flask import make_response
 from flask import render_template
 from flask import request
 from flask import url_for
-from sqlalchemy.orm import scoped_session
 
 import discograph.utils
-from discograph import exceptions
+from discograph.exceptions import BadRequestError, NotFoundError
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.role_entry import RoleEntry
 
@@ -67,21 +66,21 @@ def route__entity_type__entity_id(entity_type, entity_id):
         original_roles = default_roles
     entity_type = EntityType[entity_type.upper()]
     if entity_type not in (EntityType.ARTIST, EntityType.LABEL):
-        raise exceptions.APIError(message="Bad Entity Type", status_code=400)
+        raise BadRequestError(message="Bad Entity Type")
     if not entity_id.isnumeric():
-        raise exceptions.APIError(message="Bad Entity Id", status_code=400)
+        raise BadRequestError(message="Bad Entity Id")
     entity_id = int(entity_id)
 
     # on_mobile = request.MOBILE
     data = DatabaseHelper.db_helper.get_network(
-        DatabaseHelper.flask_db_session(),
+        # TODO DatabaseHelper.flask_db_session(),
         entity_id,
         entity_type,
         # on_mobile=on_mobile,
         roles=original_roles,
     )
     if data is None:
-        raise exceptions.APIError(message="No Data", status_code=404)
+        raise NotFoundError(message="No Data")
     initial_json = json.dumps(
         data,
         sort_keys=True,
