@@ -47,19 +47,19 @@ class WorkerEntityUpdater(multiprocessing.Process):
                     is_changed = False
                     update_payload = {}
 
-                    # Update name
                     if db_entity.entity_name != updated_entity.entity_name:
+                        # Update name
                         db_entity.entity_name = updated_entity.entity_name
+                        update_payload[
+                            EntityTable.entity_name.key
+                        ] = db_entity.entity_name
+
+                        # Update search_content
                         db_entity.search_content = (
                             EntityDataAccess().normalize_search_content(
                                 updated_entity.entity_name
                             )
                         )
-                        # flag_modified(db_entity, EntityTable.entity_name.key)
-                        # flag_modified(db_entity, EntityTable.search_content.key)
-                        update_payload[
-                            EntityTable.entity_name.key
-                        ] = db_entity.entity_name
                         update_payload[
                             EntityTable.search_content.key
                         ] = db_entity.search_content
@@ -82,17 +82,9 @@ class WorkerEntityUpdater(multiprocessing.Process):
 
                         db_entity.entity_metadata = updated_entity.entity_metadata
 
-                        # entity_repository.update(
-                        #     db_entity.entity_id,
-                        #     db_entity.entity_type,
-                        #     {
-                        #         EntityTable.entity_metadata.key: db_entity.entity_metadata
-                        #     },
-                        # )
                         update_payload[
                             EntityTable.entity_metadata.key
                         ] = db_entity.entity_metadata
-                        # flag_modified(db_entity, EntityTable.entity_metadata.key)
                         is_changed = True
 
                     if is_changed:

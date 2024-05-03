@@ -71,15 +71,12 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
         # instance: ReleaseTable = await self._save(schema.model_dump())
         return Release.model_validate(instance)
 
-    def get_chunked_release_ids(self, concurrency_multiplier=1):
-        from discograph.database import get_concurrency_count
-
+    def get_batched_release_ids(self, num_in_batch: int):
         all_ids = self._session.scalars(
-            select(ReleaseTable.release_id).order_by(ReleaseTable.release_id)
+            select(ReleaseTable.release_id)
+            # select(ReleaseTable.release_id).order_by(ReleaseTable.release_id)
         ).all()
-
-        num_chunks = get_concurrency_count() * concurrency_multiplier
-        return utils.split_tuple(num_chunks, all_ids)
+        return utils.batched(all_ids, num_in_batch)
 
     def get_random_release(self) -> Release:
         n = random()

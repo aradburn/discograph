@@ -41,7 +41,7 @@ def setup_cache(config):
                 port=6379,
                 password=None,
                 db=0,
-                default_timeout=300,
+                default_timeout=60 * 60 * 24 * 7,
                 key_prefix=None,
             )
             # cache = fakeredis.FakeRedis()

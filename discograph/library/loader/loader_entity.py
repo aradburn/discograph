@@ -1,6 +1,7 @@
 import logging
 from random import random
 
+from discograph.database import get_concurrency_count
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.entity_table import EntityTable
 from discograph.library.database.transaction import transaction
@@ -10,6 +11,7 @@ from discograph.library.loader.loader_base import LoaderBase
 from discograph.library.loader.worker_entity_pass_three import WorkerEntityPassThree
 from discograph.library.loader.worker_entity_pass_two import WorkerEntityPassTwo
 from discograph.library.loader_utils import LoaderUtils
+from discograph.logging_config import LOGGING_TRACE
 from discograph.utils import normalise_search_content, timeit
 
 log = logging.getLogger(__name__)
@@ -22,23 +24,27 @@ class LoaderEntity(LoaderBase):
     @timeit
     def loader_pass_one(cls, date: str) -> int:
         log.debug("entity loader pass one - artist")
-        artists_loaded = cls.loader_pass_one_manager(
-            repository=EntityRepository(),
-            date=date,
-            xml_tag="artist",
-            id_attr=EntityTable.entity_id.name,
-            name_attr="name",
-            skip_without=["entity_name"],
-        )
+        with transaction():
+            entity_repository = EntityRepository()
+            artists_loaded = cls.loader_pass_one_manager(
+                repository=entity_repository,
+                date=date,
+                xml_tag="artist",
+                id_attr=EntityTable.entity_id.name,
+                name_attr="name",
+                skip_without=["entity_name"],
+            )
         log.debug("entity loader pass one - label")
-        labels_loaded = cls.loader_pass_one_manager(
-            repository=EntityRepository(),
-            date=date,
-            xml_tag="label",
-            id_attr=EntityTable.entity_id.name,
-            name_attr="name",
-            skip_without=["entity_name"],
-        )
+        with transaction():
+            entity_repository = EntityRepository()
+            labels_loaded = cls.loader_pass_one_manager(
+                repository=entity_repository,
+                date=date,
+                xml_tag="label",
+                id_attr=EntityTable.entity_id.name,
+                name_attr="name",
+                skip_without=["entity_name"],
+            )
         return artists_loaded + labels_loaded
 
     @classmethod
@@ -90,45 +96,114 @@ class LoaderEntity(LoaderBase):
     @timeit
     def loader_pass_three(cls):
         log.debug("entity loader pass three")
+        with transaction():
+            entity_repository = EntityRepository()
+            entity_type: EntityType = EntityType.ARTIST
+            batched_release_ids = entity_repository.get_batched_ids(
+                entity_type, LoaderBase.BULK_INSERT_BATCH_SIZE
+            )
+
+        workers = []
+        for release_ids in batched_release_ids:
+            worker = WorkerEntityPassThree(entity_type, release_ids)
+            worker.start()
+            workers.append(worker)
+
+            if len(workers) > get_concurrency_count():
+                worker = workers.pop(0)
+                if LOGGING_TRACE:
+                    log.debug(f"wait for worker {len(workers)} in list")
+                worker.join()
+                if worker.exitcode > 0:
+                    log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
+                    raise Exception("Error in worker process")
+                worker.terminate()
+
+        while len(workers) > 0:
+            worker = workers.pop(0)
+            if LOGGING_TRACE:
+                log.debug(
+                    f"wait for worker {worker.name} - {len(workers)} left in list"
+                )
+            worker.join()
+            if worker.exitcode > 0:
+                log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
+                raise Exception("Error in worker process")
+            worker.terminate()
 
         with transaction():
-            repository = EntityRepository()
-            entity_type: EntityType = EntityType.ARTIST
-            chunked_entity_ids = repository.get_chunked_entity_ids(entity_type)
-            workers = [
-                WorkerEntityPassThree(entity_type, entity_ids)
-                for entity_ids in chunked_entity_ids
-            ]
-            log.debug(f"entity loader pass three - artist start {len(workers)} workers")
-            for worker in workers:
-                worker.start()
-            for worker in workers:
-                worker.join()
-                if worker.exitcode > 0:
-                    log.debug(
-                        f"entity loader worker {worker.name} exitcode: {worker.exitcode}"
-                    )
-                    raise Exception("Error in worker process")
-            for worker in workers:
-                worker.terminate()
+            entity_repository = EntityRepository()
             entity_type: EntityType = EntityType.LABEL
-            chunked_entity_ids = repository.get_chunked_entity_ids(entity_type)
-            workers = [
-                WorkerEntityPassThree(entity_type, entity_ids)
-                for entity_ids in chunked_entity_ids
-            ]
-            log.debug(f"entity loader pass three - label start {len(workers)} workers")
-            for worker in workers:
-                worker.start()
-            for worker in workers:
+            batched_release_ids = entity_repository.get_batched_ids(
+                entity_type, LoaderBase.BULK_INSERT_BATCH_SIZE
+            )
+
+        workers = []
+        for release_ids in batched_release_ids:
+            worker = WorkerEntityPassThree(entity_type, release_ids)
+            worker.start()
+            workers.append(worker)
+
+            if len(workers) > get_concurrency_count():
+                worker = workers.pop(0)
+                if LOGGING_TRACE:
+                    log.debug(f"wait for worker {len(workers)} in list")
                 worker.join()
                 if worker.exitcode > 0:
-                    log.debug(
-                        f"entity loader worker {worker.name} exitcode: {worker.exitcode}"
-                    )
+                    log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
                     raise Exception("Error in worker process")
-            for worker in workers:
                 worker.terminate()
+
+        while len(workers) > 0:
+            worker = workers.pop(0)
+            if LOGGING_TRACE:
+                log.debug(
+                    f"wait for worker {worker.name} - {len(workers)} left in list"
+                )
+            worker.join()
+            if worker.exitcode > 0:
+                log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
+                raise Exception("Error in worker process")
+            worker.terminate()
+
+        # with transaction():
+        #     repository = EntityRepository()
+        #     entity_type: EntityType = EntityType.ARTIST
+        #     chunked_entity_ids = repository.get_chunked_entity_ids(entity_type)
+        #     workers = [
+        #         WorkerEntityPassThree(entity_type, entity_ids)
+        #         for entity_ids in chunked_entity_ids
+        #     ]
+        #     log.debug(f"entity loader pass three - artist start {len(workers)} workers")
+        #     for worker in workers:
+        #         worker.start()
+        #     for worker in workers:
+        #         worker.join()
+        #         if worker.exitcode > 0:
+        #             log.debug(
+        #                 f"entity loader worker {worker.name} exitcode: {worker.exitcode}"
+        #             )
+        #             raise Exception("Error in worker process")
+        #     for worker in workers:
+        #         worker.terminate()
+        #     entity_type: EntityType = EntityType.LABEL
+        #     chunked_entity_ids = repository.get_chunked_entity_ids(entity_type)
+        #     workers = [
+        #         WorkerEntityPassThree(entity_type, entity_ids)
+        #         for entity_ids in chunked_entity_ids
+        #     ]
+        #     log.debug(f"entity loader pass three - label start {len(workers)} workers")
+        #     for worker in workers:
+        #         worker.start()
+        #     for worker in workers:
+        #         worker.join()
+        #         if worker.exitcode > 0:
+        #             log.debug(
+        #                 f"entity loader worker {worker.name} exitcode: {worker.exitcode}"
+        #             )
+        #             raise Exception("Error in worker process")
+        #     for worker in workers:
+        #         worker.terminate()
 
     @classmethod
     def element_to_names(cls, names):

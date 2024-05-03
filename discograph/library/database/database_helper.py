@@ -7,7 +7,6 @@ from sqlalchemy import Engine, Index
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, scoped_session
 
 from discograph.config import Configuration
-from discograph.library.domain.entity import Entity
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.fields.role_type import RoleType
 
@@ -138,6 +137,7 @@ class DatabaseHelper(ABC):
     def get_random_entity(roles=None) -> tuple[int, str]:
         from discograph.library.database.entity_repository import EntityRepository
         from discograph.library.database.relation_repository import RelationRepository
+        from discograph.library.domain.entity import Entity
 
         structural_roles = [
             "Alias",

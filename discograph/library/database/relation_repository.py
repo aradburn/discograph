@@ -1,20 +1,16 @@
 import logging
-from datetime import date
 from random import random
 from typing import Generator, Any, List, Tuple, cast
 
 from sqlalchemy import Result, select, update, Select
-from sqlalchemy.orm import joinedload, selectinload
 
 from discograph import utils
 from discograph.exceptions import NotFoundError, DatabaseError
 from discograph.library.database.base_repository import BaseRepository
 from discograph.library.database.relation_table import RelationTable
 from discograph.library.database.role_repository import RoleRepository
-from discograph.library.database.role_table import RoleTable
 from discograph.library.domain.entity import Entity
 from discograph.library.domain.relation import Relation, RelationUncommitted, RelationDB
-from discograph.library.domain.role import Role
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.fields.role_type import RoleType
 
@@ -27,32 +23,46 @@ class RelationRepository(BaseRepository[RelationTable]):
     @staticmethod
     def _to_domain(relation_db: RelationDB) -> Relation:
         # print(f"_to_domain")
-        relation_db_dict: dict = relation_db.model_dump(
-            exclude={"releases": {"artists"}}
-        )
+        relation_db_dict: dict = relation_db.model_dump()
         # print(f"original relation_db_dict: {relation_db_dict}")
-        role: Role = relation_db_dict.get("role")
-        # print(f"role: {role}")
-        role_name = role.get("role_name") if role is not None else None
+        role_id: int = relation_db_dict.get("role_id")
+        # print(f"role_id: {role_id}")
+        role_name = RoleType.role_id_to_role_name_lookup[role_id]
+        # print(f"role_name: {role_name}")
         relation_db_dict.update(role=role_name)
 
-        releases_list = relation_db_dict.get("releases")
-        # print(f"original releases: {releases_list}")
-        releases = {}
-        for release in releases_list:
-            key = str(release.get("release_id"))
-            value = release.get("release_date")
-            if value is not None:
-                if isinstance(value, int):
-                    pass
-                elif isinstance(value, date):
-                    value = value.year
-            releases[key] = value
-
-        # print(f"updated releases: {releases}")
-        relation_db_dict.update(releases=releases)
         # print(f"updated relation_db_dict: {relation_db_dict}")
         return Relation.model_validate(relation_db_dict)
+
+    # @staticmethod
+    # def _to_domain(relation_db: RelationDB) -> Relation:
+    #     # print(f"_to_domain")
+    #     relation_db_dict: dict = relation_db.model_dump(
+    #         exclude={"releases": {"artists"}}
+    #     )
+    #     # print(f"original relation_db_dict: {relation_db_dict}")
+    #     role: Role = relation_db_dict.get("role")
+    #     # print(f"role: {role}")
+    #     role_name = role.get("role_name") if role is not None else None
+    #     relation_db_dict.update(role=role_name)
+    #
+    #     releases_list = relation_db_dict.get("releases")
+    #     # print(f"original releases: {releases_list}")
+    #     releases = {}
+    #     for release in releases_list:
+    #         key = str(release.get("release_id"))
+    #         value = release.get("release_date")
+    #         if value is not None:
+    #             if isinstance(value, int):
+    #                 pass
+    #             elif isinstance(value, date):
+    #                 value = value.year
+    #         releases[key] = value
+    #
+    #     # print(f"updated releases: {releases}")
+    #     relation_db_dict.update(releases=releases)
+    #     # print(f"updated relation_db_dict: {relation_db_dict}")
+    #     return Relation.model_validate(relation_db_dict)
 
     def _get_one_by_query(self, query: Select[tuple[RelationTable]]) -> Relation:
         # print(f"_get_one_by_query")
@@ -86,17 +96,9 @@ class RelationRepository(BaseRepository[RelationTable]):
         # print(f"get")
         query = (
             select(RelationTable)
-            .options(
-                joinedload(RelationTable.role),
-            )
-            # .execution_options(populate_existing=True)
-            .options(
-                # Many to Many relationship, only load release id and date columns
-                selectinload(RelationTable.releases)
-                # .load_only(
-                #     ReleaseTable.release_date
-                # )
-            )
+            # .options(
+            #     joinedload(RelationTable.role),
+            # )
             .where(RelationTable.relation_id == relation_id)
         )
         result: Result = self.execute(query)
@@ -108,11 +110,40 @@ class RelationRepository(BaseRepository[RelationTable]):
         # print(f"instance: {instance}")
         return RelationDB.model_validate(instance)
 
+    # def get(self, relation_id: int) -> RelationDB:
+    #     # print(f"get")
+    #     query = (
+    #         select(RelationTable)
+    #         .options(
+    #             joinedload(RelationTable.role),
+    #         )
+    #         # .execution_options(populate_existing=True)
+    #         .options(
+    #             # Many to Many relationship, only load release id and date columns
+    #             selectinload(RelationTable.releases)
+    #             # .load_only(
+    #             #     ReleaseTable.release_date
+    #             # )
+    #         )
+    #         .where(RelationTable.relation_id == relation_id)
+    #     )
+    #     result: Result = self.execute(query)
+    #     # result: Result = await self.execute(query)
+    #     # print(f"result: {result}")
+    #
+    #     if not (instance := result.scalars().one_or_none()):
+    #         raise NotFoundError
+    #     # print(f"instance: {instance}")
+    #     return RelationDB.model_validate(instance)
+
     def get_id_by_key(self, key: dict) -> int:
         # print(f"find_by_key")
-        if "role_name" in key:
-            role = RoleRepository().get_by_name(key["role_name"])
-            key["role_id"] = role.role_id
+        if "role_id" not in key:
+            if "role_name" in key:
+                role_name = key["role_name"]
+                key["role_id"] = RoleType.role_name_to_role_id_lookup[role_name]
+                # role = RoleRepository().get_by_name(key["role_name"])
+                # key["role_id"] = role.role_id
         query = (
             select(RelationTable.relation_id)
             # .options(
@@ -145,42 +176,49 @@ class RelationRepository(BaseRepository[RelationTable]):
         # print(f"find_by_id")
         query = (
             select(RelationTable)
-            .options(
-                joinedload(RoleTable.role_id),
-            )
-            .options(
-                # Many to Many relationship, only load release id and date columns
-                selectinload(RelationTable.releases)
-                # .load_only(
-                #     ReleaseTable.release_date
-                # )
-            )
+            # .options(
+            #     joinedload(RoleTable.role_id),
+            # )
             .where(RelationTable.relation_id == relation_id)
         )
         return self._get_one_by_query(query)
+
+    # def find_by_id(self, relation_id: int) -> Relation:
+    #     # print(f"find_by_id")
+    #     query = (
+    #         select(RelationTable)
+    #         .options(
+    #             joinedload(RoleTable.role_id),
+    #         )
+    #         .options(
+    #             # Many to Many relationship, only load release id and date columns
+    #             selectinload(RelationTable.releases)
+    #             # .load_only(
+    #             #     ReleaseTable.release_date
+    #             # )
+    #         )
+    #         .where(RelationTable.relation_id == relation_id)
+    #     )
+    #     return self._get_one_by_query(query)
 
     def find_by_key(self, key: dict) -> Relation:
         # print(f"find_by_key")
         if "role_id" not in key:
             if "role_name" in key:
-                role = RoleRepository().get_by_name(key["role_name"])
-                key["role_id"] = role.role_id
+                role_name = key["role_name"]
+                key["role_id"] = RoleType.role_name_to_role_id_lookup[role_name]
+                # role = RoleRepository().get_by_name(key["role_name"])
+                # key["role_id"] = role.role_id
             elif "role" in key:
-                role = RoleRepository().get_by_name(key["role"])
-                key["role_id"] = role.role_id
+                role_name = key["role"]
+                key["role_id"] = RoleType.role_name_to_role_id_lookup[role_name]
+                # role = RoleRepository().get_by_name(key["role"])
+                # key["role_id"] = role.role_id
         query = (
             select(RelationTable)
-            .options(
-                joinedload(RelationTable.role),
-            )
-            # .execution_options(populate_existing=True)
-            .options(
-                # Many to Many relationship, only load release id and date columns
-                selectinload(RelationTable.releases)
-                # .load_only(
-                #     ReleaseTable.release_date
-                # )
-            )
+            # .options(
+            #     joinedload(RelationTable.role),
+            # )
             .where(
                 (RelationTable.entity_one_id == key["entity_one_id"])
                 & (RelationTable.entity_one_type == key["entity_one_type"])
@@ -191,6 +229,38 @@ class RelationRepository(BaseRepository[RelationTable]):
         )
         return self._get_one_by_query(query)
 
+    # def find_by_key(self, key: dict) -> Relation:
+    #     # print(f"find_by_key")
+    #     if "role_id" not in key:
+    #         if "role_name" in key:
+    #             role = RoleRepository().get_by_name(key["role_name"])
+    #             key["role_id"] = role.role_id
+    #         elif "role" in key:
+    #             role = RoleRepository().get_by_name(key["role"])
+    #             key["role_id"] = role.role_id
+    #     query = (
+    #         select(RelationTable)
+    #         .options(
+    #             joinedload(RelationTable.role),
+    #         )
+    #         # .execution_options(populate_existing=True)
+    #         .options(
+    #             # Many to Many relationship, only load release id and date columns
+    #             selectinload(RelationTable.releases)
+    #             # .load_only(
+    #             #     ReleaseTable.release_date
+    #             # )
+    #         )
+    #         .where(
+    #             (RelationTable.entity_one_id == key["entity_one_id"])
+    #             & (RelationTable.entity_one_type == key["entity_one_type"])
+    #             & (RelationTable.entity_two_id == key["entity_two_id"])
+    #             & (RelationTable.entity_two_type == key["entity_two_type"])
+    #             & (RelationTable.role_id == key["role_id"])
+    #         )
+    #     )
+    #     return self._get_one_by_query(query)
+
     def find_by_entity_one_key(
         self,
         entity_id: int,
@@ -198,9 +268,9 @@ class RelationRepository(BaseRepository[RelationTable]):
     ) -> List[Relation]:
         query = (
             select(RelationTable)
-            .options(
-                joinedload(RelationTable.role),
-            )
+            # .options(
+            #     joinedload(RelationTable.role),
+            # )
             .where(
                 (RelationTable.entity_one_id == entity_id)
                 & (RelationTable.entity_one_type == entity_type)
@@ -215,9 +285,9 @@ class RelationRepository(BaseRepository[RelationTable]):
     ) -> List[Relation]:
         query = (
             select(RelationTable)
-            .options(
-                joinedload(RelationTable.role),
-            )
+            # .options(
+            #     joinedload(RelationTable.role),
+            # )
             .where(
                 (RelationTable.entity_two_id == entity_id)
                 & (RelationTable.entity_two_type == entity_type)
@@ -252,9 +322,9 @@ class RelationRepository(BaseRepository[RelationTable]):
         #     where_clause &= year_clause
         query = (
             select(RelationTable)
-            .options(
-                joinedload(RelationTable.role),
-            )
+            # .options(
+            #     joinedload(RelationTable.role),
+            # )
             .where(where_clause)
         )
         return self._get_all_by_query(query)
@@ -265,8 +335,10 @@ class RelationRepository(BaseRepository[RelationTable]):
 
     def create_and_get_id(self, relation: RelationUncommitted) -> int:
         relation_payload = relation.model_dump(exclude={"role_name"})
-        role = RoleRepository().get_by_name(relation.role_name)
-        relation_payload.update(role_id=role.role_id)
+        role_id = RoleType.role_name_to_role_id_lookup[relation.role_name]
+        relation_payload.update(role_id=role_id)
+        # role = RoleRepository().get_by_name(relation.role_name)
+        # relation_payload.update(role_id=role.role_id)
         saved_relation: RelationTable = self._save(relation_payload)
         return saved_relation.relation_id
         # saved_relation: Relation = await repository.get(order_flat.id)
@@ -274,14 +346,17 @@ class RelationRepository(BaseRepository[RelationTable]):
 
     def create(self, relation: RelationUncommitted) -> Relation:
         relation_payload = relation.model_dump(exclude={"role_name"})
-        role = RoleRepository().get_by_name(relation.role_name)
-        relation_payload.update(role_id=role.role_id)
+        role_id = RoleType.role_name_to_role_id_lookup[relation.role_name]
+        relation_payload.update(role_id=role_id)
+        # role = RoleRepository().get_by_name(relation.role_name)
+        # relation_payload.update(role_id=role.role_id)
         saved_relation: RelationTable = self._save(relation_payload)
         # print(f"saved_relation: {saved_relation}")
         # instance: RelationTable = await self._save(schema.model_dump())
-        retrieved_relation = self.get(saved_relation.relation_id)
+        # retrieved_relation = self.get(saved_relation.relation_id)
         # print(f"retrieved_relation: {retrieved_relation}")
-        return self._to_domain(retrieved_relation)
+        relation_db = RelationDB.model_validate(saved_relation)
+        return self._to_domain(relation_db)
         # saved_relation: Relation = await repository.get(order_flat.id)
         # return Relation.model_validate(instance)
 
@@ -366,22 +441,16 @@ class RelationRepository(BaseRepository[RelationTable]):
 
     def update(
         self,
-        key: dict[str, Any],
+        relation_id: int,
         payload: dict[str, Any],
-    ) -> RelationTable:
+    ) -> Relation:
         """Updates an existed instance of the model in the related table.
         If some data is not exist in the payload then the null value will
         be passed to the schema class."""
 
         query = (
             update(self.schema_class)
-            .where(
-                (RelationTable.entity_one_type == key["entity_one_type"])
-                & (RelationTable.entity_one_id == key["entity_one_id"])
-                & (RelationTable.entity_two_type == key["entity_two_type"])
-                & (RelationTable.entity_two_id == key["entity_two_id"])
-                & (RelationTable.role_id == key["role_id"])
-            )
+            .where(RelationTable.relation_id == relation_id)
             .values(payload)
             .returning(self.schema_class)
         )
@@ -390,10 +459,79 @@ class RelationRepository(BaseRepository[RelationTable]):
         self._session.flush()
         # await self._session.flush()
 
-        if not (schema := result.scalar_one_or_none()):
+        if not (instance := result.scalar_one_or_none()):
             raise DatabaseError
 
-        return schema
+        relation_db = RelationDB.model_validate(instance)
+        # print(f"relation_db: {utils.normalize_dict(relation_db)}")
+        return self._to_domain(relation_db)
+
+    # def update(
+    #     self,
+    #     key: dict[str, Any],
+    #     payload: dict[str, Any],
+    # ) -> RelationTable:
+    #     """Updates an existed instance of the model in the related table.
+    #     If some data is not exist in the payload then the null value will
+    #     be passed to the schema class."""
+    #
+    #     query = (
+    #         update(self.schema_class)
+    #         .where(
+    #             (RelationTable.entity_one_type == key["entity_one_type"])
+    #             & (RelationTable.entity_one_id == key["entity_one_id"])
+    #             & (RelationTable.entity_two_type == key["entity_two_type"])
+    #             & (RelationTable.entity_two_id == key["entity_two_id"])
+    #             & (RelationTable.role_id == key["role_id"])
+    #         )
+    #         .values(payload)
+    #         .returning(self.schema_class)
+    #     )
+    #     result: Result = self.execute(query)
+    #     # result: Result = await self.execute(query)
+    #     self._session.flush()
+    #     # await self._session.flush()
+    #
+    #     if not (schema := result.scalar_one_or_none()):
+    #         raise DatabaseError
+    #
+    #     return schema
+
+    # def delete_relation_duplicates(self) -> None:
+    #     with transaction():
+    #         self._session.execute(
+    #             text(
+    #                 f"DELETE FROM {RelationTable.__tablename__} "
+    #                 + f"WHERE relation_id IN ( "
+    #                 + f"  SELECT a.relation_id FROM {RelationTable.__tablename__} a "
+    #                 + f"  JOIN {RelationTable.__tablename__} b "
+    #                 + f"  ON (a.entity_one_id = b.entity_one_id "
+    #                 + f"  AND a.entity_one_type = b.entity_one_type "
+    #                 + f"  AND a.entity_two_id = b.entity_two_id "
+    #                 + f"  AND a.entity_two_type = b.entity_two_type "
+    #                 + f"  AND a.role_id = b.role_id) "
+    #                 + f"  WHERE a.relation_id > b.relation_id);"
+    #             )
+    #         )
+
+    # def delete_relation_duplicates(self) -> None:
+    #     with transaction():
+    #         self._session.execute(
+    #             text(
+    #                 f"DELETE FROM {RelationTable.__tablename__} a "
+    #                 + f"USING {RelationTable.__tablename__} b "
+    #                 + f"WHERE a.relation_id > b.relation_id "
+    #                 + f"AND a.entity_one_id = b.entity_one_id "
+    #                 + f"AND a.entity_one_type = b.entity_one_type "
+    #                 + f"AND a.entity_two_id = b.entity_two_id "
+    #                 + f"AND a.entity_two_type = b.entity_two_type "
+    #                 + f"AND a.role_id = b.role_id;"
+    #             )
+    #         )
+    # delete from TABLE where id in (
+    #     select TABLE.id from TABLE q1
+    # join TABLE q2 on q1.name = q2.name
+    # where q1.id < q2.id)
 
     def search_multi(
         self, *, entity_keys: List[Tuple[int, EntityType]], role_names: List[str]

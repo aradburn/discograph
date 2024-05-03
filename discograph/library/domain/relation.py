@@ -1,10 +1,8 @@
 import logging
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, Any
 
 from discograph import utils
 from discograph.library.domain.base import InternalDomainObject
-from discograph.library.domain.release import Release
-from discograph.library.domain.role import Role
 from discograph.library.fields.entity_type import EntityType
 
 __all__ = [
@@ -22,6 +20,7 @@ class _RelationBase(InternalDomainObject):
     entity_one_type: EntityType
     entity_two_id: int
     entity_two_type: EntityType
+    releases: Optional[Dict[str, Optional[int]]]
     random: float
 
 
@@ -36,8 +35,8 @@ class RelationDB(_RelationBase):
 
     relation_id: int
     role_id: int
-    role: Role
-    releases: Optional[List[Release]]
+    # role: Role
+    # releases: Optional[Dict[str, Optional[int]]]
 
 
 class Relation(_RelationBase):
@@ -45,7 +44,7 @@ class Relation(_RelationBase):
 
     relation_id: int
     role: str
-    releases: Optional[Dict[str, Optional[int]]]
+    # releases: Optional[Dict[str, Optional[int]]]
 
 
 class RelationResult(Relation):

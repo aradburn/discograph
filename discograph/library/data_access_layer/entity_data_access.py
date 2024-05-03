@@ -10,6 +10,7 @@ from discograph.library.domain.entity import Entity
 from discograph.library.domain.relation import RelationResult
 from discograph.library.domain.release import Release
 from discograph.library.fields.entity_type import EntityType
+from discograph.logging_config import LOGGING_TRACE
 
 log = logging.getLogger(__name__)
 
@@ -116,14 +117,13 @@ class EntityDataAccess:
                 # cache.set(key_str, entity_id)
 
             except NotFoundError:
-                log.info(f"            update_corpus key not found: {entity_key}")
+                if LOGGING_TRACE:
+                    log.debug(f"update_corpus key not found: {entity_key}")
                 entity_id = None
                 cache.set(entity_key_str, "###")
 
         if entity_id is not None:
-            # log.debug(f"            key: {key} new value: {entity_id}")
             corpus[entity_key] = entity_id
-            # log.debug(f"            update_corpus key: {key} value: {corpus[key]}")
         # else:
         #     log.debug(f"entity_id is None")
         # log.debug(f"            corpus after : {corpus}")

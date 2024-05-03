@@ -6,7 +6,7 @@ from discograph.library.loader.loader_role import LoaderRole
 from tests.integration.library.database.repository_test_case import RepositoryTestCase
 
 
-class TestRepositoryLoaderRelation(RepositoryTestCase):
+class TestRepositoryLoaderRelationPassOne(RepositoryTestCase):
     def test_loader_relation_pass_one(self):
         # GIVEN
         date = "test"
@@ -17,7 +17,8 @@ class TestRepositoryLoaderRelation(RepositoryTestCase):
         LoaderRelease().loader_pass_two()
 
         # WHEN
-        LoaderRelation().loader_pass_one(date)
+        LoaderRelation().loader_relation_pass_one(date)
+        # RelationRepository().delete_relation_duplicates()
 
         # THEN
         expected = 16467

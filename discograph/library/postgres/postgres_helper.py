@@ -20,7 +20,6 @@ from discograph.library.loader.loader_role import LoaderRole
 from discograph.library.loader.updater_entity import UpdaterEntity
 from discograph.library.loader.updater_release import UpdaterRelease
 
-
 log = logging.getLogger(__name__)
 
 
@@ -167,6 +166,10 @@ class PostgresHelper(DatabaseHelper):
     def load_tables(date: str):
         log.info("Load Postgres tables")
 
+        autocommit_engine = DatabaseHelper.engine.execution_options(
+            isolation_level="AUTOCOMMIT"
+        )
+
         log.debug("Load role pass 1")
         LoaderRole().loader_pass_one(date)
 
@@ -174,9 +177,6 @@ class PostgresHelper(DatabaseHelper):
         LoaderEntity().loader_pass_one(date)
 
         log.debug("Load entity analyze")
-        autocommit_engine = DatabaseHelper.engine.execution_options(
-            isolation_level="AUTOCOMMIT"
-        )
         with Session(autocommit_engine) as session:
             session.execute(text(f"VACUUM FULL ANALYZE {EntityTable.__tablename__};"))
 
@@ -194,7 +194,7 @@ class PostgresHelper(DatabaseHelper):
         LoaderRelease().loader_pass_two()
 
         log.debug("Load relation pass 1")
-        LoaderRelation().loader_pass_one(date)
+        LoaderRelation().loader_relation_pass_one(date)
 
         log.debug("Load relation analyze")
         with Session(autocommit_engine) as session:
@@ -240,14 +240,8 @@ class PostgresHelper(DatabaseHelper):
         log.debug("Update release pass 2")
         LoaderRelease().loader_pass_two()
 
-        # db_logger = logging.getLogger("peewee")
-        # db_logger.setLevel(logging.DEBUG)
-
         log.debug("Update relation pass 1")
-        LoaderRelation().loader_pass_one(date)
-
-        # db_logger = logging.getLogger("peewee")
-        # db_logger.setLevel(logging.INFO)
+        LoaderRelation().loader_relation_pass_one(date)
 
         log.debug("Update relation analyze")
         with Session(autocommit_engine) as session:
@@ -269,54 +263,11 @@ class PostgresHelper(DatabaseHelper):
     @classmethod
     def create_tables(cls, tables=None):
         log.info("Create Postgres tables")
-        # table_objects = [
-        #     PostgresEntityDB.__table__,
-        #     PostgresRelationDB.__table__,
-        #     PostgresReleaseDB.__table__,
-        #     RoleDB.__table__,
-        # ]
-        # super().create_tables(tables=table_objects)
         super().create_tables(tables=tables)
-
-        # cls.idx_entity_one_id = Index(
-        #     "idx_entity_one_id",
-        #     PostgresRelation.entity_one_id,
-        #     postgresql_using="hash",
-        # )
-        # cls.idx_entity_one_id.create(cls.engine)
-        # cls.idx_entity_two_id = Index(
-        #     "idx_entity_two_id",
-        #     PostgresRelation.entity_two_id,
-        #     postgresql_using="hash",
-        # )
-        # cls.idx_entity_two_id.create(cls.engine)
 
     @classmethod
     def drop_tables(cls):
         log.info("Drop Postgres tables")
-
-        # if cls.idx_entity_one_id is not None:
-        #     try:
-        #         cls.idx_entity_one_id.drop(cls.engine)
-        #     except ProgrammingError:
-        #         pass
-        #     cls.idx_entity_one_id = None
-        # else:
-        #     try:
-        #         cls.engine.connect().execute(text("DROP INDEX idx_entity_one_id;"))
-        #     except ProgrammingError:
-        #         pass
-        # if cls.idx_entity_two_id is not None:
-        #     try:
-        #         cls.idx_entity_two_id.drop(cls.engine)
-        #     except ProgrammingError:
-        #         pass
-        #     cls.idx_entity_two_id = None
-        # else:
-        #     try:
-        #         cls.engine.connect().execute(text("DROP INDEX idx_entity_two_id;"))
-        #     except ProgrammingError:
-        #         pass
         super().drop_tables()
 
     # @classmethod

@@ -1,8 +1,11 @@
 import logging
 
+from discograph.database import get_concurrency_count
 from discograph.library.database.release_repository import ReleaseRepository
 from discograph.library.database.transaction import transaction
+from discograph.library.loader.loader_base import LoaderBase
 from discograph.library.loader.worker_relation_pass_one import WorkerRelationPassOne
+from discograph.logging_config import LOGGING_TRACE
 from discograph.utils import timeit
 
 log = logging.getLogger(__name__)
@@ -13,34 +16,38 @@ class LoaderRelation:
 
     @classmethod
     @timeit
-    def loader_pass_one(cls, date: str):
+    def loader_relation_pass_one(cls, date: str):
         log.debug("relation loader pass one")
         with transaction():
             release_repository = ReleaseRepository()
-            # relation_class_name = cls.__qualname__
-            # relation_module_name = cls.__module__
-            # release_class_name = relation_class_name.replace("RelationDB", "ReleaseDB")
-            # release_module_name = relation_module_name.replace(
-            #     "relationdb", "releasedb"
-            # )
-            # release_class = getattr(
-            #     sys.modules[release_module_name], release_class_name
-            # )
+            batched_release_ids = release_repository.get_batched_release_ids(
+                int(LoaderBase.BULK_INSERT_BATCH_SIZE / 100)
+            )
 
-            chunked_release_ids = release_repository.get_chunked_release_ids()
-            workers = [
-                WorkerRelationPassOne(release_ids)
-                for release_ids in chunked_release_ids
-            ]
-            log.debug(f"relation loader pass one - start {len(workers)} workers")
-            for worker in workers:
-                worker.start()
-            for worker in workers:
+        workers = []
+        for release_ids in batched_release_ids:
+            worker = WorkerRelationPassOne(release_ids)
+            worker.start()
+            workers.append(worker)
+
+            if len(workers) > get_concurrency_count():
+                worker = workers.pop(0)
+                if LOGGING_TRACE:
+                    log.debug(f"wait for worker {len(workers)} in list")
                 worker.join()
                 if worker.exitcode > 0:
-                    log.error(
-                        f"relation loader worker {worker.name} exitcode: {worker.exitcode}"
-                    )
+                    log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
                     raise Exception("Error in worker process")
-            for worker in workers:
                 worker.terminate()
+
+        while len(workers) > 0:
+            worker = workers.pop(0)
+            if LOGGING_TRACE:
+                log.debug(
+                    f"wait for worker {worker.name} - {len(workers)} left in list"
+                )
+            worker.join()
+            if worker.exitcode > 0:
+                log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
+                raise Exception("Error in worker process")
+            worker.terminate()

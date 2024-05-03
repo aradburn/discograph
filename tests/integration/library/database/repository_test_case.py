@@ -8,11 +8,6 @@ from discograph import database
 from discograph.config import Configuration
 from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.library.database.database_helper import DatabaseHelper
-from discograph.library.database.entity_table import EntityTable
-from discograph.library.database.relation_table import RelationTable
-from discograph.library.database.release_info_table import ReleaseInfoTable
-from discograph.library.database.release_table import ReleaseTable
-from discograph.library.database.role_table import RoleTable
 from discograph.library.relation_grapher import RelationGrapher
 from discograph.logging_config import setup_logging, shutdown_logging
 
@@ -45,15 +40,7 @@ class RepositoryTestCase(unittest.TestCase):
                 log.error("Error in database setup")
             else:
                 _db_helper.drop_tables()
-                _db_helper.create_tables(
-                    tables=[
-                        RoleTable.__table__,
-                        EntityTable.__table__,
-                        RelationTable.__table__,
-                        ReleaseTable.__table__,
-                        ReleaseInfoTable.__table__,
-                    ]
-                )
+                _db_helper.create_tables()
 
     @classmethod
     def tearDownClass(cls):

@@ -1,7 +1,7 @@
 import logging
 import multiprocessing
 
-from sqlalchemy.exc import DatabaseError
+from sqlalchemy.exc import DatabaseError, OperationalError
 
 from discograph.database import get_concurrency_count
 from discograph.library.database.database_helper import DatabaseHelper
@@ -10,6 +10,7 @@ from discograph.library.database.entity_table import EntityTable
 from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.database.transaction import transaction
 from discograph.library.fields.entity_type import EntityType
+from discograph.library.loader.loader_base import LoaderBase
 from discograph.logging_config import LOGGING_TRACE
 
 log = logging.getLogger(__name__)
@@ -23,11 +24,6 @@ class WorkerEntityPassThree(multiprocessing.Process):
 
     def run(self):
         proc_name = self.name
-        # entity_class_name = self.model_class.__qualname__
-        # entity_module_name = self.model_class.__module__
-        # relation_class_name = entity_class_name.replace("EntityDB", "RelationDB")
-        # relation_module_name = entity_module_name.replace("entitydb", "relationdb")
-        # relation_class = getattr(sys.modules[relation_module_name], relation_class_name)
 
         count = 0
         total_count = len(self.entity_ids)
@@ -47,13 +43,12 @@ class WorkerEntityPassThree(multiprocessing.Process):
                         entity_type=self.entity_type,
                     )
                     count += 1
-                    if count % 1000 == 0:
+                    if count % LoaderBase.BULK_REPORTING_SIZE == 0:
                         log.info(f"[{proc_name}] processed {count} of {total_count}")
-                except DatabaseError:
+                except (DatabaseError, OperationalError):
                     log.exception(
                         f"ERROR: {entity_id}-{self.entity_type} in process {proc_name}"
                     )
-        # session.close()
 
         log.info(f"[{proc_name}] processed {count} of {total_count}")
 
@@ -104,15 +99,11 @@ class WorkerEntityPassThree(multiprocessing.Process):
         # if not _relation_counts:
         #     return
 
+        # Update the relation counts for this entity
         entity_repository.update(
             entity_id, entity_type, {EntityTable.relation_counts.key: _relation_counts}
         )
-        # Update the relation counts for this entity
-        # pk = (entity_id, entity_type)
-        # entity = entity_repository.get(pk)
-        #
-        # entity.relation_counts = _relation_counts
-        # flag_modified(entity, cls.relation_counts.key)
+
         if LOGGING_TRACE:
             log.debug(
                 f"Entity (Pass 3)\t"

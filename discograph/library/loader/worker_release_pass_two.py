@@ -15,14 +15,6 @@ log = logging.getLogger(__name__)
 
 
 class WorkerReleasePassTwo(multiprocessing.Process):
-    # CLASS VARIABLES
-
-    # _artists_mapping = {}
-    #
-    # _companies_mapping = {}
-    #
-    # _tracks_mapping = {}
-
     def __init__(self, release_ids):
         super().__init__()
         self.release_ids = release_ids
@@ -30,7 +22,8 @@ class WorkerReleasePassTwo(multiprocessing.Process):
     def run(self):
         proc_name = self.name
         corpus = {}
-        total = len(self.release_ids)
+        count = 0
+        total_count = len(self.release_ids)
 
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
@@ -39,7 +32,7 @@ class WorkerReleasePassTwo(multiprocessing.Process):
             with transaction():
                 entity_repository = EntityRepository()
                 release_repository = ReleaseRepository()
-                progress = float(i) / total
+                progress = float(i) / total_count
                 try:
                     self.loader_pass_two_single(
                         entity_repository=entity_repository,
@@ -49,10 +42,11 @@ class WorkerReleasePassTwo(multiprocessing.Process):
                         corpus=corpus,
                         progress=progress,
                     )
+                    count += 1
                 except DatabaseError:
                     log.exception("ERROR:", release_id, proc_name)
 
-        # session.close()
+        log.info(f"[{proc_name}] processed {count} of {total_count}")
 
     @staticmethod
     def loader_pass_two_single(

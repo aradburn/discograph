@@ -9,6 +9,7 @@ import time
 from collections.abc import Mapping
 from datetime import datetime, date
 from functools import wraps
+from random import random
 from typing import Dict, List, Any
 
 from toolz import count
@@ -275,3 +276,9 @@ def timeit(func):
         return result
 
     return timeit_wrapper
+
+
+def sleep_with_backoff(multiplier: int) -> None:
+    time_in_secs = multiplier * (1.0 + 4.0 * random())
+    log.debug(f"sleeping for {time_in_secs} secs")
+    time.sleep(time_in_secs)

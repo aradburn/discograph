@@ -1,6 +1,7 @@
 import logging
 from random import random
 
+from discograph.database import get_concurrency_count
 from discograph.library.database.release_repository import ReleaseRepository
 from discograph.library.database.release_table import ReleaseTable
 from discograph.library.database.transaction import transaction
@@ -8,6 +9,7 @@ from discograph.library.domain.release import Release
 from discograph.library.loader.loader_base import LoaderBase
 from discograph.library.loader.worker_release_pass_two import WorkerReleasePassTwo
 from discograph.library.loader_utils import LoaderUtils
+from discograph.logging_config import LOGGING_TRACE
 from discograph.utils import timeit
 
 log = logging.getLogger(__name__)
@@ -26,14 +28,16 @@ class LoaderRelease(LoaderBase):
     @timeit
     def loader_pass_one(cls, date: str) -> int:
         log.debug("release loader pass one")
-        releases_loaded = cls.loader_pass_one_manager(
-            repository=ReleaseRepository(),
-            date=date,
-            xml_tag="release",
-            id_attr=ReleaseTable.release_id.name,
-            name_attr="title",
-            skip_without=["title"],
-        )
+        with transaction():
+            release_repository = ReleaseRepository()
+            releases_loaded = cls.loader_pass_one_manager(
+                repository=release_repository,
+                date=date,
+                xml_tag="release",
+                id_attr=ReleaseTable.release_id.name,
+                name_attr="title",
+                skip_without=["title"],
+            )
         return releases_loaded
 
     @classmethod
@@ -41,25 +45,38 @@ class LoaderRelease(LoaderBase):
     def loader_pass_two(cls):
         log.debug("release loader pass two")
         with transaction():
-            repository = ReleaseRepository()
-            chunked_release_ids = repository.get_chunked_release_ids()
+            release_repository = ReleaseRepository()
+            batched_release_ids = release_repository.get_batched_release_ids(
+                LoaderBase.BULK_INSERT_BATCH_SIZE
+            )
 
-            workers = [
-                WorkerReleasePassTwo(release_ids) for release_ids in chunked_release_ids
-            ]
-            log.debug(f"release loader pass two - start {len(workers)} workers")
-            for worker in workers:
-                worker.start()
-            for worker in workers:
+        workers = []
+        for release_ids in batched_release_ids:
+            worker = WorkerReleasePassTwo(release_ids)
+            worker.start()
+            workers.append(worker)
+
+            if len(workers) > get_concurrency_count():
+                worker = workers.pop(0)
+                if LOGGING_TRACE:
+                    log.debug(f"wait for worker {len(workers)} in list")
                 worker.join()
                 if worker.exitcode > 0:
-                    log.debug(
-                        f"release loader worker {worker.name} exitcode: {worker.exitcode}"
-                    )
+                    log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
                     raise Exception("Error in worker process")
-            for worker in workers:
                 worker.terminate()
-            log.debug("release loader pass two - done")
+
+        while len(workers) > 0:
+            worker = workers.pop(0)
+            if LOGGING_TRACE:
+                log.debug(
+                    f"wait for worker {worker.name} - {len(workers)} left in list"
+                )
+            worker.join()
+            if worker.exitcode > 0:
+                log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
+                raise Exception("Error in worker process")
+            worker.terminate()
 
     @classmethod
     def element_to_artist_credits(cls, element):

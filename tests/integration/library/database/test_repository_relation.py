@@ -1,22 +1,70 @@
 from discograph import utils
 from discograph.library.database.relation_repository import RelationRepository
-from discograph.library.database.release_info_repository import ReleaseInfoRepository
 from discograph.library.database.release_repository import ReleaseRepository
 from discograph.library.database.transaction import transaction
 from discograph.library.domain.relation import Relation, RelationUncommitted
 from discograph.library.domain.release import Release
-from discograph.library.domain.release_info import ReleaseInfoUncommitted
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.loader.loader_role import LoaderRole
+from discograph.library.loader.worker_relation_pass_one import WorkerRelationPassOne
 from tests.integration.library.database.repository_test_case import RepositoryTestCase
 
 
 class TestRepositoryRelation(RepositoryTestCase):
-    def test_create_01(self):
+    def test_01_create(self):
         # GIVEN
         date = "test"
         LoaderRole().loader_pass_one(date)
 
+        relation = RelationUncommitted(
+            entity_one_id=2,
+            entity_one_type=EntityType.ARTIST,
+            entity_two_id=3,
+            entity_two_type=EntityType.LABEL,
+            role_name="Composed By",
+            releases={},
+            random=0.0,
+        )
+        relation_dict = relation.model_dump()
+        relation_dict["role"] = relation.role_name
+
+        # WHEN
+        with transaction():
+            relation_repository = RelationRepository()
+            created_relation = WorkerRelationPassOne.create_relation(
+                relation_repository=relation_repository,
+                relation_dict=relation_dict,
+            )
+            # created_relation = relation_repository.create(relation)
+            print(f"created_relation: {created_relation}")
+
+            # retrieved_relation = relation_repository.find_by_key(relation.model_dump())
+            # print(f"retrieved_relation: {retrieved_relation}")
+            # actual = utils.normalize_dict(retrieved_relation.model_dump())
+
+            actual = utils.normalize_dict(
+                created_relation.model_dump(exclude={"random"})
+            )
+            print(f"actual: {actual}")
+
+        # THEN
+        expected_relation = Relation(
+            relation_id=1,
+            entity_one_id=2,
+            entity_one_type=EntityType.ARTIST,
+            entity_two_id=3,
+            entity_two_type=EntityType.LABEL,
+            role="Composed By",
+            releases={},
+            random=0.0,
+        )
+        expected = utils.normalize_dict(
+            expected_relation.model_dump(exclude={"random"})
+        )
+        self.assertEqual(expected, actual)
+
+    def test_02_update(self):
+        # GIVEN
         with transaction():
             release = Release.model_validate(
                 {
@@ -121,29 +169,26 @@ class TestRepositoryRelation(RepositoryTestCase):
                 entity_two_id=3,
                 entity_two_type=EntityType.LABEL,
                 role_name="Composed By",
+                releases={},
                 random=0.0,
             )
             # role = RoleRepository().get_by_name(relation.role_name)
 
         # WHEN
         with transaction():
-            repository = RelationRepository()
-            created_relation = repository.create(relation)
-            print(f"created_relation: {created_relation}")
-
-            release_info = ReleaseInfoUncommitted(
-                relation_id=created_relation.relation_id,
-                release_id=release.release_id,
-                release_date=release.release_date,
-            )
-            created_release_info = ReleaseInfoRepository().create(release_info)
-            print(f"created_release_info: {created_release_info}")
-
-            repository.commit()
-
-            retrieved_relation = repository.find_by_key(relation.model_dump())
-            actual = utils.normalize_dict(retrieved_relation.model_dump())
+            relation_repository = RelationRepository()
+            retrieved_relation = relation_repository.find_by_key(relation.model_dump())
             print(f"retrieved_relation: {retrieved_relation}")
+            updated_relation = WorkerRelationPassOne.update_relation(
+                relation_repository=relation_repository,
+                relation=retrieved_relation,
+                release_id=635,
+                year=1994,
+            )
+            print(f"updated_relation: {updated_relation}")
+            actual = utils.normalize_dict(
+                updated_relation.model_dump(exclude={"random"})
+            )
             print(f"actual: {actual}")
 
         # THEN
@@ -157,11 +202,13 @@ class TestRepositoryRelation(RepositoryTestCase):
             releases={"635": 1994},
             random=0.0,
         )
-        expected = utils.normalize_dict(expected_relation.model_dump())
+        expected = utils.normalize_dict(
+            expected_relation.model_dump(exclude={"random"})
+        )
         print(f"expected: {expected}")
         self.assertEqual(expected, actual)
 
-    def test_get_01(self):
+    def test_03_get(self):
         # GIVEN
 
         # WHEN
@@ -171,7 +218,7 @@ class TestRepositoryRelation(RepositoryTestCase):
             relation_db = repository.get(1)
             # Convert to domain Relation
             relation = repository._to_domain(relation_db)
-            actual = utils.normalize_dict(relation.model_dump())
+            actual = utils.normalize_dict(relation.model_dump(exclude={"random"}))
 
         # THEN
         expected_relation = Relation(
@@ -184,6 +231,8 @@ class TestRepositoryRelation(RepositoryTestCase):
             releases={"635": 1994},
             random=0.0,
         )
-        expected = utils.normalize_dict(expected_relation.model_dump())
+        expected = utils.normalize_dict(
+            expected_relation.model_dump(exclude={"random"})
+        )
         print(f"expected: {expected}")
         self.assertEqual(expected, actual)

@@ -80,7 +80,10 @@ class CockroachHelper(DatabaseHelper):
         LoaderRelease().loader_pass_two()
 
         log.debug("Load relation pass 1")
-        LoaderRelation().loader_pass_one(date)
+        LoaderRelation().loader_relation_pass_one(date)
+
+        # log.debug("Load relation pass 2")
+        # LoaderRelation().loader_relation_pass_two(date)
 
         log.debug("Load entity pass 3")
         LoaderEntity().loader_pass_three()
@@ -104,7 +107,10 @@ class CockroachHelper(DatabaseHelper):
         LoaderRelease().loader_pass_two()
 
         log.debug("Update relation pass 1")
-        LoaderRelation().loader_pass_one(date)
+        LoaderRelation().loader_relation_pass_one(date)
+
+        # log.debug("Load relation pass 2")
+        # LoaderRelation().loader_relation_pass_two(date)
 
         log.debug("Update entity pass 3")
         LoaderEntity().loader_pass_three()

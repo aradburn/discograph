@@ -123,10 +123,7 @@ class BaseRepository(WrappedSession, Generic[ConcreteTable]):
             instances = [self.schema_class(**payload) for payload in payloads]
             self._session.add_all(instances)
             self._session.flush()
-            # self._session.refresh(schema)
             # await self._session.flush()
-            # await self._session.refresh(schema)
-            # return schema
         except self._ERRORS:
             raise DatabaseError
 

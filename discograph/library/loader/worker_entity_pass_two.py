@@ -9,6 +9,7 @@ from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.entity_table import EntityTable
 from discograph.library.database.transaction import transaction
 from discograph.library.fields.entity_type import EntityType
+from discograph.library.loader.loader_base import LoaderBase
 from discograph.logging_config import LOGGING_TRACE
 
 log = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ class WorkerEntityPassTwo(multiprocessing.Process):
                             corpus=corpus,
                         )
                         count += 1
-                        if count % 10000 == 0:
+                        if count % LoaderBase.BULK_REPORTING_SIZE == 0:
                             log.info(
                                 f"[{proc_name}] processed {count} of {total_count}"
                             )
@@ -55,14 +56,12 @@ class WorkerEntityPassTwo(multiprocessing.Process):
                         log.exception(
                             f"ERROR 1: {entity_id}-{self.entity_type} in process: {proc_number}"
                         )
-                        # session.rollback()
+                        entity_repository.rollback()
                         max_attempts -= 1
                         error = True
-                    # else:
-                    # session.commit()
+
             if error:
                 log.debug(f"Error in updating references for entity: {entity_id}")
-        # session.close()
 
         log.info(f"[{proc_name}] processed {count} of {total_count}")
 
@@ -93,7 +92,6 @@ class WorkerEntityPassTwo(multiprocessing.Process):
             entity_repository.update(
                 entity_id, entity_type, {EntityTable.entities.key: entity.entities}
             )
-            # flag_modified(entity, cls.entities.key)
             entity_repository.commit()
 
     # @classmethod

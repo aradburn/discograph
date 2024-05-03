@@ -30,37 +30,26 @@ class RelationDataAccess:
         else:
             iterator = itertools.product(artist_pks, release.extra_artists)
         for entity_two_pk, credit in iterator:
-            for role in credit["roles"]:
-                role = role["name"]
-                if role not in RoleType.role_definitions:
-                    # log.debug(f"role not found: {role}")
-                    role = RoleDataAccess.normalize(role)
-                if role not in RoleType.role_definitions:
-                    log.debug(f"normalized role not found: {role}")
-                    continue
-                elif role in RoleType.aggregate_roles:
+            for roles in credit["roles"]:
+                role = cls.normalize_role(roles["name"])
+                if role in RoleType.aggregate_roles:
                     if role not in aggregate_roles:
                         aggregate_roles[role] = []
                     aggregate_credit = (credit["id"], EntityType.ARTIST)
                     aggregate_roles[role].append(aggregate_credit)
-                    continue
-                entity_one_pk = (credit["id"], EntityType.ARTIST)
-                triples.add((entity_one_pk, role, entity_two_pk))
+                elif role in RoleType.role_definitions:
+                    entity_one_pk = (credit["id"], EntityType.ARTIST)
+                    triples.add((entity_one_pk, role, entity_two_pk))
 
         if is_compilation:
             iterator = itertools.product(label_pks, release.companies)
         else:
             iterator = itertools.product(artist_pks, release.companies)
         for entity_one_pk, company in iterator:
-            role = company["entity_type_name"]
-            if role not in RoleType.role_definitions:
-                # log.debug(f"role not found: {role}")
-                role = RoleDataAccess.normalize(role)
-            if role not in RoleType.role_definitions:
-                log.debug(f"normalized role not found: {role}")
-                continue
-            entity_two_pk = (company["id"], EntityType.LABEL)
-            triples.add((entity_one_pk, role, entity_two_pk))
+            role = cls.normalize_role(company["entity_type_name"])
+            if role in RoleType.role_definitions:
+                entity_two_pk = (company["id"], EntityType.LABEL)
+                triples.add((entity_one_pk, role, entity_two_pk))
 
         all_track_artist_pks = set()
         for track in release.tracklist:
@@ -73,16 +62,11 @@ class RelationDataAccess:
             track_artist_pks = track_artist_pks or artist_pks or label_pks
             iterator = itertools.product(track_artist_pks, track["extra_artists"])
             for entity_two_pk, credit in iterator:
-                for role in credit.get("roles", ()):
-                    role = role["name"]
-                    if role not in RoleType.role_definitions:
-                        # log.debug(f"role not found: {role}")
-                        role = RoleDataAccess.normalize(role)
-                    if role not in RoleType.role_definitions:
-                        log.debug(f"normalized role not found: {role}")
-                        continue
-                    entity_one_pk = (credit["id"], EntityType.ARTIST)
-                    triples.add((entity_one_pk, role, entity_two_pk))
+                for roles in credit.get("roles", ()):
+                    role = cls.normalize_role(roles["name"])
+                    if role in RoleType.role_definitions:
+                        entity_one_pk = (credit["id"], EntityType.ARTIST)
+                        triples.add((entity_one_pk, role, entity_two_pk))
         for role, aggregate_artists in aggregate_roles.items():
             iterator = itertools.product(all_track_artist_pks, aggregate_artists)
             for track_artist_pk, aggregate_artist_pk in iterator:
@@ -160,3 +144,23 @@ class RelationDataAccess:
                     relation["year"] = release.release_date.year
             relations.append(relation)
         return relations
+
+    @staticmethod
+    def normalize_role(role: str) -> str:
+        if role in RoleType.aggregate_roles:
+            return role
+        if role in RoleType.role_definitions:
+            return role
+        # log.debug(f"role not found: {role}")
+        normalized_role = RoleDataAccess.normalize(role)
+        if normalized_role in RoleType.aggregate_roles:
+            return normalized_role
+        if normalized_role in RoleType.role_definitions:
+            return normalized_role
+        role_by = normalized_role + " By"
+        if role_by in RoleType.aggregate_roles:
+            return role_by
+        if role_by in RoleType.role_definitions:
+            return role_by
+        log.debug(f"role not found: {role}")
+        return role

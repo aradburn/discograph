@@ -2,7 +2,6 @@ import atexit
 import logging
 
 from discograph.config import PostgresDevelopmentConfiguration
-from discograph.database import setup_database, shutdown_database
 from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.logging_config import setup_logging, shutdown_logging
 
@@ -11,6 +10,7 @@ log = logging.getLogger(__name__)
 
 def loader_main():
     from discograph.library.database.database_helper import DatabaseHelper
+    from discograph.database import setup_database, shutdown_database
 
     setup_logging()
     log.info("")
@@ -34,6 +34,10 @@ def loader_main():
     atexit.register(shutdown_cache)
     atexit.register(shutdown_database, config)
     # Create tables
+    # tables = [
+    #     RelationMetadataTable.__table__,
+    # ]
+    # DatabaseHelper.db_helper.create_tables(tables)
     DatabaseHelper.db_helper.create_tables()
     # Run the test update process
     DatabaseHelper.db_helper.load_tables("20230801")

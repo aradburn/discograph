@@ -55,6 +55,13 @@ class EntityRepository(BaseRepository[EntityTable]):
         )
         return self._get_one_by_query(query)
 
+    def get_batched_ids(self, entity_type: EntityType, num_in_batch: int):
+        all_ids = self._session.scalars(
+            select(EntityTable.entity_id).where(EntityTable.entity_type == entity_type)
+            # select(ReleaseTable.release_id).order_by(ReleaseTable.release_id)
+        ).all()
+        return utils.batched(all_ids, num_in_batch)
+
     def find_by_search_content(self, search_string: str) -> List[Entity]:
         # print(f"find_by_search_content")
         query = select(EntityTable).where(

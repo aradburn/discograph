@@ -10,6 +10,7 @@ from discograph.exceptions import DatabaseError
 from discograph.library.database.base_repository import BaseRepository
 from discograph.library.loader.loader_base import LoaderBase
 from discograph.library.loader_utils import LoaderUtils
+from discograph.logging_config import LOGGING_TRACE
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +60,8 @@ class UpdaterBase(LoaderBase):
                             bulk_updates.clear()
                         if len(workers) > get_concurrency_count():
                             worker = workers.pop(0)
-                            # log.debug(f"wait for worker {len(workers)} in list")
+                            if LOGGING_TRACE:
+                                log.debug(f"wait for worker {len(workers)} in list")
                             worker.join()
                             if worker.exitcode > 0:
                                 log.error(

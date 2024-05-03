@@ -15,7 +15,9 @@ class TestRepositoryLoaderEntityPassThree(RepositoryTestCase):
         LoaderRelease().loader_pass_one(date)
         LoaderEntity().loader_pass_two()
         LoaderRelease().loader_pass_two()
-        LoaderRelation().loader_pass_one(date)
+        LoaderRelation().loader_relation_pass_one(date)
+        # RelationRepository().delete_relation_duplicates()
+        # LoaderRelation().loader_relation_pass_two(date)
 
         # WHEN
         LoaderEntity().loader_pass_three()
