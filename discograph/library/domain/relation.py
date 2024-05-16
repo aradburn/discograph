@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 
 from discograph import utils
 from discograph.library.domain.base import InternalDomainObject
@@ -20,7 +20,7 @@ class _RelationBase(InternalDomainObject):
     entity_one_type: EntityType
     entity_two_id: int
     entity_two_type: EntityType
-    releases: Optional[Dict[str, Optional[int]]]
+    releases: Dict[str, int | None] | None = None
     random: float
 
 
@@ -50,8 +50,8 @@ class Relation(_RelationBase):
 class RelationResult(Relation):
     """Domain Search result Relation representation, public facing."""
 
-    distance: Optional[int]
-    pages: Optional[tuple]
+    distance: int | None = None
+    pages: tuple | None = None
 
     @property
     def entity_one_key(self) -> tuple[int, EntityType]:

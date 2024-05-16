@@ -56,3 +56,17 @@ class LoaderRole(LoaderBase):
             }
             assert required_count == inserted_count
         return inserted_count
+
+    @classmethod
+    def updater_pass_one(cls, date: str) -> None:
+        log.debug("role updater pass one")
+
+        with transaction():
+            role_repository = RoleRepository()
+            roles = role_repository.all()
+            for role in roles:
+                RoleType.role_id_to_role_name_lookup[role.role_id] = role.role_name
+
+            RoleType.role_name_to_role_id_lookup = {
+                v: k for k, v in RoleType.role_id_to_role_name_lookup.items()
+            }

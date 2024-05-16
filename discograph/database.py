@@ -42,8 +42,8 @@ def setup_database(config) -> Type[DatabaseHelper]:
     # a sessionmaker(), also in the same scope as the engine
     DatabaseHelper.session_factory = sessionmaker(bind=engine)
 
-    # logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
-    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARN)
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
+    # logging.getLogger("sqlalchemy.engine").setLevel(logging.WARN)
 
     db_helper.check_connection(config, engine)
     return db_helper

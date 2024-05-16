@@ -10,6 +10,7 @@ from flask import url_for
 
 import discograph.utils
 from discograph.exceptions import BadRequestError, NotFoundError
+from discograph.library.database.transaction import transaction
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.role_entry import RoleEntry
 
@@ -72,13 +73,13 @@ def route__entity_type__entity_id(entity_type, entity_id):
     entity_id = int(entity_id)
 
     # on_mobile = request.MOBILE
-    data = DatabaseHelper.db_helper.get_network(
-        # TODO DatabaseHelper.flask_db_session(),
-        entity_id,
-        entity_type,
-        # on_mobile=on_mobile,
-        roles=original_roles,
-    )
+    with transaction():
+        data = DatabaseHelper.db_helper.get_network(
+            entity_id,
+            entity_type,
+            # on_mobile=on_mobile,
+            roles=original_roles,
+        )
     if data is None:
         raise NotFoundError(message="No Data")
     initial_json = json.dumps(

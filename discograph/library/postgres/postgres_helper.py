@@ -217,13 +217,17 @@ class PostgresHelper(DatabaseHelper):
     def update_tables(date: str):
         log.info(f"Update Postgres tables: {date}")
 
+        autocommit_engine = DatabaseHelper.engine.execution_options(
+            isolation_level="AUTOCOMMIT"
+        )
+
+        log.debug("Update role pass 1")
+        LoaderRole().updater_pass_one(date)
+
         log.debug("Update entity pass 1")
         UpdaterEntity().updater_pass_one(date)
 
         log.debug("Update entity analyze")
-        autocommit_engine = DatabaseHelper.engine.execution_options(
-            isolation_level="AUTOCOMMIT"
-        )
         with Session(autocommit_engine) as session:
             session.execute(text(f"VACUUM FULL ANALYZE {EntityTable.__tablename__};"))
 

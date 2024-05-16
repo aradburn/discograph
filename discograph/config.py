@@ -80,10 +80,6 @@ class PostgresDevelopmentConfiguration(Configuration):
     DEBUG = True
     TESTING = False
     DATABASE = DatabaseType.POSTGRES
-    # POSTGRES_DATABASE_NAME = "discograph"
-    # POSTGRES_ROOT = "/usr/lib/postgresql/16"
-    # POSTGRES_DATA = "/data1/postgresql/16"
-    # POSTGRES_DATA = "/data1/tmp/pg_temp/dev"
     POSTGRES_DATABASE_USERNAME = "discograph"
     POSTGRES_DATABASE_PASSWORD = "discograph"
     POSTGRES_DATABASE_HOST = "localhost"

@@ -1,8 +1,7 @@
 import atexit
 import logging
-import os
 
-from flask import Flask, url_for
+from flask import Flask
 from flask import g
 from flask import jsonify
 from flask import make_response
@@ -15,7 +14,9 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from discograph import api
 from discograph import ui
-from discograph.config import PostgresProductionConfiguration
+from discograph.config import (
+    PostgresDevelopmentConfiguration,
+)
 from discograph.database import setup_database, shutdown_database
 from discograph.exceptions import NotFoundError, BaseError
 from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
@@ -38,17 +39,6 @@ def setup_application():
     Compress(app)
     DatabaseHelper.flask_db_session = scoped_session(
         sessionmaker(autocommit=False, autoflush=False, bind=DatabaseHelper.engine)
-    )
-    app.add_url_rule(
-        "/favicon.ico", redirect_to=url_for("static", filename="favicon.ico")
-    )
-    app.add_url_rule(
-        "/favicon-32x32.png",
-        redirect_to=url_for("static", filename="favicon-32x32.png"),
-    )
-    app.add_url_rule(
-        "/apple-touch-icon.png",
-        redirect_to=url_for("static", filename="apple-touch-icon.png"),
     )
 
 
@@ -129,10 +119,8 @@ def main():
     log.info("######  #  ####   ####   ####   ####  #    # #    # #      #    # ")
     log.info("")
     log.info("")
-    log.info("Using PostgresProductionConfiguration")
-    log.info(f"DATABASE_HOST: {os.getenv('DISCOGRAPH_DATABASE_HOST')}")
-    log.info(f"DATABASE_NAME: {os.getenv('DISCOGRAPH_DATABASE_NAME')}")
-    config = vars(PostgresProductionConfiguration)
+    log.info("Using PostgresDevelopmentConfiguration")
+    config = vars(PostgresDevelopmentConfiguration)
     app.config.from_object(config)
     setup_cache(config)
     setup_database(config)
@@ -146,4 +134,4 @@ def main():
 if __name__ == "__main__":
     # Flask development server, not to be used in production
     main()
-    app.run(debug=False)
+    app.run(debug=True)

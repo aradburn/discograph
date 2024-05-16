@@ -109,7 +109,7 @@ class RelationGrapher(ABC):
             self.report_search_loop_start(distance)
             log.debug(f"    Search for: {self.entity_keys_to_visit}")
             entities = self.search_entities(self.entity_keys_to_visit)
-            log.debug(f"    Search found entities: {entities}")
+            # log.debug(f"    Search found entities: {entities}")
             relations: Dict[str, RelationResult] = {}
             self.process_entities(distance, entities)
             if not self.entity_keys_to_visit or self.should_break_loop:

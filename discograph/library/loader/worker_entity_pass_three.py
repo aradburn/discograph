@@ -17,16 +17,19 @@ log = logging.getLogger(__name__)
 
 
 class WorkerEntityPassThree(multiprocessing.Process):
-    def __init__(self, entity_type: EntityType, entity_ids):
+    def __init__(
+        self, entity_type: EntityType, entity_ids, current_total: int, total_count: int
+    ):
         super().__init__()
         self.entity_type = entity_type
         self.entity_ids = entity_ids
+        self.current_total = current_total
+        self.total_count = total_count
 
     def run(self):
         proc_name = self.name
 
-        count = 0
-        total_count = len(self.entity_ids)
+        count = self.current_total
 
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
@@ -44,13 +47,15 @@ class WorkerEntityPassThree(multiprocessing.Process):
                     )
                     count += 1
                     if count % LoaderBase.BULK_REPORTING_SIZE == 0:
-                        log.info(f"[{proc_name}] processed {count} of {total_count}")
+                        log.debug(
+                            f"[{proc_name}] processed {count} of {self.total_count}"
+                        )
                 except (DatabaseError, OperationalError):
                     log.exception(
                         f"ERROR: {entity_id}-{self.entity_type} in process {proc_name}"
                     )
 
-        log.info(f"[{proc_name}] processed {count} of {total_count}")
+        log.info(f"[{proc_name}] processed {count} of {self.total_count}")
 
     @staticmethod
     def loader_pass_three_single(

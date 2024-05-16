@@ -179,12 +179,13 @@ class TestRepositoryRelation(RepositoryTestCase):
             relation_repository = RelationRepository()
             retrieved_relation = relation_repository.find_by_key(relation.model_dump())
             print(f"retrieved_relation: {retrieved_relation}")
-            updated_relation = WorkerRelationPassOne.update_relation(
+            WorkerRelationPassOne.update_relation(
                 relation_repository=relation_repository,
                 relation=retrieved_relation,
                 release_id=635,
                 year=1994,
             )
+            updated_relation = relation_repository.find_by_key(relation.model_dump())
             print(f"updated_relation: {updated_relation}")
             actual = utils.normalize_dict(
                 updated_relation.model_dump(exclude={"random"})

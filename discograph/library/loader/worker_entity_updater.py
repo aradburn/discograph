@@ -76,7 +76,8 @@ class WorkerEntityUpdater(multiprocessing.Process):
                     )
                     diff = pprint.pformat(differences)
                     if diff != "{}":
-                        log.debug(f"diff: {diff}")
+                        if LOGGING_TRACE:
+                            log.debug(f"diff: {diff}")
                         # log.debug(f"db_entity     : {db_entity}")
                         # log.debug(f"updated_entity: {updated_entity}")
 

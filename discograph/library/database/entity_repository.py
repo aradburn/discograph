@@ -95,9 +95,13 @@ class EntityRepository(BaseRepository[EntityTable]):
         return utils.split_tuple(num_chunks, all_ids)
 
     def get_by_type_and_name(self, entity_type: EntityType, entity_name: str) -> Entity:
-        query = select(EntityTable).where(
-            (EntityTable.entity_type == entity_type)
-            & (EntityTable.entity_name == entity_name)
+        query = (
+            select(EntityTable)
+            .where(
+                (EntityTable.entity_type == entity_type)
+                & (EntityTable.entity_name == entity_name)
+            )
+            .limit(1)
         )
         return self._get_one_by_query(query)
 
@@ -108,8 +112,8 @@ class EntityRepository(BaseRepository[EntityTable]):
             .where(
                 (EntityTable.random > n)
                 & (EntityTable.entity_type == EntityType.ARTIST)
-                & ~(EntityTable.entities.is_null())
-                & ~(EntityTable.relation_counts.is_null())
+                & (EntityTable.entities.is_not(None))
+                & (EntityTable.relation_counts.is_not(None))
             )
             .order_by(EntityTable.random)
             .limit(1)

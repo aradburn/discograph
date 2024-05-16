@@ -16,18 +16,21 @@ log = logging.getLogger(__name__)
 
 
 class WorkerEntityPassTwo(multiprocessing.Process):
-    def __init__(self, entity_type: EntityType, indices):
+    def __init__(
+        self, entity_type: EntityType, indices, current_total: int, total_count: int
+    ):
         super().__init__()
         self.entity_type = entity_type
         self.indices = indices
+        self.current_total = current_total
+        self.total_count = total_count
 
     def run(self):
         proc_name = self.name
         proc_number = proc_name.split("-")[-1]
         corpus = {}
 
-        count = 0
-        total_count = len(self.indices)
+        count = self.current_total
 
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
@@ -49,8 +52,8 @@ class WorkerEntityPassTwo(multiprocessing.Process):
                         )
                         count += 1
                         if count % LoaderBase.BULK_REPORTING_SIZE == 0:
-                            log.info(
-                                f"[{proc_name}] processed {count} of {total_count}"
+                            log.debug(
+                                f"[{proc_name}] processed {count} of {self.total_count}"
                             )
                     except (DatabaseError, NotFoundError):
                         log.exception(
@@ -63,7 +66,7 @@ class WorkerEntityPassTwo(multiprocessing.Process):
             if error:
                 log.debug(f"Error in updating references for entity: {entity_id}")
 
-        log.info(f"[{proc_name}] processed {count} of {total_count}")
+        log.info(f"[{proc_name}] processed {count} of {self.total_count}")
 
     # PUBLIC METHODS
 

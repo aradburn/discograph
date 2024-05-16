@@ -1,7 +1,9 @@
 import logging
 import multiprocessing
+import pprint
 from random import random
 
+from deepdiff import DeepDiff
 from sqlalchemy.exc import OperationalError
 
 from discograph import utils
@@ -21,15 +23,16 @@ log = logging.getLogger(__name__)
 
 
 class WorkerRelationPassOne(multiprocessing.Process):
-    def __init__(self, release_ids):
+    def __init__(self, release_ids, current_total: int, total_count: int):
         super().__init__()
         self.release_ids = release_ids
+        self.current_total = current_total
+        self.total_count = total_count
 
     def run(self):
         proc_name = self.name
 
-        count = 0
-        total_count = len(self.release_ids)
+        count = self.current_total
 
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
@@ -48,12 +51,12 @@ class WorkerRelationPassOne(multiprocessing.Process):
                             relation_repository=relation_repository,
                             release_repository=release_repository,
                             release_id=release_id,
-                            annotation=proc_name,
+                            proc_name=proc_name,
                         )
                         count += 1
                         if count % LoaderBase.BULK_REPORTING_SIZE == 0:
-                            log.info(
-                                f"[{proc_name}] processed {count} of {total_count}"
+                            log.debug(
+                                f"[{proc_name}] processed {count} of {self.total_count}"
                             )
                     except DatabaseError:
                         log.debug(
@@ -61,6 +64,7 @@ class WorkerRelationPassOne(multiprocessing.Process):
                         )
                         max_attempts -= 1
                         error = True
+                        relation_repository.rollback()
                         utils.sleep_with_backoff(LoaderBase.MAX_RETRYS - max_attempts)
                     except OperationalError as e:
                         log.exception(e)
@@ -68,7 +72,7 @@ class WorkerRelationPassOne(multiprocessing.Process):
             if error:
                 log.debug(f"Error in updating relations for release: {release_id}")
 
-        log.info(f"[{proc_name}] processed {count} of {total_count}")
+        log.info(f"[{proc_name}] processed {count} of {self.total_count}")
 
     @classmethod
     def loader_pass_one_inner(
@@ -77,7 +81,7 @@ class WorkerRelationPassOne(multiprocessing.Process):
         relation_repository: RelationRepository,
         release_repository: ReleaseRepository,
         release_id,
-        annotation="",
+        proc_name="",
     ):
         try:
             # log.debug(f"loader_pass_one ({annotation}): {release_id}")
@@ -85,7 +89,7 @@ class WorkerRelationPassOne(multiprocessing.Process):
             relations = RelationDataAccess.from_release(release)
             if LOGGING_TRACE:
                 log.debug(
-                    f"Relation (Pass 1) [{annotation}]\t"
+                    f"Relation (Pass 1) [{proc_name}]\t"
                     + f"(release_id:{release.release_id})\t[{len(relations)}] {release.title}"
                 )
             for relation_dict in relations:
@@ -109,6 +113,41 @@ class WorkerRelationPassOne(multiprocessing.Process):
 
     @classmethod
     def create_relation(
+        cls,
+        *,
+        relation_repository: RelationRepository,
+        relation_dict: dict,
+    ) -> Relation:
+        try:
+            key = {
+                "entity_one_id": relation_dict["entity_one_id"],
+                "entity_one_type": relation_dict["entity_one_type"],
+                "entity_two_id": relation_dict["entity_two_id"],
+                "entity_two_type": relation_dict["entity_two_type"],
+                "role_name": RoleDataAccess.normalize(relation_dict["role"]),
+            }
+            relation_db = relation_repository.find_by_key(key)
+        except NotFoundError:
+            relation_uncommitted = RelationUncommitted(
+                entity_one_id=relation_dict["entity_one_id"],
+                entity_one_type=relation_dict["entity_one_type"],
+                entity_two_id=relation_dict["entity_two_id"],
+                entity_two_type=relation_dict["entity_two_type"],
+                role_name=RoleDataAccess.normalize(relation_dict["role"]),
+                releases={},
+                random=random(),
+            )
+            # log.debug(f"new relation: {new_instance}")
+
+            # save, ignore if already exists
+            relation_db = relation_repository.create(relation_uncommitted)
+
+            relation_repository.commit()
+
+        return relation_db
+
+    @classmethod
+    def create_relation_old(
         cls,
         *,
         relation_repository: RelationRepository,
@@ -151,11 +190,17 @@ class WorkerRelationPassOne(multiprocessing.Process):
         relation: Relation,
         release_id: int,
         year: int,
-    ) -> Relation:
-        relation.releases[str(release_id)] = year
-        # log.debug(f"relation updated releases: {existing_instance}")
-        updated_relation = relation_repository.update(
-            relation.relation_id, {"releases": relation.releases}
+    ) -> None:
+        original = relation.releases.copy()
+        updated = relation.releases.copy()
+        updated[str(release_id)] = year
+
+        differences = DeepDiff(
+            original,
+            updated,
         )
-        relation_repository.commit()
-        return updated_relation
+        diff = pprint.pformat(differences)
+        if diff != "{}":
+            # log.debug(f"diff: {diff}")
+            relation_repository.update(relation.relation_id, {"releases": updated})
+            relation_repository.commit()

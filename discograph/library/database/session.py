@@ -1,3 +1,4 @@
+# noinspection PyPackageRequirements
 from contextvars import ContextVar
 
 from sqlalchemy.engine import ResultProxy
@@ -15,11 +16,9 @@ from discograph.library.database.database_helper import DatabaseHelper
 def get_session() -> Session:
     """Creates a new session to execute SQL queries."""
     if get_concurrency_count() > 1:
-        # DatabaseHelper.initialize()
         session = scoped_session(DatabaseHelper.session_factory)
     else:
         session = DatabaseHelper.session_factory
-    # session = DatabaseHelper.session_factory
     return session()
 
 

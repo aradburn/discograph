@@ -3,25 +3,25 @@ __all__ = [
 ]
 
 from datetime import date
-from typing import Optional, List, Dict, Any
+from typing import List, Dict, Any
 
 from discograph.library.domain.base import InternalDomainObject
 
 
 class Release(InternalDomainObject):
     release_id: int
-    artists: Optional[List[Dict[str, Any]]]
-    companies: Optional[List[Dict[str, Any]]]
-    country: Optional[str]
-    extra_artists: Optional[List[Dict[str, Any]]]
-    formats: Optional[List[Dict[str, Any]]]
-    genres: Optional[List[str]]
-    identifiers: Optional[List[Dict[str, Any]]]
-    labels: Optional[List[Dict[str, Any]]]
-    master_id: Optional[int]
-    notes: Optional[str]
-    release_date: Optional[date]
-    styles: Optional[List[str]]
+    artists: List[Dict[str, Any]] | None = None
+    companies: List[Dict[str, Any]] | None = None
+    country: str | None = None
+    extra_artists: List[Dict[str, Any]] | None = None
+    formats: List[Dict[str, Any]] | None = None
+    genres: List[str] | None = None
+    identifiers: List[Dict[str, Any]] | None = None
+    labels: List[Dict[str, Any]] | None = None
+    master_id: int | None = None
+    notes: str | None = None
+    release_date: date | None = None
+    styles: List[str] | None = None
     title: str
-    tracklist: Optional[List[Dict[str, Any]]]
+    tracklist: List[Dict[str, Any]] | None = None
     random: float

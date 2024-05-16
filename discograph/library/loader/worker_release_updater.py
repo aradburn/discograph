@@ -11,6 +11,7 @@ from discograph.library.database.release_repository import ReleaseRepository
 from discograph.library.database.release_table import ReleaseTable
 from discograph.library.database.transaction import transaction
 from discograph.library.domain.release import Release
+from discograph.logging_config import LOGGING_TRACE
 
 log = logging.getLogger(__name__)
 
@@ -69,7 +70,8 @@ class WorkerReleaseUpdater(multiprocessing.Process):
                     )
                     diff = pprint.pformat(differences)
                     if diff != "{}":
-                        # log.debug(f"diff: {diff}")
+                        if LOGGING_TRACE:
+                            log.debug(f"diff: {diff}")
                         # log.debug(f"old_release: {old_release}")
                         # log.debug(f"updated_release: {updated_release}")
 

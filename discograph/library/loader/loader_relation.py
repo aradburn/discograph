@@ -18,19 +18,26 @@ class LoaderRelation:
     @timeit
     def loader_relation_pass_one(cls, date: str):
         log.debug("relation loader pass one")
+
+        number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE / 100)
+
         with transaction():
             release_repository = ReleaseRepository()
+            total_count = release_repository.count()
             batched_release_ids = release_repository.get_batched_release_ids(
-                int(LoaderBase.BULK_INSERT_BATCH_SIZE / 100)
+                number_in_batch
             )
+
+        current_total = 0
 
         workers = []
         for release_ids in batched_release_ids:
-            worker = WorkerRelationPassOne(release_ids)
+            worker = WorkerRelationPassOne(release_ids, current_total, total_count)
             worker.start()
             workers.append(worker)
+            current_total += number_in_batch
 
-            if len(workers) > get_concurrency_count():
+            if len(workers) > get_concurrency_count() * 2:
                 worker = workers.pop(0)
                 if LOGGING_TRACE:
                     log.debug(f"wait for worker {len(workers)} in list")

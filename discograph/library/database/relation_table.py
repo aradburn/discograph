@@ -3,7 +3,6 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
-    UniqueConstraint,
     JSON,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -31,23 +30,25 @@ class RelationTable(BaseTable):
     random: Mapped[float] = mapped_column(Float)
 
     __table_args__ = (
-        UniqueConstraint(
+        Index(
+            "idx_relation",
             entity_one_id,
             entity_one_type,
             entity_two_id,
             entity_two_type,
             role_id,
+            unique=True,
         ),
         Index(
-            "idx_entity_one_id",
+            "idx_relation_one",
             entity_one_id,
-            postgresql_using="hash",
+            entity_one_type,
             unique=False,
         ),
         Index(
-            "idx_entity_two_id",
+            "idx_relation_two",
             entity_two_id,
-            postgresql_using="hash",
+            entity_two_type,
             unique=False,
         ),
         {},

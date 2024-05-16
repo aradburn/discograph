@@ -134,7 +134,7 @@ class DatabaseHelper(ABC):
         return data
 
     @staticmethod
-    def get_random_entity(roles=None) -> tuple[int, str]:
+    def get_random_entity(roles=None) -> tuple[int, EntityType]:
         from discograph.library.database.entity_repository import EntityRepository
         from discograph.library.database.relation_repository import RelationRepository
         from discograph.library.domain.entity import Entity

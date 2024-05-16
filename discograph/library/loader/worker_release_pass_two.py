@@ -9,21 +9,24 @@ from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.release_repository import ReleaseRepository
 from discograph.library.database.release_table import ReleaseTable
 from discograph.library.database.transaction import transaction
+from discograph.library.loader.loader_base import LoaderBase
 from discograph.logging_config import LOGGING_TRACE
 
 log = logging.getLogger(__name__)
 
 
 class WorkerReleasePassTwo(multiprocessing.Process):
-    def __init__(self, release_ids):
+    def __init__(self, release_ids, current_total: int, total_count: int):
         super().__init__()
         self.release_ids = release_ids
+        self.current_total = current_total
+        self.total_count = total_count
 
     def run(self):
         proc_name = self.name
         corpus = {}
-        count = 0
-        total_count = len(self.release_ids)
+
+        count = self.current_total
 
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
@@ -32,7 +35,6 @@ class WorkerReleasePassTwo(multiprocessing.Process):
             with transaction():
                 entity_repository = EntityRepository()
                 release_repository = ReleaseRepository()
-                progress = float(i) / total_count
                 try:
                     self.loader_pass_two_single(
                         entity_repository=entity_repository,
@@ -40,13 +42,16 @@ class WorkerReleasePassTwo(multiprocessing.Process):
                         release_id=release_id,
                         annotation=proc_name,
                         corpus=corpus,
-                        progress=progress,
                     )
                     count += 1
+                    if count % LoaderBase.BULK_REPORTING_SIZE == 0:
+                        log.debug(
+                            f"[{proc_name}] processed {count} of {self.total_count}"
+                        )
                 except DatabaseError:
                     log.exception("ERROR:", release_id, proc_name)
 
-        log.info(f"[{proc_name}] processed {count} of {total_count}")
+        log.info(f"[{proc_name}] processed {count} of {self.total_count}")
 
     @staticmethod
     def loader_pass_two_single(
@@ -56,7 +61,6 @@ class WorkerReleasePassTwo(multiprocessing.Process):
         release_id,
         annotation="",
         corpus=None,
-        progress=None,
     ):
         release = release_repository.get(release_id)
         corpus = corpus or {}
@@ -66,7 +70,7 @@ class WorkerReleasePassTwo(multiprocessing.Process):
         if changed:
             if LOGGING_TRACE:
                 log.debug(
-                    f"Release (Pass 2) {progress:.1%} [{annotation}]\t"
+                    f"Release (Pass 2) [{annotation}]\t"
                     + f"          (id:{release.release_id}): {release.title}"
                 )
             release_repository.update(
@@ -76,6 +80,6 @@ class WorkerReleasePassTwo(multiprocessing.Process):
             release_repository.commit()
         elif LOGGING_TRACE:
             log.debug(
-                f"Release (Pass 2) {progress:.1%} [{annotation}]\t"
+                f"Release (Pass 2) [{annotation}]\t"
                 + f"[SKIPPED] (id:{release.release_id}): {release.title}"
             )

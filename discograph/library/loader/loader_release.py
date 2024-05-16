@@ -44,17 +44,23 @@ class LoaderRelease(LoaderBase):
     @timeit
     def loader_pass_two(cls):
         log.debug("release loader pass two")
+        number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
+
         with transaction():
             release_repository = ReleaseRepository()
+            total_count = release_repository.count()
             batched_release_ids = release_repository.get_batched_release_ids(
-                LoaderBase.BULK_INSERT_BATCH_SIZE
+                number_in_batch
             )
+
+        current_total = 0
 
         workers = []
         for release_ids in batched_release_ids:
-            worker = WorkerReleasePassTwo(release_ids)
+            worker = WorkerReleasePassTwo(release_ids, current_total, total_count)
             worker.start()
             workers.append(worker)
+            current_total += number_in_batch
 
             if len(workers) > get_concurrency_count():
                 worker = workers.pop(0)
