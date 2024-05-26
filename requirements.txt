@@ -1,5 +1,5 @@
 flask~=2.3.3
-flask-caching~=2.1.0
+flask-caching~=2.3.0
 flask-compress~=1.15
 flask-mobility~=1.1.0
 gunicorn~=21.2.0
