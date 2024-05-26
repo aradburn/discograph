@@ -1,9 +1,8 @@
 
-NODE_STRENGTH = -350
+NODE_STRENGTH = -800
 DISTANCE_MAX = 2000
 
 COLLIDE_ITERATIONS = 2
-//COLLIDE_RADIUS_POWER = 1.5
 COLLIDE_BUFFER = 12
 
 CENTER_STRENGTH = 0.025
@@ -17,15 +16,16 @@ VELOCITY_DECAY = 0.24; // like friction, defaults to 0.4. less velocity decay ma
 LINK_STRENGTH = 1.8
 LINK_DISTANCE_ALIAS = 20
 LINK_DISTANCE_RELEASED_ON = 200
-LINK_DISTANCE = 180
-LINK_DISTANCE_RANDOM = 50
+LINK_DISTANCE = 60
+LINK_DISTANCE_RANDOM = 20
 LINK_ITERATIONS = 3
 
 MAX_NODES_BEFORE_PRUNING = 600
 MAX_LINKS_BEFORE_PRUNING = 1800
 
-const seed = 0.42; // any number in [0, 1)
-const random = d3.randomNormal.source(d3.randomLcg(seed))(0, 1);
+// To give repeatable and predictable random behaviour, any number in [0, 1)
+const random_seed = 0.42;
+const random = d3.randomNormal.source(d3.randomLcg(random_seed))(0, 1);
 
 
 function linkDistance(d, i) {
@@ -39,9 +39,7 @@ function linkDistance(d, i) {
     } else if (d.role == 'Released On') {
         return LINK_DISTANCE_RELEASED_ON;
     } else {
-//        console.log("d.source: ", d.source);
-//        console.log("d.target: ", d.target);
-        var dist = d.source.distance == 0 || d.target.distance == 0 || d.source.distance == 3 || d.target.distance == 3 ? 1.0 : (d.source.distance + d.target.distance) / 2.0
+//        var dist = d.source.distance == 0 || d.target.distance == 0 || d.source.distance == 3 || d.target.distance == 3 ? 1.0 : (d.source.distance + d.target.distance) / 2.0
         return LINK_DISTANCE;
 //        return LINK_DISTANCE * dist + (random() * LINK_DISTANCE_RANDOM * dist);
     }
@@ -51,25 +49,34 @@ function nodeStrength(d, i) {
     if (d.distance) {
         var dist = 4 - d.distance;
         return dist * NODE_STRENGTH;
-//        return d.distance == 0 ? 3 * NODE_STRENGTH : d.distance == 1 ? 2.5 * NODE_STRENGTH : NODE_STRENGTH;
     } else if (d.isIntermediate) {
-        return Math.hypot(d.x - dg.svg_dimensions[0] / 2, d.y - dg.svg_dimensions[1] / 2) <= 300 ? 3 * NODE_STRENGTH : NODE_STRENGTH / 2;
+        return NODE_STRENGTH / 10;
+    } else if (d.cluster) {
+              return 100;
     } else {
-        return 0;
+        return NODE_STRENGTH;
     }
 }
 
+//function nodeStrength(d, i) {
+//    if (d.distance) {
+//        var dist = 4 - d.distance;
+//        return dist * NODE_STRENGTH;
+//    } else if (d.isIntermediate) {
+//        return Math.hypot(d.x - dg.svg_dimensions[0] / 2, d.y - dg.svg_dimensions[1] / 2) <= 300 ? 3 * NODE_STRENGTH : NODE_STRENGTH / 2;
+//    } else {
+//        return 0;
+//    }
+//}
+
 function gravityStrength(d, i) {
-    if (d.distance) {
-        var maxDimension = Math.max(dg.svg_dimensions[0], dg.svg_dimensions[1]);
-        var dist = 3 - d.distance;
-        var scaling = dist / 5.0;
-        var radialDistance = (maxDimension - Math.hypot(d.x - dg.svg_dimensions[0] / 2, d.y - dg.svg_dimensions[1] / 2)) / maxDimension;
-        var g = radialDistance * scaling;
-        return g;
-    } else {
-        return 0;
-    }
+    var dist = d.distance ? 3 - d.distance : 1.0;
+    var maxDimension = Math.max(dg.svg_dimensions[0], dg.svg_dimensions[1]);
+    var scaling = dist / 10.0;
+    var radialDistance = (maxDimension - Math.max(d.x - dg.svg_dimensions[0] / 2, d.y - dg.svg_dimensions[1] / 2)) / maxDimension;
+//        var radialDistance = (maxDimension - Math.hypot(d.x - dg.svg_dimensions[0] / 2, d.y - dg.svg_dimensions[1] / 2)) / maxDimension;
+    var g = radialDistance * scaling;
+    return g;
 }
 
 function dg_network_setupForceLayout() {
@@ -141,11 +148,7 @@ function dg_network_startForceLayout() {
         dg.network.forceLayout.force("x", null);
         dg.network.forceLayout.force("y", null);
     }
-//    if (linkData.length > 16 && linkData.length < 500) {
-        dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).iterations(LINK_ITERATIONS));
-//    } else {
-//        dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(d => linkDistance(d) / 10.0).iterations(LINK_ITERATIONS));
-//    }
+    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).iterations(LINK_ITERATIONS));
 
     dg_network_forceLayout_restart();
 }
@@ -235,13 +238,16 @@ function dg_network_processJson(json) {
             oldNode.missing = newNode.missing;
             oldNode.missingByPage = newNode.missingByPage;
             oldNode.pages = newNode.pages;
-            var dx = (random() * 2.0 - 1.0) * LINK_DISTANCE * oldNode.distance
-            var dy = (random() * 2.0 - 1.0) * LINK_DISTANCE * oldNode.distance
+            var dist = oldNode.distance ? oldNode.distance : 1.0;
+            var dx = (random() * 2.0 - 1.0) * LINK_DISTANCE * dist * 10;
+            var dy = (random() * 2.0 - 1.0) * LINK_DISTANCE * dist * 10;
             oldNode.x = dg.network.newNodeCoords[0] + dx;
             oldNode.y = dg.network.newNodeCoords[1] + dy;
         } else {
-            var dx = (random() * 2.0 - 1.0) * LINK_DISTANCE * newNode.distance
-            var dy = (random() * 2.0 - 1.0) * LINK_DISTANCE * newNode.distance
+            var dist = newNode.distance ? newNode.distance : 1.0;
+            var dx = (random() * 2.0 - 1.0) * LINK_DISTANCE * dist * 10;
+            var dy = (random() * 2.0 - 1.0) * LINK_DISTANCE * dist * 10;
+            //console.log("dx: " + dx + " dy: " + dy);
             newNode.x = dg.network.newNodeCoords[0] + dx;
             newNode.y = dg.network.newNodeCoords[1] + dy;
             dg.network.data.nodeMap.set(key, newNode);
@@ -377,11 +383,11 @@ function dg_network_prune(maxDist, minLinks) {
 
 function dg_network_bbox_force() {
     dg.network.data.nodeMap.forEach(node => {
-
-        var minX = 20 + node.radius;
-        var maxX = dg.svg_dimensions[0] - 100 - node.radius;
-        var minY = 100 + node.radius;
-        var maxY = dg.svg_dimensions[1] - 100 - node.radius;
+        var padding = 2 * node.radius;
+        var minX = padding;
+        var maxX = dg.svg_dimensions[0] - padding;
+        var minY = padding;
+        var maxY = dg.svg_dimensions[1] - padding;
         if (node.x < minX) {
             node.x = minX;
         }
@@ -395,69 +401,4 @@ function dg_network_bbox_force() {
             node.y = maxY;
         }
     })
-
-}
-
-// Reheat the simulation when drag starts, and fix the subject position.
-function dg_network_dragstarted(event) {
-    event.subject.fx = event.subject.x;
-    event.subject.fy = event.subject.y;
-    event.subject.dragx = event.subject.x;
-    event.subject.dragy = event.subject.y;
-    if (event.sourceEvent.type == 'mousedown') {
-        dg_network_onNodeMouseDown(event.sourceEvent, event.subject);
-    }
-}
-
-// Update the subject (dragged node) position during drag.
-function dg_network_dragged(event) {
-    event.subject.fx = event.x;
-    event.subject.fy = event.y;
-    if (event.subject.dragx != event.subject.x ||
-        event.subject.dragy != event.subject.y) {
-        event.subject.dragx = event.subject.x;
-        event.subject.dragy = event.subject.y;
-        if (!event.active) dg_network_forceLayout_restart();
-    }
-}
-
-// Restore the target alpha so the simulation cools after dragging ends.
-// Unfix the subject position now that it’s no longer being dragged.
-function dg_network_dragended(event) {
-    if (event.subject.dragx == event.subject.x &&
-        event.subject.dragy == event.subject.y)
-        return;
-    if (!event.active) dg.network.forceLayout.alphaTarget(0);
-    event.subject.fx = null;
-    event.subject.fy = null;
-    if (event.sourceEvent.type == 'mouseup') {
-        dg_network_onNodeMouseDown(event.sourceEvent, event.subject);
-    }
-}
-
-function dg_network_start() {
-    dg.network.isRunningLayout = true;
-    dg.network.tick = 0;
-    $('#network-running')
-                .addClass('glyphicon-animate glyphicon-refresh');
-    dg.network.layers.link.selectAll('.link')
-        .classed('noninteractive', false);
-    dg.network.layers.node.selectAll('.node')
-        .classed('noninteractive', false);
-}
-
-function dg_network_end(event) {
-    $('#network-running')
-                .removeClass('glyphicon-animate glyphicon-refresh');
-    dg.network.layers.link.selectAll('.link')
-        .classed('noninteractive', false);
-    dg.network.layers.node.selectAll('.node')
-        .classed('noninteractive', false);
-    dg.network.isRunningLayout = false;
-    dg_network_tick();
-}
-
-function dg_network_forceLayout_stop() {
-    console.log("forceLayout_stop: ");
-    dg.network.forceLayout.alpha(0);
 }
