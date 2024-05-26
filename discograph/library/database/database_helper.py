@@ -163,6 +163,9 @@ class DatabaseHelper(ABC):
                 entities = entity.entities
                 # log.debug(f"relation_counts: {relation_counts}")
                 counter = counter + 1
+                if entity.entity_type == EntityType.LABEL:
+                    log.debug("random skip label")
+                    continue
                 if (
                     relation_counts is not None
                     and (
@@ -174,9 +177,9 @@ class DatabaseHelper(ABC):
                 ):
                     log.debug(f"random node: {entity}")
                     break
-                if entity.entity_type == EntityType.LABEL:
-                    log.debug("random skip label")
-                    continue
+                else:
+                    log.debug(f"random fail: {entity}")
+
                 if counter >= 1000:
                     log.debug("random count expired")
                     break

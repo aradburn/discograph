@@ -2,7 +2,7 @@ import logging
 from random import random
 from typing import Generator, Any, cast, List
 
-from sqlalchemy import Result, select, update, Select
+from sqlalchemy import Result, select, update, Select, String
 
 from discograph import utils
 from discograph.exceptions import NotFoundError, DatabaseError
@@ -112,8 +112,13 @@ class EntityRepository(BaseRepository[EntityTable]):
             .where(
                 (EntityTable.random > n)
                 & (EntityTable.entity_type == EntityType.ARTIST)
-                & (EntityTable.entities.is_not(None))
-                & (EntityTable.relation_counts.is_not(None))
+                # & (cast(EntityTable.entities, String) != "{}")
+                # & (cast(EntityTable.relation_counts, String) != "{}")
+                & (
+                    (EntityTable.relation_counts["Member Of"].cast(String) != "{}")
+                    | (EntityTable.relation_counts["Alias"].cast(String) != "{}")
+                    | (EntityTable.entities["members"].cast(String) != "{}")
+                )
             )
             .order_by(EntityTable.random)
             .limit(1)
