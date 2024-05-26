@@ -99,5 +99,9 @@ class RelationResult(Relation):
         if hasattr(self, "distance"):
             data["distance"] = self.distance
         if hasattr(self, "pages"):
-            data["pages"] = tuple(sorted(self.pages))
+            if self.pages is not None:
+                pages = tuple(sorted(self.pages))
+            else:
+                pages = None
+            data["pages"] = pages
         return data
