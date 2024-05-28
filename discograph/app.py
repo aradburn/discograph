@@ -39,17 +39,6 @@ def setup_application():
     DatabaseHelper.flask_db_session = scoped_session(
         sessionmaker(autocommit=False, autoflush=False, bind=DatabaseHelper.engine)
     )
-    app.add_url_rule(
-        "/favicon.ico", redirect_to=url_for("static", filename="favicon.ico")
-    )
-    app.add_url_rule(
-        "/favicon-32x32.png",
-        redirect_to=url_for("static", filename="favicon-32x32.png"),
-    )
-    app.add_url_rule(
-        "/apple-touch-icon.png",
-        redirect_to=url_for("static", filename="apple-touch-icon.png"),
-    )
 
 
 def shutdown_application():

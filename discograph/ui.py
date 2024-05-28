@@ -1,7 +1,8 @@
 import json
 import logging
+import os
 
-from flask import Blueprint
+from flask import Blueprint, redirect, send_from_directory
 from flask import current_app as app
 from flask import make_response
 from flask import render_template
@@ -31,7 +32,7 @@ default_roles = (
 def route__index():
     initial_json = "var dgData = null;"
     # noinspection PyUnresolvedReferences
-    on_mobile = request.MOBILE
+    # on_mobile = request.MOBILE
     parsed_args = discograph.utils.parse_request_args(request.args)
     original_roles, original_year = parsed_args
     if not original_roles:
@@ -48,7 +49,7 @@ def route__index():
         multiselect_mapping=multiselect_mapping,
         og_title="Discograph2",
         og_url=url,
-        on_mobile=on_mobile,
+        # on_mobile=on_mobile,
         original_roles=original_roles,
         original_year=original_year,
         title="Discograph2",
@@ -115,3 +116,26 @@ def route__entity_type__entity_id(entity_type, entity_id):
     )
     response = make_response(rendered_template)
     return response
+
+
+@blueprint.route("/favicon.ico")
+def favicon():
+    return send_from_directory(
+        os.path.join(app.root_path, "static"),
+        path="favicon.ico",
+        mimetype="image/vnd.microsoft.icon",
+    )
+
+
+@blueprint.route("/favicon-32x32.png")
+def favicon32():
+    return send_from_directory(
+        os.path.join(app.root_path, "static"), path="favicon-32x32.png"
+    )
+
+
+@blueprint.route("/apple-touch-icon.png")
+def favicon_apple():
+    return send_from_directory(
+        os.path.join(app.root_path, "static"), path="apple-touch-icon.png"
+    )

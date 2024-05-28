@@ -44,20 +44,25 @@ def route__api__entity_type__network__entity_id(entity_type, entity_id):
 
     log.debug(f"entityType: {entity_type}")
     entity_type = EntityType[entity_type.upper()]
-    if entity_type not in (EntityType.ARTIST, EntityType.LABEL):
+    if entity_type not in (
+        EntityType.ARTIST,
+        EntityType.LABEL,
+    ):
         raise BadRequestError(message="Bad Entity Type")
+    log.debug(f"entityType: {entity_type}")
     if not entity_id.isnumeric():
         raise BadRequestError(message="Bad Entity Id")
     entity_id = int(entity_id)
+    log.debug(f"entity_id: {entity_id}")
     parsed_args = discograph.utils.parse_request_args(request.args)
     original_roles, original_year = parsed_args
     # noinspection PyUnresolvedReferences
-    on_mobile = request.MOBILE
+    # on_mobile = request.MOBILE
     with transaction():
         data = DatabaseHelper.db_helper.get_network(
             entity_id,
             entity_type,
-            on_mobile=on_mobile,
+            # on_mobile=on_mobile,
             roles=original_roles,
         )
     if data is None:
