@@ -52,7 +52,7 @@ class RepositoryTestCase(unittest.TestCase):
             shutdown_logging()
 
     def setUp(self):
-        self.test_session = DatabaseHelper.session_factory
+        # self.test_session = DatabaseHelper.session_factory
 
         log.info("-------------------------------------------------------------------")
         log.info(f"Test {self.id()}")

@@ -1,15 +1,15 @@
 # Discograph2
 
-Social Graphing for the Discogs Database
+Interactive visualization of the Discogs Database
 
 ## What is this?
 
-Discograph2 is an interactive visualization of the relationships between
-musicians, bands and labels. :notes:
+Discograph2 visualizes the relationships between
+musicians, bands and labels.
 
 All of Discograph2's data is derived from the [Discogs](http://www.discogs.com)
 discography database: nearly 7 million artists, 1 million labels, and 10 million
-releases creating a network of nearly 100 million different relationships.
+releases creating a network of over 100 million different relationships.
 
 ## How do I use this?
 

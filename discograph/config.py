@@ -100,7 +100,8 @@ class PostgresTestConfiguration(Configuration):
     DATABASE = DatabaseType.POSTGRES
     POSTGRES_DATABASE_NAME = "test_discograph"
     POSTGRES_ROOT = "/usr/lib/postgresql/16"
-    POSTGRES_DATA = "/data1/tmp/pg_temp/test"
+    POSTGRES_DATA = "/home/andy/tmp/pg_temp/test"
+    # POSTGRES_DATA = "/data1/tmp/pg_temp/test"
     APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.PROCESS
     CACHE_TYPE = CacheType.MEMORY

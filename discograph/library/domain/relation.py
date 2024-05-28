@@ -34,22 +34,23 @@ class RelationDB(_RelationBase):
     """Saved Relation representation, database internal representation."""
 
     relation_id: int
+    version_id: int
     role_id: int
-    # role: Role
-    # releases: Optional[Dict[str, Optional[int]]]
 
 
 class Relation(_RelationBase):
     """Domain Relation representation, public facing."""
 
     relation_id: int
+    version_id: int
     role: str
-    # releases: Optional[Dict[str, Optional[int]]]
 
 
-class RelationResult(Relation):
+class RelationResult(_RelationBase):
     """Domain Search result Relation representation, public facing."""
 
+    relation_id: int
+    role: str
     distance: int | None = None
     pages: tuple | None = None
 

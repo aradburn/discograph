@@ -11,12 +11,7 @@ log = logging.getLogger(__name__)
 class UpdaterTestCase(DatabaseTestCase):
     @classmethod
     def setUpClass(cls):
-        from discograph.library.database.database_helper import DatabaseHelper
-
         DatabaseTestCase._config = PostgresTestConfiguration()
-        # DatabaseTestCase.entity = PostgresEntityDB
-        # DatabaseTestCase.relation = PostgresRelationDB
-        # DatabaseTestCase.release = PostgresReleaseDB
         DatabaseTestCase.relation_grapher = RelationGrapher
         super().setUpClass()
 
@@ -28,7 +23,7 @@ class UpdaterTestCase(DatabaseTestCase):
         super().tearDownClass()
 
     def setUp(self):
-        self.test_session = DatabaseHelper.session_factory
+        # self.test_session = DatabaseHelper.session_factory
 
         log.info("-------------------------------------------------------------------")
         log.info(f"Test {self.id()}")

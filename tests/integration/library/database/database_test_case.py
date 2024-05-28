@@ -17,12 +17,7 @@ log = logging.getLogger(__name__)
 class DatabaseTestCase(unittest.TestCase):
     _config: Configuration = None
     _db_helper: DatabaseHelper = None
-    # entity: EntityDB = None
-    # relation: RelationDB = None
-    # release: ReleaseDB = None
-    # role: RoleDB = None
     relation_grapher: Type[RelationGrapher] = None
-    # test_session: sessionmaker = None
 
     # noinspection PyPep8Naming
     def __init__(self, methodName="runTest"):

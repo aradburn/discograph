@@ -352,7 +352,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             relation = RelationRepository().find_by_key(key)
             actual = utils.normalize_dict(
-                relation.model_dump(exclude={"random", "relation_id"})
+                relation.model_dump(exclude={"relation_id", "version_id", "random"})
             )
 
         # THEN
@@ -382,7 +382,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             relation = RelationRepository().find_by_key(key)
             actual = utils.normalize_dict(
-                relation.model_dump(exclude={"random", "relation_id"})
+                relation.model_dump(exclude={"relation_id", "version_id", "random"})
             )
 
         # THEN
@@ -412,7 +412,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             relation = RelationRepository().find_by_key(key)
             actual = utils.normalize_dict(
-                relation.model_dump(exclude={"random", "relation_id"})
+                relation.model_dump(exclude={"relation_id", "version_id", "random"})
             )
 
         # THEN
@@ -442,7 +442,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             relation = RelationRepository().find_by_key(key)
             actual = utils.normalize_dict(
-                relation.model_dump(exclude={"random", "relation_id"})
+                relation.model_dump(exclude={"relation_id", "version_id", "random"})
             )
 
         # THEN
@@ -472,7 +472,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             relation = RelationRepository().find_by_key(key)
             actual = utils.normalize_dict(
-                relation.model_dump(exclude={"random", "relation_id"})
+                relation.model_dump(exclude={"relation_id", "version_id", "random"})
             )
 
         # THEN
@@ -575,7 +575,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             relation = RelationRepository().find_by_key(key)
             actual = utils.normalize_dict(
-                relation.model_dump(exclude={"random", "relation_id"})
+                relation.model_dump(exclude={"relation_id", "version_id", "random"})
             )
 
         # THEN
@@ -610,7 +610,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             relation = RelationRepository().find_by_key(key)
             actual = utils.normalize_dict(
-                relation.model_dump(exclude={"random", "relation_id"})
+                relation.model_dump(exclude={"relation_id", "version_id", "random"})
             )
 
         # THEN

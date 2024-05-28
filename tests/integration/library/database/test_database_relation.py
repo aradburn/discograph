@@ -6,6 +6,7 @@ from tests.integration.library.database.database_test_case import DatabaseTestCa
 
 
 class TestDatabaseRelation(DatabaseTestCase):
+
     def test_from_db_01(self):
         # GIVEN
         key = dict(
@@ -20,7 +21,7 @@ class TestDatabaseRelation(DatabaseTestCase):
         with transaction():
             relation = RelationRepository().find_by_key(key)
             actual = utils.normalize_dict(
-                relation.model_dump(exclude={"relation_id", "random"})
+                relation.model_dump(exclude={"relation_id", "version_id", "random"})
             )
 
         # THEN
@@ -123,7 +124,7 @@ class TestDatabaseRelation(DatabaseTestCase):
         with transaction():
             relation = RelationRepository().find_by_key(key)
             actual = utils.normalize_dict(
-                relation.model_dump(exclude={"relation_id", "random"})
+                relation.model_dump(exclude={"relation_id", "version_id", "random"})
             )
 
         # THEN
@@ -158,7 +159,7 @@ class TestDatabaseRelation(DatabaseTestCase):
         with transaction():
             relation = RelationRepository().find_by_key(key)
             actual = utils.normalize_dict(
-                relation.model_dump(exclude={"relation_id", "random"})
+                relation.model_dump(exclude={"relation_id", "version_id", "random"})
             )
 
         expected_relation = {

@@ -44,7 +44,7 @@ class WrappedSession:
             raise DatabaseError
 
     @property
-    def _session(self):
+    def _session(self) -> Session:
         if not self._ctx_session:
             try:
                 self._ctx_session: Session = CTX_SESSION.get()

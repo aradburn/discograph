@@ -81,7 +81,7 @@ class PostgresHelper(DatabaseHelper):
                     "work_mem": "500MB",
                     "maintenance_work_mem": "500MB",
                     "effective_cache_size": "4GB",
-                    "max_connections": 34,
+                    "max_connections": 20,
                     "shared_buffers": "2GB",
                     # "log_min_duration_statement": 5000,
                     # "shared_preload_libraries": 'pg_stat_statements',
@@ -108,7 +108,11 @@ class PostgresHelper(DatabaseHelper):
                     database=config["POSTGRES_DATABASE_NAME"],
                 )
                 engine = create_engine(
-                    url_object, pool_size=40, pool_timeout=300, pool_recycle=300
+                    url_object,
+                    pool_size=20,
+                    pool_timeout=300,
+                    pool_recycle=300,
+                    connect_args={"connect_timeout": 1000},
                 )
 
                 PostgresHelper._is_test = True

@@ -50,6 +50,7 @@ class TestRepositoryRelation(RepositoryTestCase):
         # THEN
         expected_relation = Relation(
             relation_id=1,
+            version_id=1,
             entity_one_id=2,
             entity_one_type=EntityType.ARTIST,
             entity_two_id=3,
@@ -195,6 +196,7 @@ class TestRepositoryRelation(RepositoryTestCase):
         # THEN
         expected_relation = Relation(
             relation_id=1,
+            version_id=2,
             entity_one_id=2,
             entity_one_type=EntityType.ARTIST,
             entity_two_id=3,
@@ -224,6 +226,7 @@ class TestRepositoryRelation(RepositoryTestCase):
         # THEN
         expected_relation = Relation(
             relation_id=1,
+            version_id=2,
             entity_one_id=2,
             entity_one_type=EntityType.ARTIST,
             entity_two_id=3,

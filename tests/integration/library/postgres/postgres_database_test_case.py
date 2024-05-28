@@ -11,10 +11,6 @@ class PostgresDatabaseTestCase(DatabaseTestCase):
     @classmethod
     def setUpClass(cls):
         DatabaseTestCase._config = PostgresTestConfiguration()
-        # DatabaseTestCase.entity = PostgresEntityDB
-        # DatabaseTestCase.relation = PostgresRelationDB
-        # DatabaseTestCase.release = PostgresReleaseDB
-        # DatabaseTestCase.role = RoleDB
         DatabaseTestCase.relation_grapher = RelationGrapher
         super().setUpClass()
 

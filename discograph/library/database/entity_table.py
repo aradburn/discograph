@@ -27,7 +27,3 @@ class EntityTable(BaseTable):
         PrimaryKeyConstraint(entity_id, entity_type),
         {},
     )
-
-    # def __repr__(self):
-    #     # easy to override, and it'll honor __repr__ in foreign relationships
-    #     return super().__repr__(entity_id=self.entity_id)

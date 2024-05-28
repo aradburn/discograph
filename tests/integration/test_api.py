@@ -7,24 +7,25 @@ from tests.integration.app_test_case import AppTestCase
 class TestAPI(AppTestCase):
     def setUp(self):
         self.app = app.test_client()
-        app.debug = True
+        self.app.debug = True
 
     def test_network_01(self):
         response = self.app.get("/api/artist/network/2239")
-        assert response.status == "200 OK"
+        self.assertEqual("200 OK", response.status)
 
     def test_network_02(self):
         response = self.app.get("/api/artist/network/999999999999")
-        assert response.status == "404 NOT FOUND"
+        self.assertEqual("404 NOT FOUND", response.status)
 
     def test_network_03(self):
         response = self.app.get("/api/label/network/1")
-        assert response.status == "200 OK"
+        self.assertEqual("200 OK", response.status)
 
     def test_search_01(self):
         response = self.app.get("/api/search/Morris")
         print(f"response: {response}")
-        assert response.status == "200 OK"
+        self.assertEqual("200 OK", response.status)
+
         actual = json.loads(response.data.decode("utf-8"))
         print(f"actual: {actual}")
         expected = {
@@ -45,10 +46,12 @@ class TestAPI(AppTestCase):
 
     def test_search_02(self):
         response = self.app.get("/api/search/Chris+Morris")
-        assert response.status == "200 OK"
-        data = json.loads(response.data.decode("utf-8"))
-        assert data == {"results": [{"key": "artist-3723", "name": "Chris Morris"}]}
+        self.assertEqual("200 OK", response.status)
+
+        actual = json.loads(response.data.decode("utf-8"))
+        expected = {"results": [{"key": "artist-3723", "name": "Chris Morris"}]}
+        self.assertEqual(expected, actual)
 
     def test_relations_01(self):
         response = self.app.get("/api/artist/relations/32613")
-        assert response.status == "200 OK"
+        self.assertEqual("200 OK", response.status)

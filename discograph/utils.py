@@ -183,9 +183,11 @@ def normalize_dict(obj: Any, skip_keys=None) -> str:
 
     def list_public_attributes(input_var):
         return {
-            k: list_public_attributes(preprocessor.filter(v))
-            if isinstance(v, Mapping)
-            else v
+            k: (
+                list_public_attributes(preprocessor.filter(v))
+                if isinstance(v, Mapping)
+                else v
+            )
             for k, v in input_var.items()
             if not (k.startswith("_") or callable(v))
         }
@@ -279,6 +281,6 @@ def timeit(func):
 
 
 def sleep_with_backoff(multiplier: int) -> None:
-    time_in_secs = multiplier * (1.0 + 4.0 * random())
-    log.debug(f"sleeping for {time_in_secs} secs")
+    time_in_secs = int(multiplier * (1.0 + 4.0 * random()))
+    # log.debug(f"sleeping for {time_in_secs} secs")
     time.sleep(time_in_secs)

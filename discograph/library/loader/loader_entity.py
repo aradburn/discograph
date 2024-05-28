@@ -53,137 +53,14 @@ class LoaderEntity(LoaderBase):
         log.debug("entity loader pass two")
         cls.loader_start_workers(WorkerEntityPassTwo)
 
-        # number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
-        #
-        # with transaction():
-        #     entity_repository = EntityRepository()
-        #     total_count = entity_repository.count()
-        #     entity_type: EntityType = EntityType.ARTIST
-        #     chunked_entity_ids = entity_repository.get_chunked_entity_ids(entity_type)
-        #     workers = [
-        #         WorkerEntityPassTwo(entity_type, entity_ids, current_total, total_count)
-        #         for entity_ids in chunked_entity_ids
-        #     ]
-        #
-        #     log.debug(f"entity loader pass two - artist start {len(workers)} workers")
-        #     for worker in workers:
-        #         worker.start()
-        #     for worker in workers:
-        #         worker.join()
-        #         if worker.exitcode > 0:
-        #             log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
-        #             raise Exception("Error in worker process")
-        #     for worker in workers:
-        #         worker.terminate()
-        #
-        #     log.debug("entity loader pass two - label")
-        #     entity_type: EntityType = EntityType.LABEL
-        #     chunked_entity_ids = entity_repository.get_chunked_entity_ids(entity_type)
-        #
-        #     workers = [
-        #         WorkerEntityPassTwo(entity_type, current_total, total_count)
-        #         for entity_ids in chunked_entity_ids
-        #     ]
-        #     log.debug(f"entity loader pass two - label start {len(workers)} workers")
-        #     for worker in workers:
-        #         worker.start()
-        #     for worker in workers:
-        #         worker.join()
-        #         if worker.exitcode > 0:
-        #             log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
-        #             raise Exception("Error in worker process")
-        #     for worker in workers:
-        #         worker.terminate()
-        #     log.debug("entity loader pass two - done")
-
     @classmethod
     @timeit
     def loader_pass_three(cls):
         log.debug("entity loader pass three")
         cls.loader_start_workers(WorkerEntityPassThree)
 
-        # number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
-        #
-        # with transaction():
-        #     entity_repository = EntityRepository()
-        #     total_count = entity_repository.count()
-        #     entity_type: EntityType = EntityType.ARTIST
-        #     batched_release_ids = entity_repository.get_batched_ids(
-        #         entity_type, number_in_batch
-        #     )
-        #
-        # current_total = 0
-        #
-        # workers = []
-        # for release_ids in batched_release_ids:
-        #     worker = WorkerEntityPassThree(entity_type, release_ids, current_total, total_count)
-        #     worker.start()
-        #     workers.append(worker)
-        #     current_total += number_in_batch
-        #
-        #     if len(workers) > get_concurrency_count():
-        #         worker = workers.pop(0)
-        #         if LOGGING_TRACE:
-        #             log.debug(f"wait for worker {len(workers)} in list")
-        #         worker.join()
-        #         if worker.exitcode > 0:
-        #             log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
-        #             raise Exception("Error in worker process")
-        #         worker.terminate()
-        #
-        # while len(workers) > 0:
-        #     worker = workers.pop(0)
-        #     if LOGGING_TRACE:
-        #         log.debug(
-        #             f"wait for worker {worker.name} - {len(workers)} left in list"
-        #         )
-        #     worker.join()
-        #     if worker.exitcode > 0:
-        #         log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
-        #         raise Exception("Error in worker process")
-        #     worker.terminate()
-        #
-        # with transaction():
-        #     entity_repository = EntityRepository()
-        #     total_count = entity_repository.count()
-        #     entity_type: EntityType = EntityType.LABEL
-        #     batched_release_ids = entity_repository.get_batched_ids(
-        #         entity_type, number_in_batch
-        #     )
-        #
-        # current_total = 0
-        #
-        # workers = []
-        # for release_ids in batched_release_ids:
-        #     worker = WorkerEntityPassThree(entity_type, release_ids, current_total, total_count)
-        #     worker.start()
-        #     workers.append(worker)
-        #     current_total += number_in_batch
-        #
-        #     if len(workers) > get_concurrency_count():
-        #         worker = workers.pop(0)
-        #         if LOGGING_TRACE:
-        #             log.debug(f"wait for worker {len(workers)} in list")
-        #         worker.join()
-        #         if worker.exitcode > 0:
-        #             log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
-        #             raise Exception("Error in worker process")
-        #         worker.terminate()
-        #
-        # while len(workers) > 0:
-        #     worker = workers.pop(0)
-        #     if LOGGING_TRACE:
-        #         log.debug(
-        #             f"wait for worker {worker.name} - {len(workers)} left in list"
-        #         )
-        #     worker.join()
-        #     if worker.exitcode > 0:
-        #         log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
-        #         raise Exception("Error in worker process")
-        #     worker.terminate()
-
     @classmethod
-    def loader_start_workers(cls, worker_class):
+    def loader_start_workers(cls, worker_class) -> None:
         number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
 
         with transaction():
@@ -204,26 +81,10 @@ class LoaderEntity(LoaderBase):
             current_total += number_in_batch
 
             if len(workers) > get_concurrency_count():
-                worker = workers.pop(0)
-                if LOGGING_TRACE:
-                    log.debug(f"wait for worker {len(workers)} in list")
-                worker.join()
-                if worker.exitcode > 0:
-                    log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
-                    raise Exception("Error in worker process")
-                worker.terminate()
+                cls.loader_process_worker(workers)
 
         while len(workers) > 0:
-            worker = workers.pop(0)
-            if LOGGING_TRACE:
-                log.debug(
-                    f"wait for worker {worker.name} - {len(workers)} left in list"
-                )
-            worker.join()
-            if worker.exitcode > 0:
-                log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
-                raise Exception("Error in worker process")
-            worker.terminate()
+            cls.loader_process_worker(workers)
 
         with transaction():
             entity_repository = EntityRepository()
@@ -243,26 +104,21 @@ class LoaderEntity(LoaderBase):
             current_total += number_in_batch
 
             if len(workers) > get_concurrency_count():
-                worker = workers.pop(0)
-                if LOGGING_TRACE:
-                    log.debug(f"wait for worker {len(workers)} in list")
-                worker.join()
-                if worker.exitcode > 0:
-                    log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
-                    raise Exception("Error in worker process")
-                worker.terminate()
+                cls.loader_process_worker(workers)
 
         while len(workers) > 0:
-            worker = workers.pop(0)
-            if LOGGING_TRACE:
-                log.debug(
-                    f"wait for worker {worker.name} - {len(workers)} left in list"
-                )
-            worker.join()
-            if worker.exitcode > 0:
-                log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
-                raise Exception("Error in worker process")
-            worker.terminate()
+            cls.loader_process_worker(workers)
+
+    @classmethod
+    def loader_process_worker(cls, workers) -> None:
+        worker = workers.pop(0)
+        if LOGGING_TRACE:
+            log.debug(f"wait for worker {worker.name} - {len(workers)} left in list")
+        worker.join()
+        if worker.exitcode > 0:
+            log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
+            raise Exception("Error in worker process")
+        worker.terminate()
 
     @classmethod
     def element_to_names(cls, names):

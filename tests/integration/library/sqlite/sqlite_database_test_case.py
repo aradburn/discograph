@@ -11,10 +11,6 @@ class SqliteDatabaseTestCase(DatabaseTestCase):
     @classmethod
     def setUpClass(cls):
         DatabaseTestCase._config = SqliteTestConfiguration()
-        # DatabaseTestCase.entity = SqliteEntityDB
-        # DatabaseTestCase.relation = SqliteRelationDB
-        # DatabaseTestCase.release = SqliteReleaseDB
-        # DatabaseTestCase.role = RoleDB
         DatabaseTestCase.relation_grapher = RelationGrapher
         super().setUpClass()
 
