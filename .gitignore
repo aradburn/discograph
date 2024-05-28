@@ -63,6 +63,7 @@ logs/
 discograph/logs/
 discograph.cfg
 discograph.conf
+venv/
 
 # PyCharm
 .idea/
