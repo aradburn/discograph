@@ -19,11 +19,14 @@ class LoaderRelation:
     def loader_relation_pass_one(cls, date: str):
         log.debug("relation loader pass one")
 
-        number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE / 100)
-
         with transaction():
             release_repository = ReleaseRepository()
             total_count = release_repository.count()
+            if total_count > LoaderBase.BULK_INSERT_BATCH_SIZE * 10:
+                number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
+            else:
+                number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE / 100)
+
             batched_release_ids = release_repository.get_batched_release_ids(
                 number_in_batch
             )

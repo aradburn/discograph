@@ -207,6 +207,8 @@ class RelationRepository(BaseRepository[RelationTable]):
             if "role_name" in key:
                 role_name = key["role_name"]
                 key["role_id"] = RoleType.role_name_to_role_id_lookup[role_name]
+                # print(f"find_by_key role_id: {key['role_id']}")
+                assert key["role_id"] is not None
                 # role = RoleRepository().get_by_name(key["role_name"])
                 # key["role_id"] = role.role_id
             elif "role" in key:
@@ -442,6 +444,7 @@ class RelationRepository(BaseRepository[RelationTable]):
     def update(
         self,
         relation_id: int,
+        version_id: int,
         payload: dict[str, Any],
     ) -> Relation:
         """Updates an existed instance of the model in the related table.
@@ -450,13 +453,16 @@ class RelationRepository(BaseRepository[RelationTable]):
 
         query = (
             update(self.schema_class)
-            .where(RelationTable.relation_id == relation_id)
+            .where(
+                (RelationTable.relation_id == relation_id)
+                & (RelationTable.version_id == version_id)
+            )
             .values(payload)
             .returning(self.schema_class)
         )
         result: Result = self.execute(query)
         # result: Result = await self.execute(query)
-        self._session.flush()
+        # self._session.flush()
         # await self._session.flush()
 
         if not (instance := result.scalar_one_or_none()):

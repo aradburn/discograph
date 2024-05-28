@@ -19,6 +19,7 @@ class RelationTable(BaseTable):
     # COLUMNS
 
     relation_id: Mapped[int] = mapped_column(primary_key=True)
+    version_id = mapped_column(Integer, nullable=False)
     entity_one_id: Mapped[int] = mapped_column(Integer)
     entity_one_type: Mapped[EntityType] = mapped_column(IntEnum(EntityType))
     entity_two_id: Mapped[int] = mapped_column(Integer)
@@ -28,6 +29,8 @@ class RelationTable(BaseTable):
     releases: Mapped[dict | list] = mapped_column(type_=JSON, nullable=False)
 
     random: Mapped[float] = mapped_column(Float)
+
+    __mapper_args__ = {"version_id_col": version_id}
 
     __table_args__ = (
         Index(
