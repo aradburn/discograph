@@ -20,10 +20,10 @@ The front-end:
 The back-end:
 
 - Python 3
-- [Flask](http://flask.pocoo.org/): a light-weight Werkzeug-based web framework
-- SQLAlchemy: a object-relational mapper to access the database
-- PostgreSQL: the primary datastore
-- Redis: for caching and rate limiting
+- [Flask](https://flask.palletsprojects.com/en/3.0.x/): a light-weight Werkzeug-based web framework
+- [SQLAlchemy](https://www.sqlalchemy.org/): a object-relational mapper to access the database
+- [PostgreSQL](https://www.postgresql.org/): the primary datastore
+- [Redis](https://redis.io/): for caching and rate limiting
 
 The DB Structure
 ----------------
@@ -231,4 +231,4 @@ Network query time: 0.6372168064117432
 ```
 
 See the JSON for this query
-here: http://discograph.mbrsi.org/api/artist/network/152882?roles[]=Guitar&roles[]=Alias&roles[]=Member+Of
+here: https://discograph.azurewebsites.net/api/artist/network/152882?roles[]=Guitar&roles[]=Alias&roles[]=Member+Of

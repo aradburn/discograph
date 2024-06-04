@@ -31,3 +31,35 @@ containing a plus-sign to reveal more connections.
 
 As mentioned, the data used is straight from Discogs, so if there are any
 omissions or errors, please add or correct the artist on their website.
+
+# Development
+
+The project uses `venv` to manage the Python environment and dependencies.
+
+## Create a virtual environment
+
+    python3 -m venv venv
+
+## Activate the virtual environment
+
+    source venv/bin/activate # On Unix or MacOS
+    venv\Scripts\activate # On Windows
+
+## Deactivate the virtual environment
+
+    deactivate
+
+## Package management
+
+    pip install --upgrade pip
+
+## Create requirements.txt
+
+    pip freeze > requirements.txt
+
+## Install packages from requirements.txt
+
+    pip install -r requirements.txt
+
+
+
