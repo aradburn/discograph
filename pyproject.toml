@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=70.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "discograph"
+version = "2.0.1"
+authors = [
+    { name = "Andrew Radburn", email = "andy.radburn@outlook.com" },
+    { name = "Josiah Wolf Oberholtzer", email = "josiah.oberholtzer@gmail.com" },
+]
+description = "Interactive visualization of the Discogs database"
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/aradburn/discograph"
+Issues = "https://github.com/aradburn/discograph/issues"

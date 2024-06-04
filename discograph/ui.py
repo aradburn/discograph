@@ -1,7 +1,8 @@
 import json
 import logging
+import os
 
-from flask import Blueprint
+from flask import Blueprint, send_from_directory
 from flask import current_app as app
 from flask import make_response
 from flask import render_template
@@ -9,9 +10,10 @@ from flask import request
 from flask import url_for
 
 import discograph.utils
-from discograph import database, exceptions
-from discograph.library.credit_role import CreditRole
-from discograph.library.entity_type import EntityType
+from discograph.exceptions import BadRequestError, NotFoundError
+from discograph.library.database.transaction import transaction
+from discograph.library.fields.entity_type import EntityType
+from discograph.library.role_entry import RoleEntry
 
 log = logging.getLogger(__name__)
 
@@ -30,12 +32,12 @@ default_roles = (
 def route__index():
     initial_json = "var dgData = null;"
     # noinspection PyUnresolvedReferences
-    on_mobile = request.MOBILE
+    # on_mobile = request.MOBILE
     parsed_args = discograph.utils.parse_request_args(request.args)
     original_roles, original_year = parsed_args
     if not original_roles:
         original_roles = default_roles
-    multiselect_mapping = CreditRole.get_multiselect_mapping()
+    multiselect_mapping = RoleEntry.get_multiselect_mapping()
     url = url_for(
         request.endpoint,
         roles=original_roles,
@@ -47,7 +49,7 @@ def route__index():
         multiselect_mapping=multiselect_mapping,
         og_title="Discograph2",
         og_url=url,
-        on_mobile=on_mobile,
+        # on_mobile=on_mobile,
         original_roles=original_roles,
         original_year=original_year,
         title="Discograph2",
@@ -58,26 +60,29 @@ def route__index():
 
 @blueprint.route("/<entity_type>/<entity_id>")
 def route__entity_type__entity_id(entity_type, entity_id):
+    from discograph.library.database.database_helper import DatabaseHelper
+
     parsed_args = discograph.utils.parse_request_args(request.args)
     original_roles, original_year = parsed_args
     if not original_roles:
         original_roles = default_roles
     entity_type = EntityType[entity_type.upper()]
     if entity_type not in (EntityType.ARTIST, EntityType.LABEL):
-        raise exceptions.APIError(message="Bad Entity Type", status_code=400)
+        raise BadRequestError(message="Bad Entity Type")
     if not entity_id.isnumeric():
-        raise exceptions.APIError(message="Bad Entity Id", status_code=400)
+        raise BadRequestError(message="Bad Entity Id")
     entity_id = int(entity_id)
 
     # on_mobile = request.MOBILE
-    data = database.db_helper.get_network(
-        entity_id,
-        entity_type,
-        # on_mobile=on_mobile,
-        roles=original_roles,
-    )
+    with transaction():
+        data = DatabaseHelper.db_helper.get_network(
+            entity_id,
+            entity_type,
+            # on_mobile=on_mobile,
+            roles=original_roles,
+        )
     if data is None:
-        raise exceptions.APIError(message="No Data", status_code=404)
+        raise NotFoundError(message="No Data")
     initial_json = json.dumps(
         data,
         sort_keys=True,
@@ -95,7 +100,7 @@ def route__entity_type__entity_id(entity_type, entity_id):
         roles=original_roles,
     )
     title = f"Discograph2: {entity_name}"
-    multiselect_mapping = CreditRole.get_multiselect_mapping()
+    multiselect_mapping = RoleEntry.get_multiselect_mapping()
     rendered_template = render_template(
         "index.html",
         application_url=app.config["APPLICATION_ROOT"],
@@ -111,3 +116,26 @@ def route__entity_type__entity_id(entity_type, entity_id):
     )
     response = make_response(rendered_template)
     return response
+
+
+@blueprint.route("/favicon.ico")
+def favicon():
+    return send_from_directory(
+        os.path.join(app.root_path, "static"),
+        path="favicon.ico",
+        mimetype="image/vnd.microsoft.icon",
+    )
+
+
+@blueprint.route("/favicon-32x32.png")
+def favicon32():
+    return send_from_directory(
+        os.path.join(app.root_path, "static"), path="favicon-32x32.png"
+    )
+
+
+@blueprint.route("/apple-touch-icon.png")
+def favicon_apple():
+    return send_from_directory(
+        os.path.join(app.root_path, "static"), path="apple-touch-icon.png"
+    )

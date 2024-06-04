@@ -80,15 +80,11 @@ class PostgresDevelopmentConfiguration(Configuration):
     DEBUG = True
     TESTING = False
     DATABASE = DatabaseType.POSTGRES
-    # POSTGRES_DATABASE_NAME = "discograph"
-    # POSTGRES_ROOT = "/usr/lib/postgresql/16"
-    # POSTGRES_DATA = "/data1/postgresql/16"
-    # POSTGRES_DATA = "/data1/tmp/pg_temp/dev"
     POSTGRES_DATABASE_USERNAME = "discograph"
     POSTGRES_DATABASE_PASSWORD = "discograph"
     POSTGRES_DATABASE_HOST = "localhost"
     POSTGRES_DATABASE_PORT = 5432
-    POSTGRES_DATABASE_NAME = "discograph"
+    POSTGRES_DATABASE_NAME = "discograph_dev"
     APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.PROCESS
     CACHE_TYPE = CacheType.REDIS
@@ -104,7 +100,8 @@ class PostgresTestConfiguration(Configuration):
     DATABASE = DatabaseType.POSTGRES
     POSTGRES_DATABASE_NAME = "test_discograph"
     POSTGRES_ROOT = "/usr/lib/postgresql/16"
-    POSTGRES_DATA = "/data1/tmp/pg_temp/test"
+    POSTGRES_DATA = "/home/andy/tmp/pg_temp/test"
+    # POSTGRES_DATA = "/data1/tmp/pg_temp/test"
     APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.PROCESS
     CACHE_TYPE = CacheType.MEMORY

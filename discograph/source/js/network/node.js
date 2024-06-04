@@ -103,15 +103,23 @@ function dg_network_onNodeEnterEventBindings(nodeEnter) {
         if (status) {
             nodeToolTip.show(d, d3.select(self).node());
         } else {
-            nodeToolTip.hide(d);
+            nodeToolTip.hide();
         }
     });
     nodeEnter.on("mouseover", function(event, d) {
         dg_network_onNodeMouseOver(event, d);
+    });
+    nodeEnter.on("mouseenter", function(event, d) {
         debounceToolTip(this, d, true);
     });
-    nodeEnter.on("mouseout", function(event, d) {
-        debounceToolTip(this, d, false);
+//    nodeEnter.on("mouseout", function(event, d) {
+//        nodeToolTip.hide(d);
+//        console.log("tip mouseout: ", event);
+//    });
+    nodeEnter.on("mouseleave", function(event, d) {
+        nodeToolTip.hide();
+        console.log("tip mouseleave: ", event);
+        console.log("tip mouseleave: ", d);
     });
     nodeEnter.on("mousedown", function(event, d) {
         dg_network_onNodeMouseDown(event, d);
@@ -184,7 +192,7 @@ function dg_network_onNodeMouseDown(event, d) {
 }
 
 function dg_network_onNodeMouseDoubleClick(event, d) {
-    nodeToolTip.hide(d);
+    nodeToolTip.hide();
     linkToolTip.hide();
     $(window).trigger({
         type: 'discograph:request-network',
@@ -219,4 +227,15 @@ function dg_network_node_tooltip(d) {
         '<span>' + d.name + '</span>',
         ];
     return parts.join('');
+}
+
+function dg_network_node_check_tooltip() {
+    var el = nodeToolTip.getNodeEl();
+    if (el) {
+        console.log("tip el: ", el);
+    }
+//    var root = nodeToolTip.rootElement;
+//    if (el) {
+//        console.log("tip el: ", el);
+//    }
 }

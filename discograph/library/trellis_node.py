@@ -1,4 +1,4 @@
-class TrellisNode(object):
+class TrellisNode:
     __slots__ = (
         "_children",
         "_cluster",
@@ -53,7 +53,7 @@ class TrellisNode(object):
             "key": self.entity.json_entity_key,
             "links": tuple(sorted(self.links)),
             "missing": self.missing,
-            "name": self.entity.name,
+            "name": self.entity.entity_name,
             "pages": tuple(sorted(self.pages)),
             "size": self.entity.size,
             "type": self.entity.json_entity_key.split("-")[0],

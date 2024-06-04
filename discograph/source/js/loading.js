@@ -6,9 +6,9 @@ function dg_loading_init() {
         .attr('id', 'loadingLayer')
         .attr('class', 'centered')
         .attr('transform', 'translate(' +
-            dg.dimensions[0] * SVG_SCALING_MULTIPLIER / 2 +
+            dg.svg_dimensions[0] / 2 +
             ',' +
-            dg.dimensions[1] * SVG_SCALING_MULTIPLIER / 2 +
+            dg.svg_dimensions[1] / 2 +
             ')'
             );
     dg.loading.arc = d3.arc()

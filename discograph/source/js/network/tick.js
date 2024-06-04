@@ -127,5 +127,5 @@ function dg_network_tick(e) {
             var vertices = d3.polygonHull(dg_network_getHullVertices(d.flat()));
             return 'M' + vertices.join('L') + 'Z';
         });
-
+    dg_network_node_check_tooltip();
 }

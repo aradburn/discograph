@@ -1,6 +1,7 @@
 import unittest
 
 from discograph import utils
+from discograph.library.fields.entity_type import EntityType
 
 
 class TestUtils(unittest.TestCase):
@@ -25,11 +26,10 @@ class TestUtils(unittest.TestCase):
         assert len(result) == 1
 
     def test_split_tuple_4(self):
-        input_seq = ()
-        num_chunks = 3
-        result = tuple(utils.split_tuple(num_chunks, input_seq))
-        assert result == ()
-        assert len(result) == 0
+        with self.assertRaises(ValueError):
+            input_seq = ()
+            num_chunks = 3
+            tuple(utils.split_tuple(num_chunks, input_seq))
 
     def test_split_tuple_5(self):
         input_seq = (1, 2, 3, 4, 10, 11, 12, 13, 20, 21, 22, 23)
@@ -49,7 +49,7 @@ class TestUtils(unittest.TestCase):
         expected = "aaa\nbbb\nccc\n"
         self.assertEqual(expected, actual)
 
-    def test_normalize_dict(self):
+    def test_normalize_dict_01(self):
         input_dict = {
             "entity_one_id": 430141,
             "entity_one_type": "EntityType.ARTIST",
@@ -70,6 +70,80 @@ class TestUtils(unittest.TestCase):
                 "random": null,
                 "releases": null,
                 "role": "Member Of"
+            }
+        """
+        self.assertEqual(utils.strip_input(expected), actual)
+
+    def test_normalize_dict_02(self):
+        input_dict = {
+            "entities": {},
+            "entity_id": 264170,
+            "entity_type": "EntityType.LABEL",
+            "metadata": {
+                "profile": "American mastering studio located in New Windsor, NY. \r\n\r\n"
+                + "Formally located at 2 Engle Street, Tenafly, New Jersey, "
+                + "operations were moved to New Windsor in 2005. "
+                + "Operated by Chief Engineer [a=Alan Douches].\n",
+                "urls": ["http://www.westwestsidemusic.com/"],
+            },
+            "name": "West West Side Music",
+        }
+
+        actual = utils.normalize_dict(input_dict)
+        # print(f"actual: {actual}")
+        expected = {
+            "entities": {},
+            "entity_id": 264170,
+            "entity_type": "EntityType.LABEL",
+            "metadata": {
+                "profile": "American mastering studio located in New Windsor, NY. \r\n\r\n"
+                + "Formally located at 2 Engle Street, Tenafly, New Jersey, "
+                + "operations were moved to New Windsor in 2005. "
+                + "Operated by Chief Engineer [a=Alan Douches].\n",
+                "urls": ["http://www.westwestsidemusic.com/"],
+            },
+            "name": "West West Side Music",
+        }
+
+        self.assertEqual(utils.normalize_dict(expected), actual)
+
+    def test_normalize_nested_dict(self):
+        input_dict = {
+            "artist-430141-member-of-artist-307": {
+                "entity_one_id": 430141,
+                "entity_one_type": EntityType.ARTIST,
+                "entity_two_id": 307,
+                "entity_two_type": EntityType.ARTIST,
+                "role": "Member Of",
+            },
+            "artist-430141-member-of-artist-3603": {
+                "entity_one_id": 430141,
+                "entity_one_type": "EntityType.ARTIST",
+                "entity_two_id": 3603,
+                "entity_two_type": "EntityType.ARTIST",
+                "role": "Member Of",
+                "random": None,
+            },
+        }
+
+        actual = utils.normalize_dict(input_dict)
+        expected = """
+            {
+                "artist-430141-member-of-artist-307": {
+                    "entity_one_id": 430141,
+                    "entity_one_type": "EntityType.ARTIST",
+                    "entity_two_id": 307,
+                    "entity_two_type": "EntityType.ARTIST",
+                    "role": "Member Of"
+                },
+                "artist-430141-member-of-artist-3603": {
+                    "entity_one_id": 430141,
+                    "entity_one_type": "EntityType.ARTIST",
+                    "entity_two_id": 3603,
+                    "entity_two_type": "EntityType.ARTIST",
+                    "random": null,
+                    "role": "Member Of"
+                }
             }
         """
         self.assertEqual(utils.strip_input(expected), actual)

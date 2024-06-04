@@ -1,7 +1,7 @@
 About Discograph2
 =================
 
-- Interactive sociogram graphing
+- Interactive graphing of the relationships between bands, labels and musicians
 - Single-page application, using asynchronous calls to a JSON API
 - Uses the Discogs XML dump, heavily transformed
 
@@ -20,15 +20,15 @@ The front-end:
 The back-end:
 
 - Python 3
-- [Flask](http://flask.pocoo.org/): a light-weight Werkzeug-based web framework
-- [Peewee](http://docs.peewee-orm.com/en/latest/): a light-weight ORM
-- PostgreSQL: the primary datastore
-- Redis: for caching and rate limiting
+- [Flask](https://flask.palletsprojects.com/en/3.0.x/): a light-weight Werkzeug-based web framework
+- [SQLAlchemy](https://www.sqlalchemy.org/): a object-relational mapper to access the database
+- [PostgreSQL](https://www.postgresql.org/): the primary datastore
+- [Redis](https://redis.io/): for caching and rate limiting
 
 The DB Structure
 ----------------
 
-A classic graph-search problem, with two primary tables: 
+A classic graph-search problem, with two primary tables:
 
 - *Entities*: all artists and labels
 - *Relations*: any connection drawn between two entities (including the same one)
@@ -39,7 +39,8 @@ Relations are extracted from artists, labels and releases:
 - band membership
 - sublabel / parent label
 
-Relation-extraction on releases is a little complicated. Relations need to be drawn appropriately between artists, labels, companies, release-global extra-artists, track artists, track extra-artists, etc. Who did what role for whom?
+Relation-extraction on releases is a little complicated. Relations need to be drawn appropriately between artists,
+labels, companies, release-global extra-artists, track artists, track extra-artists, etc. Who did what role for whom?
 
 The `entities` table looks like this:
 
@@ -49,7 +50,8 @@ The `entities` table looks like this:
 - `random` (random float for efficiently looking up random entities)
 - `metadata` (ANV, profile, etc.)
 - `entities` (JSON store of entity IDS for aliases, parent/sublabels, members/groups) (this simplifies many queries)
-- `relation_counts` (precomputed counts of # of relations of each time involving this entity, for optimizing graph search)
+- `relation_counts` (precomputed counts of # of relations of each time involving this entity, for optimizing graph
+  search)
 - `search_content` (full-text-search data)
 
 For example:
@@ -114,9 +116,10 @@ The `relations` table looks like this:
 
 - `entity_one_type`
 - `entity_one_id`
-- `entity_two_type` 
+- `entity_two_type`
 - `entity_two_id`
-- `release_id` (will soon be migrated to a JSON store to reduce the number of rows in the relations table, by collapsing relations with identical entities and roles into a single row of multiple releases)
+- `release_id` (will soon be migrated to a JSON store to reduce the number of rows in the relations table, by collapsing
+  relations with identical entities and roles into a single row of multiple releases)
 - `role` (the credit role)
 - `year` (currently just aspirational)
 - `random` (random float for efficiently looking up random relations)
@@ -144,17 +147,18 @@ The graph-search algorithm
 2. Get all relations involving that entity.
 3. Get all other entities involved in those relations.
 4. Get all relations involving those new entities.
-   - `Alias`, `Member Of`, `Sublabel Of` are stored on in the `entities` table
-   - All other credit roles require hitting the `relations` table.
-   - Some prolific roles (`Released On`, `Compiled On`, `Written-By`) are pruned after distance 1.
+    - `Alias`, `Member Of`, `Sublabel Of` are stored on in the `entities` table
+    - All other credit roles require hitting the `relations` table.
+    - Some prolific roles (`Released On`, `Compiled On`, `Written-By`) are pruned after distance 1.
 5. Repeat getting entities and relations until either:
-   - the maximum distance is reached,
-   - we run out of entities,
-   - or we surpass either the max-entities or max-relations thresholds.
+    - the maximum distance is reached,
+    - we run out of entities,
+    - or we surpass either the max-entities or max-relations thresholds.
 6. Cross-reference all entities with all roles (pre-role-pruning).
 7. Build a *trellis* to perform subgraph paging.
 
-Here's the terminal output for the graph-search, starting with Morris Day, and using the roles "Alias", "Member Of" and "Guitar":
+Here's the terminal output for the graph-search, starting with Morris Day, and using the roles "Alias", "Member Of"
+and "Guitar":
 
 ```
 Searching around Morris Day...
@@ -226,4 +230,5 @@ Searching around Morris Day...
 Network query time: 0.6372168064117432
 ```
 
-See the JSON for this query here: http://discograph.mbrsi.org/api/artist/network/152882?roles[]=Guitar&roles[]=Alias&roles[]=Member+Of
+See the JSON for this query
+here: https://discograph.azurewebsites.net/api/artist/network/152882?roles[]=Guitar&roles[]=Alias&roles[]=Member+Of

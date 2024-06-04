@@ -46,7 +46,7 @@ var DiscographFsm = machina.Fsm.extend({
         };
         $(window).on('resize', $.debounce(100, function(event) {
             dg_window_init();
-            dg_svg_container_setup();
+//            dg_svg_container_setup();
             dg_svg_set_size();
 
             var transform = [
@@ -229,6 +229,7 @@ var DiscographFsm = machina.Fsm.extend({
                 dg_network_processJson(data);
                 console.log("received-network dg_network_selectPage");
                 dg_network_selectPage(1);
+                dg_network_reset_transform()
                 console.log("received-network dg_network_startForceLayout");
                 dg_network_startForceLayout();
 //                this.selectEntity(dg.network.data.json.center.key, false);

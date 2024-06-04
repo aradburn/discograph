@@ -5,6 +5,7 @@ dg.network = {
     isRunningLayout: false,
     tick: 0,
     newNodeCoords: [0, 0],
+    zoom: {},
     data: {
         json: null,
         nodeMap: new Map(),

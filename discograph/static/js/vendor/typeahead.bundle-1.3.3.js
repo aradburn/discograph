@@ -34,8 +34,12 @@
             isNumber: function(obj) {
                 return typeof obj === "number";
             },
-            isArray: $.isArray,
-            isFunction: $.isFunction,
+            isArray: Array.isArray,
+//            isArray: $.isArray,
+            isFunction: function(obj) {
+                return typeof obj === "function";
+            },
+//            isFunction: $.isFunction,
             isObject: $.isPlainObject,
             isUndefined: function(obj) {
                 return typeof obj === "undefined";
@@ -96,7 +100,8 @@
                 };
             },
             templatify: function templatify(obj) {
-                return $.isFunction(obj) ? obj : template;
+                return typeof obj === "function" ? obj : template;
+                // return $.isFunction(obj) ? obj : template;
                 function template() {
                     return String(obj);
                 }
@@ -981,8 +986,12 @@
             isNumber: function(obj) {
                 return typeof obj === "number";
             },
-            isArray: $.isArray,
-            isFunction: $.isFunction,
+            isArray: Array.isArray,
+//            isArray: $.isArray,
+            isFunction: function(obj) {
+                return typeof x === "function";
+            },
+//            isFunction: $.isFunction,
             isObject: $.isPlainObject,
             isUndefined: function(obj) {
                 return typeof obj === "undefined";
@@ -1043,7 +1052,8 @@
                 };
             },
             templatify: function templatify(obj) {
-                return $.isFunction(obj) ? obj : template;
+                return typeof obj === "function" ? obj : template;
+//                return $.isFunction(obj) ? obj : template;
                 function template() {
                     return String(obj);
                 }

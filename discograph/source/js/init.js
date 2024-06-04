@@ -1,10 +1,9 @@
-VIEWPORT_SIZE_MULTIPLIER = 3;
+VIEWPORT_SIZE_MULTIPLIER = 3.0;
 SVG_SCALING_MULTIPLIER = 0.8
 
 $(document).ready(function() {
     dg_window_init();
     dg_svg_init();
-    dg_svg_container_setup();
     dg_network_init();
     dg_relations_init();
     dg_loading_init();
@@ -69,25 +68,6 @@ $(document).ready(function() {
     console.log('discograph initialized.');
 });
 
-function dg_svg_container_setup() {
-    var navTopHeight = $('#nav-top').height();
-    var navBottomHeight = $('#nav-bottom').height();
-
-    var containerWidth = Math.floor(dg.dimensions[0] / (VIEWPORT_SIZE_MULTIPLIER * dg.dpr));
-    var containerHeight = Math.floor(dg.dimensions[1] / (VIEWPORT_SIZE_MULTIPLIER * dg.dpr));
-    console.log("svg_container dimensions: ", containerWidth, containerHeight);
-
-    $('#svg-container').width(containerWidth);
-    $('#svg-container').height(containerHeight - navBottomHeight);
-
-    // Set the initial scroll bars so that the viewport is in the centre of the larger svg canvas
-    var containerOffsetX = (VIEWPORT_SIZE_MULTIPLIER * dg.dpr - 1) * containerWidth / 2;
-    var containerOffsetY = (VIEWPORT_SIZE_MULTIPLIER * dg.dpr - 1) * containerHeight / 2;
-    $('#svg-container').scrollLeft(containerOffsetX);
-    $('#svg-container').scrollTop(containerOffsetY);
-    console.log("svg_container scroll offsets: ", containerOffsetX, containerOffsetY);
-}
-
 function dg_window_init() {
     // Setup window dimensions
     var w = window,
@@ -97,15 +77,19 @@ function dg_window_init() {
     dg.dpr = w.devicePixelRatio;
     console.log("window devicePixelRatio: ", dg.dpr);
 
+    svgContainer = d.getElementById('svg-container-fluid');
+    svgContainer.style.top = $("#nav-top").css( "height" );
+    svgContainer.style.bottom = $("#nav-bottom").css( "height" );
     dg.dimensions = [
-        Math.floor((w.innerWidth || e.clientWidth || g.clientWidth) * VIEWPORT_SIZE_MULTIPLIER * dg.dpr),
-        Math.floor((w.innerHeight|| e.clientHeight|| g.clientHeight) * VIEWPORT_SIZE_MULTIPLIER * dg.dpr),
+        svgContainer.clientWidth * VIEWPORT_SIZE_MULTIPLIER * dg.dpr,
+        svgContainer.clientHeight * VIEWPORT_SIZE_MULTIPLIER * dg.dpr,
     ];
+
     console.log("window dimensions: ", dg.dimensions);
 
     dg.svg_dimensions = [
-        dg.dimensions[0] * SVG_SCALING_MULTIPLIER,
-        dg.dimensions[1] * SVG_SCALING_MULTIPLIER,
+        dg.dimensions[0],
+        dg.dimensions[1],
     ];
     console.log("svg dimensions: ", dg.svg_dimensions);
 

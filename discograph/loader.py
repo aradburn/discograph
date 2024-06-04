@@ -1,9 +1,7 @@
 import atexit
 import logging
 
-from discograph import database
 from discograph.config import PostgresDevelopmentConfiguration
-from discograph.database import setup_database, shutdown_database
 from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.logging_config import setup_logging, shutdown_logging
 
@@ -11,6 +9,9 @@ log = logging.getLogger(__name__)
 
 
 def loader_main():
+    from discograph.library.database.database_helper import DatabaseHelper
+    from discograph.database import setup_database, shutdown_database
+
     setup_logging()
     log.info("")
     log.info("")
@@ -31,9 +32,10 @@ def loader_main():
     # Note reverse order (last in first out), logging is the last to be shutdown
     atexit.register(shutdown_logging)
     atexit.register(shutdown_cache)
-    atexit.register(shutdown_database)
+    atexit.register(shutdown_database, config)
+
     # Run the test update process
-    database.db_helper.update_tables("20230801")
+    DatabaseHelper.db_helper.load_tables("20230801")
 
 
 if __name__ == "__main__":
