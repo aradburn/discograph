@@ -45,7 +45,12 @@ def setup_database(config) -> Type[DatabaseHelper]:
     # logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARN)
 
+    # Check database connection
     db_helper.check_connection(config, engine)
+
+    # Create tables
+    db_helper.create_tables()
+
     return db_helper
 
 

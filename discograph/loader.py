@@ -33,12 +33,7 @@ def loader_main():
     atexit.register(shutdown_logging)
     atexit.register(shutdown_cache)
     atexit.register(shutdown_database, config)
-    # Create tables
-    # tables = [
-    #     RelationMetadataTable.__table__,
-    # ]
-    # DatabaseHelper.db_helper.create_tables(tables)
-    DatabaseHelper.db_helper.create_tables()
+
     # Run the test update process
     DatabaseHelper.db_helper.load_tables("20230801")
 
