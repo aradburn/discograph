@@ -29,7 +29,7 @@ class TestUtils(unittest.TestCase):
         with self.assertRaises(ValueError):
             input_seq = ()
             num_chunks = 3
-            result = tuple(utils.split_tuple(num_chunks, input_seq))
+            tuple(utils.split_tuple(num_chunks, input_seq))
 
     def test_split_tuple_5(self):
         input_seq = (1, 2, 3, 4, 10, 11, 12, 13, 20, 21, 22, 23)

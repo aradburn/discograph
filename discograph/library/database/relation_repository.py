@@ -617,6 +617,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         relations = self._get_all_by_query(query)
         return relations
 
+    # noinspection PyUnusedLocal
     def search_bimulti(
         self,
         lh_entities: List[Tuple[int, EntityType]],

@@ -23,7 +23,7 @@ class LoaderEntity(LoaderBase):
     @classmethod
     @timeit
     def loader_pass_one(cls, date: str) -> int:
-        log.debug("entity loader pass one - artist")
+        log.debug(f"entity loader pass one - artist - date: {date}")
         with transaction():
             entity_repository = EntityRepository()
             artists_loaded = cls.loader_pass_one_manager(
@@ -31,7 +31,6 @@ class LoaderEntity(LoaderBase):
                 date=date,
                 xml_tag="artist",
                 id_attr=EntityTable.entity_id.name,
-                name_attr="name",
                 skip_without=["entity_name"],
             )
         log.debug("entity loader pass one - label")
@@ -42,7 +41,6 @@ class LoaderEntity(LoaderBase):
                 date=date,
                 xml_tag="label",
                 id_attr=EntityTable.entity_id.name,
-                name_attr="name",
                 skip_without=["entity_name"],
             )
         return artists_loaded + labels_loaded

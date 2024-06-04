@@ -17,7 +17,7 @@ class LoaderRelation:
     @classmethod
     @timeit
     def loader_relation_pass_one(cls, date: str):
-        log.debug("relation loader pass one")
+        log.debug(f"relation loader pass one - date: {date}")
 
         with transaction():
             release_repository = ReleaseRepository()

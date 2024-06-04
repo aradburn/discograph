@@ -72,13 +72,9 @@ class WorkerRelationPassOne(multiprocessing.Process):
                                 relation_dict=relation_dict,
                             )
                             relation_repository.commit()
-                        except DatabaseError as e:
-                            # log.exception(e)
+                        except DatabaseError:
                             relation_repository.rollback()
 
-                            # log.debug(
-                            #     f"Database record locked in updating relation {max_attempts} goes left"
-                            # )
                             max_attempts -= 1
                             error = True
                             utils.sleep_with_backoff(

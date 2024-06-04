@@ -144,7 +144,7 @@ class TestEntityLoader(unittest.TestCase):
             id_attr="entity_id",
             skip_without=["entity_name"],
         )
-        count = sum(1 for dummy in entity_generator)
+        count = sum(1 for _ in entity_generator)
         self.assertEqual(5560, count)
 
     def test_load_labels_from_xml_file(self):
@@ -156,5 +156,5 @@ class TestEntityLoader(unittest.TestCase):
             id_attr="entity_id",
             skip_without=["entity_name"],
         )
-        count = sum(1 for dummy in entity_generator)
+        count = sum(1 for _ in entity_generator)
         self.assertEqual(656, count)

@@ -27,7 +27,7 @@ class LoaderRelease(LoaderBase):
     @classmethod
     @timeit
     def loader_pass_one(cls, date: str) -> int:
-        log.debug("release loader pass one")
+        log.debug(f"release loader pass one - date: {date}")
         with transaction():
             release_repository = ReleaseRepository()
             releases_loaded = cls.loader_pass_one_manager(
@@ -35,7 +35,6 @@ class LoaderRelease(LoaderBase):
                 date=date,
                 xml_tag="release",
                 id_attr=ReleaseTable.release_id.name,
-                name_attr="title",
                 skip_without=["title"],
             )
         return releases_loaded

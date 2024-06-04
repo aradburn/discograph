@@ -23,11 +23,10 @@ class UpdaterBase(LoaderBase):
         date: str,
         xml_tag: str,
         id_attr: str,
-        name_attr: str,
         skip_without: List[str],
     ):
         # Updater pass one.
-        # initial_count = len(model_class)
+        initial_count = repository.count()
         processed_count = 0
         xml_path = LoaderUtils.get_xml_path(xml_tag, date)
         log.info(f"Loading update data from {xml_path}")
@@ -86,6 +85,11 @@ class UpdaterBase(LoaderBase):
                     log.error(f"worker {worker.name} exitcode: {worker.exitcode}")
                     # raise Exception("Error in worker process")
                 worker.terminate()
+
+        final_count = repository.count()
+        log.debug(f"initial_count: {initial_count}")
+        log.debug(f"processed_count: {processed_count}")
+        log.debug(f"final_count: {final_count}")
 
     @classmethod
     @abstractmethod

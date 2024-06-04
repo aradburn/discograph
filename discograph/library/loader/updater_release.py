@@ -21,7 +21,6 @@ class UpdaterRelease(UpdaterBase):
             date=date,
             xml_tag="release",
             id_attr=ReleaseTable.release_id.name,
-            name_attr="title",
             skip_without=["title"],
         )
 

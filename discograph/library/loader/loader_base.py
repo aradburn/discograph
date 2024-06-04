@@ -29,11 +29,8 @@ class LoaderBase:
         date: str,
         xml_tag: str,
         id_attr: str,
-        name_attr: str,
         skip_without: List[str],
     ) -> int:
-        # from discograph.library.models.release_genre import ReleaseGenre
-
         # Loader pass one.
 
         initial_count = repository.count()
@@ -57,26 +54,7 @@ class LoaderBase:
                     data["random"] = random()
                     # log.debug(f"data: {data}")
 
-                    # if "genres" in data:
-                    #     genres = data["genres"]
-                    #     log.debug(f"process genres: {genres}")
-                    #     del data["genres"]
-                    #     new_instance = model_class(model_class, **data)
-                    #
-                    #     for genre in genres:
-                    #         new_release_genre_instance = ReleaseGenre(
-                    #             release_id=new_instance, genre_id=genre
-                    #         )
-                    #         bulk_release_genre_inserts.append(
-                    #             new_release_genre_instance
-                    #         )
-                    # else:
-                    #     new_instance = model_class(**data)
-
-                    # new_instance = domain_class(**data)
-                    # log.debug(f"new_instance: {new_instance}")
                     bulk_inserts.append(data)
-                    # bulk_inserts.append(new_instance)
                     inserted_count += 1
                     if get_concurrency_count() > 1:
                         # Can do multi threading
@@ -84,8 +62,6 @@ class LoaderBase:
                             worker = cls.insert_bulk(
                                 repository,
                                 bulk_inserts,
-                                # ReleaseGenre,
-                                # bulk_release_genre_inserts,
                                 inserted_count,
                             )
                             worker.start()
@@ -106,7 +82,6 @@ class LoaderBase:
 
                 except DataError as e:
                     log.exception("Error in loader_pass_one", pprint.pformat(data))
-                    # traceback.print_exc()
                     raise e
 
             while len(workers) > 0:

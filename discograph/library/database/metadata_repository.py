@@ -7,7 +7,6 @@ from discograph.exceptions import NotFoundError, DatabaseError
 from discograph.library.database.base_repository import BaseRepository
 from discograph.library.database.metadata_table import MetadataTable
 from discograph.library.domain.metadata import Metadata
-from discograph.library.domain.release import Release
 
 log = logging.getLogger(__name__)
 

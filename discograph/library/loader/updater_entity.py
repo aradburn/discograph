@@ -22,7 +22,6 @@ class UpdaterEntity(UpdaterBase):
             date=date,
             xml_tag="artist",
             id_attr=EntityTable.entity_id.name,
-            name_attr="name",
             skip_without=["entity_name"],
         )
         log.debug("entity updater pass one - label")
@@ -31,7 +30,6 @@ class UpdaterEntity(UpdaterBase):
             date=date,
             xml_tag="label",
             id_attr=EntityTable.entity_id.name,
-            name_attr="name",
             skip_without=["entity_name"],
         )
 

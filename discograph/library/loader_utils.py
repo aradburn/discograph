@@ -100,6 +100,7 @@ class LoaderUtils:
             return [_.text for _ in element]
         return None
 
+    # noinspection PyUnusedLocal
     @staticmethod
     def element_to_none(element):
         return None

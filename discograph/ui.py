@@ -2,7 +2,7 @@ import json
 import logging
 import os
 
-from flask import Blueprint, redirect, send_from_directory
+from flask import Blueprint, send_from_directory
 from flask import current_app as app
 from flask import make_response
 from flask import render_template

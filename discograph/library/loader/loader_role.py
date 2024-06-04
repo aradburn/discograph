@@ -15,7 +15,7 @@ class LoaderRole(LoaderBase):
 
     @classmethod
     def loader_pass_one(cls, date: str) -> int:
-        log.debug("role loader pass one")
+        log.debug(f"role loader pass one - date: {date}")
 
         with transaction():
             required_count = 0
@@ -59,7 +59,7 @@ class LoaderRole(LoaderBase):
 
     @classmethod
     def updater_pass_one(cls, date: str) -> None:
-        log.debug("role updater pass one")
+        log.debug(f"role updater pass one - date: {date}")
 
         with transaction():
             role_repository = RoleRepository()

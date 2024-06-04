@@ -2,7 +2,7 @@ import atexit
 import logging
 import os
 
-from flask import Flask, url_for
+from flask import Flask
 from flask import g
 from flask import jsonify
 from flask import make_response
