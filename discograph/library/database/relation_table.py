@@ -19,7 +19,7 @@ class RelationTable(BaseTable):
     # COLUMNS
 
     relation_id: Mapped[int] = mapped_column(primary_key=True)
-    version_id = mapped_column(Integer, nullable=False)
+    version_id: Mapped[int] = mapped_column(Integer, nullable=False)
     entity_one_id: Mapped[int] = mapped_column(Integer)
     entity_one_type: Mapped[EntityType] = mapped_column(IntEnum(EntityType))
     entity_two_id: Mapped[int] = mapped_column(Integer)
