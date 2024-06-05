@@ -1,4 +1,5 @@
 __all__ = [
+    "MetadataUncommitted",
     "Metadata",
 ]
 
@@ -10,7 +11,18 @@ from discograph.library.domain.base import InternalDomainObject
 log = logging.getLogger(__name__)
 
 
-class Metadata(InternalDomainObject):
-    load_timestamp: datetime
-    load_stage: str
-    load_block: int
+class _MetadataBase(InternalDomainObject):
+    metadata_key: str
+    metadata_value: str
+    metadata_timestamp: datetime = datetime.now()
+
+
+class MetadataUncommitted(_MetadataBase):
+    """This schema is used for creating an instance without an id before it is persisted into the database."""
+
+    pass
+
+
+class Metadata(_MetadataBase):
+    metadata_id: int
+    version_id: int = 1
