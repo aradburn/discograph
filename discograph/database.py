@@ -3,7 +3,7 @@ import multiprocessing
 import os
 from typing import Type
 
-from sqlalchemy import event, exc
+from sqlalchemy import exc
 from sqlalchemy.event import listen
 from sqlalchemy.orm import sessionmaker
 
@@ -48,10 +48,10 @@ def setup_database(config) -> Type[DatabaseHelper]:
         connection_record.info["pid"] = os.getpid()
 
     def engine_on_checkout(dbapi_con, connection_record, connection_proxy):
-        # log.debug(f"New engine checkout: {dbapi_con}")
-
         pid = os.getpid()
         if connection_record.info["pid"] != pid:
+            log.error(f"New engine checkout using wrong pid: {dbapi_con}")
+
             connection_record.dbapi_connection = connection_proxy.dbapi_connection = (
                 None
             )
@@ -67,6 +67,7 @@ def setup_database(config) -> Type[DatabaseHelper]:
     # a sessionmaker(), also in the same scope as the engine
     DatabaseHelper.session_factory = sessionmaker(bind=engine)
 
+    # Set logging level for SqlAlchemy
     # logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARN)
 
