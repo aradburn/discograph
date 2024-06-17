@@ -13,7 +13,7 @@ from tests.integration.library.database.repository_test_case import RepositoryTe
 class TestRepositoryRelation(RepositoryTestCase):
     def test_01_create(self):
         # GIVEN
-        date = "test"
+        date = "testinsert"
         LoaderRole().loader_pass_one(date)
 
         relation = RelationUncommitted(

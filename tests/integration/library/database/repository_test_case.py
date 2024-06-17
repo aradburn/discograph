@@ -41,6 +41,7 @@ class RepositoryTestCase(unittest.TestCase):
             else:
                 _db_helper.drop_tables()
                 _db_helper.create_tables()
+                # Note: No data loading, empty repositories
 
     @classmethod
     def tearDownClass(cls):

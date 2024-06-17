@@ -1,3 +1,5 @@
+import datetime
+
 from discograph import utils
 from discograph.library.database.metadata_repository import MetadataRepository
 from discograph.library.database.transaction import transaction
@@ -8,7 +10,12 @@ from tests.integration.library.database.repository_test_case import RepositoryTe
 class TestRepositoryMetadata(RepositoryTestCase):
     def test_create_01(self):
         # GIVEN
-        metadata = MetadataUncommitted(metadata_key="key1", metadata_value="value1")
+        timestamp = datetime.datetime(year=2024, month=6, day=1)
+        metadata = MetadataUncommitted(
+            metadata_key="key1",
+            metadata_value="value1",
+            metadata_timestamp=timestamp,
+        )
 
         # WHEN
         with transaction():
@@ -25,6 +32,7 @@ class TestRepositoryMetadata(RepositoryTestCase):
             version_id=1,
             metadata_key="key1",
             metadata_value="value1",
+            metadata_timestamp=timestamp,
         )
         expected = utils.normalize_dict(
             expected_relation.model_dump(exclude={"metadata_timestamp"})
@@ -33,7 +41,12 @@ class TestRepositoryMetadata(RepositoryTestCase):
 
     def test_get_01(self):
         # GIVEN
-        metadata = MetadataUncommitted(metadata_key="key2", metadata_value="value2")
+        timestamp = datetime.datetime(year=2024, month=6, day=1)
+        metadata = MetadataUncommitted(
+            metadata_key="key2",
+            metadata_value="value2",
+            metadata_timestamp=timestamp,
+        )
 
         # WHEN
         with transaction():

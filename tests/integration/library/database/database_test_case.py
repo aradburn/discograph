@@ -5,7 +5,7 @@ from typing import Type
 from sqlalchemy.exc import DatabaseError
 
 from discograph import database
-from discograph.config import Configuration
+from discograph.config import Configuration, TEST_DATA_DIR
 from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.relation_grapher import RelationGrapher
@@ -45,7 +45,9 @@ class DatabaseTestCase(unittest.TestCase):
                 # db_logger.setLevel(logging.DEBUG)
                 _db_helper.drop_tables()
                 _db_helper.create_tables()
-                _db_helper.load_tables("test")
+                _db_helper.load_tables(
+                    TEST_DATA_DIR, "testinsert", is_bulk_inserts=True
+                )
 
     @classmethod
     def tearDownClass(cls):
