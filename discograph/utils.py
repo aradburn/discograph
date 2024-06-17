@@ -4,6 +4,7 @@ import json
 import logging
 import math
 import re
+import shutil
 import textwrap
 import time
 from collections.abc import Mapping
@@ -12,9 +13,15 @@ from functools import wraps
 from random import random
 from typing import Dict, List, Any
 
+import requests
+from dateutil.relativedelta import relativedelta
 from toolz import count
 from unidecode import unidecode
 
+from discograph.config import (
+    DISCOGS_BASE_URL,
+    DISCOGS_PATH,
+)
 from discograph.library.database.database_helper import Base
 from discograph.library.fields.role_type import RoleType
 
@@ -284,3 +291,28 @@ def sleep_with_backoff(multiplier: int) -> None:
     time_in_secs = int(multiplier * (1.0 + 4.0 * random()))
     # log.debug(f"sleeping for {time_in_secs} secs")
     time.sleep(time_in_secs)
+
+
+def download_file(input_url: str, output_file) -> None:
+    with requests.get(input_url, stream=True) as response:
+        response.raise_for_status()
+        shutil.copyfileobj(response.raw, output_file, length=10 * 1024)
+    output_file.flush()
+    output_file.close()
+
+
+def get_discogs_url(dump_date: date, dump_type: str) -> str:
+    year = dump_date.year
+    base = DISCOGS_BASE_URL.format(year=year)
+    path = DISCOGS_PATH.format(date=dump_date.strftime("%Y%m%d"), type=dump_type)
+    return base + path
+
+
+def get_discogs_dump_dates(start_date: date, end_date: date) -> List[date]:
+    date_list = []
+    curr_date = start_date
+    while curr_date <= end_date:
+        month_date = date(year=curr_date.year, month=curr_date.month, day=1)
+        date_list.append(month_date)
+        curr_date += relativedelta(months=1)
+    return date_list

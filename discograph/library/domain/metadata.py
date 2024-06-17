@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 class _MetadataBase(InternalDomainObject):
     metadata_key: str
     metadata_value: str
-    metadata_timestamp: datetime = datetime.now()
+    metadata_timestamp: datetime
 
 
 class MetadataUncommitted(_MetadataBase):

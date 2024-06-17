@@ -1,15 +1,18 @@
 import atexit
+import datetime
 import logging
+
+import luigi
 
 from discograph.config import PostgresDevelopmentConfiguration
 from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
+from discograph.library.loader.loader_tasks import LoaderTask
 from discograph.logging_config import setup_logging, shutdown_logging
 
 log = logging.getLogger(__name__)
 
 
 def loader_main():
-    from discograph.library.database.database_helper import DatabaseHelper
     from discograph.database import setup_database, shutdown_database
 
     setup_logging()
@@ -35,7 +38,13 @@ def loader_main():
     atexit.register(shutdown_database, config)
 
     # Run the test update process
-    DatabaseHelper.db_helper.load_tables("20230801")
+    # DatabaseHelper.db_helper.load_tables("20230801")
+
+    start_date = datetime.date(2023, 10, 1)
+    end_date = datetime.datetime.now()
+    tasks = [LoaderTask(start_date=start_date, end_date=end_date)]
+    luigi_run_result = luigi.build(tasks, detailed_summary=True, local_scheduler=True)
+    print(luigi_run_result.summary_text)
 
 
 if __name__ == "__main__":

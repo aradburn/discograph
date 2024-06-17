@@ -22,15 +22,15 @@ class LoaderUtils:
     # PUBLIC STATIC METHODS
 
     @staticmethod
-    def get_xml_path(tag: str, date: str = ""):
+    def get_xml_path(data_directory: str, tag: str, date: str = ""):
         # Date in the format yyyymmdd, use test_yyyymmdd for test data
-        data_directory = os.path.abspath(
-            os.path.join(
-                os.path.abspath(os.path.dirname(__file__)),
-                "..",
-                "data",
-            )
-        )
+        # data_directory = os.path.abspath(
+        #     os.path.join(
+        #         os.path.abspath(os.path.dirname(__file__)),
+        #         "..",
+        #         "data",
+        #     )
+        # )
         glob_pattern = f"discogs_{date}_{tag}s.xml.gz"
         log.debug(f"data_directory: {data_directory}")
         log.debug(f"glob_pattern: {glob_pattern}")
@@ -106,8 +106,8 @@ class LoaderUtils:
         return None
 
     @staticmethod
-    def get_iterator(tag: str, date: str):
-        file_path = LoaderUtils.get_xml_path(tag, date)
+    def get_iterator(data_directory: str, tag: str, date: str):
+        file_path = LoaderUtils.get_xml_path(data_directory, tag, date)
         file_pointer = gzip.GzipFile(file_path, "r")
         iterator = LoaderUtils.iterparse(file_pointer, tag)
         iterator = LoaderUtils.clean_elements(iterator)

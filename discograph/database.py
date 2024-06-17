@@ -1,7 +1,10 @@
 import logging
 import multiprocessing
+import os
 from typing import Type
 
+from sqlalchemy import event, exc
+from sqlalchemy.event import listen
 from sqlalchemy.orm import sessionmaker
 
 from discograph.config import DatabaseType, ThreadingModel
@@ -39,6 +42,28 @@ def setup_database(config) -> Type[DatabaseHelper]:
 
     engine = db_helper.setup_database(config)
     DatabaseHelper.engine = engine
+
+    def engine_on_connect(dbapi_con, connection_record):
+        log.debug(f"New engine connection: {dbapi_con}")
+        connection_record.info["pid"] = os.getpid()
+
+    def engine_on_checkout(dbapi_con, connection_record, connection_proxy):
+        # log.debug(f"New engine checkout: {dbapi_con}")
+
+        pid = os.getpid()
+        if connection_record.info["pid"] != pid:
+            connection_record.dbapi_connection = connection_proxy.dbapi_connection = (
+                None
+            )
+            raise exc.DisconnectionError(
+                "Connection record belongs to pid %s, "
+                "attempting to check out in pid %s"
+                % (connection_record.info["pid"], pid)
+            )
+
+    listen(engine, "connect", engine_on_connect)
+    listen(engine, "checkout", engine_on_checkout)
+
     # a sessionmaker(), also in the same scope as the engine
     DatabaseHelper.session_factory = sessionmaker(bind=engine)
 
