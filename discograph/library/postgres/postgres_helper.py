@@ -17,8 +17,6 @@ from discograph.library.loader.loader_entity import LoaderEntity
 from discograph.library.loader.loader_relation import LoaderRelation
 from discograph.library.loader.loader_release import LoaderRelease
 from discograph.library.loader.loader_role import LoaderRole
-from discograph.library.loader.updater_entity import UpdaterEntity
-from discograph.library.loader.updater_release import UpdaterRelease
 
 log = logging.getLogger(__name__)
 
@@ -167,7 +165,7 @@ class PostgresHelper(DatabaseHelper):
             log.exception("Connection Error", e)
 
     @staticmethod
-    def load_tables(date: str):
+    def load_tables(data_directory: str, date: str, is_bulk_inserts=False):
         log.info("Load Postgres tables")
 
         autocommit_engine = DatabaseHelper.engine.execution_options(
@@ -178,14 +176,14 @@ class PostgresHelper(DatabaseHelper):
         LoaderRole().loader_pass_one(date)
 
         log.debug("Load entity pass 1")
-        LoaderEntity().loader_pass_one(date)
+        LoaderEntity().loader_pass_one(data_directory, date, is_bulk_inserts)
 
         log.debug("Load entity analyze")
         with Session(autocommit_engine) as session:
             session.execute(text(f"VACUUM FULL ANALYZE {EntityTable.__tablename__};"))
 
         log.debug("Load release pass 1")
-        LoaderRelease().loader_pass_one(date)
+        LoaderRelease().loader_pass_one(data_directory, date, is_bulk_inserts)
 
         log.debug("Load release analyze")
         with Session(autocommit_engine) as session:
@@ -216,57 +214,6 @@ class PostgresHelper(DatabaseHelper):
             session.execute(text(f"VACUUM FULL ANALYZE {RelationTable.__tablename__};"))
 
         log.info("Load Postgres done.")
-
-    @staticmethod
-    def update_tables(date: str):
-        log.info(f"Update Postgres tables: {date}")
-
-        autocommit_engine = DatabaseHelper.engine.execution_options(
-            isolation_level="AUTOCOMMIT"
-        )
-
-        log.debug("Update role pass 1")
-        LoaderRole().updater_pass_one(date)
-
-        log.debug("Update entity pass 1")
-        UpdaterEntity().updater_pass_one(date)
-
-        log.debug("Update entity analyze")
-        with Session(autocommit_engine) as session:
-            session.execute(text(f"VACUUM FULL ANALYZE {EntityTable.__tablename__};"))
-
-        log.debug("Update release pass 1")
-        UpdaterRelease().updater_pass_one(date)
-
-        log.debug("Update release analyze")
-        with Session(autocommit_engine) as session:
-            session.execute(text(f"VACUUM FULL ANALYZE {ReleaseTable.__tablename__};"))
-
-        log.debug("Update entity pass 2")
-        LoaderEntity().loader_pass_two()
-
-        log.debug("Update release pass 2")
-        LoaderRelease().loader_pass_two()
-
-        log.debug("Update relation pass 1")
-        LoaderRelation().loader_relation_pass_one(date)
-
-        log.debug("Update relation analyze")
-        with Session(autocommit_engine) as session:
-            session.execute(text(f"VACUUM FULL ANALYZE {EntityTable.__tablename__};"))
-            session.execute(text(f"VACUUM FULL ANALYZE {ReleaseTable.__tablename__};"))
-            session.execute(text(f"VACUUM FULL ANALYZE {RelationTable.__tablename__};"))
-
-        log.debug("Update entity pass 3")
-        LoaderEntity().loader_pass_three()
-
-        log.debug("Update final vacuum analyze")
-        with Session(autocommit_engine) as session:
-            session.execute(text(f"VACUUM FULL ANALYZE {EntityTable.__tablename__};"))
-            session.execute(text(f"VACUUM FULL ANALYZE {ReleaseTable.__tablename__};"))
-            session.execute(text(f"VACUUM FULL ANALYZE {RelationTable.__tablename__};"))
-
-        log.info("Update Postgres done.")
 
     @classmethod
     def create_tables(cls, tables=None):

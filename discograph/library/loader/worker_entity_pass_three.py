@@ -50,11 +50,12 @@ class WorkerEntityPassThree(multiprocessing.Process):
                         log.debug(
                             f"[{proc_name}] processed {count} of {self.total_count}"
                         )
-                except (DatabaseError, OperationalError):
+                except DatabaseError as e:
                     log.exception(
-                        f"ERROR: {entity_id}-{self.entity_type} in process {proc_name}"
+                        f"Database Error: {entity_id}-{self.entity_type} in process {proc_name}",
+                        e,
                     )
-
+                    raise e
         log.info(f"[{proc_name}] processed {count} of {self.total_count}")
 
     @staticmethod

@@ -48,13 +48,16 @@ class WorkerRelationPassOne(multiprocessing.Process):
                     relations = RelationDataAccess.from_release(release)
                     if LOGGING_TRACE:
                         log.debug(
-                            f"Relation (Pass 1) [{proc_name}]\t"
+                            f"WorkerRelationPassOne [{proc_name}]\t"
                             + f"(release_id:{release.release_id})\t[{len(relations)}] {release.title}"
                         )
                 except NotFoundError:
                     log.debug(
-                        f"Relation loader_pass_one_inner release_id not found: {release_id}"
+                        f"WorkerRelationPassOne release_id not found: {release_id}"
                     )
+                except DatabaseError as e:
+                    log.exception("Database Error in WorkerRelationPassOne", e)
+                    raise e
 
             for relation_dict in relations:
                 max_attempts = LoaderBase.MAX_RETRYS
@@ -82,6 +85,7 @@ class WorkerRelationPassOne(multiprocessing.Process):
                             )
                         except OperationalError as e:
                             log.exception(e)
+                            raise e
 
                 if error:
                     log.debug(f"Error in updating relations for release: {release_id}")

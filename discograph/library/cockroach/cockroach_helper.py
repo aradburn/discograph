@@ -9,8 +9,6 @@ from discograph.library.loader.loader_entity import LoaderEntity
 from discograph.library.loader.loader_relation import LoaderRelation
 from discograph.library.loader.loader_release import LoaderRelease
 from discograph.library.loader.loader_role import LoaderRole
-from discograph.library.loader.updater_entity import UpdaterEntity
-from discograph.library.loader.updater_release import UpdaterRelease
 
 log = logging.getLogger(__name__)
 
@@ -61,17 +59,17 @@ class CockroachHelper(DatabaseHelper):
             raise e
 
     @staticmethod
-    def load_tables(date: str):
+    def load_tables(data_directory: str, date: str, is_bulk_inserts=False):
         log.info("Load CockroachDB tables")
 
         log.debug("Load role pass 1")
         LoaderRole().loader_pass_one(date)
 
         log.debug("Load entity pass 1")
-        LoaderEntity().loader_pass_one(date)
+        LoaderEntity().loader_pass_one(data_directory, date, is_bulk_inserts)
 
         log.debug("Load release pass 1")
-        LoaderRelease().loader_pass_one(date)
+        LoaderRelease().loader_pass_one(data_directory, date, is_bulk_inserts)
 
         log.debug("Load entity pass 2")
         LoaderEntity().loader_pass_two()
@@ -89,33 +87,6 @@ class CockroachHelper(DatabaseHelper):
         LoaderEntity().loader_pass_three()
 
         log.info("Load CockroachDB done.")
-
-    @staticmethod
-    def update_tables(date: str):
-        log.info("Update CockroachDB tables")
-
-        log.debug("Update entity pass 1")
-        UpdaterEntity().updater_pass_one(date)
-
-        log.debug("Update release pass 1")
-        UpdaterRelease().updater_pass_one(date)
-
-        log.debug("Update entity pass 2")
-        LoaderEntity().loader_pass_two()
-
-        log.debug("Update release pass 2")
-        LoaderRelease().loader_pass_two()
-
-        log.debug("Update relation pass 1")
-        LoaderRelation().loader_relation_pass_one(date)
-
-        # log.debug("Load relation pass 2")
-        # LoaderRelation().loader_relation_pass_two(date)
-
-        log.debug("Update entity pass 3")
-        LoaderEntity().loader_pass_three()
-
-        log.info("Update CockroachDB done.")
 
     @classmethod
     def create_tables(cls, tables=None):

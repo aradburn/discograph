@@ -1,5 +1,6 @@
 import logging
 
+from discograph.exceptions import NotFoundError
 from discograph.library.data_access_layer.role_data_access import RoleDataAccess
 from discograph.library.database.role_repository import RoleRepository
 from discograph.library.database.transaction import transaction
@@ -36,26 +37,33 @@ class LoaderRole(LoaderBase):
                 #     f"role_name: {role_name}, category_id: {category_id}, category_name: {category_name}, "
                 #     + f"subcategory_id: {subcategory_id}, subcategory_name: {subcategory_name}"
                 # )
-                new_role = RoleUncommited(
-                    role_name=role_name,
-                    role_category=category_id,
-                    role_subcategory=subcategory_id,
-                    role_category_name=category_name,
-                    role_subcategory_name=subcategory_name,
-                )
-                role_repository.create(new_role)
+
+                try:
+                    existing_role = role_repository.get_by_name(name=role_name)
+                    log.debug(
+                        f"Role record already exists: {role_name} {existing_role.role_name}"
+                    )
+                except NotFoundError:
+                    # Add new role
+                    new_role = RoleUncommited(
+                        role_name=role_name,
+                        role_category=category_id,
+                        role_subcategory=subcategory_id,
+                        role_category_name=category_name,
+                        role_subcategory_name=subcategory_name,
+                    )
+                    role_repository.create(new_role)
+
                 required_count += 1
                 RoleType.role_id_to_role_name_lookup[required_count] = role_name
 
-            inserted_count = role_repository.count()
-            log.debug(
-                f"inserted_count: {inserted_count}, required_count: {required_count}"
-            )
+            record_count = role_repository.count()
+            log.debug(f"record_count: {record_count}, required_count: {required_count}")
             RoleType.role_name_to_role_id_lookup = {
                 v: k for k, v in RoleType.role_id_to_role_name_lookup.items()
             }
-            assert required_count == inserted_count
-        return inserted_count
+            assert required_count == record_count
+        return record_count
 
     @classmethod
     def updater_pass_one(cls, date: str) -> None:
@@ -70,3 +78,11 @@ class LoaderRole(LoaderBase):
             RoleType.role_name_to_role_id_lookup = {
                 v: k for k, v in RoleType.role_id_to_role_name_lookup.items()
             }
+
+    @classmethod
+    def insert_bulk(cls, bulk_inserts, processed_count):
+        pass
+
+    @classmethod
+    def update_bulk(cls, bulk_updates, processed_count):
+        pass

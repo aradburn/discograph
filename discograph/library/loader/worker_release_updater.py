@@ -5,7 +5,7 @@ import pprint
 from deepdiff import DeepDiff
 
 from discograph.database import get_concurrency_count
-from discograph.exceptions import DatabaseError
+from discograph.exceptions import DatabaseError, NotFoundError
 from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.database.release_repository import ReleaseRepository
 from discograph.library.database.release_table import ReleaseTable
@@ -31,10 +31,10 @@ class WorkerReleaseUpdater(multiprocessing.Process):
 
         for i, data in enumerate(self.bulk_updates):
             with transaction():
-                repository = ReleaseRepository()
+                release_repository = ReleaseRepository()
                 updated_release = Release(**data)
                 try:
-                    db_release = repository.get(updated_release.release_id)
+                    db_release = release_repository.get(updated_release.release_id)
 
                     differences = DeepDiff(
                         db_release,
@@ -84,7 +84,7 @@ class WorkerReleaseUpdater(multiprocessing.Process):
                         # if diff2 != "{}":
                         #     log.debug(f"entities diff: {diff2}")
                         # Update release
-                        repository.update(
+                        release_repository.update(
                             db_release.release_id,
                             {
                                 ReleaseTable.release_id.key: updated_release.release_id,
@@ -104,61 +104,20 @@ class WorkerReleaseUpdater(multiprocessing.Process):
                                 ReleaseTable.tracklist.key: updated_release.tracklist,
                             },
                         )
-                        # db_release.artists = updated_release.artists
-                        # db_release.companies = updated_release.companies
-                        # db_release.country = updated_release.country
-                        # db_release.extra_artists = updated_release.extra_artists
-                        # db_release.formats = updated_release.formats
-                        # db_release.genres = updated_release.genres
-                        # db_release.identifiers = updated_release.identifiers
-                        # db_release.labels = updated_release.labels
-                        # db_release.master_id = updated_release.master_id
-                        # db_release.notes = updated_release.notes
-                        # db_release.release_date = updated_release.release_date
-                        # db_release.styles = updated_release.styles
-                        # db_release.title = updated_release.title
-                        # db_release.tracklist = updated_release.tracklist
-                        # flag_modified(db_release, self.model_class.artists.key)
-                        # flag_modified(db_release, self.model_class.companies.key)
-                        # flag_modified(db_release, self.model_class.country.key)
-                        # flag_modified(db_release, self.model_class.extra_artists.key)
-                        # flag_modified(db_release, self.model_class.formats.key)
-                        # flag_modified(db_release, self.model_class.genres.key)
-                        # flag_modified(db_release, self.model_class.identifiers.key)
-                        # flag_modified(db_release, self.model_class.labels.key)
-                        # flag_modified(db_release, self.model_class.master_id.key)
-                        # flag_modified(db_release, self.model_class.notes.key)
-                        # flag_modified(db_release, self.model_class.release_date.key)
-                        # flag_modified(db_release, self.model_class.styles.key)
-                        # flag_modified(db_release, self.model_class.title.key)
-                        # flag_modified(db_release, self.model_class.tracklist.key)
-                        # q = self.model_class.update(
-                        #     {
-                        #         self.model_class.release_id: updated_release.release_id,
-                        #         self.model_class.artists: updated_release.artists,
-                        #         self.model_class.companies: updated_release.companies,
-                        #         self.model_class.country: updated_release.country,
-                        #         self.model_class.extra_artists: updated_release.extra_artists,
-                        #         self.model_class.formats: updated_release.formats,
-                        #         self.model_class.genres: updated_release.genres,
-                        #         self.model_class.identifiers: updated_release.identifiers,
-                        #         self.model_class.labels: updated_release.labels,
-                        #         self.model_class.master_id: updated_release.master_id,
-                        #         self.model_class.notes: updated_release.notes,
-                        #         self.model_class.release_date: updated_release.release_date,
-                        #         self.model_class.styles: updated_release.styles,
-                        #         self.model_class.title: updated_release.title,
-                        #         self.model_class.tracklist: updated_release.tracklist,
-                        #     }
-                        # ).where(
-                        #     self.model_class.release_id
-                        #     == updated_release.release_id
-                        # )
-                        # q.execute()  # Execute the query.
-                        repository.commit()
+
+                        release_repository.commit()
                         updated_count += 1
+                except NotFoundError:
+                    log.debug("New insert in WorkerReleaseUpdater")
+                    try:
+                        release_repository.create(updated_release)
+                        release_repository.commit()
+                        updated_count += 1
+                    except DatabaseError as e:
+                        log.exception("Database Error in WorkerReleaseUpdater worker")
+                        raise e
                 except DatabaseError as e:
-                    log.exception("Error in updater_pass_one")
+                    log.exception("Database Error in WorkerReleaseUpdater")
                     raise e
 
         log.info(

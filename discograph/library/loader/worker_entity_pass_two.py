@@ -1,6 +1,8 @@
 import logging
 import multiprocessing
 
+from sqlalchemy.exc import OperationalError
+
 from discograph.database import get_concurrency_count
 from discograph.exceptions import NotFoundError, DatabaseError
 from discograph.library.data_access_layer.entity_data_access import EntityDataAccess
@@ -55,14 +57,19 @@ class WorkerEntityPassTwo(multiprocessing.Process):
                             log.debug(
                                 f"[{proc_name}] processed {count} of {self.total_count}"
                             )
-                    except (DatabaseError, NotFoundError):
+                    except NotFoundError:
                         log.exception(
                             f"ERROR 1: {entity_id}-{self.entity_type} in process: {proc_number}"
                         )
                         entity_repository.rollback()
                         max_attempts -= 1
                         error = True
-
+                    except DatabaseError as e:
+                        log.exception(
+                            f"Database Error: {entity_id}-{self.entity_type} in process: {proc_number}",
+                            e,
+                        )
+                        raise e
             if error:
                 log.debug(f"Error in updating references for entity: {entity_id}")
 

@@ -8,8 +8,10 @@ from discograph.library.database.transaction import transaction
 from discograph.library.domain.entity import Entity
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.loader.loader_base import LoaderBase
+from discograph.library.loader.worker_entity_inserter import WorkerEntityInserter
 from discograph.library.loader.worker_entity_pass_three import WorkerEntityPassThree
 from discograph.library.loader.worker_entity_pass_two import WorkerEntityPassTwo
+from discograph.library.loader.worker_entity_updater import WorkerEntityUpdater
 from discograph.library.loader_utils import LoaderUtils
 from discograph.logging_config import LOGGING_TRACE
 from discograph.utils import normalise_search_content, timeit
@@ -22,28 +24,50 @@ class LoaderEntity(LoaderBase):
 
     @classmethod
     @timeit
-    def loader_pass_one(cls, date: str) -> int:
-        log.debug(f"entity loader pass one - artist - date: {date}")
+    def loader_pass_one(
+        cls, data_directory: str, data_date: str, is_bulk_inserts=False
+    ) -> int:
+        log.debug(f"entity loader pass one - artist - date: {data_date}")
         with transaction():
             entity_repository = EntityRepository()
             artists_loaded = cls.loader_pass_one_manager(
                 repository=entity_repository,
-                date=date,
+                data_directory=data_directory,
+                date=data_date,
                 xml_tag="artist",
                 id_attr=EntityTable.entity_id.name,
                 skip_without=["entity_name"],
+                is_bulk_inserts=is_bulk_inserts,
             )
-        log.debug("entity loader pass one - label")
+        log.debug(f"entity loader pass one - label - date: {data_date}")
         with transaction():
             entity_repository = EntityRepository()
             labels_loaded = cls.loader_pass_one_manager(
                 repository=entity_repository,
-                date=date,
+                data_directory=data_directory,
+                date=data_date,
                 xml_tag="label",
                 id_attr=EntityTable.entity_id.name,
                 skip_without=["entity_name"],
+                is_bulk_inserts=is_bulk_inserts,
             )
         return artists_loaded + labels_loaded
+
+    @classmethod
+    def insert_bulk(cls, bulk_inserts, inserted_count):
+        worker = WorkerEntityInserter(
+            bulk_inserts=bulk_inserts,
+            inserted_count=inserted_count,
+        )
+        return worker
+
+    @classmethod
+    def update_bulk(cls, bulk_updates, processed_count):
+        worker = WorkerEntityUpdater(
+            bulk_updates=bulk_updates,
+            processed_count=processed_count,
+        )
+        return worker
 
     @classmethod
     @timeit
@@ -206,27 +230,6 @@ class LoaderEntity(LoaderBase):
         elif element.tag == "label":
             data["entity_type"] = EntityType.LABEL
         return data
-
-    # def roles_to_relation_count(self, roles) -> int:
-    #     count = 0
-    #     relation_counts = self.relation_counts or {}
-    #     for role in roles:
-    #         if role == "Alias":
-    #             if "aliases" in self.entities:
-    #                 count += len(cast(Dict, self.entities["aliases"]))
-    #         elif role == "Member Of":
-    #             if "groups" in self.entities:
-    #                 count += len(cast(Dict, self.entities["groups"]))
-    #             if "members" in self.entities:
-    #                 count += len(cast(Dict, self.entities["members"]))
-    #         elif role == "Sublabel Of":
-    #             if "parent_label" in self.entities:
-    #                 count += len(cast(Dict, self.entities["parent_label"]))
-    #             if "sublabels" in self.entities:
-    #                 count += len(cast(Dict, self.entities["sublabels"]))
-    #         else:
-    #             count += relation_counts.get(role, 0)
-    #     return count
 
 
 LoaderEntity._tags_to_fields_mapping = {

@@ -54,6 +54,7 @@ class DatabaseHelper(ABC):
         """ensure the parent proc's database connections are not touched
         in the new connection pool"""
         cls.engine.dispose(close=False)
+        cls.session_factory = sessionmaker(bind=cls.engine)
 
     @staticmethod
     @abstractmethod
@@ -62,12 +63,7 @@ class DatabaseHelper(ABC):
 
     @staticmethod
     @abstractmethod
-    def load_tables(date: str):
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def update_tables(date: str):
+    def load_tables(data_directory: str, date: str, is_bulk_inserts=False):
         pass
 
     @classmethod

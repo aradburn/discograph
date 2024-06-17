@@ -7,7 +7,9 @@ from discograph.library.database.release_table import ReleaseTable
 from discograph.library.database.transaction import transaction
 from discograph.library.domain.release import Release
 from discograph.library.loader.loader_base import LoaderBase
+from discograph.library.loader.worker_release_inserter import WorkerReleaseInserter
 from discograph.library.loader.worker_release_pass_two import WorkerReleasePassTwo
+from discograph.library.loader.worker_release_updater import WorkerReleaseUpdater
 from discograph.library.loader_utils import LoaderUtils
 from discograph.logging_config import LOGGING_TRACE
 from discograph.utils import timeit
@@ -26,18 +28,38 @@ class LoaderRelease(LoaderBase):
 
     @classmethod
     @timeit
-    def loader_pass_one(cls, date: str) -> int:
+    def loader_pass_one(
+        cls, data_directory: str, date: str, is_bulk_inserts=False
+    ) -> int:
         log.debug(f"release loader pass one - date: {date}")
         with transaction():
             release_repository = ReleaseRepository()
             releases_loaded = cls.loader_pass_one_manager(
                 repository=release_repository,
+                data_directory=data_directory,
                 date=date,
                 xml_tag="release",
                 id_attr=ReleaseTable.release_id.name,
                 skip_without=["title"],
+                is_bulk_inserts=is_bulk_inserts,
             )
         return releases_loaded
+
+    @classmethod
+    def insert_bulk(cls, bulk_inserts, inserted_count):
+        worker = WorkerReleaseInserter(
+            bulk_inserts=bulk_inserts,
+            inserted_count=inserted_count,
+        )
+        return worker
+
+    @classmethod
+    def update_bulk(cls, bulk_updates, processed_count):
+        worker = WorkerReleaseUpdater(
+            bulk_updates=bulk_updates,
+            processed_count=processed_count,
+        )
+        return worker
 
     @classmethod
     @timeit
@@ -229,17 +251,6 @@ class LoaderRelease(LoaderBase):
             result.append(data)
         return result
 
-    # @classmethod
-    # def element_to_genres(cls, session: Session, element):
-    #     result = []
-    #     if element is None or not len(element):
-    #         return result
-    #     for sub_element in element:
-    #         genre_str = sub_element.text
-    #         genre = Genre.create_or_get(session, genre_str)
-    #         result.append(genre)
-    #     return result
-
     @classmethod
     def from_element(cls, element) -> Release:
         data = cls.tags_to_fields(element)
@@ -260,7 +271,6 @@ LoaderRelease._tags_to_fields_mapping = {
     "country": ("country", LoaderUtils.element_to_string),
     "extraartists": ("extra_artists", LoaderRelease.element_to_artist_credits),
     "formats": ("formats", LoaderRelease.element_to_formats),
-    # "genres": ("genres", Release.element_to_genres),
     "genres": ("genres", LoaderUtils.element_to_strings),
     "identifiers": ("identifiers", LoaderRelease.element_to_identifiers),
     "labels": ("labels", LoaderRelease.element_to_label_credits),
