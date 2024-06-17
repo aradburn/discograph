@@ -11,10 +11,18 @@ log = logging.getLogger(__name__)
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(APP_DIR, ".."))
+DATA_DIR = os.path.join(ROOT_DIR, "discograph", "data")
+TEST_DATA_DIR = os.path.join(ROOT_DIR, "tests", "data")
 LOGGING_DIR = os.path.join(ROOT_DIR, "logs")
 LOGGING_FILE = os.path.join(LOGGING_DIR, "discograph.log")
 LOGGING_ERROR_FILE = os.path.join(LOGGING_DIR, "error.log")
 LOGGING_DEBUG_FILE = os.path.join(LOGGING_DIR, "debug.log")
+DISCOGS_BASE_URL = "https://discogs-data-dumps.s3-us-west-2.amazonaws.com/data/{year}/"
+DISCOGS_PATH = "discogs_{date}_{type}.xml.gz"
+DISCOGS_ARTISTS_TYPE = "artists"
+DISCOGS_RELEASES_TYPE = "releases"
+DISCOGS_LABELS_TYPE = "labels"
+DISCOGS_MASTERS_TYPE = "masters"
 
 env_file = find_dotenv()
 env_config = dotenv_values()  # take environment variables from .env.
