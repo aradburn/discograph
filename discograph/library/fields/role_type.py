@@ -539,7 +539,7 @@ class RoleType:
             ("Mandolincello", (Category.INSTRUMENTS, Subcategory.STRINGED_INSTRUMENTS)),
             ("Monochord", (Category.INSTRUMENTS, Subcategory.STRINGED_INSTRUMENTS)),
             ("Morinhoor", (Category.INSTRUMENTS, Subcategory.STRINGED_INSTRUMENTS)),
-            ("Musical bow", (Category.INSTRUMENTS, Subcategory.STRINGED_INSTRUMENTS)),
+            # ("Musical bow", (Category.INSTRUMENTS, Subcategory.STRINGED_INSTRUMENTS)),
             ("Nyckelharpa", (Category.INSTRUMENTS, Subcategory.STRINGED_INSTRUMENTS)),
             ("Oud", (Category.INSTRUMENTS, Subcategory.STRINGED_INSTRUMENTS)),
             ("Outi", (Category.INSTRUMENTS, Subcategory.STRINGED_INSTRUMENTS)),
