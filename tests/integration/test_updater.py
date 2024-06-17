@@ -113,6 +113,34 @@ class TestUpdater(UpdaterTestCase):
         expected = utils.normalize_dict(expected_entity)
         self.assertEqual(expected, actual)
 
+    def test_artist_record_inserted(self):
+        # GIVEN
+        entity_id = 9999999
+        entity_type = EntityType.ARTIST
+
+        # WHEN
+        with transaction():
+            entity = EntityRepository().get(entity_id, entity_type)
+            actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
+
+        # THEN
+        expected_entity = {
+            "entities": {"aliases": {}, "groups": {"Test Group": None}},
+            "entity_id": 9999999,
+            "entity_metadata": {
+                "name_variations": ["Test Test", "DJ TEST"],
+                "profile": "Test Profile",
+                "real_name": "Test 9999999",
+                "urls": ["http://www.test.com/", "http://www.testtest.com/"],
+            },
+            "entity_name": "New Test Artist",
+            "entity_type": EntityType.ARTIST,
+            "relation_counts": {},
+            "search_content": "new test artist",
+        }
+        expected = utils.normalize_dict(expected_entity)
+        self.assertEqual(expected, actual)
+
     def test_label_record_updated(self):
         # GIVEN
         entity_id = 1
@@ -171,6 +199,32 @@ class TestUpdater(UpdaterTestCase):
             "entity_name": "West West Side Music",
             "relation_counts": {"Mastered At": 1},
             "search_content": "west west side music",
+        }
+        expected = utils.normalize_dict(expected_entity)
+        self.assertEqual(expected, actual)
+
+    def test_label_record_inserted(self):
+        # GIVEN
+        entity_id = 99999999
+        entity_type = EntityType.LABEL
+
+        # WHEN
+        with transaction():
+            entity = EntityRepository().get(entity_id, entity_type)
+            actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
+
+        # THEN
+        expected_entity = {
+            "entities": {},
+            "entity_id": 99999999,
+            "entity_metadata": {
+                "profile": "Test Profile",
+                "urls": ["http://www.test.net/", "http://www.testtest.com"],
+            },
+            "entity_name": "New Label Test",
+            "entity_type": EntityType.LABEL,
+            "relation_counts": {},
+            "search_content": "new label test",
         }
         expected = utils.normalize_dict(expected_entity)
         self.assertEqual(expected, actual)
@@ -332,6 +386,80 @@ class TestUpdater(UpdaterTestCase):
                     "position": "4",
                     "title": "Alpha 1999 (Delta Reformed By Pentatonik)",
                 },
+            ],
+        }
+
+        expected = utils.normalize_dict(expected_release)
+        self.assertEqual(expected, actual)
+
+    def test_release_inserted(self):
+        # GIVEN
+        release_id = 99999999
+
+        # WHEN
+        with transaction():
+            release = ReleaseRepository().get(release_id)
+            actual = utils.normalize_dict(release.model_dump(exclude={"random"}))
+
+        # THEN
+        expected_release = {
+            "artists": [
+                {"id": 99999999, "name": "Test Artist"},
+                {"id": 99999999, "name": "Test Artist"},
+            ],
+            "companies": [],
+            "country": "UK",
+            "extra_artists": [
+                {
+                    "id": 445854,
+                    "name": "Designers Republic, The (Test Update)",
+                    "roles": [{"name": "Design"}],
+                },
+                {
+                    "anv": "Brown",
+                    "id": 300407,
+                    "name": "Rob Brown (3)",
+                    "roles": [{"name": "Producer"}],
+                },
+                {
+                    "anv": "Booth",
+                    "id": 42,
+                    "name": "Sean Booth",
+                    "roles": [{"name": "Producer"}],
+                },
+            ],
+            "formats": [
+                {
+                    "descriptions": ['12"', "EP", "33 \u2153 RPM", "45 RPM"],
+                    "name": "Vinyl",
+                    "quantity": "1",
+                }
+            ],
+            "genres": ["Electronic", "(Test Update)"],
+            "identifiers": [
+                {"description": None, "type": "Barcode", "value": "5 021603 054066"},
+                {
+                    "description": "Etching A",
+                    "type": "Matrix / Runout",
+                    "value": "WAP-54-A\u2081 MA.",
+                },
+                {
+                    "description": "Etching B",
+                    "type": "Matrix / Runout",
+                    "value": "WAP-54-B\u2081 MA.",
+                },
+            ],
+            "labels": [{"catalog_number": "TEST99999999", "name": "Test Records"}],
+            "master_id": 99999999,
+            "notes": None,
+            "release_date": "1994-09-03",
+            "release_id": 99999999,
+            "styles": ["Abstract", "IDM", "Experimental", "(Test Update)"],
+            "title": "Test EP",
+            "tracklist": [
+                {"position": "A1", "title": "Test"},
+                {"position": "A2", "title": "Djarum"},
+                {"position": "B", "title": "Flutter"},
             ],
         }
 

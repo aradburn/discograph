@@ -37,9 +37,7 @@ def loader_main():
     atexit.register(shutdown_cache)
     atexit.register(shutdown_database, config)
 
-    # Run the test update process
-    # DatabaseHelper.db_helper.load_tables("20230801")
-
+    # Run the loader process between these dates
     start_date = datetime.date(2023, 10, 1)
     end_date = datetime.datetime.now()
     tasks = [LoaderTask(start_date=start_date, end_date=end_date)]

@@ -108,7 +108,9 @@ class WorkerReleaseUpdater(multiprocessing.Process):
                         release_repository.commit()
                         updated_count += 1
                 except NotFoundError:
-                    log.debug("New insert in WorkerReleaseUpdater")
+                    log.debug(
+                        f"New insert in WorkerReleaseUpdater: {updated_release.release_id}"
+                    )
                     try:
                         release_repository.create(updated_release)
                         release_repository.commit()

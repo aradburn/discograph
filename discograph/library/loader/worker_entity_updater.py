@@ -95,7 +95,9 @@ class WorkerEntityUpdater(multiprocessing.Process):
                         entity_repository.commit()
                         updated_count += 1
                 except NotFoundError:
-                    log.debug("New insert in WorkerEntityUpdater")
+                    log.debug(
+                        f"New insert in WorkerEntityUpdater: {updated_entity.entity_id}-{updated_entity.entity_type}"
+                    )
                     try:
                         entity_repository.create(updated_entity)
                         entity_repository.commit()
@@ -107,6 +109,4 @@ class WorkerEntityUpdater(multiprocessing.Process):
                     log.exception("Error in WorkerEntityUpdater", e)
                     raise e
 
-        log.info(
-            f"[{proc_name}] processed_count: {self.processed_count}, updated: {updated_count}"
-        )
+        log.info(f"processed_count: {self.processed_count}, updated: {updated_count}")
