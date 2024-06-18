@@ -1,4 +1,5 @@
 from discograph import utils
+from discograph.exceptions import NotFoundError
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.database.release_repository import ReleaseRepository
@@ -141,6 +142,21 @@ class TestUpdater(UpdaterTestCase):
         expected = utils.normalize_dict(expected_entity)
         self.assertEqual(expected, actual)
 
+    def test_artist_record_deleted(self):
+        # GIVEN
+        entity_id = 12589
+        entity_type = EntityType.ARTIST
+
+        # WHEN
+        with transaction():
+            try:
+                entity = EntityRepository().get(entity_id, entity_type)
+            except NotFoundError:
+                entity = None
+
+        # THEN
+        self.assertIsNone(entity)
+
     def test_label_record_updated(self):
         # GIVEN
         entity_id = 1
@@ -228,6 +244,21 @@ class TestUpdater(UpdaterTestCase):
         }
         expected = utils.normalize_dict(expected_entity)
         self.assertEqual(expected, actual)
+
+    def test_label_record_deleted(self):
+        # GIVEN
+        entity_id = 2529
+        entity_type = EntityType.LABEL
+
+        # WHEN
+        with transaction():
+            try:
+                entity = EntityRepository().get(entity_id, entity_type)
+            except NotFoundError:
+                entity = None
+
+        # THEN
+        self.assertIsNone(entity)
 
     def test_release_updated(self):
         # GIVEN
@@ -465,6 +496,20 @@ class TestUpdater(UpdaterTestCase):
 
         expected = utils.normalize_dict(expected_release)
         self.assertEqual(expected, actual)
+
+    def test_release_deleted(self):
+        # GIVEN
+        release_id = 61930
+
+        # WHEN
+        with transaction():
+            try:
+                release = ReleaseRepository().get(release_id)
+            except NotFoundError:
+                release = None
+
+        # THEN
+        self.assertIsNone(release)
 
     def test_relation_updated_01(self):
         # GIVEN

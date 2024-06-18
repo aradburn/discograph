@@ -56,7 +56,8 @@ class WorkerRelationPassOne(multiprocessing.Process):
                         f"WorkerRelationPassOne release_id not found: {release_id}"
                     )
                 except DatabaseError as e:
-                    log.exception("Database Error in WorkerRelationPassOne", e)
+                    log.error("Database Error in WorkerRelationPassOne")
+                    # log.exception("Database Error in WorkerRelationPassOne", e)
                     raise e
 
             for relation_dict in relations:
@@ -84,7 +85,8 @@ class WorkerRelationPassOne(multiprocessing.Process):
                                 LoaderBase.MAX_RETRYS - max_attempts
                             )
                         except OperationalError as e:
-                            log.exception(e)
+                            log.error("Database Error in WorkerRelationPassOne")
+                            # log.exception(e)
                             raise e
 
                 if error:

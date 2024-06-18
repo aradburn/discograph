@@ -89,15 +89,15 @@ class LoaderEntity(LoaderBase):
             entity_repository = EntityRepository()
             total_count = entity_repository.count()
             entity_type: EntityType = EntityType.ARTIST
-            batched_release_ids = entity_repository.get_batched_ids(
+            batched_entity_ids = entity_repository.get_batched_ids(
                 entity_type, number_in_batch
             )
 
         current_total = 0
 
         workers = []
-        for release_ids in batched_release_ids:
-            worker = worker_class(entity_type, release_ids, current_total, total_count)
+        for entity_ids in batched_entity_ids:
+            worker = worker_class(entity_type, entity_ids, current_total, total_count)
             worker.start()
             workers.append(worker)
             current_total += number_in_batch
@@ -112,15 +112,15 @@ class LoaderEntity(LoaderBase):
             entity_repository = EntityRepository()
             total_count = entity_repository.count()
             entity_type: EntityType = EntityType.LABEL
-            batched_release_ids = entity_repository.get_batched_ids(
+            batched_entity_ids = entity_repository.get_batched_ids(
                 entity_type, number_in_batch
             )
 
         current_total = 0
 
         workers = []
-        for release_ids in batched_release_ids:
-            worker = worker_class(entity_type, release_ids, current_total, total_count)
+        for entity_ids in batched_entity_ids:
+            worker = worker_class(entity_type, entity_ids, current_total, total_count)
             worker.start()
             workers.append(worker)
             current_total += number_in_batch

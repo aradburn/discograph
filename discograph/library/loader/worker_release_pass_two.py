@@ -49,7 +49,8 @@ class WorkerReleasePassTwo(multiprocessing.Process):
                             f"[{proc_name}] processed {count} of {self.total_count}"
                         )
                 except DatabaseError as e:
-                    log.exception("Database Error in WorkerReleasePassTwo:", e)
+                    log.error("Database Error in WorkerReleasePassTwo")
+                    # log.exception("Database Error in WorkerReleasePassTwo:", e)
                     raise e
 
         log.info(f"[{proc_name}] processed {count} of {self.total_count}")

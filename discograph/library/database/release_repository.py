@@ -2,7 +2,7 @@ import logging
 from random import random
 from typing import Generator, Any, List
 
-from sqlalchemy import Result, select, update, Select
+from sqlalchemy import Result, select, update, Select, delete
 
 from discograph import utils
 from discograph.exceptions import NotFoundError, DatabaseError
@@ -113,3 +113,11 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
             raise DatabaseError
 
         return schema
+
+    def delete_by_id(self, release_id: int) -> None:
+        self.execute(
+            delete(self.schema_class).where(ReleaseTable.release_id == release_id)
+        )
+        # await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))
+        self._session.flush()
+        # await self._session.flush()

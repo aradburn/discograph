@@ -2,7 +2,7 @@ import logging
 from random import random
 from typing import Generator, Any, cast, List
 
-from sqlalchemy import Result, select, update, Select, String
+from sqlalchemy import Result, select, update, Select, String, delete
 
 from discograph import utils
 from discograph.exceptions import NotFoundError, DatabaseError
@@ -153,6 +153,17 @@ class EntityRepository(BaseRepository[EntityTable]):
             raise DatabaseError
 
         return schema
+
+    def delete_by_id(self, entity_id: int, entity_type: EntityType) -> None:
+        self.execute(
+            delete(self.schema_class).where(
+                (EntityTable.entity_id == entity_id)
+                & (EntityTable.entity_type == entity_type)
+            )
+        )
+        # await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))
+        self._session.flush()
+        # await self._session.flush()
 
     def search_multi(self, entity_keys) -> List[Entity]:
         artist_ids: List[int] = []

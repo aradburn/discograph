@@ -65,15 +65,16 @@ class WorkerEntityPassTwo(multiprocessing.Process):
                         max_attempts -= 1
                         error = True
                     except DatabaseError as e:
-                        log.exception(
-                            f"Database Error: {entity_id}-{self.entity_type} in process: {proc_number}",
-                            e,
-                        )
+                        log.error("Database Error in WorkerEntityPassTwo")
+                        # log.exception(
+                        #     f"Database Error: {entity_id}-{self.entity_type} in process: {proc_number}",
+                        #     e,
+                        # )
                         raise e
             if error:
                 log.debug(f"Error in updating references for entity: {entity_id}")
 
-        log.info(f"[{proc_name}] processed {count} of {self.total_count}")
+        log.info(f"processed {count} of {self.total_count}")
 
     # PUBLIC METHODS
 
