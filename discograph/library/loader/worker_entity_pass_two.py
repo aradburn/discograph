@@ -1,8 +1,6 @@
 import logging
 import multiprocessing
 
-from sqlalchemy.exc import OperationalError
-
 from discograph.database import get_concurrency_count
 from discograph.exceptions import NotFoundError, DatabaseError
 from discograph.library.data_access_layer.entity_data_access import EntityDataAccess
@@ -19,25 +17,25 @@ log = logging.getLogger(__name__)
 
 class WorkerEntityPassTwo(multiprocessing.Process):
     def __init__(
-        self, entity_type: EntityType, indices, current_total: int, total_count: int
+        self, entity_type: EntityType, entity_ids, current_total: int, total_count: int
     ):
         super().__init__()
         self.entity_type = entity_type
-        self.indices = indices
+        self.entity_ids = entity_ids
         self.current_total = current_total
         self.total_count = total_count
 
     def run(self):
         proc_name = self.name
-        proc_number = proc_name.split("-")[-1]
         corpus = {}
 
         count = self.current_total
+        total_count = count + len(self.entity_ids)
 
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
 
-        for i, entity_id in enumerate(self.indices):
+        for entity_id in self.entity_ids:
             max_attempts = 10
             error = True
             while error and max_attempts != 0:
@@ -49,32 +47,32 @@ class WorkerEntityPassTwo(multiprocessing.Process):
                             entity_repository=entity_repository,
                             entity_id=entity_id,
                             entity_type=self.entity_type,
-                            annotation=proc_number,
+                            annotation=proc_name,
                             corpus=corpus,
                         )
-                        count += 1
-                        if count % LoaderBase.BULK_REPORTING_SIZE == 0:
-                            log.debug(
-                                f"[{proc_name}] processed {count} of {self.total_count}"
-                            )
                     except NotFoundError:
-                        log.exception(
-                            f"ERROR 1: {entity_id}-{self.entity_type} in process: {proc_number}"
+                        log.warning(
+                            f"Database NotFoundError: {entity_id}-{self.entity_type} in process: {proc_name}"
                         )
                         entity_repository.rollback()
                         max_attempts -= 1
                         error = True
                     except DatabaseError as e:
-                        log.error("Database Error in WorkerEntityPassTwo")
-                        # log.exception(
-                        #     f"Database Error: {entity_id}-{self.entity_type} in process: {proc_number}",
-                        #     e,
-                        # )
+                        log.exception(
+                            f"Database Error for entity: {entity_id}-{self.entity_type} in process: {proc_name}",
+                            e,
+                        )
                         raise e
+
             if error:
                 log.debug(f"Error in updating references for entity: {entity_id}")
+                raise Exception(f"Error in updating references for entity: {entity_id}")
 
-        log.info(f"processed {count} of {self.total_count}")
+            count += 1
+            if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == total_count:
+                log.debug(f"[{proc_name}] processed {count} of {self.total_count}")
+
+        log.info(f"[{proc_name}] processed {count} of {self.total_count}")
 
     # PUBLIC METHODS
 

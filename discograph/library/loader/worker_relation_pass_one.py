@@ -1,10 +1,8 @@
 import logging
 import multiprocessing
-import pprint
 from random import random
 
-from deepdiff import DeepDiff
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, IntegrityError
 
 from discograph import utils
 from discograph.database import get_concurrency_count
@@ -33,14 +31,16 @@ class WorkerRelationPassOne(multiprocessing.Process):
         proc_name = self.name
 
         count = self.current_total
+        total_count = count + len(self.release_ids)
 
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
 
-        for release_id in self.release_ids:
+        with transaction():
+            release_repository = ReleaseRepository()
+            relation_repository = RelationRepository()
 
-            with transaction():
-                release_repository = ReleaseRepository()
+            for release_id in self.release_ids:
 
                 try:
                     # log.debug(f"loader_pass_one ({annotation}): {release_id}")
@@ -60,24 +60,26 @@ class WorkerRelationPassOne(multiprocessing.Process):
                     # log.exception("Database Error in WorkerRelationPassOne", e)
                     raise e
 
-            for relation_dict in relations:
-                max_attempts = LoaderBase.MAX_RETRYS
-                error = True
-                while error and max_attempts != 0:
-                    error = False
-
-                    with transaction():
-                        relation_repository = RelationRepository()
+                for relation_dict in relations:
+                    max_attempts = LoaderBase.MAX_RETRYS
+                    error = True
+                    while error and max_attempts != 0:
+                        error = False
 
                         try:
-                            self.loader_pass_one_inner(
+                            self.create_relation(
                                 relation_repository=relation_repository,
-                                release_id=release_id,
                                 relation_dict=relation_dict,
                             )
                             relation_repository.commit()
-                        except DatabaseError:
+                        except DatabaseError as e:
                             relation_repository.rollback()
+
+                            if (
+                                LOGGING_TRACE
+                                or max_attempts < LoaderBase.MAX_RETRYS - 1
+                            ):
+                                log.error(e)
 
                             max_attempts -= 1
                             error = True
@@ -85,38 +87,36 @@ class WorkerRelationPassOne(multiprocessing.Process):
                                 LoaderBase.MAX_RETRYS - max_attempts
                             )
                         except OperationalError as e:
-                            log.error("Database Error in WorkerRelationPassOne")
-                            # log.exception(e)
-                            raise e
+                            relation_repository.rollback()
 
-                if error:
-                    log.debug(f"Error in updating relations for release: {release_id}")
+                            if LOGGING_TRACE or max_attempts <= 1:
+                                log.exception(
+                                    f"Database OperationalError in WorkerRelationPassOne (create)",
+                                    e,
+                                )
 
-            count += 1
-            if count % LoaderBase.BULK_REPORTING_SIZE == 0:
-                log.debug(f"[{proc_name}] processed {count} of {self.total_count}")
+                            max_attempts -= 1
+                            error = True
+                            utils.sleep_with_backoff(
+                                LoaderBase.MAX_RETRYS - max_attempts
+                            )
+
+                    if error:
+                        log.error(
+                            f"Error in updating relations for release: {release_id}"
+                        )
+                        raise Exception(
+                            f"Error in updating relations for release: {release_id}"
+                        )
+
+                count += 1
+                if (
+                    count % LoaderBase.BULK_REPORTING_SIZE == 0
+                    and not count == total_count
+                ):
+                    log.debug(f"[{proc_name}] processed {count} of {self.total_count}")
 
         log.info(f"[{proc_name}] processed {count} of {self.total_count}")
-
-    @classmethod
-    def loader_pass_one_inner(
-        cls,
-        relation_repository: RelationRepository,
-        release_id: int,
-        relation_dict,
-    ):
-        # log.debug(f"  loader_pass_one ({annotation}): {relation}")
-        relation_db = cls.create_relation(
-            relation_repository=relation_repository,
-            relation_dict=relation_dict,
-        )
-        year = relation_dict.get("year")
-        cls.update_relation(
-            relation_repository=relation_repository,
-            relation=relation_db,
-            release_id=release_id,
-            year=year,
-        )
 
     @classmethod
     def create_relation(
@@ -124,62 +124,36 @@ class WorkerRelationPassOne(multiprocessing.Process):
         relation_repository: RelationRepository,
         relation_dict: dict,
     ) -> Relation:
+
+        relation_uncommitted = RelationUncommitted(
+            entity_one_id=relation_dict["entity_one_id"],
+            entity_one_type=relation_dict["entity_one_type"],
+            entity_two_id=relation_dict["entity_two_id"],
+            entity_two_type=relation_dict["entity_two_type"],
+            role_name=RoleDataAccess.normalize(relation_dict["role"]),
+            releases={},
+            random=random(),
+        )
+        # log.debug(f"new relation: {new_instance}")
+
+        # save, throw error if already exists
         try:
-            key = {
-                "entity_one_id": relation_dict["entity_one_id"],
-                "entity_one_type": relation_dict["entity_one_type"],
-                "entity_two_id": relation_dict["entity_two_id"],
-                "entity_two_type": relation_dict["entity_two_type"],
-                "role_name": RoleDataAccess.normalize(relation_dict["role"]),
-            }
-            relation_db = relation_repository.find_by_key(key)
-        except NotFoundError:
-            relation_db = None
-
-        if relation_db is None:
-            relation_uncommitted = RelationUncommitted(
-                entity_one_id=relation_dict["entity_one_id"],
-                entity_one_type=relation_dict["entity_one_type"],
-                entity_two_id=relation_dict["entity_two_id"],
-                entity_two_type=relation_dict["entity_two_type"],
-                role_name=RoleDataAccess.normalize(relation_dict["role"]),
-                releases={},
-                random=random(),
+            relation_db = relation_repository.create(
+                relation_uncommitted, on_conflict_do_nothing=True
             )
-            # log.debug(f"new relation: {new_instance}")
-
-            # save, throw error if already exists
-            relation_db = relation_repository.create(relation_uncommitted)
-
             relation_repository.commit()
-        # except NotFoundError:
-        #     print(f"NotFound")
-        #     relation_db = None
+        except DatabaseError:
+            relation_repository.rollback()
+            # log.debug(f"Roll back create")
+            # log.exception(e)
+            relation_db = None
+        except IntegrityError:
+            relation_repository.rollback()
+            # log.debug(f"Roll back create")
+            relation_db = None
+        except OperationalError as e:
+            relation_repository.rollback()
+            log.debug(f"Record is locked in create")
+            raise e
 
         return relation_db
-
-    @classmethod
-    def update_relation(
-        cls,
-        relation_repository: RelationRepository,
-        relation: Relation,
-        release_id: int,
-        year: int,
-    ) -> None:
-        original = relation.releases.copy()
-        updated = relation.releases.copy()
-        updated[str(release_id)] = year
-
-        differences = DeepDiff(
-            original,
-            updated,
-        )
-        diff = pprint.pformat(differences)
-        if diff != "{}":
-            # log.debug(f"diff: {diff}")
-            relation_repository.update(
-                relation.relation_id,
-                relation.version_id,
-                {"releases": updated, "version_id": relation.version_id + 1},
-            )
-            relation_repository.commit()

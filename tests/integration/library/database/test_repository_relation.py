@@ -7,14 +7,14 @@ from discograph.library.domain.release import Release
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.loader.loader_role import LoaderRole
 from discograph.library.loader.worker_relation_pass_one import WorkerRelationPassOne
+from discograph.library.loader.worker_relation_pass_two import WorkerRelationPassTwo
 from tests.integration.library.database.repository_test_case import RepositoryTestCase
 
 
 class TestRepositoryRelation(RepositoryTestCase):
     def test_01_create(self):
         # GIVEN
-        date = "testinsert"
-        LoaderRole().loader_pass_one(date)
+        LoaderRole().load_all_roles()
 
         relation = RelationUncommitted(
             entity_one_id=2,
@@ -173,20 +173,20 @@ class TestRepositoryRelation(RepositoryTestCase):
                 releases={},
                 random=0.0,
             )
-            # role = RoleRepository().get_by_name(relation.role_name)
+            relation_dict = relation.model_dump()
+            relation_dict["role"] = relation.role_name
 
         # WHEN
         with transaction():
             relation_repository = RelationRepository()
-            retrieved_relation = relation_repository.find_by_key(relation.model_dump())
-            print(f"retrieved_relation: {retrieved_relation}")
-            WorkerRelationPassOne.update_relation(
+
+            WorkerRelationPassTwo.update_relation(
                 relation_repository=relation_repository,
-                relation=retrieved_relation,
+                relation_dict=relation_dict,
                 release_id=635,
                 year=1994,
             )
-            updated_relation = relation_repository.find_by_key(relation.model_dump())
+            updated_relation = relation_repository.find_by_key(relation_dict)
             print(f"updated_relation: {updated_relation}")
             actual = utils.normalize_dict(
                 updated_relation.model_dump(exclude={"random"})

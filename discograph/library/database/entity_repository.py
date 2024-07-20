@@ -55,12 +55,14 @@ class EntityRepository(BaseRepository[EntityTable]):
         )
         return self._get_one_by_query(query)
 
-    def get_batched_ids(self, entity_type: EntityType, num_in_batch: int):
-        all_ids = self._session.scalars(
+    def get_ids(self, entity_type: EntityType):
+        return self._session.scalars(
             select(EntityTable.entity_id).where(EntityTable.entity_type == entity_type)
             # select(ReleaseTable.release_id).order_by(ReleaseTable.release_id)
         ).all()
-        return utils.batched(all_ids, num_in_batch)
+
+    def get_batched_ids(self, entity_type: EntityType, num_in_batch: int):
+        return utils.batched(self.get_ids(entity_type), num_in_batch)
 
     def find_by_search_content(self, search_string: str) -> List[Entity]:
         # print(f"find_by_search_content")
@@ -144,7 +146,7 @@ class EntityRepository(BaseRepository[EntityTable]):
             .values(payload)
             .returning(self.schema_class)
         )
-        result: Result = self.execute(query)
+        result: Result = self._session.execute(query)
         # result: Result = await self.execute(query)
         self._session.flush()
         # await self._session.flush()
@@ -162,7 +164,7 @@ class EntityRepository(BaseRepository[EntityTable]):
             )
         )
         # await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))
-        self._session.flush()
+        # self._session.flush()
         # await self._session.flush()
 
     def search_multi(self, entity_keys) -> List[Entity]:

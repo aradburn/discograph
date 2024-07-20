@@ -2,21 +2,17 @@ import logging
 import os
 import pathlib
 import shutil
+from typing import Type
 
 from pg_temp import TempDB
 from sqlalchemy import Engine, URL, create_engine, text
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import DatabaseError
-from sqlalchemy.orm import Session
+from sqlalchemy.sql.dml import ReturningInsert
 
 from discograph.config import Configuration
-from discograph.library.database.database_helper import DatabaseHelper
-from discograph.library.database.entity_table import EntityTable
-from discograph.library.database.relation_table import RelationTable
-from discograph.library.database.release_table import ReleaseTable
-from discograph.library.loader.loader_entity import LoaderEntity
-from discograph.library.loader.loader_relation import LoaderRelation
-from discograph.library.loader.loader_release import LoaderRelease
-from discograph.library.loader.loader_role import LoaderRole
+from discograph.database import get_concurrency_count
+from discograph.library.database.database_helper import DatabaseHelper, ConcreteTable
 
 log = logging.getLogger(__name__)
 
@@ -78,12 +74,17 @@ class PostgresHelper(DatabaseHelper):
                 options = {
                     "work_mem": "500MB",
                     "maintenance_work_mem": "500MB",
-                    "effective_cache_size": "4GB",
-                    "max_connections": 20,
+                    "effective_cache_size": "2GB",
+                    "max_connections": get_concurrency_count() * 2,
                     "shared_buffers": "2GB",
                     # "log_min_duration_statement": 5000,
                     # "shared_preload_libraries": 'pg_stat_statements',
                     # "session_preload_libraries": 'auto_explain',
+                    # "default_transaction_isolation": "serializable",
+                    # "transaction_isolation": "serializable",
+                    # "statement_timeout": "20000",
+                    # "lock_timeout": "10000",
+                    # "idle_in_transaction_session_timeout": "30000",
                 }
                 PostgresHelper.postgres_test_db = TempDB(
                     verbosity=0,
@@ -98,7 +99,8 @@ class PostgresHelper(DatabaseHelper):
 
                 # Create a temporary test database engine and pool that will manage connections and execute queries
                 url_object = URL.create(
-                    "postgresql+psycopg2",
+                    "postgresql",
+                    # "postgresql+psycopg2",
                     username=PostgresHelper.postgres_test_db.current_user,
                     # password=config["POSTGRES_DATABASE_PASSWORD"],
                     host=PostgresHelper.postgres_test_db.pg_socket_dir,
@@ -107,10 +109,20 @@ class PostgresHelper(DatabaseHelper):
                 )
                 engine = create_engine(
                     url_object,
-                    pool_size=20,
-                    pool_timeout=300,
-                    pool_recycle=300,
-                    connect_args={"connect_timeout": 1000},
+                    pool_size=get_concurrency_count(),
+                    pool_timeout=30,
+                    pool_recycle=30,
+                    connect_args={
+                        "connect_timeout": 10,
+                    },
+                    # isolation_level="REPEATABLE READ",
+                    # isolation_level="SERIALIZABLE",
+                    # execution_options={
+                    #     # "isolation_level": "REPEATABLE READ",
+                    #     "statement_timeout": 20000,
+                    #     "lock_timeout": 10000,
+                    #     "idle_in_transaction_session_timeout": 30000,
+                    # },
                 )
 
                 PostgresHelper._is_test = True
@@ -127,15 +139,28 @@ class PostgresHelper(DatabaseHelper):
                     database=config["POSTGRES_DATABASE_NAME"],
                 )
                 engine = create_engine(
-                    url_object, pool_size=40, pool_timeout=300, pool_recycle=300
+                    url_object,
+                    pool_size=40,
+                    pool_timeout=300,
+                    pool_recycle=300,
+                    connect_args={
+                        "connect_timeout": 1000,
+                    },
+                    # isolation_level="REPEATABLE READ",
+                    # isolation_level="SERIALIZABLE",
+                    # execution_options={
+                    #     # "isolation_level": "REPEATABLE READ",
+                    #     "statement_timeout": 20000,
+                    #     "lock_timeout": 10000,
+                    #     "idle_in_transaction_session_timeout": 30000,
+                    # },
                 )
 
         return engine
 
     @staticmethod
     def shutdown_database():
-        log.info("Shutting down database")
-        DatabaseHelper.engine.dispose()
+        log.info("Shutting down Postgres database")
 
         if PostgresHelper._is_test and PostgresHelper.postgres_test_db is not None:
             log.info("Cleaning up Postgres Test Database")
@@ -164,57 +189,6 @@ class PostgresHelper(DatabaseHelper):
         except DatabaseError as e:
             log.exception("Connection Error", e)
 
-    @staticmethod
-    def load_tables(data_directory: str, date: str, is_bulk_inserts=False):
-        log.info("Load Postgres tables")
-
-        autocommit_engine = DatabaseHelper.engine.execution_options(
-            isolation_level="AUTOCOMMIT"
-        )
-
-        log.debug("Load role pass 1")
-        LoaderRole().loader_pass_one(date)
-
-        log.debug("Load entity pass 1")
-        LoaderEntity().loader_pass_one(data_directory, date, is_bulk_inserts)
-
-        log.debug("Load entity analyze")
-        with Session(autocommit_engine) as session:
-            session.execute(text(f"VACUUM FULL ANALYZE {EntityTable.__tablename__};"))
-
-        log.debug("Load release pass 1")
-        LoaderRelease().loader_pass_one(data_directory, date, is_bulk_inserts)
-
-        log.debug("Load release analyze")
-        with Session(autocommit_engine) as session:
-            session.execute(text(f"VACUUM FULL ANALYZE {ReleaseTable.__tablename__};"))
-
-        log.debug("Load entity pass 2")
-        LoaderEntity().loader_pass_two()
-
-        log.debug("Load release pass 2")
-        LoaderRelease().loader_pass_two()
-
-        log.debug("Load relation pass 1")
-        LoaderRelation().loader_relation_pass_one(date)
-
-        log.debug("Load relation analyze")
-        with Session(autocommit_engine) as session:
-            session.execute(text(f"VACUUM FULL ANALYZE {EntityTable.__tablename__};"))
-            session.execute(text(f"VACUUM FULL ANALYZE {ReleaseTable.__tablename__};"))
-            session.execute(text(f"VACUUM FULL ANALYZE {RelationTable.__tablename__};"))
-
-        log.debug("Load entity pass 3")
-        LoaderEntity().loader_pass_three()
-
-        log.debug("Load final vacuum analyze")
-        with Session(autocommit_engine) as session:
-            session.execute(text(f"VACUUM FULL ANALYZE {EntityTable.__tablename__};"))
-            session.execute(text(f"VACUUM FULL ANALYZE {ReleaseTable.__tablename__};"))
-            session.execute(text(f"VACUUM FULL ANALYZE {RelationTable.__tablename__};"))
-
-        log.info("Load Postgres done.")
-
     @classmethod
     def create_tables(cls, tables=None):
         log.info("Create Postgres tables")
@@ -224,6 +198,32 @@ class PostgresHelper(DatabaseHelper):
     def drop_tables(cls):
         log.info("Drop Postgres tables")
         super().drop_tables()
+
+    @staticmethod
+    def has_vacuum_tablename() -> bool:
+        return True
+
+    @staticmethod
+    def is_vacuum_full() -> bool:
+        return True
+
+    @staticmethod
+    def is_vacuum_analyze() -> bool:
+        return True
+
+    @staticmethod
+    def generate_insert_query(
+        schema_class: Type[ConcreteTable], values: dict, on_conflict_do_nothing=False
+    ) -> ReturningInsert[tuple[ConcreteTable]]:
+        if on_conflict_do_nothing:
+            return (
+                insert(schema_class)
+                .on_conflict_do_nothing()
+                .values(values)
+                .returning(schema_class)
+            )
+        else:
+            return insert(schema_class).values(values).returning(schema_class)
 
     # @classmethod
     # def get_entity(cls, session: Session, entity_id: int, entity_type: EntityType):

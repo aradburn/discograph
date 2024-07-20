@@ -1,7 +1,7 @@
 import logging
 import multiprocessing
 
-from sqlalchemy.exc import DatabaseError, OperationalError
+from sqlalchemy.exc import DatabaseError
 
 from discograph.database import get_concurrency_count
 from discograph.library.database.database_helper import DatabaseHelper
@@ -30,11 +30,12 @@ class WorkerEntityPassThree(multiprocessing.Process):
         proc_name = self.name
 
         count = self.current_total
+        total_count = count + len(self.entity_ids)
 
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
 
-        for i, entity_id in enumerate(self.entity_ids):
+        for entity_id in self.entity_ids:
             with transaction():
                 entity_repository = EntityRepository()
                 relation_repository = RelationRepository()
@@ -45,18 +46,18 @@ class WorkerEntityPassThree(multiprocessing.Process):
                         entity_id=entity_id,
                         entity_type=self.entity_type,
                     )
-                    count += 1
-                    if count % LoaderBase.BULK_REPORTING_SIZE == 0:
-                        log.debug(
-                            f"[{proc_name}] processed {count} of {self.total_count}"
-                        )
+
                 except DatabaseError as e:
-                    log.error("Database Error in WorkerEntityPassThree")
-                    # log.exception(
-                    #     f"Database Error: {entity_id}-{self.entity_type} in process {proc_name}",
-                    #     e,
-                    # )
+                    log.exception(
+                        f"Database Error for entity: {entity_id}-{self.entity_type} in process {proc_name}",
+                        e,
+                    )
                     raise e
+
+            count += 1
+            if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == total_count:
+                log.debug(f"[{proc_name}] processed {count} of {self.total_count}")
+
         log.info(f"[{proc_name}] processed {count} of {self.total_count}")
 
     @staticmethod

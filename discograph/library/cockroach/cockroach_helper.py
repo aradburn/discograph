@@ -1,14 +1,12 @@
 import logging
+from typing import Type
 
-from sqlalchemy import Engine, text, URL, create_engine
+from sqlalchemy import Engine, text, URL, create_engine, insert
 from sqlalchemy.exc import SQLAlchemyError, DatabaseError
+from sqlalchemy.sql.dml import ReturningInsert
 
 from discograph.config import Configuration
-from discograph.library.database.database_helper import DatabaseHelper
-from discograph.library.loader.loader_entity import LoaderEntity
-from discograph.library.loader.loader_relation import LoaderRelation
-from discograph.library.loader.loader_release import LoaderRelease
-from discograph.library.loader.loader_role import LoaderRole
+from discograph.library.database.database_helper import DatabaseHelper, ConcreteTable
 
 log = logging.getLogger(__name__)
 
@@ -42,8 +40,7 @@ class CockroachHelper(DatabaseHelper):
 
     @staticmethod
     def shutdown_database():
-        log.info("Shutting down database")
-        DatabaseHelper.engine.dispose()
+        log.info("Shutting down CockroachDB database")
 
     @staticmethod
     def check_connection(config: Configuration, engine: Engine):
@@ -57,36 +54,6 @@ class CockroachHelper(DatabaseHelper):
         except DatabaseError as e:
             log.exception("Connection Error")
             raise e
-
-    @staticmethod
-    def load_tables(data_directory: str, date: str, is_bulk_inserts=False):
-        log.info("Load CockroachDB tables")
-
-        log.debug("Load role pass 1")
-        LoaderRole().loader_pass_one(date)
-
-        log.debug("Load entity pass 1")
-        LoaderEntity().loader_pass_one(data_directory, date, is_bulk_inserts)
-
-        log.debug("Load release pass 1")
-        LoaderRelease().loader_pass_one(data_directory, date, is_bulk_inserts)
-
-        log.debug("Load entity pass 2")
-        LoaderEntity().loader_pass_two()
-
-        log.debug("Load release pass 2")
-        LoaderRelease().loader_pass_two()
-
-        log.debug("Load relation pass 1")
-        LoaderRelation().loader_relation_pass_one(date)
-
-        # log.debug("Load relation pass 2")
-        # LoaderRelation().loader_relation_pass_two(date)
-
-        log.debug("Load entity pass 3")
-        LoaderEntity().loader_pass_three()
-
-        log.info("Load CockroachDB done.")
 
     @classmethod
     def create_tables(cls, tables=None):
@@ -128,6 +95,27 @@ class CockroachHelper(DatabaseHelper):
             super().drop_tables()
         except SQLAlchemyError:
             log.error("Cannot connect to Cockroach Database")
+
+    @staticmethod
+    def has_vacuum_tablename() -> bool:
+        return False
+
+    @staticmethod
+    def is_vacuum_full() -> bool:
+        return False
+
+    @staticmethod
+    def is_vacuum_analyze() -> bool:
+        return False
+
+    @staticmethod
+    def generate_insert_query(
+        schema_class: Type[ConcreteTable], values: dict, on_conflict_do_nothing=False
+    ) -> ReturningInsert[tuple[ConcreteTable]]:
+        if on_conflict_do_nothing:
+            return insert(schema_class).values(values).returning(schema_class)
+        else:
+            return insert(schema_class).values(values).returning(schema_class)
 
     # @staticmethod
     # def get_entity(entity_type: EntityType, entity_id: int):

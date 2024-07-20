@@ -5,10 +5,11 @@ from typing import Type
 
 from sqlalchemy import exc
 from sqlalchemy.event import listen
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, close_all_sessions
 
 from discograph.config import DatabaseType, ThreadingModel
 from discograph.library.database.database_helper import DatabaseHelper
+from discograph.logging_config import LOGGING_TRACE
 
 log = logging.getLogger(__name__)
 
@@ -16,6 +17,8 @@ threading_model: ThreadingModel | None = None
 
 
 def setup_database(config) -> Type[DatabaseHelper]:
+    from discograph.library.loader.loader_role import LoaderRole
+
     global threading_model
 
     threading_model = config["THREADING_MODEL"]
@@ -44,7 +47,8 @@ def setup_database(config) -> Type[DatabaseHelper]:
     DatabaseHelper.engine = engine
 
     def engine_on_connect(dbapi_con, connection_record):
-        log.debug(f"New engine connection: {dbapi_con}")
+        if LOGGING_TRACE:
+            log.debug(f"New engine connection: {dbapi_con}")
         connection_record.info["pid"] = os.getpid()
 
     def engine_on_checkout(dbapi_con, connection_record, connection_proxy):
@@ -61,8 +65,9 @@ def setup_database(config) -> Type[DatabaseHelper]:
                 % (connection_record.info["pid"], pid)
             )
 
-    listen(engine, "connect", engine_on_connect)
-    listen(engine, "checkout", engine_on_checkout)
+    if get_concurrency_count() > 1:
+        listen(engine, "connect", engine_on_connect)
+        listen(engine, "checkout", engine_on_checkout)
 
     # a sessionmaker(), also in the same scope as the engine
     DatabaseHelper.session_factory = sessionmaker(bind=engine)
@@ -76,6 +81,8 @@ def setup_database(config) -> Type[DatabaseHelper]:
 
     # Create tables
     db_helper.create_tables()
+
+    LoaderRole().load_all_roles()
 
     return db_helper
 
@@ -99,10 +106,15 @@ def shutdown_database(config):
     else:
         raise ValueError("Configuration Error: Unknown database type")
 
+    log.info("Shutting down database connections")
+
+    close_all_sessions()
+    db_helper.engine.dispose()
+
     db_helper.shutdown_database()
 
 
-def get_concurrency_count():
+def get_concurrency_count() -> int:
     if threading_model == ThreadingModel.PROCESS:
         return multiprocessing.cpu_count() * 2
     elif threading_model == ThreadingModel.THREAD:

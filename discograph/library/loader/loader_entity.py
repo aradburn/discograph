@@ -1,6 +1,8 @@
 import logging
 from random import random
 
+from sortedcontainers import SortedSet
+
 from discograph.database import get_concurrency_count
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.entity_table import EntityTable
@@ -8,12 +10,12 @@ from discograph.library.database.transaction import transaction
 from discograph.library.domain.entity import Entity
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.loader.loader_base import LoaderBase
+from discograph.library.loader.worker_entity_deleter import WorkerEntityDeleter
 from discograph.library.loader.worker_entity_inserter import WorkerEntityInserter
 from discograph.library.loader.worker_entity_pass_three import WorkerEntityPassThree
 from discograph.library.loader.worker_entity_pass_two import WorkerEntityPassTwo
 from discograph.library.loader.worker_entity_updater import WorkerEntityUpdater
 from discograph.library.loader_utils import LoaderUtils
-from discograph.logging_config import LOGGING_TRACE
 from discograph.utils import normalise_search_content, timeit
 
 log = logging.getLogger(__name__)
@@ -70,6 +72,22 @@ class LoaderEntity(LoaderBase):
         return worker
 
     @classmethod
+    def delete_bulk(cls, bulk_deletes, processed_count):
+        worker = WorkerEntityDeleter(
+            bulk_deletes=bulk_deletes,
+            processed_count=processed_count,
+        )
+        return worker
+
+    @classmethod
+    def get_set_of_ids(cls, entity_type):
+        with transaction():
+            entity_repository = EntityRepository()
+            ids = entity_repository.get_ids(entity_type)
+        set_of_ids = SortedSet(ids)
+        return set_of_ids
+
+    @classmethod
     @timeit
     def loader_pass_two(cls) -> None:
         log.debug("entity loader pass two")
@@ -103,10 +121,12 @@ class LoaderEntity(LoaderBase):
             current_total += number_in_batch
 
             if len(workers) > get_concurrency_count():
-                cls.loader_process_worker(workers)
+                worker = workers.pop(0)
+                cls.loader_wait_for_worker(worker)
 
         while len(workers) > 0:
-            cls.loader_process_worker(workers)
+            worker = workers.pop(0)
+            cls.loader_wait_for_worker(worker)
 
         with transaction():
             entity_repository = EntityRepository()
@@ -126,21 +146,22 @@ class LoaderEntity(LoaderBase):
             current_total += number_in_batch
 
             if len(workers) > get_concurrency_count():
-                cls.loader_process_worker(workers)
+                worker = workers.pop(0)
+                cls.loader_wait_for_worker(worker)
 
         while len(workers) > 0:
-            cls.loader_process_worker(workers)
+            worker = workers.pop(0)
+            cls.loader_wait_for_worker(worker)
 
     @classmethod
-    def loader_process_worker(cls, workers) -> None:
-        worker = workers.pop(0)
-        if LOGGING_TRACE:
-            log.debug(f"wait for worker {worker.name} - {len(workers)} left in list")
-        worker.join()
-        if worker.exitcode > 0:
-            log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
-            raise Exception("Error in worker process")
-        worker.terminate()
+    @timeit
+    def loader_vacuum(
+        cls, has_tablename: bool, is_full: bool, is_analyze: bool
+    ) -> None:
+        log.debug(f"entity loader vacuum")
+        with transaction():
+            entity_repository = EntityRepository()
+            entity_repository.vacuum(has_tablename, is_full, is_analyze)
 
     @classmethod
     def element_to_names(cls, names):

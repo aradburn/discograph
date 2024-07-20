@@ -25,6 +25,7 @@ class WorkerReleaseUpdater(multiprocessing.Process):
     def run(self):
         proc_name = self.name
         updated_count = 0
+        inserted_count = 0
 
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
@@ -108,13 +109,14 @@ class WorkerReleaseUpdater(multiprocessing.Process):
                         release_repository.commit()
                         updated_count += 1
                 except NotFoundError:
-                    log.debug(
-                        f"New insert in WorkerReleaseUpdater: {updated_release.release_id}"
-                    )
+                    if LOGGING_TRACE:
+                        log.debug(
+                            f"New insert in WorkerReleaseUpdater: {updated_release.release_id}"
+                        )
                     try:
                         release_repository.create(updated_release)
                         release_repository.commit()
-                        updated_count += 1
+                        inserted_count += 1
                     except DatabaseError as e:
                         log.exception("Database Error in WorkerReleaseUpdater worker")
                         raise e
@@ -123,5 +125,6 @@ class WorkerReleaseUpdater(multiprocessing.Process):
                     raise e
 
         log.info(
-            f"[{proc_name}] processed_count: {self.processed_count}, updated: {updated_count}"
+            f"[{proc_name}] processed_count: {self.processed_count}, "
+            + f"updated: {updated_count}, inserted: {inserted_count}"
         )

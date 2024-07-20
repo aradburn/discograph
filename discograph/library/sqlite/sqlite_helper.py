@@ -1,15 +1,14 @@
 import logging
 import pathlib
+from typing import Type
 
 from sqlalchemy import Engine, create_engine, text
+from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.exc import DatabaseError
+from sqlalchemy.sql.dml import ReturningInsert
 
 from discograph.config import Configuration
-from discograph.library.database.database_helper import DatabaseHelper
-from discograph.library.loader.loader_entity import LoaderEntity
-from discograph.library.loader.loader_relation import LoaderRelation
-from discograph.library.loader.loader_release import LoaderRelease
-from discograph.library.loader.loader_role import LoaderRole
+from discograph.library.database.database_helper import DatabaseHelper, ConcreteTable
 
 log = logging.getLogger(__name__)
 
@@ -50,8 +49,7 @@ class SqliteHelper(DatabaseHelper):
 
     @staticmethod
     def shutdown_database():
-        log.info("Shutting down database")
-        DatabaseHelper.engine.dispose()
+        log.info("Shutting down Sqlite database")
 
     @staticmethod
     def check_connection(config: Configuration, engine: Engine):
@@ -73,32 +71,22 @@ class SqliteHelper(DatabaseHelper):
         except DatabaseError as e:
             log.exception("Connection Error", e)
 
-    @staticmethod
-    def load_tables(data_directory: str, date: str, is_bulk_inserts=False):
+    @classmethod
+    def load_tables(cls, data_directory: str, date: str, is_bulk_inserts: bool):
         log.info("Load Sqlite tables")
-
-        log.debug("Load role pass 1")
-        LoaderRole().loader_pass_one(date)
-
-        log.debug("Load entity pass 1")
-        LoaderEntity().loader_pass_one(data_directory, date, is_bulk_inserts)
-
-        log.debug("Load release pass 1")
-        LoaderRelease().loader_pass_one(data_directory, date, is_bulk_inserts)
-
-        log.debug("Load entity pass 2")
-        LoaderEntity().loader_pass_two()
-
-        log.debug("Load release pass 2")
-        LoaderRelease().loader_pass_two()
-
-        log.debug("Load relation pass 1")
-        LoaderRelation().loader_relation_pass_one(date)
-
-        log.debug("Load entity pass 3")
-        LoaderEntity().loader_pass_three()
+        stages = cls.get_load_table_stages(data_directory, date, is_bulk_inserts)
+        for stage in stages:
+            stage()
 
         log.info("Load Sqlite done.")
+
+    @classmethod
+    def load_table_stage(
+        cls, data_directory: str, date: str, is_bulk_inserts: bool, stage: int
+    ):
+        stages = cls.get_load_table_stages(data_directory, date, is_bulk_inserts)
+        log.debug(f"Run stage: {stage}")
+        stages[stage]()
 
     @classmethod
     def create_tables(cls, tables=None):
@@ -109,6 +97,32 @@ class SqliteHelper(DatabaseHelper):
     def drop_tables(cls):
         log.info("Drop Sqlite tables")
         super().drop_tables()
+
+    @staticmethod
+    def has_vacuum_tablename() -> bool:
+        return False
+
+    @staticmethod
+    def is_vacuum_full() -> bool:
+        return False
+
+    @staticmethod
+    def is_vacuum_analyze() -> bool:
+        return False
+
+    @staticmethod
+    def generate_insert_query(
+        schema_class: Type[ConcreteTable], values: dict, on_conflict_do_nothing=False
+    ) -> ReturningInsert[tuple[ConcreteTable]]:
+        if on_conflict_do_nothing:
+            return (
+                insert(schema_class)
+                .on_conflict_do_nothing()
+                .values(values)
+                .returning(schema_class)
+            )
+        else:
+            return insert(schema_class).values(values).returning(schema_class)
 
     # @staticmethod
     # def get_entity(entity_type: EntityType, entity_id: int):

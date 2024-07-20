@@ -26,6 +26,7 @@ class WorkerEntityUpdater(multiprocessing.Process):
     def run(self):
         proc_name = self.name
         updated_count = 0
+        inserted_count = 0
 
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
@@ -101,7 +102,7 @@ class WorkerEntityUpdater(multiprocessing.Process):
                     try:
                         entity_repository.create(updated_entity)
                         entity_repository.commit()
-                        updated_count += 1
+                        inserted_count += 1
                     except DatabaseError as e:
                         log.exception("Error in WorkerEntityUpdater worker")
                         raise e
@@ -109,4 +110,7 @@ class WorkerEntityUpdater(multiprocessing.Process):
                     log.exception("Error in WorkerEntityUpdater", e)
                     raise e
 
-        log.info(f"processed_count: {self.processed_count}, updated: {updated_count}")
+        log.info(
+            f"[{proc_name}] processed_count: {self.processed_count}, "
+            + f"updated: {updated_count}, inserted: {inserted_count}"
+        )

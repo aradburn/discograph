@@ -71,12 +71,11 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
         # instance: ReleaseTable = await self._save(schema.model_dump())
         return Release.model_validate(instance)
 
-    def get_batched_release_ids(self, num_in_batch: int):
-        all_ids = self._session.scalars(
-            select(ReleaseTable.release_id)
-            # select(ReleaseTable.release_id).order_by(ReleaseTable.release_id)
-        ).all()
-        return utils.batched(all_ids, num_in_batch)
+    def get_ids(self):
+        return self._session.scalars(select(ReleaseTable.release_id)).all()
+
+    def get_batched_ids(self, num_in_batch: int):
+        return utils.batched(self.get_ids(), num_in_batch)
 
     def get_random_release(self) -> Release:
         n = random()
@@ -104,7 +103,7 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
             .values(payload)
             .returning(self.schema_class)
         )
-        result: Result = self.execute(query)
+        result: Result = self._session.execute(query)
         # result: Result = await self.execute(query)
         self._session.flush()
         # await self._session.flush()
@@ -119,5 +118,5 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
             delete(self.schema_class).where(ReleaseTable.release_id == release_id)
         )
         # await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))
-        self._session.flush()
+        # self._session.flush()
         # await self._session.flush()

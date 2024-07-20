@@ -55,7 +55,7 @@ class MetadataRepository(BaseRepository[MetadataTable]):
         be passed to the schema class."""
 
         query = update(self.schema_class).values(payload).returning(self.schema_class)
-        result: Result = self.execute(query)
+        result: Result = self._session.execute(query)
         # result: Result = await self.execute(query)
         self._session.flush()
         # await self._session.flush()

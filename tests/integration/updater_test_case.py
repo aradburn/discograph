@@ -16,7 +16,9 @@ class UpdaterTestCase(DatabaseTestCase):
         super().setUpClass()
 
         # Run the test update process
-        DatabaseHelper.db_helper.load_tables(TEST_DATA_DIR, "testupdate")
+        DatabaseHelper.db_helper.load_tables(
+            TEST_DATA_DIR, "testupdate", is_bulk_inserts=False
+        )
 
     @classmethod
     def tearDownClass(cls):

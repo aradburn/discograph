@@ -15,8 +15,11 @@ class LoaderRole(LoaderBase):
     # CLASS METHODS
 
     @classmethod
-    def loader_pass_one(cls, date: str) -> int:
-        log.debug(f"role loader pass one - date: {date}")
+    def load_default_roles(cls) -> int:
+        log.debug(f"Loading default roles")
+
+        RoleType.role_id_to_role_name_lookup.clear()
+        RoleType.role_name_to_role_id_lookup.clear()
 
         with transaction():
             required_count = 0
@@ -66,8 +69,11 @@ class LoaderRole(LoaderBase):
         return record_count
 
     @classmethod
-    def updater_pass_one(cls, date: str) -> None:
-        log.debug(f"role updater pass one - date: {date}")
+    def load_all_roles(cls) -> None:
+        log.debug(f"Loading all roles")
+
+        RoleType.role_id_to_role_name_lookup.clear()
+        RoleType.role_name_to_role_id_lookup.clear()
 
         with transaction():
             role_repository = RoleRepository()
@@ -78,6 +84,9 @@ class LoaderRole(LoaderBase):
             RoleType.role_name_to_role_id_lookup = {
                 v: k for k, v in RoleType.role_id_to_role_name_lookup.items()
             }
+        # No roles in database yet, so load in default roles
+        if len(RoleType.role_id_to_role_name_lookup) == 0:
+            cls.load_default_roles()
 
     @classmethod
     def insert_bulk(cls, bulk_inserts, processed_count):
@@ -85,4 +94,12 @@ class LoaderRole(LoaderBase):
 
     @classmethod
     def update_bulk(cls, bulk_updates, processed_count):
+        pass
+
+    @classmethod
+    def delete_bulk(cls, bulk_deletes, processed_count):
+        pass
+
+    @classmethod
+    def get_set_of_ids(cls, entity_type):
         pass

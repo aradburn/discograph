@@ -1,17 +1,19 @@
 import logging
 from random import random
 
+from sortedcontainers import SortedSet
+
 from discograph.database import get_concurrency_count
 from discograph.library.database.release_repository import ReleaseRepository
 from discograph.library.database.release_table import ReleaseTable
 from discograph.library.database.transaction import transaction
 from discograph.library.domain.release import Release
 from discograph.library.loader.loader_base import LoaderBase
+from discograph.library.loader.worker_release_deleter import WorkerReleaseDeleter
 from discograph.library.loader.worker_release_inserter import WorkerReleaseInserter
 from discograph.library.loader.worker_release_pass_two import WorkerReleasePassTwo
 from discograph.library.loader.worker_release_updater import WorkerReleaseUpdater
 from discograph.library.loader_utils import LoaderUtils
-from discograph.logging_config import LOGGING_TRACE
 from discograph.utils import timeit
 
 log = logging.getLogger(__name__)
@@ -62,6 +64,32 @@ class LoaderRelease(LoaderBase):
         return worker
 
     @classmethod
+    def delete_bulk(cls, bulk_deletes, processed_count):
+        worker = WorkerReleaseDeleter(
+            bulk_deletes=bulk_deletes,
+            processed_count=processed_count,
+        )
+        return worker
+
+    @classmethod
+    def get_set_of_ids(cls, entity_type):
+        with transaction():
+            release_repository = ReleaseRepository()
+            ids = release_repository.get_ids()
+        set_of_ids = SortedSet(ids)
+        return set_of_ids
+
+    @classmethod
+    @timeit
+    def loader_vacuum(
+        cls, has_tablename: bool, is_full: bool, is_analyze: bool
+    ) -> None:
+        log.debug(f"release loader vacuum")
+        with transaction():
+            release_repository = ReleaseRepository()
+            release_repository.vacuum(has_tablename, is_full, is_analyze)
+
+    @classmethod
     @timeit
     def loader_pass_two(cls):
         log.debug("release loader pass two")
@@ -70,9 +98,7 @@ class LoaderRelease(LoaderBase):
         with transaction():
             release_repository = ReleaseRepository()
             total_count = release_repository.count()
-            batched_release_ids = release_repository.get_batched_release_ids(
-                number_in_batch
-            )
+            batched_release_ids = release_repository.get_batched_ids(number_in_batch)
 
         current_total = 0
 
@@ -85,25 +111,11 @@ class LoaderRelease(LoaderBase):
 
             if len(workers) > get_concurrency_count():
                 worker = workers.pop(0)
-                if LOGGING_TRACE:
-                    log.debug(f"wait for worker {len(workers)} in list")
-                worker.join()
-                if worker.exitcode > 0:
-                    log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
-                    raise Exception("Error in worker process")
-                worker.terminate()
+                cls.loader_wait_for_worker(worker)
 
         while len(workers) > 0:
             worker = workers.pop(0)
-            if LOGGING_TRACE:
-                log.debug(
-                    f"wait for worker {worker.name} - {len(workers)} left in list"
-                )
-            worker.join()
-            if worker.exitcode > 0:
-                log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
-                raise Exception("Error in worker process")
-            worker.terminate()
+            cls.loader_wait_for_worker(worker)
 
     @classmethod
     def element_to_artist_credits(cls, element):

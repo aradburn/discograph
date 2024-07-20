@@ -288,7 +288,11 @@ def timeit(func):
 
 
 def sleep_with_backoff(multiplier: int) -> None:
-    time_in_secs = int(multiplier * (1.0 + 4.0 * random()))
+    time_in_secs = int(multiplier * (1.0 + random()))
+    if time_in_secs > 60:
+        time_in_secs = 60
+    if time_in_secs < 1:
+        time_in_secs = 1
     # log.debug(f"sleeping for {time_in_secs} secs")
     time.sleep(time_in_secs)
 

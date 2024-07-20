@@ -27,11 +27,12 @@ class WorkerReleasePassTwo(multiprocessing.Process):
         corpus = {}
 
         count = self.current_total
+        total_count = count + len(self.release_ids)
 
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
 
-        for i, release_id in enumerate(self.release_ids):
+        for release_id in self.release_ids:
             with transaction():
                 entity_repository = EntityRepository()
                 release_repository = ReleaseRepository()
@@ -43,15 +44,13 @@ class WorkerReleasePassTwo(multiprocessing.Process):
                         annotation=proc_name,
                         corpus=corpus,
                     )
-                    count += 1
-                    if count % LoaderBase.BULK_REPORTING_SIZE == 0:
-                        log.debug(
-                            f"[{proc_name}] processed {count} of {self.total_count}"
-                        )
                 except DatabaseError as e:
-                    log.error("Database Error in WorkerReleasePassTwo")
-                    # log.exception("Database Error in WorkerReleasePassTwo:", e)
+                    log.exception("Database Error in WorkerReleasePassTwo:", e)
                     raise e
+
+            count += 1
+            if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == total_count:
+                log.debug(f"[{proc_name}] processed {count} of {self.total_count}")
 
         log.info(f"[{proc_name}] processed {count} of {self.total_count}")
 

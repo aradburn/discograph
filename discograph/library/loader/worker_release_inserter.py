@@ -35,4 +35,5 @@ class WorkerReleaseInserter(multiprocessing.Process):
             except DatabaseError as e:
                 log.exception("Database Error in WorkerReleaseInserter worker", e)
                 raise e
+
         log.info(f"[{proc_name}] inserted_count: {self.inserted_count}")

@@ -4,9 +4,8 @@ from tests.integration.library.database.repository_test_case import RepositoryTe
 
 
 class TestRepositoryLoaderRole(RepositoryTestCase):
-    def test_loader_role_pass_one(self):
-        date = "testinsert"
-        actual = LoaderRole().loader_pass_one(date)
+    def test_loader_role_load_default_roles(self):
+        actual = LoaderRole().load_default_roles()
         expected = len(RoleType.role_name_to_role_id_lookup)
         self.assertTrue(expected > 0)
         self.assertEqual(expected, actual)

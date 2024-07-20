@@ -1,10 +1,12 @@
 import logging
 import random
 from abc import ABC, abstractmethod
+from functools import partial
 from typing import Type, TypeVar
 
 from sqlalchemy import Engine, Index
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, scoped_session
+from sqlalchemy.sql.dml import ReturningInsert
 
 from discograph.config import Configuration
 from discograph.library.fields.entity_type import EntityType
@@ -61,11 +63,6 @@ class DatabaseHelper(ABC):
     def check_connection(config: Configuration, engine: Engine):
         pass
 
-    @staticmethod
-    @abstractmethod
-    def load_tables(data_directory: str, date: str, is_bulk_inserts=False):
-        pass
-
     @classmethod
     @abstractmethod
     def create_tables(cls, tables=None):
@@ -75,6 +72,80 @@ class DatabaseHelper(ABC):
     @abstractmethod
     def drop_tables(cls):
         Base.metadata.drop_all(cls.engine, checkfirst=True)
+
+    @classmethod
+    def load_tables(cls, data_directory: str, date: str, is_bulk_inserts: bool):
+        log.info("Load tables")
+        stages = cls.get_load_table_stages(data_directory, date, is_bulk_inserts)
+        for stage in stages:
+            stage()
+        log.info("Load tables done.")
+
+    @classmethod
+    def load_table_stage(
+        cls, data_directory: str, date: str, is_bulk_inserts: bool, stage: int
+    ):
+        stages = cls.get_load_table_stages(data_directory, date, is_bulk_inserts)
+        log.debug(f"Run stage: {stage}")
+        stages[stage]()
+
+    @classmethod
+    def get_load_table_stages(
+        cls, data_directory: str, date: str, is_bulk_inserts: bool
+    ) -> list[partial]:
+        from discograph.library.loader.loader_entity import LoaderEntity
+        from discograph.library.loader.loader_relation import LoaderRelation
+        from discograph.library.loader.loader_release import LoaderRelease
+        from discograph.library.loader.loader_role import LoaderRole
+
+        has_tablename = cls.has_vacuum_tablename()
+        is_full = cls.is_vacuum_full()
+        is_analyze = cls.is_vacuum_analyze()
+        stages = [
+            partial(LoaderRole().load_all_roles),
+            partial(
+                LoaderEntity().loader_pass_one, data_directory, date, is_bulk_inserts
+            ),
+            partial(LoaderEntity().loader_vacuum, has_tablename, is_full, is_analyze),
+            partial(
+                LoaderRelease().loader_pass_one, data_directory, date, is_bulk_inserts
+            ),
+            partial(LoaderRelease().loader_vacuum, has_tablename, is_full, is_analyze),
+            partial(LoaderEntity().loader_pass_two),
+            partial(LoaderRelease().loader_pass_two),
+            partial(LoaderRelation().loader_relation_pass_one, date),
+            partial(LoaderRelation().loader_relation_pass_two, date),
+            partial(LoaderEntity().loader_vacuum, has_tablename, is_full, is_analyze),
+            partial(LoaderRelease().loader_vacuum, has_tablename, is_full, is_analyze),
+            partial(LoaderRelation().loader_vacuum, has_tablename, is_full, is_analyze),
+            partial(LoaderEntity().loader_pass_three),
+            partial(LoaderEntity().loader_vacuum, has_tablename, is_full, is_analyze),
+            partial(LoaderRelease().loader_vacuum, has_tablename, is_full, is_analyze),
+            partial(LoaderRelation().loader_vacuum, has_tablename, is_full, is_analyze),
+        ]
+        return stages
+
+    @staticmethod
+    @abstractmethod
+    def has_vacuum_tablename() -> bool:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def is_vacuum_full() -> bool:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def is_vacuum_analyze() -> bool:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def generate_insert_query(
+        schema_class: Type[ConcreteTable], values: dict, on_conflict_do_nothing=False
+    ) -> ReturningInsert[tuple[ConcreteTable]]:
+        pass
 
     @classmethod
     def get_entity(cls, entity_id: int, entity_type: EntityType):

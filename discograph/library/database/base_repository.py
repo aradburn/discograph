@@ -1,6 +1,7 @@
+import logging
 from typing import Any, Generic, Type, Generator, cast
 
-from sqlalchemy import asc, delete, desc, func, select, update
+from sqlalchemy import asc, delete, desc, func, select, update, text
 from sqlalchemy.engine import Result
 
 __all__ = ("BaseRepository",)
@@ -8,6 +9,8 @@ __all__ = ("BaseRepository",)
 from discograph.exceptions import UnprocessableError, DatabaseError, NotFoundError
 from discograph.library.database.database_helper import ConcreteTable
 from discograph.library.database.session import WrappedSession
+
+log = logging.getLogger(__name__)
 
 
 class BaseRepository(WrappedSession, Generic[ConcreteTable]):
@@ -32,18 +35,23 @@ class BaseRepository(WrappedSession, Generic[ConcreteTable]):
         If some data is not exist in the payload then the null value will
         be passed to the schema class."""
 
-        query = (
-            update(self.schema_class)
-            .where(
-                cast("ColumnElement[bool]", getattr(self.schema_class, key) == value)
+        try:
+            query = (
+                update(self.schema_class)
+                .where(
+                    cast(
+                        "ColumnElement[bool]", getattr(self.schema_class, key) == value
+                    )
+                )
+                .values(payload)
+                .returning(self.schema_class)
             )
-            .values(payload)
-            .returning(self.schema_class)
-        )
-        result: Result = self.execute(query)
-        # result: Result = await self.execute(query)
-        self._session.flush()
-        # await self._session.flush()
+            result: Result = self.execute(query)
+            # result: Result = await self.execute(query)
+            # self._session.flush()
+            # await self._session.flush()
+        except self._ERRORS:
+            raise DatabaseError
 
         if not (schema := result.scalar_one_or_none()):
             raise DatabaseError
@@ -147,5 +155,16 @@ class BaseRepository(WrappedSession, Generic[ConcreteTable]):
     def rollback(self) -> None:
         self._session.rollback()
 
-    # def close(self) -> None:
-    #     self._session.close()
+    def vacuum(self, has_tablename=False, is_full=False, is_analyze=False) -> None:
+        query = "VACUUM"
+        if is_full:
+            query += " FULL"
+        if is_analyze:
+            query += " ANALYZE"
+        if has_tablename:
+            query += " " + self.schema_class.__tablename__
+        query += ";"
+        if has_tablename:
+            # log.debug("vacuum close transaction")
+            self._session.execute(text("COMMIT"))
+        self._session.execute(text(query))

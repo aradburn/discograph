@@ -36,7 +36,7 @@ def transaction() -> Generator[Session, None, None]:
     except (IntegrityError, InvalidRequestError) as error:
         # NOTE: Since there is a session commit on this level it should
         #       be handled because it can raise some errors also
-        log.error(f"Rolling back changes.\n{error}")
+        log.error(f"Rolling back changes. {error}")
         session.rollback()
         # await session.rollback()
     finally:

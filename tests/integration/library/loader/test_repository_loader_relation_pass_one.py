@@ -11,7 +11,7 @@ class TestRepositoryLoaderRelationPassOne(RepositoryTestCase):
     def test_loader_relation_pass_one(self):
         # GIVEN
         date = "testinsert"
-        LoaderRole().loader_pass_one(date)
+        LoaderRole().load_all_roles()
         LoaderEntity().loader_pass_one(TEST_DATA_DIR, date, is_bulk_inserts=True)
         LoaderRelease().loader_pass_one(TEST_DATA_DIR, date, is_bulk_inserts=True)
         LoaderEntity().loader_pass_two()
@@ -19,7 +19,6 @@ class TestRepositoryLoaderRelationPassOne(RepositoryTestCase):
 
         # WHEN
         LoaderRelation().loader_relation_pass_one(date)
-        # RelationRepository().delete_relation_duplicates()
 
         # THEN
         expected = 16467

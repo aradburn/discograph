@@ -6,7 +6,7 @@ import luigi
 
 from discograph.config import PostgresDevelopmentConfiguration
 from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
-from discograph.library.loader.loader_tasks import LoaderTask
+from discograph.library.loader.loader_tasks import LoaderSetupTask
 from discograph.logging_config import setup_logging, shutdown_logging
 
 log = logging.getLogger(__name__)
@@ -40,8 +40,13 @@ def loader_main():
     # Run the loader process between these dates
     start_date = datetime.date(2023, 10, 1)
     end_date = datetime.datetime.now()
-    tasks = [LoaderTask(start_date=start_date, end_date=end_date)]
-    luigi_run_result = luigi.build(tasks, detailed_summary=True, local_scheduler=True)
+    tasks = [LoaderSetupTask(start_date=start_date, end_date=end_date)]
+    luigi_run_result = luigi.build(
+        tasks,
+        detailed_summary=True,
+        local_scheduler=True,
+        log_level="WARNING",
+    )
     print(luigi_run_result.summary_text)
 
 
