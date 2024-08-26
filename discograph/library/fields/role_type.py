@@ -1249,3 +1249,21 @@ class RoleType:
             ("Zeze", (Category.INSTRUMENTS, Subcategory.OTHER_MUSICAL)),
         ]
     )
+
+    @staticmethod
+    def hornbostel_sachs_to_subcategory(
+        hornbostel_sachs_classification: str,
+    ) -> Subcategory:
+        match hornbostel_sachs_classification:
+            case "Idiophones":
+                return RoleType.Subcategory.DRUMS_AND_PERCUSSION
+            case "Membranophones":
+                return RoleType.Subcategory.DRUMS_AND_PERCUSSION
+            case "Chordophones":
+                return RoleType.Subcategory.STRINGED_INSTRUMENTS
+            case "Aerophones":
+                return RoleType.Subcategory.WIND_INSTRUMENTS
+            case "Electrophones":
+                return RoleType.Subcategory.TECHNICAL_MUSICAL
+            case _:
+                return RoleType.Subcategory.OTHER_MUSICAL
