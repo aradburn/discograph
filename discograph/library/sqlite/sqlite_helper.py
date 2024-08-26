@@ -1,9 +1,9 @@
 import logging
 import pathlib
-from typing import Type
+from typing import Type, List
 
-from sqlalchemy import Engine, create_engine, text
-from sqlalchemy.dialects.sqlite import insert
+from sqlalchemy import Engine, create_engine, text, StaticPool
+from sqlalchemy.dialects.sqlite import insert, Insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.sql.dml import ReturningInsert
 
@@ -14,13 +14,16 @@ log = logging.getLogger(__name__)
 
 
 class SqliteHelper(DatabaseHelper):
+
     @staticmethod
     def setup_database(config: Configuration) -> Engine:
         log.info("Using Sqlite Database")
         # if config["TESTING"]:
         #     engine = create_engine(
-        #         "sqlite:///:memory:",
-        #         connect_args={"check_same_thread": False},
+        #         "sqlite://",
+        #         connect_args={
+        #             "check_same_thread": False,
+        #         },
         #         poolclass=StaticPool,
         #     )
         # else:
@@ -29,22 +32,13 @@ class SqliteHelper(DatabaseHelper):
         target_parent.mkdir(parents=True, exist_ok=True)
         log.info(f"Sqlite Database: {target_path}")
 
-        engine = create_engine(f"sqlite:///{target_path}")
-
-        # database = SqliteExtDatabase(
-        #     config["SQLITE_DATABASE_NAME"],
-        #     pragmas={
-        #         "journal_mode": "wal",
-        #         # 'check_same_thread': False,
-        #         # 'journal_mode': 'off',
-        #         "synchronous": 0,
-        #         "cache_size": 1000000,
-        #         # 'locking_mode': 'exclusive',
-        #         "temp_store": "memory",
-        #     },
-        #     timeout=20,
-        # )
-
+        engine = create_engine(
+            f"sqlite:///{target_path}",
+            connect_args={
+                "check_same_thread": False,
+            },
+            poolclass=StaticPool,
+        )
         return engine
 
     @staticmethod
@@ -62,12 +56,13 @@ class SqliteHelper(DatabaseHelper):
                 )
                 log.info(f"Database Version: {version.scalars().one_or_none()}")
 
-                connection.execute(text("pragma journal_mode=wal"))
-                connection.execute(text("pragma synchronous=0"))
-                connection.execute(text("pragma cache_size=10000000"))
-                connection.execute(text("pragma temp_store=memory"))
-
-            log.info("Database connected OK.")
+                connection.execute(text("pragma journal_mode=MEMORY"))
+                # connection.execute(text("pragma journal_mode=wal"))
+                connection.execute(text("pragma synchronous=OFF"))
+                connection.execute(text("pragma cache_size=-10000"))
+                connection.execute(text("pragma temp_store=MEMORY"))
+                connection.commit()
+                log.info("Database connected OK.")
         except DatabaseError as e:
             log.exception("Connection Error", e)
 
@@ -123,6 +118,17 @@ class SqliteHelper(DatabaseHelper):
             )
         else:
             return insert(schema_class).values(values).returning(schema_class)
+
+    @staticmethod
+    def generate_insert_bulk_query(
+        schema_class: Type[ConcreteTable],
+        values_list: List[dict],
+        on_conflict_do_nothing=False,
+    ) -> Insert[tuple[ConcreteTable]]:
+        if on_conflict_do_nothing:
+            return insert(schema_class).on_conflict_do_nothing().values(values_list)
+        else:
+            return insert(schema_class).values(values_list)
 
     # @staticmethod
     # def get_entity(entity_type: EntityType, entity_id: int):

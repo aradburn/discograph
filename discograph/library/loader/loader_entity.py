@@ -26,10 +26,10 @@ class LoaderEntity(LoaderBase):
 
     @classmethod
     @timeit
-    def loader_pass_one(
+    def loader_entity_pass_one(
         cls, data_directory: str, data_date: str, is_bulk_inserts=False
     ) -> int:
-        log.debug(f"entity loader pass one - artist - date: {data_date}")
+        log.debug(f"loader entity pass one - artist - date: {data_date}")
         with transaction():
             entity_repository = EntityRepository()
             artists_loaded = cls.loader_pass_one_manager(
@@ -41,7 +41,7 @@ class LoaderEntity(LoaderBase):
                 skip_without=["entity_name"],
                 is_bulk_inserts=is_bulk_inserts,
             )
-        log.debug(f"entity loader pass one - label - date: {data_date}")
+        log.debug(f"loader entity pass one - label - date: {data_date}")
         with transaction():
             entity_repository = EntityRepository()
             labels_loaded = cls.loader_pass_one_manager(
@@ -89,14 +89,14 @@ class LoaderEntity(LoaderBase):
 
     @classmethod
     @timeit
-    def loader_pass_two(cls) -> None:
-        log.debug("entity loader pass two")
+    def loader_entity_pass_two(cls) -> None:
+        log.debug("loader entity pass two")
         cls.loader_start_workers(WorkerEntityPassTwo)
 
     @classmethod
     @timeit
-    def loader_pass_three(cls):
-        log.debug("entity loader pass three")
+    def loader_entity_pass_three(cls):
+        log.debug("loader entity pass three")
         cls.loader_start_workers(WorkerEntityPassThree)
 
     @classmethod
@@ -155,10 +155,10 @@ class LoaderEntity(LoaderBase):
 
     @classmethod
     @timeit
-    def loader_vacuum(
+    def loader_entity_vacuum(
         cls, has_tablename: bool, is_full: bool, is_analyze: bool
     ) -> None:
-        log.debug(f"entity loader vacuum")
+        log.debug(f"loader entity vacuum")
         with transaction():
             entity_repository = EntityRepository()
             entity_repository.vacuum(has_tablename, is_full, is_analyze)

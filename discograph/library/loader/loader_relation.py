@@ -18,7 +18,7 @@ class LoaderRelation(LoaderBase):
     @classmethod
     @timeit
     def loader_relation_pass_one(cls, date: str):
-        log.debug(f"relation loader pass one - date: {date}")
+        log.debug(f"loader relation pass one - date: {date}")
 
         with transaction():
             release_repository = ReleaseRepository()
@@ -50,15 +50,15 @@ class LoaderRelation(LoaderBase):
     @classmethod
     @timeit
     def loader_relation_pass_two(cls, date: str):
-        log.debug(f"relation loader pass two - date: {date}")
+        log.debug(f"loader relation pass two - date: {date}")
 
         with transaction():
             release_repository = ReleaseRepository()
             total_count = release_repository.count()
-            if total_count > LoaderBase.BULK_INSERT_BATCH_SIZE * 10:
-                number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
+            if total_count > LoaderBase.BULK_UPDATE_BATCH_SIZE * 10:
+                number_in_batch = int(LoaderBase.BULK_UPDATE_BATCH_SIZE)
             else:
-                number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE / 10)
+                number_in_batch = int(LoaderBase.BULK_UPDATE_BATCH_SIZE / 10)
 
             batched_release_ids = release_repository.get_batched_ids(number_in_batch)
 
@@ -97,10 +97,10 @@ class LoaderRelation(LoaderBase):
 
     @classmethod
     @timeit
-    def loader_vacuum(
+    def loader_relation_vacuum(
         cls, has_tablename: bool, is_full: bool, is_analyze: bool
     ) -> None:
-        log.debug(f"relation loader vacuum")
+        log.debug(f"loader relation vacuum")
         with transaction():
             relation_repository = RelationRepository()
             relation_repository.vacuum(has_tablename, is_full, is_analyze)

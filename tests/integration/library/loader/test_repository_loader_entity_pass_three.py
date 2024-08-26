@@ -12,15 +12,17 @@ class TestRepositoryLoaderEntityPassThree(RepositoryTestCase):
         # GIVEN
         date = "testinsert"
         LoaderRole().load_all_roles()
-        LoaderEntity().loader_pass_one(TEST_DATA_DIR, date, is_bulk_inserts=True)
-        LoaderRelease().loader_pass_one(TEST_DATA_DIR, date, is_bulk_inserts=True)
-        LoaderEntity().loader_pass_two()
-        LoaderRelease().loader_pass_two()
+        LoaderEntity().loader_entity_pass_one(TEST_DATA_DIR, date, is_bulk_inserts=True)
+        LoaderRelease().loader_release_pass_one(
+            TEST_DATA_DIR, date, is_bulk_inserts=True
+        )
+        LoaderEntity().loader_entity_pass_two()
+        LoaderRelease().loader_release_pass_two()
         LoaderRelation().loader_relation_pass_one(date)
         LoaderRelation().loader_relation_pass_two(date)
 
         # WHEN
-        LoaderEntity().loader_pass_three()
+        LoaderEntity().loader_entity_pass_three()
 
         # THEN
         expected = 6216

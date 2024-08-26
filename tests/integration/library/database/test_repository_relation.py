@@ -27,20 +27,15 @@ class TestRepositoryRelation(RepositoryTestCase):
         )
         relation_dict = relation.model_dump()
         relation_dict["role"] = relation.role_name
+        relation_dicts = [relation_dict]
 
         # WHEN
         with transaction():
             relation_repository = RelationRepository()
-            created_relation = WorkerRelationPassOne.create_relation(
-                relation_repository=relation_repository,
-                relation_dict=relation_dict,
-            )
-            # created_relation = relation_repository.create(relation)
-            print(f"created_relation: {created_relation}")
+            relations = WorkerRelationPassOne.to_relations_from_dict(relation_dicts)
 
-            # retrieved_relation = relation_repository.find_by_key(relation.model_dump())
-            # print(f"retrieved_relation: {retrieved_relation}")
-            # actual = utils.normalize_dict(retrieved_relation.model_dump())
+            created_relation = relation_repository.create(relations[0])
+            print(f"created_relation: {created_relation}")
 
             actual = utils.normalize_dict(
                 created_relation.model_dump(exclude={"random"})

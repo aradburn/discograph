@@ -11,7 +11,7 @@ class TestRepositoryLoaderEntityPassOne(RepositoryTestCase):
         LoaderRole().load_all_roles()
 
         # WHEN
-        actual = LoaderEntity().loader_pass_one(
+        actual = LoaderEntity().loader_entity_pass_one(
             TEST_DATA_DIR, date, is_bulk_inserts=True
         )
 

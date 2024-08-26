@@ -124,8 +124,8 @@ class WorkerRelationPassTwo(multiprocessing.Process):
         release_id: int,
         year: int,
     ) -> None:
-        relation_db = None
-        while relation_db is None:
+        retry_wanted = True
+        while retry_wanted:
             try:
                 key = {
                     "entity_one_id": relation_dict["entity_one_id"],
@@ -158,7 +158,7 @@ class WorkerRelationPassTwo(multiprocessing.Process):
                 if diff != "{}":
                     # log.debug(f"diff: {diff}")
                     try:
-                        relation_db = relation_repository.update(
+                        relation_repository.update_one(
                             relation_db.relation_id,
                             relation_db.version_id,
                             {
@@ -167,6 +167,8 @@ class WorkerRelationPassTwo(multiprocessing.Process):
                             },
                         )
                         relation_repository.commit()
+                        retry_wanted = False
                     except DatabaseError:
                         relation_repository.rollback()
-                        relation_db = None
+                else:
+                    retry_wanted = False

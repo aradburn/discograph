@@ -270,6 +270,35 @@ class RelationRepository(BaseRepository[RelationTable]):
     #     # saved_relation: Relation = await repository.get(order_flat.id)
     #     # return Relation.model_validate(instance)
 
+    def create_bulk(
+        self, relations: List[RelationUncommitted], on_conflict_do_nothing=False
+    ) -> None:
+        relation_dicts = []
+        for relation in relations:
+            relation_dict = relation.model_dump(exclude={"role_name"})
+            role_id = RoleType.role_name_to_role_id_lookup[relation.role_name]
+            relation_dict.update(role_id=role_id)
+            relation_dict.update(version_id=1)
+            relation_dicts.append(relation_dict)
+        query = DatabaseHelper.db_helper.generate_insert_bulk_query(
+            self.schema_class, relation_dicts, on_conflict_do_nothing
+        )
+        # query = (
+        #     insert(self.schema_class).values(relation_dict).returning(self.schema_class)
+        # )
+        self._session.execute(query)
+        # result: Result = self._session.execute(query)
+        # result: Result = await self.execute(query)
+        # self._session.flush()
+        # await self._session.flush()
+
+        # if not (instance := result.scalar_one_or_none()):
+        #     raise DatabaseError
+
+        # relation_db = RelationDB.model_validate(instance)
+        # print(f"relation_db: {utils.normalize_dict(relation_db)}")
+        # return self._to_domain(relation_db)
+
     # def get_chunked_relation_ids(self, concurrency_multiplier=1) -> List[Tuple[Any]]:
     #     # TODO handle session and errors
     #     from discograph.database import get_concurrency_count
@@ -379,6 +408,26 @@ class RelationRepository(BaseRepository[RelationTable]):
         relation_db = RelationDB.model_validate(instance)
         # print(f"relation_db: {utils.normalize_dict(relation_db)}")
         return self._to_domain(relation_db)
+
+    def update_one(
+        self,
+        relation_id: int,
+        version_id: int,
+        payload: dict[str, Any],
+    ) -> None:
+        """Updates an existed instance of the model in the related table.
+        If some data is not exist in the payload then the null value will
+        be passed to the schema class."""
+
+        query = (
+            update(self.schema_class)
+            .where(
+                (RelationTable.relation_id == relation_id)
+                & (RelationTable.version_id == version_id)
+            )
+            .values(payload)
+        )
+        self._session.execute(query)
 
     def set(
         self,

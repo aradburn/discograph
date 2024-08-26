@@ -30,10 +30,10 @@ class LoaderRelease(LoaderBase):
 
     @classmethod
     @timeit
-    def loader_pass_one(
+    def loader_release_pass_one(
         cls, data_directory: str, date: str, is_bulk_inserts=False
     ) -> int:
-        log.debug(f"release loader pass one - date: {date}")
+        log.debug(f"loader release pass one - date: {date}")
         with transaction():
             release_repository = ReleaseRepository()
             releases_loaded = cls.loader_pass_one_manager(
@@ -81,18 +81,8 @@ class LoaderRelease(LoaderBase):
 
     @classmethod
     @timeit
-    def loader_vacuum(
-        cls, has_tablename: bool, is_full: bool, is_analyze: bool
-    ) -> None:
-        log.debug(f"release loader vacuum")
-        with transaction():
-            release_repository = ReleaseRepository()
-            release_repository.vacuum(has_tablename, is_full, is_analyze)
-
-    @classmethod
-    @timeit
-    def loader_pass_two(cls):
-        log.debug("release loader pass two")
+    def loader_release_pass_two(cls):
+        log.debug("loader release pass two")
         number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
 
         with transaction():
@@ -116,6 +106,16 @@ class LoaderRelease(LoaderBase):
         while len(workers) > 0:
             worker = workers.pop(0)
             cls.loader_wait_for_worker(worker)
+
+    @classmethod
+    @timeit
+    def loader_release_vacuum(
+        cls, has_tablename: bool, is_full: bool, is_analyze: bool
+    ) -> None:
+        log.debug(f"loader release vacuum")
+        with transaction():
+            release_repository = ReleaseRepository()
+            release_repository.vacuum(has_tablename, is_full, is_analyze)
 
     @classmethod
     def element_to_artist_credits(cls, element):

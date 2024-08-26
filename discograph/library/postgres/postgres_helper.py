@@ -2,11 +2,11 @@ import logging
 import os
 import pathlib
 import shutil
-from typing import Type
+from typing import Type, List
 
 from pg_temp import TempDB
 from sqlalchemy import Engine, URL, create_engine, text
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.dialects.postgresql import insert, Insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.sql.dml import ReturningInsert
 
@@ -76,7 +76,7 @@ class PostgresHelper(DatabaseHelper):
                     "maintenance_work_mem": "500MB",
                     "effective_cache_size": "2GB",
                     "max_connections": get_concurrency_count() * 2,
-                    "shared_buffers": "2GB",
+                    "shared_buffers": "4GB",
                     # "log_min_duration_statement": 5000,
                     # "shared_preload_libraries": 'pg_stat_statements',
                     # "session_preload_libraries": 'auto_explain',
@@ -224,6 +224,17 @@ class PostgresHelper(DatabaseHelper):
             )
         else:
             return insert(schema_class).values(values).returning(schema_class)
+
+    @staticmethod
+    def generate_insert_bulk_query(
+        schema_class: Type[ConcreteTable],
+        values_list: List[dict],
+        on_conflict_do_nothing=False,
+    ) -> Insert[tuple[ConcreteTable]]:
+        if on_conflict_do_nothing:
+            return insert(schema_class).on_conflict_do_nothing().values(values_list)
+        else:
+            return insert(schema_class).values(values_list)
 
     # @classmethod
     # def get_entity(cls, session: Session, entity_id: int, entity_type: EntityType):

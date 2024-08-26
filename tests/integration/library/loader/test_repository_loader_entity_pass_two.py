@@ -10,10 +10,10 @@ class TestRepositoryLoaderEntityPassTwo(RepositoryTestCase):
         # GIVEN
         date = "testinsert"
         LoaderRole().load_all_roles()
-        LoaderEntity().loader_pass_one(TEST_DATA_DIR, date, is_bulk_inserts=True)
+        LoaderEntity().loader_entity_pass_one(TEST_DATA_DIR, date, is_bulk_inserts=True)
 
         # WHEN
-        LoaderEntity().loader_pass_two()
+        LoaderEntity().loader_entity_pass_two()
 
         # THEN
         expected = 6216

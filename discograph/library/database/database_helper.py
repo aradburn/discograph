@@ -2,11 +2,11 @@ import logging
 import random
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Type, TypeVar
+from typing import Type, TypeVar, List
 
 from sqlalchemy import Engine, Index
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, scoped_session
-from sqlalchemy.sql.dml import ReturningInsert
+from sqlalchemy.sql.dml import ReturningInsert, Insert
 
 from discograph.config import Configuration
 from discograph.library.fields.entity_type import EntityType
@@ -104,24 +104,61 @@ class DatabaseHelper(ABC):
         stages = [
             partial(LoaderRole().load_all_roles),
             partial(
-                LoaderEntity().loader_pass_one, data_directory, date, is_bulk_inserts
+                LoaderEntity().loader_entity_pass_one,
+                data_directory,
+                date,
+                is_bulk_inserts,
             ),
-            partial(LoaderEntity().loader_vacuum, has_tablename, is_full, is_analyze),
             partial(
-                LoaderRelease().loader_pass_one, data_directory, date, is_bulk_inserts
+                LoaderEntity().loader_entity_vacuum, has_tablename, is_full, is_analyze
             ),
-            partial(LoaderRelease().loader_vacuum, has_tablename, is_full, is_analyze),
-            partial(LoaderEntity().loader_pass_two),
-            partial(LoaderRelease().loader_pass_two),
+            partial(
+                LoaderRelease().loader_release_pass_one,
+                data_directory,
+                date,
+                is_bulk_inserts,
+            ),
+            partial(
+                LoaderRelease().loader_release_vacuum,
+                has_tablename,
+                is_full,
+                is_analyze,
+            ),
+            partial(LoaderEntity().loader_entity_pass_two),
+            partial(LoaderRelease().loader_release_pass_two),
             partial(LoaderRelation().loader_relation_pass_one, date),
             partial(LoaderRelation().loader_relation_pass_two, date),
-            partial(LoaderEntity().loader_vacuum, has_tablename, is_full, is_analyze),
-            partial(LoaderRelease().loader_vacuum, has_tablename, is_full, is_analyze),
-            partial(LoaderRelation().loader_vacuum, has_tablename, is_full, is_analyze),
-            partial(LoaderEntity().loader_pass_three),
-            partial(LoaderEntity().loader_vacuum, has_tablename, is_full, is_analyze),
-            partial(LoaderRelease().loader_vacuum, has_tablename, is_full, is_analyze),
-            partial(LoaderRelation().loader_vacuum, has_tablename, is_full, is_analyze),
+            partial(
+                LoaderEntity().loader_entity_vacuum, has_tablename, is_full, is_analyze
+            ),
+            partial(
+                LoaderRelease().loader_release_vacuum,
+                has_tablename,
+                is_full,
+                is_analyze,
+            ),
+            partial(
+                LoaderRelation().loader_relation_vacuum,
+                has_tablename,
+                is_full,
+                is_analyze,
+            ),
+            partial(LoaderEntity().loader_entity_pass_three),
+            partial(
+                LoaderEntity().loader_entity_vacuum, has_tablename, is_full, is_analyze
+            ),
+            partial(
+                LoaderRelease().loader_release_vacuum,
+                has_tablename,
+                is_full,
+                is_analyze,
+            ),
+            partial(
+                LoaderRelation().loader_relation_vacuum,
+                has_tablename,
+                is_full,
+                is_analyze,
+            ),
         ]
         return stages
 
@@ -145,6 +182,15 @@ class DatabaseHelper(ABC):
     def generate_insert_query(
         schema_class: Type[ConcreteTable], values: dict, on_conflict_do_nothing=False
     ) -> ReturningInsert[tuple[ConcreteTable]]:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def generate_insert_bulk_query(
+        schema_class: Type[ConcreteTable],
+        values: List[dict],
+        on_conflict_do_nothing=False,
+    ) -> Insert[tuple[ConcreteTable]]:
         pass
 
     @classmethod
