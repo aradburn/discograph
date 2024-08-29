@@ -12,7 +12,8 @@ log = logging.getLogger(__name__)
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(APP_DIR, ".."))
 DATA_DIR = os.path.join(ROOT_DIR, "discograph", "data")
-INSTRUMENTS_DIR = os.path.join(ROOT_DIR, "discograph", "instruments")
+ROLE_DIR = os.path.join(ROOT_DIR, "discograph", "data_role")
+INSTRUMENTS_DIR = os.path.join(ROOT_DIR, "discograph", "data_instruments")
 INSTRUMENTS_PATH = os.path.join(INSTRUMENTS_DIR, "hornbostelSachs.json")
 TEST_DATA_DIR = os.path.join(ROOT_DIR, "tests", "data")
 LOGGING_DIR = os.path.join(ROOT_DIR, "logs")
@@ -25,6 +26,7 @@ DISCOGS_ARTISTS_TYPE = "artists"
 DISCOGS_RELEASES_TYPE = "releases"
 DISCOGS_LABELS_TYPE = "labels"
 DISCOGS_MASTERS_TYPE = "masters"
+ALL_DATABASE_TABLE_NAMES = ["entity", "relation", "release", "role", "metadata"]
 
 env_file = find_dotenv()
 env_config = dotenv_values()  # take environment variables from .env.

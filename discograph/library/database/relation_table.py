@@ -7,13 +7,14 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from discograph.library.database.base_table import BaseTable
+from discograph import utils
+from discograph.library.database.database_helper import Base
 from discograph.library.database.role_table import RoleTable
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.fields.int_enum import IntEnum
 
 
-class RelationTable(BaseTable):
+class RelationTable(Base):
     __tablename__ = "relation"
 
     # COLUMNS
@@ -56,3 +57,6 @@ class RelationTable(BaseTable):
         ),
         {},
     )
+
+    def __repr__(self):
+        return utils.normalize_dict(utils.row2dict(self), skip_keys={"random"})

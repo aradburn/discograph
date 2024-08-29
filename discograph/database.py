@@ -7,7 +7,7 @@ from sqlalchemy import exc
 from sqlalchemy.event import listen
 from sqlalchemy.orm import sessionmaker, close_all_sessions
 
-from discograph.config import DatabaseType, ThreadingModel
+from discograph.config import DatabaseType, ThreadingModel, ALL_DATABASE_TABLE_NAMES
 from discograph.library.database.database_helper import DatabaseHelper
 from discograph.logging_config import LOGGING_TRACE
 
@@ -80,9 +80,9 @@ def setup_database(config) -> Type[DatabaseHelper]:
     db_helper.check_connection(config, engine)
 
     # Create tables
-    db_helper.create_tables()
+    db_helper.create_tables(ALL_DATABASE_TABLE_NAMES)
 
-    LoaderRole().load_all_roles()
+    LoaderRole.load_all_roles()
 
     return db_helper
 

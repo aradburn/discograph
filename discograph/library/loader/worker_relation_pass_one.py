@@ -5,7 +5,6 @@ from typing import List
 
 from sqlalchemy.exc import OperationalError, IntegrityError
 
-from discograph import utils
 from discograph.database import get_concurrency_count
 from discograph.exceptions import NotFoundError, DatabaseError
 from discograph.library.data_access_layer.relation_data_access import RelationDataAccess
@@ -14,7 +13,7 @@ from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.database.release_repository import ReleaseRepository
 from discograph.library.database.transaction import transaction
-from discograph.library.domain.relation import RelationUncommitted, Relation
+from discograph.library.domain.relation import RelationUncommitted
 from discograph.library.loader.loader_base import LoaderBase
 from discograph.logging_config import LOGGING_TRACE
 
@@ -94,11 +93,9 @@ class WorkerRelationPassOne(multiprocessing.Process):
             relation_repository.rollback()
             # log.debug(f"Roll back create")
             # log.exception(e)
-            relation_db = None
         except IntegrityError:
             relation_repository.rollback()
             # log.debug(f"Roll back create")
-            relation_db = None
         except OperationalError as e:
             relation_repository.rollback()
             log.debug(f"Record is locked in create")
@@ -110,16 +107,18 @@ class WorkerRelationPassOne(multiprocessing.Process):
     ) -> List[RelationUncommitted]:
         relation_uncommitteds = []
         for relation_dict in relation_dicts:
-            relation_uncommitted = RelationUncommitted(
-                entity_one_id=relation_dict["entity_one_id"],
-                entity_one_type=relation_dict["entity_one_type"],
-                entity_two_id=relation_dict["entity_two_id"],
-                entity_two_type=relation_dict["entity_two_type"],
-                role_name=RoleDataAccess.normalize(relation_dict["role"]),
-                releases={},
-                random=random(),
-            )
-            relation_uncommitteds.append(relation_uncommitted)
+            role_names = RoleDataAccess.normalise_role_names(relation_dict["role"])
+            for role_name in role_names:
+                relation_uncommitted = RelationUncommitted(
+                    entity_one_id=relation_dict["entity_one_id"],
+                    entity_one_type=relation_dict["entity_one_type"],
+                    entity_two_id=relation_dict["entity_two_id"],
+                    entity_two_type=relation_dict["entity_two_type"],
+                    role_name=role_name,
+                    releases={},
+                    random=random(),
+                )
+                relation_uncommitteds.append(relation_uncommitted)
         return relation_uncommitteds
 
     # def run(self):

@@ -1,12 +1,29 @@
 import logging
 import re
+from typing import Dict, List
+
+from discograph.library.fields.role_type import RoleType
 
 log = logging.getLogger(__name__)
 
 
 class RoleDataAccess:
+    # CLASS VARIABLES
+    role_name_to_role_id_lookup: Dict[str, int] = {}
+    role_id_to_role_category_lookup: Dict[int, RoleType.Category] = {}
+    role_id_to_role_name_lookup: Dict[int, str] = {}
+
     @staticmethod
-    def normalize(input_name: str) -> str:
+    def normalise_role_names(input_name: str) -> List[str]:
+        # Split into multiple names if needed
+        input_names = input_name.split(" & ")
+        input_names_list = [name.split(" and ") for name in input_names]
+        input_names = [name for name_list in input_names_list for name in name_list]
+        input_names = [RoleDataAccess.normalise_role_name(name) for name in input_names]
+        return input_names
+
+    @staticmethod
+    def normalise_role_name(input_name: str) -> str:
         def upper(match):
             return match.group(1).upper()
 
@@ -19,17 +36,34 @@ class RoleDataAccess:
         if input_name.isupper():
             return input_name
 
-        name = input_name.replace("-By", " By")
-        name = name.replace("-by", " By")
-        name = name.replace("Cgi", "CGI")
-        name = name.replace("Dj", "DJ")
+        name = input_name
+        name = re.sub(r"(-BY|-By|-by)($|\s)", " By", name)
+        name = re.sub(r"(-TO|-To|-to)($|\s)", " To", name)
+        name = re.sub(r"(-AT|-At|-at)($|\s)", " At", name)
+        name = re.sub(r"(-WITH|-With|-with)($|\s)", " With", name)
+        # name = re.sub(r"(\s|-)+(BY|By|by)($|\s)", "", name)
+        # name = re.sub(r"(\s|-)+(TO|To|to)($|\s)", "", name)
+        # name = re.sub(r"(\s|-)+(AT|At|at)($|\s)", "", name)
+        # name = re.sub(r"(\s|-)+(FOR|For|for)($|\s)", "", name)
+        # name = re.sub(r"(\s|-)+(ON|On|on)($|\s)", "", name)
+        # name = re.sub(r"(\s|-)+(WITH|With|with)($|\s)", "", name)
+        # name = name.replace(" By", "")
+        # name = name.replace(" by", "")
+        # name = name.replace("-By", "")
+        # name = name.replace("-by", "")
 
-        if name == "Vibes":
+        if name.lower() == "dj":
+            return "DJ"
+        if name.lower() == "cgi":
+            return "CGI"
+        if name.lower() == "dj mix":
+            return "DJ Mix"
+        if name.lower() == "cgi artist":
+            return "CGI Artist"
+        if name.lower() == "vibes":
             return "Vibraphone"
-        if name == "Artwork":
-            return "Artwork By"
-        if name == "Artwork & Package Design By":
-            return "Artwork By"
+        if name.lower() == "remiz":
+            return "Remix"
 
         name = " ".join(
             word.capitalize() if not word.isupper() else word

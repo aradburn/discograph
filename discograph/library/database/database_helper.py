@@ -4,13 +4,13 @@ from abc import ABC, abstractmethod
 from functools import partial
 from typing import Type, TypeVar, List
 
-from sqlalchemy import Engine, Index
+from sqlalchemy import Engine, Index, Table
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, scoped_session
 from sqlalchemy.sql.dml import ReturningInsert, Insert
 
 from discograph.config import Configuration
+from discograph.library.data_access_layer.role_data_access import RoleDataAccess
 from discograph.library.fields.entity_type import EntityType
-from discograph.library.fields.role_type import RoleType
 
 log = logging.getLogger(__name__)
 
@@ -48,11 +48,11 @@ class DatabaseHelper(ABC):
 
     @staticmethod
     @abstractmethod
-    def shutdown_database():
+    def shutdown_database() -> None:
         pass
 
     @classmethod
-    def initialize(cls):
+    def initialize(cls) -> None:
         """ensure the parent proc's database connections are not touched
         in the new connection pool"""
         cls.engine.dispose(close=False)
@@ -60,21 +60,32 @@ class DatabaseHelper(ABC):
 
     @staticmethod
     @abstractmethod
-    def check_connection(config: Configuration, engine: Engine):
+    def check_connection(config: Configuration, engine: Engine) -> None:
         pass
 
     @classmethod
     @abstractmethod
-    def create_tables(cls, tables=None):
-        Base.metadata.create_all(cls.engine, checkfirst=True, tables=tables)
+    def create_tables(cls, tables: List[str] = None) -> None:
+        from discograph.library.database import ALL_DATABASE_TABLES
+
+        for table in ALL_DATABASE_TABLES:
+            log.debug(f"table definition for: {table.__tablename__}")
+        for table in Base.metadata.tables:
+            log.debug(f"table in metadata: {table}")
+        table_definitions: List[Table] = [
+            Base.metadata.tables[table_name] for table_name in tables
+        ]
+        for table in table_definitions:
+            log.debug(f"creating table: {table.name}")
+        Base.metadata.create_all(cls.engine, checkfirst=True, tables=table_definitions)
 
     @classmethod
     @abstractmethod
-    def drop_tables(cls):
+    def drop_tables(cls) -> None:
         Base.metadata.drop_all(cls.engine, checkfirst=True)
 
     @classmethod
-    def load_tables(cls, data_directory: str, date: str, is_bulk_inserts: bool):
+    def load_tables(cls, data_directory: str, date: str, is_bulk_inserts: bool) -> None:
         log.info("Load tables")
         stages = cls.get_load_table_stages(data_directory, date, is_bulk_inserts)
         for stage in stages:
@@ -84,7 +95,7 @@ class DatabaseHelper(ABC):
     @classmethod
     def load_table_stage(
         cls, data_directory: str, date: str, is_bulk_inserts: bool, stage: int
-    ):
+    ) -> None:
         stages = cls.get_load_table_stages(data_directory, date, is_bulk_inserts)
         log.debug(f"Run stage: {stage}")
         stages[stage]()
@@ -354,7 +365,7 @@ class DatabaseHelper(ABC):
             elif ARG_ROLES_REGEX.match(key):
                 value = args.getlist(key)
                 for role in value:
-                    if role in RoleType.role_definitions:
+                    if role in RoleDataAccess.role_name_to_role_id_lookup.keys():
                         roles.add(role)
         roles = list(sorted(roles))
         return roles, year

@@ -6,6 +6,7 @@ import luigi
 
 from discograph.config import PostgresDevelopmentConfiguration
 from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
+from discograph.library.loader.loader_role import LoaderRole
 from discograph.library.loader.loader_tasks import LoaderSetupTask
 from discograph.logging_config import setup_logging, shutdown_logging
 
@@ -32,13 +33,16 @@ def loader_main():
     config = PostgresDevelopmentConfiguration()
     setup_cache(config)
     setup_database(config)
+    LoaderRole.load_initial_roles()
+
     # Note reverse order (last in first out), logging is the last to be shutdown
     atexit.register(shutdown_logging)
     atexit.register(shutdown_cache)
     atexit.register(shutdown_database, config)
 
     # Run the loader process between these dates
-    start_date = datetime.date(2023, 10, 1)
+    start_date = datetime.date(2023, 8, 1)
+    # start_date = datetime.date(2023, 10, 1)
     end_date = datetime.datetime.now()
     tasks = [LoaderSetupTask(start_date=start_date, end_date=end_date)]
     luigi_run_result = luigi.build(

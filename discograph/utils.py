@@ -22,8 +22,8 @@ from discograph.config import (
     DISCOGS_BASE_URL,
     DISCOGS_PATH,
 )
+from discograph.library.data_access_layer.role_data_access import RoleDataAccess
 from discograph.library.database.database_helper import Base
-from discograph.library.fields.role_type import RoleType
 
 log = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ def parse_request_args(args):
         elif ARG_ROLES_REGEX.match(key):
             value = args.getlist(key)
             for role in value:
-                if role in RoleType.role_definitions:
+                if role in RoleDataAccess.role_name_to_role_id_lookup.keys():
                     roles.add(role)
     roles = list(sorted(roles))
     return roles, year

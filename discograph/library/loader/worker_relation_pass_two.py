@@ -124,51 +124,53 @@ class WorkerRelationPassTwo(multiprocessing.Process):
         release_id: int,
         year: int,
     ) -> None:
-        retry_wanted = True
-        while retry_wanted:
-            try:
-                key = {
-                    "entity_one_id": relation_dict["entity_one_id"],
-                    "entity_one_type": relation_dict["entity_one_type"],
-                    "entity_two_id": relation_dict["entity_two_id"],
-                    "entity_two_type": relation_dict["entity_two_type"],
-                    "role_name": RoleDataAccess.normalize(relation_dict["role"]),
-                }
-                relation_db = relation_repository.find_by_key(key)
-                # log.debug(f"v: {relation_db.version_id}")
-            except DatabaseError:
-                relation_repository.rollback()
-                log.debug(f"Error cannot find relation")
-                relation_db = None
-            except OperationalError as e:
-                relation_repository.rollback()
-                # log.debug(f"Record is locked")
-                raise e
+        role_names = RoleDataAccess.normalise_role_names(relation_dict["role"])
+        for role_name in role_names:
+            retry_wanted = True
+            while retry_wanted:
+                try:
+                    key = {
+                        "entity_one_id": relation_dict["entity_one_id"],
+                        "entity_one_type": relation_dict["entity_one_type"],
+                        "entity_two_id": relation_dict["entity_two_id"],
+                        "entity_two_type": relation_dict["entity_two_type"],
+                        "role_name": role_name,
+                    }
+                    relation_db = relation_repository.find_by_key(key)
+                    # log.debug(f"v: {relation_db.version_id}")
+                except DatabaseError:
+                    relation_repository.rollback()
+                    log.debug(f"Error cannot find relation")
+                    relation_db = None
+                except OperationalError as e:
+                    relation_repository.rollback()
+                    # log.debug(f"Record is locked")
+                    raise e
 
-            if relation_db is not None:
-                original = relation_db.releases.copy()
-                updated = relation_db.releases.copy()
-                updated[str(release_id)] = year
+                if relation_db is not None:
+                    original = relation_db.releases.copy()
+                    updated = relation_db.releases.copy()
+                    updated[str(release_id)] = year
 
-                differences = DeepDiff(
-                    original,
-                    updated,
-                )
-                diff = pprint.pformat(differences)
-                if diff != "{}":
-                    # log.debug(f"diff: {diff}")
-                    try:
-                        relation_repository.update_one(
-                            relation_db.relation_id,
-                            relation_db.version_id,
-                            {
-                                "releases": updated,
-                                "version_id": relation_db.version_id + 1,
-                            },
-                        )
-                        relation_repository.commit()
+                    differences = DeepDiff(
+                        original,
+                        updated,
+                    )
+                    diff = pprint.pformat(differences)
+                    if diff != "{}":
+                        # log.debug(f"diff: {diff}")
+                        try:
+                            relation_repository.update_one(
+                                relation_db.relation_id,
+                                relation_db.version_id,
+                                {
+                                    "releases": updated,
+                                    "version_id": relation_db.version_id + 1,
+                                },
+                            )
+                            relation_repository.commit()
+                            retry_wanted = False
+                        except DatabaseError:
+                            relation_repository.rollback()
+                    else:
                         retry_wanted = False
-                    except DatabaseError:
-                        relation_repository.rollback()
-                else:
-                    retry_wanted = False

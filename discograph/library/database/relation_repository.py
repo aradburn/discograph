@@ -5,6 +5,7 @@ from typing import Generator, Any, List, Tuple, cast
 from sqlalchemy import Result, select, update, Select, text
 
 from discograph.exceptions import NotFoundError, DatabaseError
+from discograph.library.data_access_layer.role_data_access import RoleDataAccess
 from discograph.library.database.base_repository import BaseRepository
 from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.database.relation_table import RelationTable
@@ -12,7 +13,6 @@ from discograph.library.database.role_repository import RoleRepository
 from discograph.library.domain.entity import Entity
 from discograph.library.domain.relation import Relation, RelationUncommitted, RelationDB
 from discograph.library.fields.entity_type import EntityType
-from discograph.library.fields.role_type import RoleType
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class RelationRepository(BaseRepository[RelationTable]):
     def _to_domain(relation_db: RelationDB) -> Relation:
         relation_db_dict: dict = relation_db.model_dump()
         role_id: int = relation_db_dict.get("role_id")
-        role_name = RoleType.role_id_to_role_name_lookup[role_id]
+        role_name = RoleDataAccess.role_id_to_role_name_lookup[role_id]
         relation_db_dict.update(role=role_name)
         return Relation.model_validate(relation_db_dict)
 
@@ -74,7 +74,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         if "role_id" not in key:
             if "role_name" in key:
                 role_name = key["role_name"]
-                key["role_id"] = RoleType.role_name_to_role_id_lookup[role_name]
+                key["role_id"] = RoleDataAccess.role_name_to_role_id_lookup[role_name]
                 # role = RoleRepository().get_by_name(key["role_name"])
                 # key["role_id"] = role.role_id
         query = (
@@ -121,14 +121,14 @@ class RelationRepository(BaseRepository[RelationTable]):
         if "role_id" not in key:
             if "role_name" in key:
                 role_name = key["role_name"]
-                key["role_id"] = RoleType.role_name_to_role_id_lookup[role_name]
+                key["role_id"] = RoleDataAccess.role_name_to_role_id_lookup[role_name]
                 # print(f"find_by_key role_id: {key['role_id']}")
                 assert key["role_id"] is not None
                 # role = RoleRepository().get_by_name(key["role_name"])
                 # key["role_id"] = role.role_id
             elif "role" in key:
                 role_name = key["role"]
-                key["role_id"] = RoleType.role_name_to_role_id_lookup[role_name]
+                key["role_id"] = RoleDataAccess.role_name_to_role_id_lookup[role_name]
                 # role = RoleRepository().get_by_name(key["role"])
                 # key["role_id"] = role.role_id
         query = (
@@ -220,7 +220,7 @@ class RelationRepository(BaseRepository[RelationTable]):
 
     def create_and_get_id(self, relation: RelationUncommitted) -> int:
         relation_payload = relation.model_dump(exclude={"role_name"})
-        role_id = RoleType.role_name_to_role_id_lookup[relation.role_name]
+        role_id = RoleDataAccess.role_name_to_role_id_lookup[relation.role_name]
         relation_payload.update(role_id=role_id)
         # role = RoleRepository().get_by_name(relation.role_name)
         # relation_payload.update(role_id=role.role_id)
@@ -233,7 +233,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         self, relation: RelationUncommitted, on_conflict_do_nothing=False
     ) -> Relation:
         relation_dict = relation.model_dump(exclude={"role_name"})
-        role_id = RoleType.role_name_to_role_id_lookup[relation.role_name]
+        role_id = RoleDataAccess.role_name_to_role_id_lookup[relation.role_name]
         relation_dict.update(role_id=role_id)
         relation_dict.update(version_id=1)
         query = DatabaseHelper.db_helper.generate_insert_query(
@@ -276,7 +276,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         relation_dicts = []
         for relation in relations:
             relation_dict = relation.model_dump(exclude={"role_name"})
-            role_id = RoleType.role_name_to_role_id_lookup[relation.role_name]
+            role_id = RoleDataAccess.role_name_to_role_id_lookup[relation.role_name]
             relation_dict.update(role_id=role_id)
             relation_dict.update(version_id=1)
             relation_dicts.append(relation_dict)
@@ -502,7 +502,7 @@ class RelationRepository(BaseRepository[RelationTable]):
             where_clause = None
         if role_names:
             role_ids = [
-                RoleType.role_name_to_role_id_lookup[role_name]
+                RoleDataAccess.role_name_to_role_id_lookup[role_name]
                 for role_name in role_names
             ]
             if where_clause:

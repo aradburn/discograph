@@ -42,11 +42,11 @@ class SqliteHelper(DatabaseHelper):
         return engine
 
     @staticmethod
-    def shutdown_database():
+    def shutdown_database() -> None:
         log.info("Shutting down Sqlite database")
 
     @staticmethod
-    def check_connection(config: Configuration, engine: Engine):
+    def check_connection(config: Configuration, engine: Engine) -> None:
         try:
             log.info("Check Sqlite database connection...")
 
@@ -67,7 +67,7 @@ class SqliteHelper(DatabaseHelper):
             log.exception("Connection Error", e)
 
     @classmethod
-    def load_tables(cls, data_directory: str, date: str, is_bulk_inserts: bool):
+    def load_tables(cls, data_directory: str, date: str, is_bulk_inserts: bool) -> None:
         log.info("Load Sqlite tables")
         stages = cls.get_load_table_stages(data_directory, date, is_bulk_inserts)
         for stage in stages:
@@ -78,18 +78,18 @@ class SqliteHelper(DatabaseHelper):
     @classmethod
     def load_table_stage(
         cls, data_directory: str, date: str, is_bulk_inserts: bool, stage: int
-    ):
+    ) -> None:
         stages = cls.get_load_table_stages(data_directory, date, is_bulk_inserts)
         log.debug(f"Run stage: {stage}")
         stages[stage]()
 
     @classmethod
-    def create_tables(cls, tables=None):
+    def create_tables(cls, tables: List[str] = None) -> None:
         log.info("Create Sqlite tables")
         super().create_tables(tables=tables)
 
     @classmethod
-    def drop_tables(cls):
+    def drop_tables(cls) -> None:
         log.info("Drop Sqlite tables")
         super().drop_tables()
 

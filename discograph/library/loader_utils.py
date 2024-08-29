@@ -4,10 +4,11 @@ import gzip
 import logging
 import os
 import re
-from typing import Optional
+from typing import Optional, List
 from xml.dom import minidom
 from xml.etree import ElementTree
 
+from discograph.config import ROLE_DIR
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +39,19 @@ class LoaderUtils:
         files = sorted(glob.glob(glob_pattern, root_dir=data_directory))
         log.debug(f"files: {files}")
         full_path_files = os.path.join(data_directory, files[-1])
+        log.debug(f"full_path_files: {full_path_files}")
+        return full_path_files
+
+    @staticmethod
+    def get_role_paths() -> List[str]:
+        data_directory = ROLE_DIR
+        glob_pattern = "*.csv"
+        log.debug(f"data_directory: {data_directory}")
+        log.debug(f"glob_pattern: {glob_pattern}")
+        # with contextmanagers.TemporaryDirectoryChange(data_directory):
+        files = sorted(glob.glob(glob_pattern, root_dir=data_directory))
+        log.debug(f"files: {files}")
+        full_path_files = [os.path.join(data_directory, file) for file in files]
         log.debug(f"full_path_files: {full_path_files}")
         return full_path_files
 

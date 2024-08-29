@@ -3,10 +3,11 @@ from datetime import datetime
 from sqlalchemy import String, TIMESTAMP, Integer, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
-from discograph.library.database.base_table import BaseTable
+from discograph import utils
+from discograph.library.database.database_helper import Base
 
 
-class MetadataTable(BaseTable):
+class MetadataTable(Base):
     __tablename__ = "metadata"
 
     # COLUMNS
@@ -26,3 +27,6 @@ class MetadataTable(BaseTable):
         ),
         {},
     )
+
+    def __repr__(self):
+        return utils.normalize_dict(utils.row2dict(self), skip_keys={"random"})

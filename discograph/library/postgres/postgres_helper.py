@@ -159,7 +159,7 @@ class PostgresHelper(DatabaseHelper):
         return engine
 
     @staticmethod
-    def shutdown_database():
+    def shutdown_database() -> None:
         log.info("Shutting down Postgres database")
 
         if PostgresHelper._is_test and PostgresHelper.postgres_test_db is not None:
@@ -176,12 +176,13 @@ class PostgresHelper(DatabaseHelper):
             PostgresHelper._is_test = False
 
     @staticmethod
-    def check_connection(config: Configuration, engine: Engine):
+    def check_connection(config: Configuration, engine: Engine) -> None:
         try:
             log.info("Check Postgres database connection...")
 
             with engine.connect() as connection:
                 version = connection.execute(text("SELECT version();"))
+                connection.commit()
 
             log.info(f"Database Version: {version.scalars().one_or_none()}")
 
@@ -190,12 +191,12 @@ class PostgresHelper(DatabaseHelper):
             log.exception("Connection Error", e)
 
     @classmethod
-    def create_tables(cls, tables=None):
+    def create_tables(cls, tables: List[str] = None) -> None:
         log.info("Create Postgres tables")
         super().create_tables(tables=tables)
 
     @classmethod
-    def drop_tables(cls):
+    def drop_tables(cls) -> None:
         log.info("Drop Postgres tables")
         super().drop_tables()
 

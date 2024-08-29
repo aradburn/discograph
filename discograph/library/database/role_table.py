@@ -1,11 +1,12 @@
 from sqlalchemy import String, Enum
 from sqlalchemy.orm import Mapped, mapped_column
 
-from discograph.library.database.base_table import BaseTable
+from discograph import utils
+from discograph.library.database.database_helper import Base
 from discograph.library.fields.role_type import RoleType
 
 
-class RoleTable(BaseTable):
+class RoleTable(Base):
     __tablename__ = "role"
 
     # COLUMNS
@@ -18,3 +19,6 @@ class RoleTable(BaseTable):
     )
     role_category_name: Mapped[str] = mapped_column(String)
     role_subcategory_name: Mapped[str] = mapped_column(String)
+
+    def __repr__(self):
+        return utils.normalize_dict(utils.row2dict(self), skip_keys={"random"})

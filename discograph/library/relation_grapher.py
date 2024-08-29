@@ -5,12 +5,12 @@ from typing import List, Dict, Tuple, OrderedDict
 
 from discograph import utils
 from discograph.library.data_access_layer.entity_data_access import EntityDataAccess
+from discograph.library.data_access_layer.role_data_access import RoleDataAccess
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.domain.entity import Entity
 from discograph.library.domain.relation import RelationResult
 from discograph.library.fields.entity_type import EntityType
-from discograph.library.fields.role_type import RoleType
 from discograph.library.trellis_node import TrellisNode
 
 log = logging.getLogger(__name__)
@@ -82,7 +82,10 @@ class RelationGrapher(ABC):
             # elif not isinstance(role_names, collections_abc.Iterable):
             #     role_names = (role_names,)
             # role_names = tuple(role_names)
-            assert all(_ in RoleType.role_definitions for _ in role_names)
+            assert all(
+                _ in RoleDataAccess.role_name_to_role_id_lookup.keys()
+                for _ in role_names
+            )
             for role_name in role_names:
                 if role_name in ("Alias", "Sublabel Of", "Member Of"):
                     self.structural_role_names.append(role_name)
@@ -90,9 +93,9 @@ class RelationGrapher(ABC):
                     self.relational_role_names.append(role_name)
         # self.structural_role_names = tuple(structural_role_names)
         # self.relational_role_names = tuple(relational_role_names)
-        self.nodes: OrderedDict[
-            Tuple[int, EntityType], TrellisNode
-        ] = collections.OrderedDict()
+        self.nodes: OrderedDict[Tuple[int, EntityType], TrellisNode] = (
+            collections.OrderedDict()
+        )
         self.links: Dict[str, RelationResult] = {}
         self.should_break_loop = False
         self.entity_keys_to_visit = set[tuple[int, EntityType]]()
