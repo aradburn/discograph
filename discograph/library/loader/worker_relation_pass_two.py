@@ -31,7 +31,7 @@ class WorkerRelationPassTwo(multiprocessing.Process):
         proc_name = self.name
 
         count = self.current_total
-        total_count = count + len(self.release_ids)
+        end_count = count + len(self.release_ids)
 
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
@@ -75,7 +75,6 @@ class WorkerRelationPassTwo(multiprocessing.Process):
                                 release_id=release_id,
                                 year=year,
                             )
-                            relation_repository.commit()
                         except DatabaseError as e:
                             relation_repository.rollback()
 
@@ -111,7 +110,7 @@ class WorkerRelationPassTwo(multiprocessing.Process):
                     )
 
             count += 1
-            if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == total_count:
+            if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == end_count:
                 log.debug(f"[{proc_name}] processed {count} of {self.total_count}")
 
         log.info(f"[{proc_name}] processed {count} of {self.total_count}")

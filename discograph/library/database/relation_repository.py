@@ -2,7 +2,7 @@ import logging
 from random import random
 from typing import Generator, Any, List, Tuple, cast
 
-from sqlalchemy import Result, select, update, Select, text
+from sqlalchemy import Result, select, update, Select, text, delete
 
 from discograph.exceptions import NotFoundError, DatabaseError
 from discograph.library.data_access_layer.role_data_access import RoleDataAccess
@@ -428,6 +428,23 @@ class RelationRepository(BaseRepository[RelationTable]):
             .values(payload)
         )
         self._session.execute(query)
+
+    def delete_by_entity_id(self, entity_id: int, entity_type: EntityType) -> None:
+        self.execute(
+            delete(self.schema_class).where(
+                (
+                    (RelationTable.entity_one_id == entity_id)
+                    & (RelationTable.entity_one_type == entity_type)
+                )
+                | (
+                    (RelationTable.entity_two_id == entity_id)
+                    & (RelationTable.entity_two_type == entity_type)
+                )
+            )
+        )
+        # await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))
+        # self._session.flush()
+        # await self._session.flush()
 
     def set(
         self,

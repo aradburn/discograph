@@ -31,7 +31,7 @@ class WorkerRelationPassOne(multiprocessing.Process):
         proc_name = self.name
 
         count = self.current_total
-        total_count = count + len(self.release_ids)
+        end_count = count + len(self.release_ids)
 
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
@@ -71,7 +71,7 @@ class WorkerRelationPassOne(multiprocessing.Process):
                 count += 1
                 if (
                     count % LoaderBase.BULK_REPORTING_SIZE == 0
-                    and not count == total_count
+                    and not count == end_count
                 ):
                     log.debug(f"[{proc_name}] processed {count} of {self.total_count}")
 

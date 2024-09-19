@@ -105,7 +105,7 @@ class LoaderEntity(LoaderBase):
 
         with transaction():
             entity_repository = EntityRepository()
-            total_count = entity_repository.count()
+            total_count = entity_repository.count_by_type(EntityType.ARTIST)
             entity_type: EntityType = EntityType.ARTIST
             batched_entity_ids = entity_repository.get_batched_ids(
                 entity_type, number_in_batch
@@ -130,7 +130,7 @@ class LoaderEntity(LoaderBase):
 
         with transaction():
             entity_repository = EntityRepository()
-            total_count = entity_repository.count()
+            total_count = entity_repository.count_by_type(EntityType.LABEL)
             entity_type: EntityType = EntityType.LABEL
             batched_entity_ids = entity_repository.get_batched_ids(
                 entity_type, number_in_batch

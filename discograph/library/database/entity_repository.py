@@ -2,10 +2,10 @@ import logging
 from random import random
 from typing import Generator, Any, cast, List
 
-from sqlalchemy import Result, select, update, Select, String, delete
+from sqlalchemy import Result, select, update, Select, String, delete, func
 
 from discograph import utils
-from discograph.exceptions import NotFoundError, DatabaseError
+from discograph.exceptions import NotFoundError, DatabaseError, UnprocessableError
 from discograph.library.database.base_repository import BaseRepository
 from discograph.library.database.entity_table import EntityTable
 from discograph.library.domain.entity import Entity
@@ -43,6 +43,26 @@ class EntityRepository(BaseRepository[EntityTable]):
         instances = result.scalars().all()
         entity_dbs = [Entity.model_validate(instance) for instance in instances]
         return list(map(self._to_domain, entity_dbs))
+
+    def count_by_type(self, entity_type: EntityType) -> int:
+        query = (
+            select(func.count())
+            .select_from(self.schema_class)
+            .where(EntityTable.entity_type == entity_type)
+        )
+        result: Result = self.execute(query)
+        # result: Result = await self.execute(func.count(self.schema_class.id))
+        value = result.scalar()
+
+        if not isinstance(value, int):
+            raise UnprocessableError(
+                message=(
+                    "For some reason count function returned not an integer."
+                    f"Value: {value}"
+                ),
+            )
+
+        return value
 
     def all(self) -> Generator[Entity, None, None]:
         for instance in self._all():

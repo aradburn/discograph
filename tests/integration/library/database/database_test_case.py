@@ -24,10 +24,11 @@ class DatabaseTestCase(unittest.TestCase):
     def __init__(self, methodName="runTest"):
         if self.__class__.__name__.startswith("TestDatabase"):
             # don't run these tests in the abstract base implementation
-            methodName = "runNoTestsInBaseClass"
+            methodName = "runTestIgnoreInBaseClass"
+            # methodName = "runNoTestsInBaseClass"
         super().__init__(methodName)
 
-    def runNoTestsInBaseClass(self):
+    def runTestIgnoreInBaseClass(self):
         pass
 
     @classmethod
@@ -46,7 +47,7 @@ class DatabaseTestCase(unittest.TestCase):
                 # db_logger.setLevel(logging.DEBUG)
                 cls._db_helper.drop_tables()
                 cls._db_helper.create_tables(ALL_DATABASE_TABLE_NAMES)
-                LoaderRole.load_initial_roles()
+                LoaderRole.load_roles_into_database()
                 cls._db_helper.load_tables(
                     TEST_DATA_DIR, "testinsert", is_bulk_inserts=True
                 )

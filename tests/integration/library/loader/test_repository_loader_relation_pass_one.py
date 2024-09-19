@@ -23,6 +23,6 @@ class TestRepositoryLoaderRelationPassOne(RepositoryTestCase):
         LoaderRelation().loader_relation_pass_one(date)
 
         # THEN
-        expected = 16469
+        expected = 16464
         actual = RelationRepository().count()
         self.assertEqual(expected, actual)

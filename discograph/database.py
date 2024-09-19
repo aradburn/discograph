@@ -82,7 +82,7 @@ def setup_database(config) -> Type[DatabaseHelper]:
     # Create tables
     db_helper.create_tables(ALL_DATABASE_TABLE_NAMES)
 
-    LoaderRole.load_all_roles()
+    LoaderRole.load_roles_into_database()
 
     return db_helper
 
@@ -116,7 +116,7 @@ def shutdown_database(config):
 
 def get_concurrency_count() -> int:
     if threading_model == ThreadingModel.PROCESS:
-        return multiprocessing.cpu_count() * 2
+        return multiprocessing.cpu_count()
     elif threading_model == ThreadingModel.THREAD:
         return 1
     else:

@@ -16,6 +16,14 @@ ROLE_DIR = os.path.join(ROOT_DIR, "discograph", "data_role")
 INSTRUMENTS_DIR = os.path.join(ROOT_DIR, "discograph", "data_instruments")
 INSTRUMENTS_PATH = os.path.join(INSTRUMENTS_DIR, "hornbostelSachs.json")
 TEST_DATA_DIR = os.path.join(ROOT_DIR, "tests", "data")
+TEST_DATA_ROLES_DIR = os.path.join(ROOT_DIR, "tests", "data_roles")
+TEST_DATA_ROLES_PATH = os.path.join(TEST_DATA_ROLES_DIR, "test_data_roles.tsv")
+TEST_DATA_ROLES_NORMALISED_PATH = os.path.join(
+    TEST_DATA_ROLES_DIR, "test_data_roles_normalised.tsv"
+)
+TEST_DATA_ROLES_OUTPUT_PATH = os.path.join(
+    TEST_DATA_ROLES_DIR, "test_data_roles_output.tsv"
+)
 LOGGING_DIR = os.path.join(ROOT_DIR, "logs")
 LOGGING_FILE = os.path.join(LOGGING_DIR, "discograph.log")
 LOGGING_ERROR_FILE = os.path.join(LOGGING_DIR, "error.log")

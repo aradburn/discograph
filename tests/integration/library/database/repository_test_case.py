@@ -24,10 +24,11 @@ class RepositoryTestCase(unittest.TestCase):
     def __init__(self, methodName="runTest"):
         if self.__class__.__name__.startswith("TestRepository"):
             # don't run these tests in the abstract base implementation
-            methodName = "runNoTestsInBaseClass"
+            methodName = "runTestIgnoreInBaseClass"
+            # methodName = "runNoTestsInBaseClass"
         super().__init__(methodName)
 
-    def runNoTestsInBaseClass(self):
+    def runTestIgnoreInBaseClass(self):
         pass
 
     @classmethod
@@ -42,7 +43,7 @@ class RepositoryTestCase(unittest.TestCase):
             else:
                 cls._db_helper.drop_tables()
                 cls._db_helper.create_tables(ALL_DATABASE_TABLE_NAMES)
-                LoaderRole.load_initial_roles()
+                LoaderRole.load_roles_into_database()
                 # Note: No data loading, empty repositories
 
     @classmethod
@@ -56,8 +57,10 @@ class RepositoryTestCase(unittest.TestCase):
 
     @classmethod
     def resetDB(cls):
-        cls._db_helper.drop_tables()
-        cls._db_helper.create_tables(ALL_DATABASE_TABLE_NAMES)
+        if cls._db_helper is not None:
+            log.info(f"Reset database tables: {cls.__name__}")
+            cls._db_helper.drop_tables()
+            cls._db_helper.create_tables(ALL_DATABASE_TABLE_NAMES)
 
     def setUp(self):
         log.info("-------------------------------------------------------------------")

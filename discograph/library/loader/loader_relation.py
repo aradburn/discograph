@@ -55,10 +55,10 @@ class LoaderRelation(LoaderBase):
         with transaction():
             release_repository = ReleaseRepository()
             total_count = release_repository.count()
-            if total_count > LoaderBase.BULK_UPDATE_BATCH_SIZE * 10:
-                number_in_batch = int(LoaderBase.BULK_UPDATE_BATCH_SIZE)
+            if total_count > LoaderBase.BULK_INSERT_BATCH_SIZE * 10:
+                number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
             else:
-                number_in_batch = int(LoaderBase.BULK_UPDATE_BATCH_SIZE / 10)
+                number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE / 10)
 
             batched_release_ids = release_repository.get_batched_ids(number_in_batch)
 
