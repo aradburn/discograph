@@ -84,7 +84,7 @@ class WorkerRelationPassOne(multiprocessing.Process):
         relations: List[RelationUncommitted],
     ) -> None:
 
-        # save, throw error if already exists
+        # save, do nothing if already exists
         try:
             relation_repository.create_bulk(relations, on_conflict_do_nothing=True)
             relation_repository.commit()

@@ -2,7 +2,6 @@ import csv
 import json
 import logging
 import os
-import re
 from typing import List
 
 from discograph.config import INSTRUMENTS_PATH, INSTRUMENTS_DIR

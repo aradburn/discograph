@@ -1,9 +1,6 @@
 import csv
-import unittest
 
 from discograph.config import (
-    TEST_DATA_ROLES_DIR,
-    TEST_DATA_ROLES_PATH,
     TEST_DATA_ROLES_NORMALISED_PATH,
     TEST_DATA_ROLES_OUTPUT_PATH,
 )
@@ -23,6 +20,7 @@ class TestDatabaseRoleDataAccess(DatabaseTestCase):
                 TEST_DATA_ROLES_OUTPUT_PATH, "w", newline="", encoding="utf-8"
             ) as output_file:
                 fieldnames = ["input", "expected"]
+                # noinspection PyTypeChecker
                 writer = csv.DictWriter(
                     output_file,
                     fieldnames=fieldnames,

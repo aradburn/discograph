@@ -44,7 +44,6 @@ load_dotenv(override=True, verbose=True)  # take environment variables from .env
 class DatabaseType(enum.Enum):
     POSTGRES = 1
     SQLITE = 2
-    COCKROACH = 3
 
 
 class ThreadingModel(enum.Enum):
@@ -159,31 +158,3 @@ class SqliteTestConfiguration(Configuration):
 
     def __init__(self):
         super().__init__(vars(SqliteTestConfiguration))
-
-
-class CockroachDevelopmentConfiguration(Configuration):
-    PRODUCTION = False
-    DEBUG = True
-    TESTING = False
-    DATABASE = DatabaseType.COCKROACH
-    COCKROACH_DATABASE_NAME = "dev_discograph"
-    APPLICATION_ROOT = "http://localhost"
-    THREADING_MODEL = ThreadingModel.PROCESS
-    CACHE_TYPE = CacheType.FILESYSTEM
-
-    def __init__(self):
-        super().__init__(vars(CockroachDevelopmentConfiguration))
-
-
-class CockroachTestConfiguration(Configuration):
-    PRODUCTION = False
-    DEBUG = True
-    TESTING = True
-    DATABASE = DatabaseType.COCKROACH
-    COCKROACH_DATABASE_NAME = "test_discograph"
-    APPLICATION_ROOT = "http://localhost"
-    THREADING_MODEL = ThreadingModel.PROCESS
-    CACHE_TYPE = CacheType.MEMORY
-
-    def __init__(self):
-        super().__init__(vars(CockroachTestConfiguration))

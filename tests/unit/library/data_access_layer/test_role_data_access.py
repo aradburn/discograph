@@ -2,10 +2,7 @@ import csv
 import unittest
 
 from discograph.config import (
-    TEST_DATA_ROLES_DIR,
     TEST_DATA_ROLES_PATH,
-    TEST_DATA_ROLES_NORMALISED_PATH,
-    TEST_DATA_ROLES_OUTPUT_PATH,
 )
 from discograph.library.data_access_layer.role_data_access import RoleDataAccess
 

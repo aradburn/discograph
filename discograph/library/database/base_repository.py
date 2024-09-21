@@ -144,7 +144,11 @@ class BaseRepository(WrappedSession, Generic[ConcreteTable]):
             yield schema
 
     def delete(self, id_: int) -> None:
-        self.execute(delete(self.schema_class).where(self.schema_class.id == id_))
+        self.execute(
+            delete(self.schema_class).where(
+                cast("ColumnElement[bool]", self.schema_class.id == id_)
+            )
+        )
         # await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))
         self._session.flush()
         # await self._session.flush()

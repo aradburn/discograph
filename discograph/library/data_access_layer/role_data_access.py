@@ -4,7 +4,7 @@ import re
 from collections import deque
 from typing import Dict, List, Set
 
-from rapidfuzz import process, fuzz
+from rapidfuzz import process
 
 from discograph.library.fields.role_type import RoleType
 

@@ -226,7 +226,7 @@ class LoaderRelease(LoaderBase):
                 result["detail"] = detail
             return result
 
-        credit_roles = []
+        credit_roles: list[dict[str, str]] = []
         if element is None or not element.text:
             return credit_roles or None
         current_text = ""

@@ -34,10 +34,6 @@ def setup_database(config) -> Type[DatabaseHelper]:
 
         db_helper = SqliteHelper
 
-    elif config["DATABASE"] == DatabaseType.COCKROACH:
-        from discograph.library.cockroach.cockroach_helper import CockroachHelper
-
-        db_helper = CockroachHelper
     else:
         raise ValueError("Configuration Error: Unknown database type")
 
@@ -99,10 +95,6 @@ def shutdown_database(config):
 
         db_helper = SqliteHelper
 
-    elif config["DATABASE"] == DatabaseType.COCKROACH:
-        from discograph.library.cockroach.cockroach_helper import CockroachHelper
-
-        db_helper = CockroachHelper
     else:
         raise ValueError("Configuration Error: Unknown database type")
 
