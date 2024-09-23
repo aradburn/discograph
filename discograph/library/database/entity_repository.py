@@ -127,7 +127,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         )
         return self._get_one_by_query(query)
 
-    def get_random_entity(self) -> Entity:
+    def get_random(self) -> Entity:
         n = random()
         query = (
             select(EntityTable)

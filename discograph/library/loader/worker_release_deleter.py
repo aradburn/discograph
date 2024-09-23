@@ -35,7 +35,9 @@ class WorkerReleaseDeleter(multiprocessing.Process):
                     release_repository.delete_by_id(release_id)
                     deleted_count += 1
                 except DatabaseError as e:
-                    log.exception("Database Error in WorkerReleaseDeleter worker", e)
+                    log.exception(
+                        "Database Error in WorkerReleaseDeleter worker", exc_info=True
+                    )
                     raise e
 
         log.info(

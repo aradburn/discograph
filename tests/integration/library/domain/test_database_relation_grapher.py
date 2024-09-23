@@ -2,6 +2,7 @@ import logging
 
 from discograph import utils
 from discograph.library.database.entity_repository import EntityRepository
+from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.database.transaction import transaction
 from discograph.library.fields.entity_type import EntityType
 from tests.integration.library.database.database_test_case import DatabaseTestCase
@@ -10,7 +11,6 @@ log = logging.getLogger(__name__)
 
 
 class TestDatabaseRelationGrapher(DatabaseTestCase):
-
     """
     Problematic networks:
 
@@ -27,7 +27,9 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
 
         # WHEN
         with transaction():
-            artist = EntityRepository().get_by_type_and_name(entity_type, entity_name)
+            entity_repository = EntityRepository()
+            relation_repository = RelationRepository()
+            artist = entity_repository.get_by_type_and_name(entity_type, entity_name)
             log.debug(f"artist: {artist}")
             roles = ["Alias", "Member Of"]
             grapher = DatabaseTestCase.relation_grapher(
@@ -35,7 +37,7 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
                 degree=1,
                 role_names=roles,
             )
-            network = grapher.get_relation_graph()
+            network = grapher.get_relation_graph(relation_repository)
             actual = utils.normalize_dict(network)
             log.debug(f"network: {actual}")
 
@@ -167,7 +169,9 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
 
         # WHEN
         with transaction():
-            artist = EntityRepository().get_by_type_and_name(entity_type, entity_name)
+            entity_repository = EntityRepository()
+            relation_repository = RelationRepository()
+            artist = entity_repository.get_by_type_and_name(entity_type, entity_name)
             log.debug(f"artist: {artist}")
             roles = ["Alias", "Member Of"]
             grapher = DatabaseTestCase.relation_grapher(
@@ -176,7 +180,7 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
                 max_nodes=5,
                 role_names=roles,
             )
-            network = grapher.get_relation_graph()
+            network = grapher.get_relation_graph(relation_repository)
             actual = utils.normalize_dict(network)
             log.debug(f"network: {actual}")
 
@@ -307,7 +311,9 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
 
         # WHEN
         with transaction():
-            artist = EntityRepository().get_by_type_and_name(entity_type, entity_name)
+            entity_repository = EntityRepository()
+            relation_repository = RelationRepository()
+            artist = entity_repository.get_by_type_and_name(entity_type, entity_name)
             roles = ["Alias", "Member Of"]
             grapher = DatabaseTestCase.relation_grapher(
                 center_entity=artist,
@@ -315,7 +321,7 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
                 link_ratio=2,
                 role_names=roles,
             )
-            network = grapher.get_relation_graph()
+            network = grapher.get_relation_graph(relation_repository)
             actual = utils.normalize_dict(network)
 
         # THEN
@@ -450,14 +456,16 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
 
         # WHEN
         with transaction():
-            artist = EntityRepository().get(entity_id, entity_type)
+            entity_repository = EntityRepository()
+            relation_repository = RelationRepository()
+            artist = entity_repository.get(entity_id, entity_type)
             roles = ["Alias", "Member Of"]
             grapher = DatabaseTestCase.relation_grapher(
                 center_entity=artist,
                 degree=12,
                 role_names=roles,
             )
-            network = grapher.get_relation_graph()
+            network = grapher.get_relation_graph(relation_repository)
             actual = utils.normalize_dict(network)
 
         expected_network = {
@@ -683,7 +691,9 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
 
         # WHEN
         with transaction():
-            label = EntityRepository().get_by_type_and_name(entity_type, entity_name)
+            entity_repository = EntityRepository()
+            relation_repository = RelationRepository()
+            label = entity_repository.get_by_type_and_name(entity_type, entity_name)
             print(f"label: {label}")
             roles = ["Recorded At"]
             grapher = DatabaseTestCase.relation_grapher(
@@ -691,7 +701,7 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
                 degree=2,
                 role_names=roles,
             )
-            network = grapher.get_relation_graph()
+            network = grapher.get_relation_graph(relation_repository)
             actual = utils.normalize_dict(network)
 
         # THEN

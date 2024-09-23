@@ -15,7 +15,8 @@ class TestDatabaseEntityStructuralRolesToRelations(DatabaseTestCase):
         entity_id = 430141
         entity_type = EntityType.ARTIST
         with transaction():
-            entity = EntityRepository().get(entity_id, entity_type)
+            entity_repository = EntityRepository()
+            entity = entity_repository.get(entity_id, entity_type)
             print(f"entity: {entity}")
             roles = ["Alias", "Member Of"]
             relations = EntityDataAccess.structural_roles_to_relations(

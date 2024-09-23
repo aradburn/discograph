@@ -35,10 +35,12 @@ class WorkerEntityDeleter(multiprocessing.Process):
                 relation_repository = RelationRepository()
                 try:
                     entity_repository.delete_by_id(entity_id, entity_type)
-                    relation_repository.delete_by_entity_id(entity_id, entity_type)
+                    relation_repository.delete_by_entity_id_and_entity_type(
+                        entity_id, entity_type
+                    )
                     deleted_count += 1
                 except DatabaseError as e:
-                    log.exception("Error in WorkerEntityDeleter worker", e)
+                    log.exception("Error in WorkerEntityDeleter worker", exc_info=True)
                     raise e
 
         log.info(

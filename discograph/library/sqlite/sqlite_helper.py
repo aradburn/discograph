@@ -63,8 +63,8 @@ class SqliteHelper(DatabaseHelper):
                 connection.execute(text("pragma temp_store=MEMORY"))
                 connection.commit()
                 log.info("Database connected OK.")
-        except DatabaseError as e:
-            log.exception("Connection Error", e)
+        except DatabaseError:
+            log.exception("Connection Error", exc_info=True)
 
     @classmethod
     def load_tables(cls, data_directory: str, date: str, is_bulk_inserts: bool) -> None:

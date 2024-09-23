@@ -100,7 +100,7 @@ class RelationGrapher(ABC):
         self.should_break_loop = False
         self.entity_keys_to_visit = set[tuple[int, EntityType]]()
 
-    def get_relation_graph(self):
+    def get_relation_graph(self, relation_repository: RelationRepository):
         log.debug(f"Searching around {self.center_entity.entity_name}...")
         provisional_role_names = self.relational_role_names
         # provisional_roles = list(self.relational_role_names)
@@ -124,7 +124,7 @@ class RelationGrapher(ABC):
                     distance, provisional_role_names, relations
                 )
                 self.search_via_relational_roles(
-                    distance, provisional_role_names, relations
+                    relation_repository, distance, provisional_role_names, relations
                 )
             self.test_loop_two(distance, relations)
             self.entity_keys_to_visit.clear()
@@ -177,7 +177,11 @@ class RelationGrapher(ABC):
         return entities
 
     def search_via_relational_roles(
-        self, distance, provisional_roles, relation_links: Dict[str, RelationResult]
+        self,
+        relation_repository: RelationRepository,
+        distance,
+        provisional_roles,
+        relation_links: Dict[str, RelationResult],
     ):
         for entity_key in sorted(self.entity_keys_to_visit):
             node = self.nodes.get(entity_key)
@@ -200,7 +204,7 @@ class RelationGrapher(ABC):
                 log.debug(
                     f"            {start + 1}-{min(start + step, stop)} of {stop}"
                 )
-                relation_results = RelationRepository().search_multi(
+                relation_results = relation_repository.search_multi(
                     entity_keys=key_slice, role_names=provisional_roles
                 )
                 for relation in relation_results:

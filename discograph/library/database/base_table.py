@@ -1,9 +1,10 @@
-# from discograph import utils
-# from discograph.library.database.database_helper import Base
+from typing import TypeVar
+
+from sqlalchemy.orm import DeclarativeBase
 
 
-# class BaseTable(Base):
-#     __abstract__ = True
-#
-#     def __repr__(self):
-#         return utils.normalize_dict(utils.row2dict(self), skip_keys={"random"})
+class Base(DeclarativeBase):
+    pass
+
+
+ConcreteTable = TypeVar("ConcreteTable", bound=Base)

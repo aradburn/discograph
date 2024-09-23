@@ -33,7 +33,9 @@ class WorkerReleaseInserter(multiprocessing.Process):
                 release_repository.save_all(self.bulk_inserts)
                 release_repository.commit()
             except DatabaseError as e:
-                log.exception("Database Error in WorkerReleaseInserter worker", e)
+                log.exception(
+                    "Database Error in WorkerReleaseInserter worker", exc_info=True
+                )
                 raise e
 
         log.info(f"[{proc_name}] inserted_count: {self.inserted_count}")

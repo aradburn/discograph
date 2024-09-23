@@ -23,7 +23,6 @@ from discograph.config import (
     DISCOGS_PATH,
 )
 from discograph.library.data_access_layer.role_data_access import RoleDataAccess
-from discograph.library.database.database_helper import Base
 
 log = logging.getLogger(__name__)
 
@@ -202,6 +201,8 @@ def normalize_dict(obj: Any, skip_keys=None) -> str:
     def default(o):
         def as_dict(self):
             return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+        from discograph.library.database.base_table import Base
 
         if isinstance(o, Base):
             return list_public_attributes(preprocessor.filter(as_dict(o)))

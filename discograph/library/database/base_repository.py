@@ -7,7 +7,7 @@ from sqlalchemy.engine import Result
 __all__ = ("BaseRepository",)
 
 from discograph.exceptions import UnprocessableError, DatabaseError, NotFoundError
-from discograph.library.database.database_helper import ConcreteTable
+from discograph.library.database.base_table import ConcreteTable
 from discograph.library.database.session import WrappedSession
 
 log = logging.getLogger(__name__)

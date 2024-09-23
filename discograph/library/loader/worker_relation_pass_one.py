@@ -115,7 +115,7 @@ class WorkerRelationPassOne(multiprocessing.Process):
                     entity_two_id=relation_dict["entity_two_id"],
                     entity_two_type=relation_dict["entity_two_type"],
                     role_name=role_name,
-                    releases={},
+                    # releases={},
                     random=random(),
                 )
                 relation_uncommitteds.append(relation_uncommitted)

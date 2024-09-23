@@ -50,7 +50,7 @@ class WorkerEntityPassThree(multiprocessing.Process):
                 except DatabaseError as e:
                     log.exception(
                         f"Database Error for entity: {entity_id}-{self.entity_type} in process {proc_name}",
-                        e,
+                        exc_info=True,
                     )
                     raise e
 

@@ -33,6 +33,6 @@ class WorkerEntityInserter(multiprocessing.Process):
                 entity_repository.save_all(self.bulk_inserts)
                 entity_repository.commit()
             except DatabaseError as e:
-                log.exception("Error in WorkerEntityInserter worker", e)
+                log.exception("Error in WorkerEntityInserter worker", exc_info=True)
                 raise e
         log.info(f"[{proc_name}] inserted_count: {self.inserted_count}")

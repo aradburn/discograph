@@ -1,55 +1,45 @@
 from discograph import utils
-from discograph.library.database.relation_repository import RelationRepository
+from discograph.library.database.relation_release_year_repository import (
+    RelationReleaseYearRepository,
+)
 from discograph.library.database.transaction import transaction
-from discograph.library.domain.relation import Relation, RelationUncommitted
-from discograph.library.fields.entity_type import EntityType
+from discograph.library.domain.relation_release_year import (
+    RelationReleaseYearUncommitted,
+    RelationReleaseYear,
+)
 from discograph.library.loader.loader_role import LoaderRole
-from discograph.library.loader.worker_relation_pass_one import WorkerRelationPassOne
 from tests.integration.library.database.repository_test_case import RepositoryTestCase
 
 
-class TestRepositoryRelation(RepositoryTestCase):
+class TestRepositoryRelationReleaseYear(RepositoryTestCase):
     def test_01_create(self):
         # GIVEN
         LoaderRole().load_all_roles()
 
-        relation = RelationUncommitted(
-            entity_one_id=2,
-            entity_one_type=EntityType.ARTIST,
-            entity_two_id=3,
-            entity_two_type=EntityType.LABEL,
-            role_name="Composed By",
-            # releases={},
-            random=0.0,
+        relation_release_year = RelationReleaseYearUncommitted(
+            relation_id=2,
+            release_id=3,
+            year=1969,
         )
-        relation_dict = relation.model_dump()
-        relation_dict["role"] = relation.role_name
-        relation_dicts = [relation_dict]
 
         # WHEN
         with transaction():
-            relation_repository = RelationRepository()
-            relations = WorkerRelationPassOne.to_relations_from_dict(relation_dicts)
+            repository = RelationReleaseYearRepository()
 
-            created_relation = relation_repository.create(relations[0])
-            print(f"created_relation: {created_relation}")
+            created_relation_release_year = repository.create(relation_release_year)
+            print(f"created_relation_release_year: {created_relation_release_year}")
 
             actual = utils.normalize_dict(
-                created_relation.model_dump(exclude={"random"})
+                created_relation_release_year.model_dump(exclude={"random"})
             )
             print(f"actual: {actual}")
 
         # THEN
-        expected_relation = Relation(
-            relation_id=1,
-            version_id=1,
-            entity_one_id=2,
-            entity_one_type=EntityType.ARTIST,
-            entity_two_id=3,
-            entity_two_type=EntityType.LABEL,
-            role="Composed By",
-            # releases={},
-            random=0.0,
+        expected_relation = RelationReleaseYear(
+            relation_release_year_id=1,
+            relation_id=2,
+            release_id=3,
+            year=1969,
         )
         expected = utils.normalize_dict(
             expected_relation.model_dump(exclude={"random"})
@@ -59,7 +49,7 @@ class TestRepositoryRelation(RepositoryTestCase):
     # def test_02_update(self):
     #     # GIVEN
     #     with transaction():
-    #         release = Release.model_validate(
+    #         release = ReleaseReleaseYear.model_validate(
     #             {
     #                 "artists": [{"id": 939, "name": "Higher Intelligence Agency, The"}],
     #                 "companies": [],
@@ -208,27 +198,30 @@ class TestRepositoryRelation(RepositoryTestCase):
 
         # WHEN
         with transaction():
-            repository = RelationRepository()
-            # Get internal RelationDB
-            relation_db = repository.get(1)
-            # Convert to domain Relation
-            relation = repository._to_domain(relation_db)
-            actual = utils.normalize_dict(relation.model_dump(exclude={"random"}))
+            repository = RelationReleaseYearRepository()
+            # Get internal RelationReleaseYearDB
+            relation_release_years = repository.get(2)
+            actual = [
+                utils.normalize_dict(
+                    relation_release_year.model_dump(exclude={"random"})
+                )
+                for relation_release_year in relation_release_years
+            ]
 
         # THEN
-        expected_relation = Relation(
-            relation_id=1,
-            version_id=2,
-            entity_one_id=2,
-            entity_one_type=EntityType.ARTIST,
-            entity_two_id=3,
-            entity_two_type=EntityType.LABEL,
-            role="Composed By",
-            # releases={"635": 1994},
-            random=0.0,
-        )
-        expected = utils.normalize_dict(
-            expected_relation.model_dump(exclude={"random"})
-        )
+        expected_relation_release_years = [
+            RelationReleaseYear(
+                relation_release_year_id=1,
+                relation_id=2,
+                release_id=3,
+                year=1969,
+            )
+        ]
+        expected = [
+            utils.normalize_dict(
+                expected_relation_release_year.model_dump(exclude={"random"})
+            )
+            for expected_relation_release_year in expected_relation_release_years
+        ]
         print(f"expected: {expected}")
-        self.assertEqual(expected, actual)
+        self.assertListEqual(expected, actual)

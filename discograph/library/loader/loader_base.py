@@ -1,6 +1,5 @@
 import gzip
 import logging
-import pprint
 import sys
 from abc import abstractmethod
 from random import random
@@ -90,7 +89,7 @@ class LoaderBase:
                             cls.loader_wait_for_worker(worker)
 
                 except DataError as e:
-                    log.exception("Error in loader_pass_one", pprint.pformat(data))
+                    log.exception("Error in loader_pass_one", exc_info=True)
                     raise e
 
             if len(bulk_records) > 0:

@@ -8,7 +8,8 @@ class TestDatabaseRelease(DatabaseTestCase):
     def test_from_db_01(self):
         release_id = 157
         with transaction():
-            release = ReleaseRepository().get(release_id)
+            release_repository = ReleaseRepository()
+            release = release_repository.get(release_id)
             actual = utils.normalize_dict(release.model_dump(exclude={"random"}))
 
         expected_release = {
@@ -77,7 +78,8 @@ class TestDatabaseRelease(DatabaseTestCase):
     def test_from_db_02(self):
         release_id = 635
         with transaction():
-            release = ReleaseRepository().get(release_id)
+            release_repository = ReleaseRepository()
+            release = release_repository.get(release_id)
             actual = utils.normalize_dict(release.model_dump(exclude={"random"}))
 
         expected_release = {

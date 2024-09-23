@@ -2,24 +2,30 @@ import logging
 import random
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Type, TypeVar, List
+from typing import Type, List, Any
 
 from sqlalchemy import Engine, Index, Table
-from sqlalchemy.orm import DeclarativeBase, sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.sql.dml import ReturningInsert, Insert
 
 from discograph.config import Configuration
-from discograph.library.data_access_layer.role_data_access import RoleDataAccess
+from discograph.library.database.base_table import Base, ConcreteTable
+from discograph.library.database.entity_repository import EntityRepository
+from discograph.library.database.relation_release_year_repository import (
+    RelationReleaseYearRepository,
+)
+from discograph.library.database.relation_repository import RelationRepository
+from discograph.library.domain.relation import Relation
 from discograph.library.fields.entity_type import EntityType
 
 log = logging.getLogger(__name__)
 
 
-class Base(DeclarativeBase):
-    pass
-
-
-ConcreteTable = TypeVar("ConcreteTable", bound=Base)
+# class Base(DeclarativeBase):
+#     pass
+#
+#
+# ConcreteTable = TypeVar("ConcreteTable", bound=Base)
 
 
 class DatabaseHelper(ABC):
@@ -56,7 +62,7 @@ class DatabaseHelper(ABC):
         """ensure the parent proc's database connections are not touched
         in the new connection pool"""
         cls.engine.dispose(close=False)
-        cls.session_factory = sessionmaker(bind=cls.engine)
+        # cls.session_factory = sessionmaker(bind=cls.engine)
 
     @staticmethod
     @abstractmethod
@@ -204,14 +210,10 @@ class DatabaseHelper(ABC):
     ) -> Insert[tuple[ConcreteTable]]:
         pass
 
-    @classmethod
-    def get_entity(cls, entity_id: int, entity_type: EntityType):
-        from discograph.library.database.entity_repository import EntityRepository
-
-        return EntityRepository().get(entity_id, entity_type)
-
     @staticmethod
     def get_network(
+        entity_repository: EntityRepository,
+        relation_repository: RelationRepository,
         entity_id: int,
         entity_type: EntityType,
         on_mobile=False,
@@ -219,7 +221,6 @@ class DatabaseHelper(ABC):
     ):
         from discograph.library.cache.cache_manager import cache
         from discograph.library.relation_grapher import RelationGrapher
-        from discograph.library.database.entity_repository import EntityRepository
 
         assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
         template = "discograph:/api/{entity_type}/network/{entity_id}"
@@ -238,7 +239,7 @@ class DatabaseHelper(ABC):
         if data is not None:
             return data
 
-        entity = EntityRepository().get(entity_id, entity_type)
+        entity = entity_repository.get(entity_id, entity_type)
         if entity is None:
             return None
         if not on_mobile:
@@ -253,23 +254,24 @@ class DatabaseHelper(ABC):
             max_nodes=max_nodes,
             role_names=roles,
         )
-        data = relation_grapher.get_relation_graph()
+        data = relation_grapher.get_relation_graph(relation_repository)
         cache.set(cache_key, data)
         return data
 
     @staticmethod
-    def get_random_entity(roles=None) -> tuple[int, EntityType]:
-        from discograph.library.database.entity_repository import EntityRepository
-        from discograph.library.database.relation_repository import RelationRepository
-        from discograph.library.domain.entity import Entity
+    def get_random_entity(
+        entity_repository: EntityRepository,
+        relation_repository: RelationRepository,
+        role_names: List[str] = None,
+    ) -> tuple[int, EntityType]:
 
         structural_roles = [
             "Alias",
             "Member Of",
             "Sublabel Of",
         ]
-        if roles and any(_ not in structural_roles for _ in roles):
-            relation = RelationRepository().get_random_relation(roles=roles)
+        if role_names and any(_ not in structural_roles for _ in role_names):
+            relation = relation_repository.get_random(role_names=role_names)
             entity_choice = random.randint(1, 2)
             if entity_choice == 1:
                 entity_type = relation.entity_one_type
@@ -282,7 +284,7 @@ class DatabaseHelper(ABC):
             counter = 0
 
             while True:
-                entity: Entity = EntityRepository().get_random_entity()
+                entity = entity_repository.get_random()
                 relation_counts = entity.relation_counts
                 entities = entity.entities
                 # log.debug(f"relation_counts: {relation_counts}")
@@ -312,69 +314,10 @@ class DatabaseHelper(ABC):
         assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
         return entity_id, entity_type
 
-    # @staticmethod
-    # def get_relations(session: Session, entity_id: int, entity_type: EntityType):
-    #     entity = EntityRepository().get(entity_id, entity_type)
-    #     if entity is None:
-    #         return None
-    #     where_clause = PostgresRelationDB.search(
-    #         entity_id=entity.entity_id,
-    #         entity_type=entity.entity_type,
-    #         query_only=True,
-    #     )
-    #     relations = session.scalars(
-    #         select(PostgresRelationDB)
-    #         .where(where_clause)
-    #         .order_by(
-    #             PostgresRelationDB.role_id,
-    #             PostgresRelationDB.entity_one_id,
-    #             PostgresRelationDB.entity_one_type,
-    #             PostgresRelationDB.entity_two_id,
-    #             PostgresRelationDB.entity_two_type,
-    #         )
-    #     ).all()
-    #     data = []
-    #     for relation in relations:
-    #         # category = RoleType.role_definitions[relation.role]
-    #         # if category is None:
-    #         #     continue
-    #         datum = {
-    #             "role": RoleType.role_id_to_role_lookup[relation.role_id],
-    #         }
-    #         data.append(datum)
-    #     data = {"results": tuple(data)}
-    #     return data
-
     @staticmethod
-    def parse_request_args(args):
-        from discograph.utils import ARG_ROLES_REGEX
-
-        year = None
-        roles = set()
-        for key in args:
-            if key == "year":
-                year = args[key]
-                try:
-                    if "-" in year:
-                        start, _, stop = year.partition("-")
-                        year = tuple(sorted((int(start), int(stop))))
-                    else:
-                        year = int(year)
-                finally:
-                    pass
-            elif ARG_ROLES_REGEX.match(key):
-                value = args.getlist(key)
-                for role in value:
-                    if role in RoleDataAccess.role_name_to_role_id_lookup.keys():
-                        roles.add(role)
-        roles = list(sorted(roles))
-        return roles, year
-
-    @staticmethod
-    def search_entities(search_string):
+    def search_entities(entity_repository: EntityRepository, search_string):
         from discograph.utils import URLIFY_REGEX
         from discograph.library.cache.cache_manager import cache
-        from discograph.library.database.entity_repository import EntityRepository
 
         search_query_url = URLIFY_REGEX.sub("+", search_string)
         cache_key = f"discograph:/api/search/{search_query_url}"
@@ -386,7 +329,7 @@ class DatabaseHelper(ABC):
                 log.debug(f"    {datum}")
             return data
 
-        entities = EntityRepository().find_by_search_content(search_string)
+        entities = entity_repository.find_by_search_content(search_string)
         log.debug(f"{cache_key}: NOT CACHED")
         data = []
         for entity in entities:
@@ -401,51 +344,55 @@ class DatabaseHelper(ABC):
         cache.set(cache_key, data)
         return data
 
-    # @staticmethod
-    # @abstractmethod
-    # def get_network(
-    #     session: Session,
-    #     entity_id: int,
-    #     entity_type: EntityType,
-    #     on_mobile=False,
-    #     roles=None,
-    # ):
-    #     pass
-    #
-    # @staticmethod
-    # @abstractmethod
-    # def get_random_entity(session: Session, roles=None) -> tuple[int, str]:
-    #     pass
-    #
-    # @staticmethod
-    # @abstractmethod
-    # def get_relations(session: Session, entity_id: int, entity_type: EntityType):
-    #     pass
-
     @classmethod
-    def get_relations(cls, entity_id: int, entity_type: EntityType):
-        from discograph.library.database.relation_repository import RelationRepository
-
-        entity = cls.get_entity(entity_id, entity_type)
-        if entity is None:
-            return None
-        relations = RelationRepository().get_relations_for_entity(entity)
+    def get_relations_by_entity_id_and_entity_type(
+        cls,
+        relation_repository: RelationRepository,
+        relation_release_year_repository: RelationReleaseYearRepository,
+        entity_id: int,
+        entity_type: EntityType,
+    ) -> dict[str, Any]:
+        relations = relation_repository.find_by_entity_id_and_entity_type(
+            entity_id, entity_type
+        )
 
         data = []
         for relation in relations:
+            relation_release_years = relation_release_year_repository.get(
+                relation.relation_id
+            )
+            relation.releases = {}
+            for relation_release_year in relation_release_years:
+                relation.releases[relation_release_year.release_id] = (
+                    relation_release_year.year
+                )
+
             # category = RoleType.role_definitions[relation.role]
             # if category is None:
             #     continue
             datum = {
                 "role": relation.role,
-                # "role": RoleType.role_id_to_role_name_lookup[relation.role_id],
+                "releases": relation.releases,
             }
             data.append(datum)
         data = {"results": tuple(data)}
         return data
 
-    #
-    # @staticmethod
-    # @abstractmethod
-    # def search_entities(session: Session, search_string: str):
-    #     pass
+    @classmethod
+    def get_relation_by_key(
+        cls,
+        relation_repository: RelationRepository,
+        relation_release_year_repository: RelationReleaseYearRepository,
+        key: dict[str, Any],
+    ) -> Relation:
+        relation = relation_repository.find_by_key(key)
+
+        relation_release_years = relation_release_year_repository.get(
+            relation.relation_id
+        )
+        relation.releases = {}
+        for relation_release_year in relation_release_years:
+            relation.releases[str(relation_release_year.release_id)] = (
+                relation_release_year.year
+            )
+        return relation

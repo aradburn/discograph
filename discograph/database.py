@@ -1,14 +1,12 @@
 import logging
 import multiprocessing
 import os
-from typing import Type
 
 from sqlalchemy import exc
 from sqlalchemy.event import listen
 from sqlalchemy.orm import sessionmaker, close_all_sessions
 
 from discograph.config import DatabaseType, ThreadingModel, ALL_DATABASE_TABLE_NAMES
-from discograph.library.database.database_helper import DatabaseHelper
 from discograph.logging_config import LOGGING_TRACE
 
 log = logging.getLogger(__name__)
@@ -16,8 +14,9 @@ log = logging.getLogger(__name__)
 threading_model: ThreadingModel | None = None
 
 
-def setup_database(config) -> Type[DatabaseHelper]:
+def setup_database(config) -> "DatabaseHelper":
     from discograph.library.loader.loader_role import LoaderRole
+    from discograph.library.database.database_helper import DatabaseHelper
 
     global threading_model
 

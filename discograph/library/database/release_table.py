@@ -2,7 +2,7 @@ from sqlalchemy import String, JSON, Integer, Float, Date
 from sqlalchemy.orm import Mapped, mapped_column
 
 from discograph import utils
-from discograph.library.database.database_helper import Base
+from discograph.library.database.base_table import Base
 
 
 class ReleaseTable(Base):

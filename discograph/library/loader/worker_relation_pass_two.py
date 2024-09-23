@@ -1,19 +1,23 @@
 import logging
 import multiprocessing
-import pprint
+from typing import List
 
-from deepdiff import DeepDiff
 from sqlalchemy.exc import OperationalError
 
-from discograph import utils
 from discograph.database import get_concurrency_count
 from discograph.exceptions import NotFoundError, DatabaseError
 from discograph.library.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.library.data_access_layer.role_data_access import RoleDataAccess
 from discograph.library.database.database_helper import DatabaseHelper
+from discograph.library.database.relation_release_year_repository import (
+    RelationReleaseYearRepository,
+)
 from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.database.release_repository import ReleaseRepository
 from discograph.library.database.transaction import transaction
+from discograph.library.domain.relation_release_year import (
+    RelationReleaseYearUncommitted,
+)
 from discograph.library.loader.loader_base import LoaderBase
 from discograph.logging_config import LOGGING_TRACE
 
@@ -29,6 +33,8 @@ class WorkerRelationPassTwo(multiprocessing.Process):
 
     def run(self):
         proc_name = self.name
+
+        relation_release_years = []
 
         count = self.current_total
         end_count = count + len(self.release_ids)
@@ -54,122 +60,95 @@ class WorkerRelationPassTwo(multiprocessing.Process):
                         f"WorkerRelationPassTwo release_id not found: {release_id}"
                     )
                 except DatabaseError as e:
-                    log.error("Database Error in WorkerRelationPassTwo")
-                    # log.exception("Database Error in WorkerRelationPassTwo", e)
+                    log.exception(
+                        "Database Error in WorkerRelationPassTwo (getting relations from release)"
+                    )
                     raise e
 
             for relation_dict in relations:
-                max_attempts = LoaderBase.MAX_RETRYS
-                error = True
-                while error and max_attempts != 0:
-                    error = False
 
-                    with transaction():
-                        relation_repository = RelationRepository()
+                with transaction():
+                    relation_repository = RelationRepository()
+                    relation_release_year_repository = RelationReleaseYearRepository()
 
-                        try:
-                            year = relation_dict.get("year")
-                            self.update_relation(
-                                relation_repository=relation_repository,
-                                relation_dict=relation_dict,
-                                release_id=release_id,
-                                year=year,
-                            )
-                        except DatabaseError as e:
-                            relation_repository.rollback()
-
-                            if (
-                                LOGGING_TRACE
-                                or max_attempts < LoaderBase.MAX_RETRYS - 1
-                            ):
-                                log.exception(e)
-
-                            max_attempts -= 1
-                            error = True
-                            utils.sleep_with_backoff(
-                                LoaderBase.MAX_RETRYS - max_attempts
-                            )
-                        except OperationalError as e:
-                            relation_repository.rollback()
-
-                            if LOGGING_TRACE or max_attempts <= 1:
-                                log.exception(
-                                    f"Database OperationalError in WorkerRelationPassTwo (update)",
-                                    e,
-                                )
-                            max_attempts -= 1
-                            error = True
-                            utils.sleep_with_backoff(
-                                LoaderBase.MAX_RETRYS - max_attempts
-                            )
-
-                if error:
-                    log.error(f"Error in updating relations for release: {release_id}")
-                    raise Exception(
-                        f"Error in updating relations for release: {release_id}"
+                    year = relation_dict.get("year")
+                    new_relation_release_years = self.to_relation_release_years(
+                        relation_repository=relation_repository,
+                        relation_dict=relation_dict,
+                        release_id=release_id,
+                        year=year,
                     )
+                    relation_release_years.extend(new_relation_release_years)
+
+                    if len(relation_release_years) > LoaderBase.BULK_INSERT_BATCH_SIZE:
+                        self.create_relation_release_year_bulk(
+                            relation_release_year_repository, relation_release_years
+                        )
+                        relation_release_years.clear()
 
             count += 1
             if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == end_count:
                 log.debug(f"[{proc_name}] processed {count} of {self.total_count}")
 
+        if len(relation_release_years) > 0:
+            with transaction():
+                relation_release_year_repository = RelationReleaseYearRepository()
+                self.create_relation_release_year_bulk(
+                    relation_release_year_repository, relation_release_years
+                )
+
         log.info(f"[{proc_name}] processed {count} of {self.total_count}")
 
     @classmethod
-    def update_relation(
+    def to_relation_release_years(
         cls,
         relation_repository: RelationRepository,
         relation_dict: dict,
         release_id: int,
         year: int,
-    ) -> None:
+    ) -> List[RelationReleaseYearUncommitted]:
+        relation_release_years = []
         role_names = RoleDataAccess.normalise_role_names(relation_dict["role"])
         for role_name in role_names:
-            retry_wanted = True
-            while retry_wanted:
-                try:
-                    key = {
-                        "entity_one_id": relation_dict["entity_one_id"],
-                        "entity_one_type": relation_dict["entity_one_type"],
-                        "entity_two_id": relation_dict["entity_two_id"],
-                        "entity_two_type": relation_dict["entity_two_type"],
-                        "role_name": role_name,
-                    }
-                    relation_db = relation_repository.find_by_key(key)
-                    # log.debug(f"v: {relation_db.version_id}")
-                except DatabaseError:
-                    relation_repository.rollback()
-                    log.debug(f"Error cannot find relation")
-                    relation_db = None
-                except OperationalError as e:
-                    relation_repository.rollback()
-                    # log.debug(f"Record is locked")
-                    raise e
+            try:
+                key = {
+                    "entity_one_id": relation_dict["entity_one_id"],
+                    "entity_one_type": relation_dict["entity_one_type"],
+                    "entity_two_id": relation_dict["entity_two_id"],
+                    "entity_two_type": relation_dict["entity_two_type"],
+                    "role_name": role_name,
+                }
+                relation_id = relation_repository.get_id_by_key(key)
+                # log.debug(f"v: {relation_db.version_id}")
+                relation_release_year_uncommitted = RelationReleaseYearUncommitted(
+                    relation_id=relation_id,
+                    release_id=release_id,
+                    year=year,
+                )
+                relation_release_years.append(relation_release_year_uncommitted)
+            except DatabaseError:
+                relation_repository.rollback()
+                log.debug(f"Error cannot find relation")
+            except OperationalError as e:
+                relation_repository.rollback()
+                raise e
+        return relation_release_years
 
-                if relation_db is not None:
-                    original = relation_db.releases.copy()
-                    updated = relation_db.releases.copy()
-                    updated[str(release_id)] = year
-
-                    differences = DeepDiff(
-                        original,
-                        updated,
-                    )
-                    diff = pprint.pformat(differences)
-                    if diff != "{}":
-                        # log.debug(f"diff: {diff}")
-                        try:
-                            relation_repository.update_one(
-                                relation_db.relation_id,
-                                relation_db.version_id,
-                                {
-                                    "releases": updated,
-                                    "version_id": relation_db.version_id + 1,
-                                },
-                            )
-                            relation_repository.commit()
-                            retry_wanted = False
-                        except DatabaseError:
-                            relation_repository.rollback()
-                    else:
-                        retry_wanted = False
+    @classmethod
+    def create_relation_release_year_bulk(
+        cls,
+        relation_release_year_repository: RelationReleaseYearRepository,
+        relation_release_years: List[RelationReleaseYearUncommitted],
+    ) -> None:
+        try:
+            relation_release_year_repository.create_bulk(relation_release_years)
+            relation_release_year_repository.commit()
+            # log.debug(
+            #     f"Created RelationReleaseYear: {relation_db.relation_id} {release_id} {year}"
+            # )
+        except DatabaseError:
+            relation_release_year_repository.rollback()
+            log.debug(f"Error cannot create RelationReleaseYear")
+        except OperationalError as e:
+            relation_release_year_repository.rollback()
+            raise e

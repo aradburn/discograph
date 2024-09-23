@@ -2,7 +2,7 @@ from sqlalchemy import String, JSON, PrimaryKeyConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from discograph import utils
-from discograph.library.database.database_helper import Base
+from discograph.library.database.base_table import Base
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.fields.int_enum import IntEnum
 

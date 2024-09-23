@@ -1,6 +1,10 @@
 from discograph import utils
 from discograph.exceptions import NotFoundError
+from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.database.entity_repository import EntityRepository
+from discograph.library.database.relation_release_year_repository import (
+    RelationReleaseYearRepository,
+)
 from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.database.release_repository import ReleaseRepository
 from discograph.library.database.transaction import transaction
@@ -16,7 +20,8 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
-            entity = EntityRepository().get(entity_id, entity_type)
+            entity_repository = EntityRepository()
+            entity = entity_repository.get(entity_id, entity_type)
             actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
 
         # THEN
@@ -64,7 +69,8 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
-            entity = EntityRepository().get(entity_id, entity_type)
+            entity_repository = EntityRepository()
+            entity = entity_repository.get(entity_id, entity_type)
             actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
 
         # THEN
@@ -121,7 +127,8 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
-            entity = EntityRepository().get(entity_id, entity_type)
+            entity_repository = EntityRepository()
+            entity = entity_repository.get(entity_id, entity_type)
             actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
 
         # THEN
@@ -149,8 +156,9 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
+            entity_repository = EntityRepository()
             try:
-                entity = EntityRepository().get(entity_id, entity_type)
+                entity = entity_repository.get(entity_id, entity_type)
             except NotFoundError:
                 entity = None
 
@@ -164,7 +172,8 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
-            entity = EntityRepository().get(entity_id, entity_type)
+            entity_repository = EntityRepository()
+            entity = entity_repository.get(entity_id, entity_type)
             actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
 
         # THEN
@@ -197,7 +206,8 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
-            entity = EntityRepository().get(entity_id, entity_type)
+            entity_repository = EntityRepository()
+            entity = entity_repository.get(entity_id, entity_type)
             actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
 
         # THEN
@@ -226,7 +236,8 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
-            entity = EntityRepository().get(entity_id, entity_type)
+            entity_repository = EntityRepository()
+            entity = entity_repository.get(entity_id, entity_type)
             actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
 
         # THEN
@@ -252,8 +263,9 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
+            entity_repository = EntityRepository()
             try:
-                entity = EntityRepository().get(entity_id, entity_type)
+                entity = entity_repository.get(entity_id, entity_type)
             except NotFoundError:
                 entity = None
 
@@ -266,7 +278,8 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
-            release = ReleaseRepository().get(release_id)
+            release_repository = ReleaseRepository()
+            release = release_repository.get(release_id)
             actual = utils.normalize_dict(release.model_dump(exclude={"random"}))
 
         # THEN
@@ -339,7 +352,8 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
-            release = ReleaseRepository().get(release_id)
+            release_repository = ReleaseRepository()
+            release = release_repository.get(release_id)
             actual = utils.normalize_dict(release.model_dump(exclude={"random"}))
 
         # THEN
@@ -429,7 +443,8 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
-            release = ReleaseRepository().get(release_id)
+            release_repository = ReleaseRepository()
+            release = release_repository.get(release_id)
             actual = utils.normalize_dict(release.model_dump(exclude={"random"}))
 
         # THEN
@@ -503,8 +518,9 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
+            release_repository = ReleaseRepository()
             try:
-                release = ReleaseRepository().get(release_id)
+                release = release_repository.get(release_id)
             except NotFoundError:
                 release = None
 
@@ -523,7 +539,11 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
-            relation = RelationRepository().find_by_key(key)
+            relation_repository = RelationRepository()
+            relation_release_year_repository = RelationReleaseYearRepository()
+            relation = DatabaseHelper.get_relation_by_key(
+                relation_repository, relation_release_year_repository, key
+            )
             actual = utils.normalize_dict(
                 relation.model_dump(exclude={"relation_id", "version_id", "random"})
             )
@@ -553,7 +573,11 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
-            relation = RelationRepository().find_by_key(key)
+            relation_repository = RelationRepository()
+            relation_release_year_repository = RelationReleaseYearRepository()
+            relation = DatabaseHelper.get_relation_by_key(
+                relation_repository, relation_release_year_repository, key
+            )
             actual = utils.normalize_dict(
                 relation.model_dump(exclude={"relation_id", "version_id", "random"})
             )
@@ -583,7 +607,11 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
-            relation = RelationRepository().find_by_key(key)
+            relation_repository = RelationRepository()
+            relation_release_year_repository = RelationReleaseYearRepository()
+            relation = DatabaseHelper.get_relation_by_key(
+                relation_repository, relation_release_year_repository, key
+            )
             actual = utils.normalize_dict(
                 relation.model_dump(exclude={"relation_id", "version_id", "random"})
             )
@@ -613,7 +641,11 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
-            relation = RelationRepository().find_by_key(key)
+            relation_repository = RelationRepository()
+            relation_release_year_repository = RelationReleaseYearRepository()
+            relation = DatabaseHelper.get_relation_by_key(
+                relation_repository, relation_release_year_repository, key
+            )
             actual = utils.normalize_dict(
                 relation.model_dump(exclude={"relation_id", "version_id", "random"})
             )
@@ -643,7 +675,11 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
-            relation = RelationRepository().find_by_key(key)
+            relation_repository = RelationRepository()
+            relation_release_year_repository = RelationReleaseYearRepository()
+            relation = DatabaseHelper.get_relation_by_key(
+                relation_repository, relation_release_year_repository, key
+            )
             actual = utils.normalize_dict(
                 relation.model_dump(exclude={"relation_id", "version_id", "random"})
             )
@@ -746,7 +782,11 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
-            relation = RelationRepository().find_by_key(key)
+            relation_repository = RelationRepository()
+            relation_release_year_repository = RelationReleaseYearRepository()
+            relation = DatabaseHelper.get_relation_by_key(
+                relation_repository, relation_release_year_repository, key
+            )
             actual = utils.normalize_dict(
                 relation.model_dump(exclude={"relation_id", "version_id", "random"})
             )
@@ -781,7 +821,11 @@ class TestUpdater(UpdaterTestCase):
 
         # WHEN
         with transaction():
-            relation = RelationRepository().find_by_key(key)
+            relation_repository = RelationRepository()
+            relation_release_year_repository = RelationReleaseYearRepository()
+            relation = DatabaseHelper.get_relation_by_key(
+                relation_repository, relation_release_year_repository, key
+            )
             actual = utils.normalize_dict(
                 relation.model_dump(exclude={"relation_id", "version_id", "random"})
             )

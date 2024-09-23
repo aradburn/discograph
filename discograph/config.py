@@ -34,7 +34,14 @@ DISCOGS_ARTISTS_TYPE = "artists"
 DISCOGS_RELEASES_TYPE = "releases"
 DISCOGS_LABELS_TYPE = "labels"
 DISCOGS_MASTERS_TYPE = "masters"
-ALL_DATABASE_TABLE_NAMES = ["entity", "relation", "release", "role", "metadata"]
+ALL_DATABASE_TABLE_NAMES = [
+    "entity",
+    "relation",
+    "release",
+    "role",
+    "relation_release_year",
+    "metadata",
+]
 
 env_file = find_dotenv()
 env_config = dotenv_values()  # take environment variables from .env.

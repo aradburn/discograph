@@ -8,7 +8,8 @@ class TestDatabaseRole(DatabaseTestCase):
     def test_from_db_01(self):
         name = "Acoustic Bass"
         with transaction():
-            role = RoleRepository().get_by_name(name)
+            role_repository = RoleRepository()
+            role = role_repository.get_by_name(name)
             actual = utils.normalize_dict(role.model_dump(exclude={"role_id"}))
 
         expected_role = {
@@ -24,7 +25,8 @@ class TestDatabaseRole(DatabaseTestCase):
     def test_from_db_02(self):
         name = "Mezzo-Soprano Vocals"
         with transaction():
-            role = RoleRepository().get_by_name(name)
+            role_repository = RoleRepository()
+            role = role_repository.get_by_name(name)
             actual = utils.normalize_dict(role.model_dump(exclude={"role_id"}))
 
         expected_role = {
