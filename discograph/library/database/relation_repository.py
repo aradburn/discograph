@@ -50,13 +50,7 @@ class RelationRepository(BaseRepository[RelationTable]):
 
     def get(self, relation_id: int) -> RelationDB:
         # print(f"get")
-        query = (
-            select(RelationTable)
-            # .options(
-            #     joinedload(RelationTable.role),
-            # )
-            .where(RelationTable.relation_id == relation_id)
-        )
+        query = select(RelationTable).where(RelationTable.relation_id == relation_id)
         result: Result = self.execute(query)
         # result: Result = await self.execute(query)
         # print(f"result: {result}")
@@ -79,7 +73,7 @@ class RelationRepository(BaseRepository[RelationTable]):
             query = (
                 select(RelationTable)
                 .where(where_clause)
-                .order_by(RelationTable.random, RelationTable.role)
+                .order_by(RelationTable.random, RelationTable.role_id)
                 .limit(1)
             )
             result: Result = self.execute(query)
@@ -99,26 +93,12 @@ class RelationRepository(BaseRepository[RelationTable]):
             if "role_name" in key:
                 role_name = key["role_name"]
                 key["role_id"] = RoleDataAccess.role_name_to_role_id_lookup[role_name]
-        query = (
-            select(RelationTable.relation_id)
-            # .options(
-            #     joinedload(RelationTable.role),
-            # )
-            # .execution_options(populate_existing=True)
-            # .options(
-            #     # Many to Many relationship, only load release id and date columns
-            #     selectinload(RelationTable.releases)
-            #     # .load_only(
-            #     #     ReleaseTable.release_date
-            #     # )
-            # )
-            .where(
-                (RelationTable.entity_one_id == key["entity_one_id"])
-                & (RelationTable.entity_one_type == key["entity_one_type"])
-                & (RelationTable.entity_two_id == key["entity_two_id"])
-                & (RelationTable.entity_two_type == key["entity_two_type"])
-                & (RelationTable.role_id == key["role_id"])
-            )
+        query = select(RelationTable.relation_id).where(
+            (RelationTable.entity_one_id == key["entity_one_id"])
+            & (RelationTable.entity_one_type == key["entity_one_type"])
+            & (RelationTable.entity_two_id == key["entity_two_id"])
+            & (RelationTable.entity_two_type == key["entity_two_type"])
+            & (RelationTable.role_id == key["role_id"])
         )
         result: Result = self.execute(query)
         # result: Result = await self.execute(query)
@@ -130,10 +110,8 @@ class RelationRepository(BaseRepository[RelationTable]):
     def find_by_id(self, relation_id: int) -> Relation:
         # print(f"find_by_id")
         query = (
-            select(RelationTable).with_for_update(of=RelationTable, nowait=True)
-            # .options(
-            #     joinedload(RoleTable.role_id),
-            # )
+            select(RelationTable)
+            .with_for_update(of=RelationTable, nowait=True)
             .where(RelationTable.relation_id == relation_id)
         )
         return self._get_one_by_query(query)
@@ -150,11 +128,7 @@ class RelationRepository(BaseRepository[RelationTable]):
                 role_name = key["role"]
                 key["role_id"] = RoleDataAccess.role_name_to_role_id_lookup[role_name]
         query = (
-            select(RelationTable)
-            # .options(
-            #     joinedload(RelationTable.role),
-            # )
-            .where(
+            select(RelationTable).where(
                 (RelationTable.entity_one_id == key["entity_one_id"])
                 & (RelationTable.entity_one_type == key["entity_one_type"])
                 & (RelationTable.entity_two_id == key["entity_two_id"])
@@ -170,15 +144,9 @@ class RelationRepository(BaseRepository[RelationTable]):
         entity_id: int,
         entity_type: EntityType,
     ) -> List[Relation]:
-        query = (
-            select(RelationTable)
-            # .options(
-            #     joinedload(RelationTable.role),
-            # )
-            .where(
-                (RelationTable.entity_one_id == entity_id)
-                & (RelationTable.entity_one_type == entity_type)
-            )
+        query = select(RelationTable).where(
+            (RelationTable.entity_one_id == entity_id)
+            & (RelationTable.entity_one_type == entity_type)
         )
         return self._get_all_by_query(query)
 
@@ -187,15 +155,9 @@ class RelationRepository(BaseRepository[RelationTable]):
         entity_id: int,
         entity_type: EntityType,
     ) -> List[Relation]:
-        query = (
-            select(RelationTable)
-            # .options(
-            #     joinedload(RelationTable.role),
-            # )
-            .where(
-                (RelationTable.entity_two_id == entity_id)
-                & (RelationTable.entity_two_type == entity_type)
-            )
+        query = select(RelationTable).where(
+            (RelationTable.entity_two_id == entity_id)
+            & (RelationTable.entity_two_type == entity_type)
         )
         return self._get_all_by_query(query)
 
@@ -225,13 +187,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         #     else:
         #         year_clause |= cls.year.between(year[0], year[1])
         #     where_clause &= year_clause
-        query = (
-            select(RelationTable)
-            # .options(
-            #     joinedload(RelationTable.role),
-            # )
-            .where(where_clause)
-        )
+        query = select(RelationTable).where(where_clause)
         return self._get_all_by_query(query)
 
     def find_by_entity_id_and_entity_type(

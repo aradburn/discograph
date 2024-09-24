@@ -87,8 +87,16 @@ class DatabaseHelper(ABC):
 
     @classmethod
     @abstractmethod
-    def drop_tables(cls) -> None:
-        Base.metadata.drop_all(cls.engine, checkfirst=True)
+    def drop_tables(cls, tables: List[str] = None) -> None:
+        if tables is not None:
+            table_definitions: List[Table] = [
+                Base.metadata.tables[table_name] for table_name in tables
+            ]
+            for table in table_definitions:
+                log.debug(f"deleting table: {table.name}")
+                table.drop(cls.engine, checkfirst=True)
+        else:
+            Base.metadata.drop_all(cls.engine, checkfirst=True)
 
     @classmethod
     def load_tables(cls, data_directory: str, date: str, is_bulk_inserts: bool) -> None:
@@ -144,7 +152,7 @@ class DatabaseHelper(ABC):
             partial(LoaderEntity().loader_entity_pass_two),
             partial(LoaderRelease().loader_release_pass_two),
             partial(LoaderRelation().loader_relation_pass_one, date),
-            partial(LoaderRelation().loader_relation_pass_two, date),
+            # partial(LoaderRelation().loader_relation_pass_two, date),
             partial(
                 LoaderEntity().loader_entity_vacuum, has_tablename, is_full, is_analyze
             ),

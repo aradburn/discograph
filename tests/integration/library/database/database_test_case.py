@@ -5,7 +5,12 @@ from typing import Type
 from sqlalchemy.exc import DatabaseError
 
 from discograph import database
-from discograph.config import Configuration, TEST_DATA_DIR, ALL_DATABASE_TABLE_NAMES
+from discograph.config import (
+    Configuration,
+    TEST_DATA_DIR,
+    ALL_DATABASE_TABLE_NAMES,
+    DATABASE_TABLE_NAMES_WITHOUT_ROLE,
+)
 from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.loader.loader_role import LoaderRole
@@ -45,9 +50,9 @@ class DatabaseTestCase(unittest.TestCase):
             else:
                 # db_logger = logging.getLogger("peewee")
                 # db_logger.setLevel(logging.DEBUG)
-                cls._db_helper.drop_tables()
+                cls._db_helper.drop_tables(DATABASE_TABLE_NAMES_WITHOUT_ROLE)
                 cls._db_helper.create_tables(ALL_DATABASE_TABLE_NAMES)
-                LoaderRole.load_roles_into_database()
+                # LoaderRole.load_roles_into_database()
                 cls._db_helper.load_tables(
                     TEST_DATA_DIR, "testinsert", is_bulk_inserts=True
                 )

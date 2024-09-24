@@ -61,6 +61,7 @@ class SqliteHelper(DatabaseHelper):
                 connection.execute(text("pragma synchronous=OFF"))
                 connection.execute(text("pragma cache_size=-10000"))
                 connection.execute(text("pragma temp_store=MEMORY"))
+                connection.execute(text("pragma foreign_keys=ON"))
                 connection.commit()
                 log.info("Database connected OK.")
         except DatabaseError:
@@ -89,9 +90,9 @@ class SqliteHelper(DatabaseHelper):
         super().create_tables(tables=tables)
 
     @classmethod
-    def drop_tables(cls) -> None:
+    def drop_tables(cls, tables: List[str] = None) -> None:
         log.info("Drop Sqlite tables")
-        super().drop_tables()
+        super().drop_tables(tables=tables)
 
     @staticmethod
     def has_vacuum_tablename() -> bool:

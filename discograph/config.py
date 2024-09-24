@@ -42,7 +42,13 @@ ALL_DATABASE_TABLE_NAMES = [
     "relation_release_year",
     "metadata",
 ]
-
+DATABASE_TABLE_NAMES_WITHOUT_ROLE = [
+    "relation_release_year",
+    "relation",
+    "entity",
+    "release",
+    "metadata",
+]
 env_file = find_dotenv()
 env_config = dotenv_values()  # take environment variables from .env.
 load_dotenv(override=True, verbose=True)  # take environment variables from .env.

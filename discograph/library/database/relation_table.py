@@ -3,10 +3,12 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    ForeignKeyConstraint,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from discograph import utils
+from discograph.library.database import EntityTable
 from discograph.library.database.base_table import Base
 from discograph.library.database.role_table import RoleTable
 from discograph.library.fields.entity_type import EntityType
@@ -19,20 +21,22 @@ class RelationTable(Base):
     # COLUMNS
 
     relation_id: Mapped[int] = mapped_column(primary_key=True)
-    # version_id: Mapped[int] = mapped_column(Integer, nullable=False)
     entity_one_id: Mapped[int] = mapped_column(Integer)
     entity_one_type: Mapped[EntityType] = mapped_column(IntEnum(EntityType))
     entity_two_id: Mapped[int] = mapped_column(Integer)
     entity_two_type: Mapped[EntityType] = mapped_column(IntEnum(EntityType))
-    role_id: Mapped[int] = mapped_column(ForeignKey("role.role_id"))
-    role: Mapped[RoleTable] = relationship()
-    # releases: Mapped[dict | list] = mapped_column(type_=JSON, nullable=False)
-
+    role_id: Mapped[int] = mapped_column(ForeignKey(RoleTable.role_id))
     random: Mapped[float] = mapped_column(Float)
 
-    # __mapper_args__ = {"version_id_col": version_id}
-
     __table_args__ = (
+        ForeignKeyConstraint(
+            [entity_one_id, entity_one_type],
+            [EntityTable.entity_id, EntityTable.entity_type],
+        ),
+        ForeignKeyConstraint(
+            [entity_two_id, entity_two_type],
+            [EntityTable.entity_id, EntityTable.entity_type],
+        ),
         Index(
             "idx_relation",
             entity_one_id,

@@ -1,10 +1,14 @@
 from discograph import utils
+from discograph.config import TEST_DATA_DIR
+from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.database.transaction import transaction
 from discograph.library.domain.relation import Relation, RelationUncommitted
 from discograph.library.fields.entity_type import EntityType
+from discograph.library.loader.loader_entity import LoaderEntity
 from discograph.library.loader.loader_role import LoaderRole
 from discograph.library.loader.worker_relation_pass_one import WorkerRelationPassOne
+from discograph.library.loader_utils import LoaderUtils
 from tests.integration.library.database.repository_test_case import RepositoryTestCase
 
 
@@ -12,12 +16,25 @@ class TestRepositoryRelation(RepositoryTestCase):
     def test_01_create(self):
         # GIVEN
         LoaderRole().load_all_roles()
+        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "artist", "testinsert")
+        entity_element_1 = next(iterator)
+        entity_1 = LoaderEntity().from_element(entity_element_1)
+        entity_element_2 = next(iterator)
+        entity_2 = LoaderEntity().from_element(entity_element_2)
+
+        # WHEN
+        with transaction():
+            repository = EntityRepository()
+            created_entity_1 = repository.create(entity_1)
+            print(f"created_entity_1: {created_entity_1}")
+            created_entity_2 = repository.create(entity_2)
+            print(f"created_entity_2: {created_entity_2}")
 
         relation = RelationUncommitted(
-            entity_one_id=2,
-            entity_one_type=EntityType.ARTIST,
-            entity_two_id=3,
-            entity_two_type=EntityType.LABEL,
+            entity_one_id=created_entity_1.entity_id,
+            entity_one_type=created_entity_1.entity_type,
+            entity_two_id=created_entity_2.entity_id,
+            entity_two_type=created_entity_2.entity_type,
             role_name="Composed By",
             # releases={},
             random=0.0,
@@ -42,11 +59,11 @@ class TestRepositoryRelation(RepositoryTestCase):
         # THEN
         expected_relation = Relation(
             relation_id=1,
-            version_id=1,
-            entity_one_id=2,
-            entity_one_type=EntityType.ARTIST,
-            entity_two_id=3,
-            entity_two_type=EntityType.LABEL,
+            # version_id=1,
+            entity_one_id=created_entity_1.entity_id,
+            entity_one_type=created_entity_1.entity_type,
+            entity_two_id=created_entity_2.entity_id,
+            entity_two_type=created_entity_2.entity_type,
             role="Composed By",
             # releases={},
             random=0.0,
@@ -219,10 +236,10 @@ class TestRepositoryRelation(RepositoryTestCase):
         expected_relation = Relation(
             relation_id=1,
             version_id=2,
-            entity_one_id=2,
+            entity_one_id=3,
             entity_one_type=EntityType.ARTIST,
-            entity_two_id=3,
-            entity_two_type=EntityType.LABEL,
+            entity_two_id=5,
+            entity_two_type=EntityType.ARTIST,
             role="Composed By",
             # releases={"635": 1994},
             random=0.0,

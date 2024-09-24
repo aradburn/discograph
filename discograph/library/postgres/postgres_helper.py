@@ -197,9 +197,9 @@ class PostgresHelper(DatabaseHelper):
         super().create_tables(tables=tables)
 
     @classmethod
-    def drop_tables(cls) -> None:
+    def drop_tables(cls, tables: List[str] = None) -> None:
         log.info("Drop Postgres tables")
-        super().drop_tables()
+        super().drop_tables(tables=tables)
 
     @staticmethod
     def has_vacuum_tablename() -> bool:

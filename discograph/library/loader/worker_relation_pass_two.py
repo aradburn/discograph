@@ -126,6 +126,9 @@ class WorkerRelationPassTwo(multiprocessing.Process):
                     year=year,
                 )
                 relation_release_years.append(relation_release_year_uncommitted)
+            except NotFoundError:
+                relation_repository.rollback()
+                log.debug(f"Error cannot find relation")
             except DatabaseError:
                 relation_repository.rollback()
                 log.debug(f"Error cannot find relation")
