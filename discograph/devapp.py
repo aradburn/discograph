@@ -128,7 +128,7 @@ def main():
     # Note reverse order (last in first out), logging is the last to be shutdown
     atexit.register(shutdown_logging)
     atexit.register(shutdown_cache)
-    atexit.register(shutdown_database)
+    atexit.register(shutdown_database, config)
 
 
 if __name__ == "__main__":
