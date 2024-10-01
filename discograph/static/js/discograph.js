@@ -1136,7 +1136,8 @@
     }
 
     function dg_network_node_check_tooltip() {
-        var el = nodeToolTip.getNodeEl();
+        var el = nodeToolTip.rootElement;
+        //    var el = nodeToolTip.getNodeEl();
         if (el) {
             console.log("tip el: ", el);
         }
