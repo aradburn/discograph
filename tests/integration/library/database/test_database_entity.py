@@ -13,7 +13,8 @@ class TestDatabaseEntity(DatabaseTestCase):
 
         # WHEN
         with transaction():
-            entity = EntityRepository().get(entity_id, entity_type)
+            entity_repository = EntityRepository()
+            entity = entity_repository.get(entity_id, entity_type)
             actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
 
         # THEN
@@ -88,7 +89,8 @@ class TestDatabaseEntity(DatabaseTestCase):
 
         # WHEN
         with transaction():
-            entity = EntityRepository().get(entity_id, entity_type)
+            entity_repository = EntityRepository()
+            entity = entity_repository.get(entity_id, entity_type)
             actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
 
         expected_entity = {
@@ -119,13 +121,13 @@ class TestDatabaseEntity(DatabaseTestCase):
             "entity_name": "Seefeel",
             "relation_counts": {
                 "Compiled On": 15,
-                "Copyright (c)": 2,
+                "Copyright": 2,
                 "DJ Mix": 7,
                 "Design": 1,
                 "Designed At": 1,
                 "Film Director": 1,
                 "Performer": 1,
-                "Phonographic Copyright (p)": 2,
+                "Phonographic Copyright": 2,
                 "Producer": 2,
                 "Published By": 1,
                 "Released On": 1,
@@ -144,7 +146,8 @@ class TestDatabaseEntity(DatabaseTestCase):
 
         # WHEN
         with transaction():
-            entity = EntityRepository().get(entity_id, entity_type)
+            entity_repository = EntityRepository()
+            entity = entity_repository.get(entity_id, entity_type)
             actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
 
         expected_entity = {

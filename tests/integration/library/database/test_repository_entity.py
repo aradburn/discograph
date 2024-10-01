@@ -1,3 +1,4 @@
+from discograph.config import TEST_DATA_DIR
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.transaction import transaction
 from discograph.library.fields.entity_type import EntityType
@@ -9,7 +10,7 @@ from tests.integration.library.database.repository_test_case import RepositoryTe
 class TestRepositoryEntity(RepositoryTestCase):
     def test_create_01(self):
         # GIVEN
-        iterator = LoaderUtils.get_iterator("artist", "test")
+        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "artist", "testinsert")
         entity_element = next(iterator)
         entity = LoaderEntity().from_element(entity_element)
 
@@ -23,7 +24,7 @@ class TestRepositoryEntity(RepositoryTestCase):
 
     def test_get_01(self):
         # GIVEN
-        iterator = LoaderUtils.get_iterator("label", "test")
+        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "label", "testinsert")
         entity_element = next(iterator)
         entity = LoaderEntity().from_element(entity_element)
 

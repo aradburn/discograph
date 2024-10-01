@@ -20,7 +20,7 @@ class _RelationBase(InternalDomainObject):
     entity_one_type: EntityType
     entity_two_id: int
     entity_two_type: EntityType
-    releases: Dict[str, int | None] | None = None
+    # releases: Dict[str, int | None] | None = None
     random: float
 
 
@@ -34,7 +34,7 @@ class RelationDB(_RelationBase):
     """Saved Relation representation, database internal representation."""
 
     relation_id: int
-    version_id: int
+    # version_id: int
     role_id: int
 
 
@@ -42,8 +42,9 @@ class Relation(_RelationBase):
     """Domain Relation representation, public facing."""
 
     relation_id: int
-    version_id: int
+    # version_id: int
     role: str
+    releases: Dict[str, int | None] | None = None
 
 
 class RelationResult(_RelationBase):

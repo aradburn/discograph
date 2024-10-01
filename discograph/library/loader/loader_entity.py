@@ -1,6 +1,8 @@
 import logging
 from random import random
 
+from sortedcontainers import SortedSet
+
 from discograph.database import get_concurrency_count
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.entity_table import EntityTable
@@ -8,10 +10,12 @@ from discograph.library.database.transaction import transaction
 from discograph.library.domain.entity import Entity
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.loader.loader_base import LoaderBase
+from discograph.library.loader.worker_entity_deleter import WorkerEntityDeleter
+from discograph.library.loader.worker_entity_inserter import WorkerEntityInserter
 from discograph.library.loader.worker_entity_pass_three import WorkerEntityPassThree
 from discograph.library.loader.worker_entity_pass_two import WorkerEntityPassTwo
+from discograph.library.loader.worker_entity_updater import WorkerEntityUpdater
 from discograph.library.loader_utils import LoaderUtils
-from discograph.logging_config import LOGGING_TRACE
 from discograph.utils import normalise_search_content, timeit
 
 log = logging.getLogger(__name__)
@@ -22,39 +26,77 @@ class LoaderEntity(LoaderBase):
 
     @classmethod
     @timeit
-    def loader_pass_one(cls, date: str) -> int:
-        log.debug(f"entity loader pass one - artist - date: {date}")
+    def loader_entity_pass_one(
+        cls, data_directory: str, data_date: str, is_bulk_inserts=False
+    ) -> int:
+        log.debug(f"loader entity pass one - artist - date: {data_date}")
         with transaction():
             entity_repository = EntityRepository()
             artists_loaded = cls.loader_pass_one_manager(
                 repository=entity_repository,
-                date=date,
+                data_directory=data_directory,
+                date=data_date,
                 xml_tag="artist",
                 id_attr=EntityTable.entity_id.name,
                 skip_without=["entity_name"],
+                is_bulk_inserts=is_bulk_inserts,
             )
-        log.debug("entity loader pass one - label")
+        log.debug(f"loader entity pass one - label - date: {data_date}")
         with transaction():
             entity_repository = EntityRepository()
             labels_loaded = cls.loader_pass_one_manager(
                 repository=entity_repository,
-                date=date,
+                data_directory=data_directory,
+                date=data_date,
                 xml_tag="label",
                 id_attr=EntityTable.entity_id.name,
                 skip_without=["entity_name"],
+                is_bulk_inserts=is_bulk_inserts,
             )
         return artists_loaded + labels_loaded
 
     @classmethod
+    def insert_bulk(cls, bulk_inserts, inserted_count):
+        worker = WorkerEntityInserter(
+            bulk_inserts=bulk_inserts,
+            inserted_count=inserted_count,
+        )
+        return worker
+
+    @classmethod
+    def update_bulk(cls, bulk_updates, processed_count):
+        worker = WorkerEntityUpdater(
+            bulk_updates=bulk_updates,
+            processed_count=processed_count,
+        )
+        return worker
+
+    @classmethod
+    def delete_bulk(cls, bulk_deletes, processed_count):
+        worker = WorkerEntityDeleter(
+            bulk_deletes=bulk_deletes,
+            processed_count=processed_count,
+        )
+        return worker
+
+    @classmethod
+    def get_set_of_ids(cls, entity_type):
+        with transaction():
+            entity_repository = EntityRepository()
+            ids = entity_repository.get_ids(entity_type)
+        set_of_ids = SortedSet(ids)
+        return set_of_ids
+
+    @classmethod
     @timeit
-    def loader_pass_two(cls) -> None:
-        log.debug("entity loader pass two")
+    def loader_entity_pass_two(cls) -> None:
+        log.debug("loader entity pass two")
         cls.loader_start_workers(WorkerEntityPassTwo)
 
     @classmethod
     @timeit
-    def loader_pass_three(cls):
-        log.debug("entity loader pass three")
+    def loader_entity_pass_three(cls):
+        log.debug("loader entity pass three")
         cls.loader_start_workers(WorkerEntityPassThree)
 
     @classmethod
@@ -63,60 +105,63 @@ class LoaderEntity(LoaderBase):
 
         with transaction():
             entity_repository = EntityRepository()
-            total_count = entity_repository.count()
+            total_count = entity_repository.count_by_type(EntityType.ARTIST)
             entity_type: EntityType = EntityType.ARTIST
-            batched_release_ids = entity_repository.get_batched_ids(
+            batched_entity_ids = entity_repository.get_batched_ids(
                 entity_type, number_in_batch
             )
 
         current_total = 0
 
         workers = []
-        for release_ids in batched_release_ids:
-            worker = worker_class(entity_type, release_ids, current_total, total_count)
+        for entity_ids in batched_entity_ids:
+            worker = worker_class(entity_type, entity_ids, current_total, total_count)
             worker.start()
             workers.append(worker)
             current_total += number_in_batch
 
             if len(workers) > get_concurrency_count():
-                cls.loader_process_worker(workers)
+                worker = workers.pop(0)
+                cls.loader_wait_for_worker(worker)
 
         while len(workers) > 0:
-            cls.loader_process_worker(workers)
+            worker = workers.pop(0)
+            cls.loader_wait_for_worker(worker)
 
         with transaction():
             entity_repository = EntityRepository()
-            total_count = entity_repository.count()
+            total_count = entity_repository.count_by_type(EntityType.LABEL)
             entity_type: EntityType = EntityType.LABEL
-            batched_release_ids = entity_repository.get_batched_ids(
+            batched_entity_ids = entity_repository.get_batched_ids(
                 entity_type, number_in_batch
             )
 
         current_total = 0
 
         workers = []
-        for release_ids in batched_release_ids:
-            worker = worker_class(entity_type, release_ids, current_total, total_count)
+        for entity_ids in batched_entity_ids:
+            worker = worker_class(entity_type, entity_ids, current_total, total_count)
             worker.start()
             workers.append(worker)
             current_total += number_in_batch
 
             if len(workers) > get_concurrency_count():
-                cls.loader_process_worker(workers)
+                worker = workers.pop(0)
+                cls.loader_wait_for_worker(worker)
 
         while len(workers) > 0:
-            cls.loader_process_worker(workers)
+            worker = workers.pop(0)
+            cls.loader_wait_for_worker(worker)
 
     @classmethod
-    def loader_process_worker(cls, workers) -> None:
-        worker = workers.pop(0)
-        if LOGGING_TRACE:
-            log.debug(f"wait for worker {worker.name} - {len(workers)} left in list")
-        worker.join()
-        if worker.exitcode > 0:
-            log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
-            raise Exception("Error in worker process")
-        worker.terminate()
+    @timeit
+    def loader_entity_vacuum(
+        cls, has_tablename: bool, is_full: bool, is_analyze: bool
+    ) -> None:
+        log.debug(f"loader entity vacuum")
+        with transaction():
+            entity_repository = EntityRepository()
+            entity_repository.vacuum(has_tablename, is_full, is_analyze)
 
     @classmethod
     def element_to_names(cls, names):
@@ -206,27 +251,6 @@ class LoaderEntity(LoaderBase):
         elif element.tag == "label":
             data["entity_type"] = EntityType.LABEL
         return data
-
-    # def roles_to_relation_count(self, roles) -> int:
-    #     count = 0
-    #     relation_counts = self.relation_counts or {}
-    #     for role in roles:
-    #         if role == "Alias":
-    #             if "aliases" in self.entities:
-    #                 count += len(cast(Dict, self.entities["aliases"]))
-    #         elif role == "Member Of":
-    #             if "groups" in self.entities:
-    #                 count += len(cast(Dict, self.entities["groups"]))
-    #             if "members" in self.entities:
-    #                 count += len(cast(Dict, self.entities["members"]))
-    #         elif role == "Sublabel Of":
-    #             if "parent_label" in self.entities:
-    #                 count += len(cast(Dict, self.entities["parent_label"]))
-    #             if "sublabels" in self.entities:
-    #                 count += len(cast(Dict, self.entities["sublabels"]))
-    #         else:
-    #             count += relation_counts.get(role, 0)
-    #     return count
 
 
 LoaderEntity._tags_to_fields_mapping = {

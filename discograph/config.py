@@ -11,11 +11,44 @@ log = logging.getLogger(__name__)
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(APP_DIR, ".."))
+DATA_DIR = os.path.join(ROOT_DIR, "discograph", "data")
+ROLE_DIR = os.path.join(ROOT_DIR, "discograph", "data_role")
+INSTRUMENTS_DIR = os.path.join(ROOT_DIR, "discograph", "data_instruments")
+INSTRUMENTS_PATH = os.path.join(INSTRUMENTS_DIR, "hornbostelSachs.json")
+TEST_DATA_DIR = os.path.join(ROOT_DIR, "tests", "data")
+TEST_DATA_ROLES_DIR = os.path.join(ROOT_DIR, "tests", "data_roles")
+TEST_DATA_ROLES_PATH = os.path.join(TEST_DATA_ROLES_DIR, "test_data_roles.tsv")
+TEST_DATA_ROLES_NORMALISED_PATH = os.path.join(
+    TEST_DATA_ROLES_DIR, "test_data_roles_normalised.tsv"
+)
+TEST_DATA_ROLES_OUTPUT_PATH = os.path.join(
+    TEST_DATA_ROLES_DIR, "test_data_roles_output.tsv"
+)
 LOGGING_DIR = os.path.join(ROOT_DIR, "logs")
 LOGGING_FILE = os.path.join(LOGGING_DIR, "discograph.log")
 LOGGING_ERROR_FILE = os.path.join(LOGGING_DIR, "error.log")
 LOGGING_DEBUG_FILE = os.path.join(LOGGING_DIR, "debug.log")
-
+DISCOGS_BASE_URL = "https://discogs-data-dumps.s3-us-west-2.amazonaws.com/data/{year}/"
+DISCOGS_PATH = "discogs_{date}_{type}.xml.gz"
+DISCOGS_ARTISTS_TYPE = "artists"
+DISCOGS_RELEASES_TYPE = "releases"
+DISCOGS_LABELS_TYPE = "labels"
+DISCOGS_MASTERS_TYPE = "masters"
+ALL_DATABASE_TABLE_NAMES = [
+    "entity",
+    "relation",
+    "release",
+    "role",
+    "relation_release_year",
+    "metadata",
+]
+DATABASE_TABLE_NAMES_WITHOUT_ROLE = [
+    "relation_release_year",
+    "relation",
+    "entity",
+    "release",
+    "metadata",
+]
 env_file = find_dotenv()
 env_config = dotenv_values()  # take environment variables from .env.
 load_dotenv(override=True, verbose=True)  # take environment variables from .env.
@@ -24,7 +57,6 @@ load_dotenv(override=True, verbose=True)  # take environment variables from .env
 class DatabaseType(enum.Enum):
     POSTGRES = 1
     SQLITE = 2
-    COCKROACH = 3
 
 
 class ThreadingModel(enum.Enum):
@@ -100,8 +132,7 @@ class PostgresTestConfiguration(Configuration):
     DATABASE = DatabaseType.POSTGRES
     POSTGRES_DATABASE_NAME = "test_discograph"
     POSTGRES_ROOT = "/usr/lib/postgresql/16"
-    POSTGRES_DATA = "/home/andy/tmp/pg_temp/test"
-    # POSTGRES_DATA = "/data1/tmp/pg_temp/test"
+    POSTGRES_DATA = os.path.join(tempfile.gettempdir(), "pg_temp", "test")
     APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.PROCESS
     CACHE_TYPE = CacheType.MEMORY
@@ -140,31 +171,3 @@ class SqliteTestConfiguration(Configuration):
 
     def __init__(self):
         super().__init__(vars(SqliteTestConfiguration))
-
-
-class CockroachDevelopmentConfiguration(Configuration):
-    PRODUCTION = False
-    DEBUG = True
-    TESTING = False
-    DATABASE = DatabaseType.COCKROACH
-    COCKROACH_DATABASE_NAME = "dev_discograph"
-    APPLICATION_ROOT = "http://localhost"
-    THREADING_MODEL = ThreadingModel.PROCESS
-    CACHE_TYPE = CacheType.FILESYSTEM
-
-    def __init__(self):
-        super().__init__(vars(CockroachDevelopmentConfiguration))
-
-
-class CockroachTestConfiguration(Configuration):
-    PRODUCTION = False
-    DEBUG = True
-    TESTING = True
-    DATABASE = DatabaseType.COCKROACH
-    COCKROACH_DATABASE_NAME = "test_discograph"
-    APPLICATION_ROOT = "http://localhost"
-    THREADING_MODEL = ThreadingModel.PROCESS
-    CACHE_TYPE = CacheType.MEMORY
-
-    def __init__(self):
-        super().__init__(vars(CockroachTestConfiguration))

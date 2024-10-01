@@ -5,12 +5,12 @@ from typing import List, Dict, Tuple, OrderedDict
 
 from discograph import utils
 from discograph.library.data_access_layer.entity_data_access import EntityDataAccess
+from discograph.library.data_access_layer.role_data_access import RoleDataAccess
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.domain.entity import Entity
 from discograph.library.domain.relation import RelationResult
 from discograph.library.fields.entity_type import EntityType
-from discograph.library.fields.role_type import RoleType
 from discograph.library.trellis_node import TrellisNode
 
 log = logging.getLogger(__name__)
@@ -82,7 +82,10 @@ class RelationGrapher(ABC):
             # elif not isinstance(role_names, collections_abc.Iterable):
             #     role_names = (role_names,)
             # role_names = tuple(role_names)
-            assert all(_ in RoleType.role_definitions for _ in role_names)
+            assert all(
+                _ in RoleDataAccess.role_name_to_role_id_lookup.keys()
+                for _ in role_names
+            )
             for role_name in role_names:
                 if role_name in ("Alias", "Sublabel Of", "Member Of"):
                     self.structural_role_names.append(role_name)
@@ -90,14 +93,14 @@ class RelationGrapher(ABC):
                     self.relational_role_names.append(role_name)
         # self.structural_role_names = tuple(structural_role_names)
         # self.relational_role_names = tuple(relational_role_names)
-        self.nodes: OrderedDict[
-            Tuple[int, EntityType], TrellisNode
-        ] = collections.OrderedDict()
+        self.nodes: OrderedDict[Tuple[int, EntityType], TrellisNode] = (
+            collections.OrderedDict()
+        )
         self.links: Dict[str, RelationResult] = {}
         self.should_break_loop = False
         self.entity_keys_to_visit = set[tuple[int, EntityType]]()
 
-    def get_relation_graph(self):
+    def get_relation_graph(self, relation_repository: RelationRepository):
         log.debug(f"Searching around {self.center_entity.entity_name}...")
         provisional_role_names = self.relational_role_names
         # provisional_roles = list(self.relational_role_names)
@@ -121,7 +124,7 @@ class RelationGrapher(ABC):
                     distance, provisional_role_names, relations
                 )
                 self.search_via_relational_roles(
-                    distance, provisional_role_names, relations
+                    relation_repository, distance, provisional_role_names, relations
                 )
             self.test_loop_two(distance, relations)
             self.entity_keys_to_visit.clear()
@@ -174,7 +177,11 @@ class RelationGrapher(ABC):
         return entities
 
     def search_via_relational_roles(
-        self, distance, provisional_roles, relation_links: Dict[str, RelationResult]
+        self,
+        relation_repository: RelationRepository,
+        distance,
+        provisional_roles,
+        relation_links: Dict[str, RelationResult],
     ):
         for entity_key in sorted(self.entity_keys_to_visit):
             node = self.nodes.get(entity_key)
@@ -197,7 +204,7 @@ class RelationGrapher(ABC):
                 log.debug(
                     f"            {start + 1}-{min(start + step, stop)} of {stop}"
                 )
-                relation_results = RelationRepository().search_multi(
+                relation_results = relation_repository.search_multi(
                     entity_keys=key_slice, role_names=provisional_roles
                 )
                 for relation in relation_results:

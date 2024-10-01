@@ -1,6 +1,7 @@
 import unittest
 
 from discograph import utils
+from discograph.config import TEST_DATA_DIR
 from discograph.library.domain.entity import Entity
 from discograph.library.loader.loader_entity import LoaderEntity
 from discograph.library.loader_utils import LoaderUtils
@@ -8,7 +9,7 @@ from discograph.library.loader_utils import LoaderUtils
 
 class TestEntityLoader(unittest.TestCase):
     def test_from_element_01(self):
-        iterator = LoaderUtils.get_iterator("artist", "test")
+        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "artist", "testinsert")
         element = next(iterator)
         entity = LoaderEntity().from_element(element)
         actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
@@ -71,7 +72,7 @@ class TestEntityLoader(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_from_element_02(self):
-        iterator = LoaderUtils.get_iterator("artist", "test")
+        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "artist", "testinsert")
         element = next(iterator)
         while element.find("name").text != "Seefeel":
             element = next(iterator)
@@ -110,7 +111,7 @@ class TestEntityLoader(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_from_element_03(self):
-        iterator = LoaderUtils.get_iterator("label", "test")
+        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "label", "testinsert")
         element = next(iterator)
         entity = LoaderEntity().from_element(element)
         actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
@@ -136,9 +137,10 @@ class TestEntityLoader(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_load_artists_from_xml_file(self):
-        date = "test"
+        date = "testinsert"
         entity_generator = LoaderEntity().load_from_xml(
             domain_class=Entity,
+            data_directory=TEST_DATA_DIR,
             date=date,
             xml_tag="artist",
             id_attr="entity_id",
@@ -148,9 +150,10 @@ class TestEntityLoader(unittest.TestCase):
         self.assertEqual(5560, count)
 
     def test_load_labels_from_xml_file(self):
-        date = "test"
+        date = "testinsert"
         entity_generator = LoaderEntity().load_from_xml(
             domain_class=Entity,
+            data_directory=TEST_DATA_DIR,
             date=date,
             xml_tag="label",
             id_attr="entity_id",

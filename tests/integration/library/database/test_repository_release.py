@@ -1,3 +1,4 @@
+from discograph.config import TEST_DATA_DIR
 from discograph.library.database.release_repository import ReleaseRepository
 from discograph.library.database.transaction import transaction
 from discograph.library.loader.loader_release import LoaderRelease
@@ -8,7 +9,7 @@ from tests.integration.library.database.repository_test_case import RepositoryTe
 class TestRepositoryRelease(RepositoryTestCase):
     def test_create_01(self):
         # GIVEN
-        iterator = LoaderUtils.get_iterator("release", "test")
+        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "release", "testinsert")
         release_element = next(iterator)
         release = LoaderRelease().from_element(release_element)
 
@@ -22,7 +23,7 @@ class TestRepositoryRelease(RepositoryTestCase):
 
     def test_get_01(self):
         # GIVEN
-        iterator = LoaderUtils.get_iterator("release", "test")
+        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "release", "testinsert")
         next(iterator)
         next(iterator)
         next(iterator)

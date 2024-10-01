@@ -5,7 +5,7 @@ import pprint
 from deepdiff import DeepDiff
 
 from discograph.database import get_concurrency_count
-from discograph.exceptions import DatabaseError
+from discograph.exceptions import DatabaseError, NotFoundError
 from discograph.library.data_access_layer.entity_data_access import EntityDataAccess
 from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.database.entity_repository import EntityRepository
@@ -26,6 +26,7 @@ class WorkerEntityUpdater(multiprocessing.Process):
     def run(self):
         proc_name = self.name
         updated_count = 0
+        inserted_count = 0
 
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
@@ -50,9 +51,9 @@ class WorkerEntityUpdater(multiprocessing.Process):
                     if db_entity.entity_name != updated_entity.entity_name:
                         # Update name
                         db_entity.entity_name = updated_entity.entity_name
-                        update_payload[
-                            EntityTable.entity_name.key
-                        ] = db_entity.entity_name
+                        update_payload[EntityTable.entity_name.key] = (
+                            db_entity.entity_name
+                        )
 
                         # Update search_content
                         db_entity.search_content = (
@@ -60,9 +61,9 @@ class WorkerEntityUpdater(multiprocessing.Process):
                                 updated_entity.entity_name
                             )
                         )
-                        update_payload[
-                            EntityTable.search_content.key
-                        ] = db_entity.search_content
+                        update_payload[EntityTable.search_content.key] = (
+                            db_entity.search_content
+                        )
                         is_changed = True
 
                     # Update metadata
@@ -83,9 +84,9 @@ class WorkerEntityUpdater(multiprocessing.Process):
 
                         db_entity.entity_metadata = updated_entity.entity_metadata
 
-                        update_payload[
-                            EntityTable.entity_metadata.key
-                        ] = db_entity.entity_metadata
+                        update_payload[EntityTable.entity_metadata.key] = (
+                            db_entity.entity_metadata
+                        )
                         is_changed = True
 
                     if is_changed:
@@ -94,10 +95,22 @@ class WorkerEntityUpdater(multiprocessing.Process):
                         )
                         entity_repository.commit()
                         updated_count += 1
+                except NotFoundError:
+                    # log.debug(
+                    #     f"New insert in WorkerEntityUpdater: {updated_entity.entity_id}-{updated_entity.entity_type}"
+                    # )
+                    try:
+                        entity_repository.create(updated_entity)
+                        entity_repository.commit()
+                        inserted_count += 1
+                    except DatabaseError as e:
+                        log.exception("Error in WorkerEntityUpdater worker")
+                        raise e
                 except DatabaseError as e:
-                    log.exception("Error in updater_pass_one", e)
+                    log.exception("Error in WorkerEntityUpdater", e)
                     raise e
 
         log.info(
-            f"[{proc_name}] processed_count: {self.processed_count}, updated: {updated_count}"
+            f"[{proc_name}] processed_count: {self.processed_count}, "
+            + f"updated: {updated_count}, inserted: {inserted_count}"
         )

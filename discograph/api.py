@@ -7,6 +7,11 @@ from flask import request
 import discograph.utils
 from discograph import decorators
 from discograph.exceptions import BadRequestError, NotFoundError, DatabaseError
+from discograph.library.database.entity_repository import EntityRepository
+from discograph.library.database.relation_release_year_repository import (
+    RelationReleaseYearRepository,
+)
+from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.database.transaction import transaction
 from discograph.library.fields.entity_type import EntityType
 
@@ -28,7 +33,11 @@ def route__api__entity_type__relations__entity_id(entity_type, entity_id):
         raise BadRequestError(message="Bad Entity Id")
     entity_id = int(entity_id)
     with transaction():
-        data = DatabaseHelper.db_helper.get_relations(
+        relation_repository = RelationRepository()
+        relation_release_year_repository = RelationReleaseYearRepository()
+        data = DatabaseHelper.db_helper.get_relations_by_entity_id_and_entity_type(
+            relation_repository,
+            relation_release_year_repository,
             entity_id,
             entity_type,
         )
@@ -59,7 +68,11 @@ def route__api__entity_type__network__entity_id(entity_type, entity_id):
     # noinspection PyUnresolvedReferences
     # on_mobile = request.MOBILE
     with transaction():
+        entity_repository = EntityRepository()
+        relation_repository = RelationRepository()
         data = DatabaseHelper.db_helper.get_network(
+            entity_repository,
+            relation_repository,
             entity_id,
             entity_type,
             # on_mobile=on_mobile,
@@ -77,7 +90,10 @@ def route__api__search(search_string):
 
     log.debug(f"search_string: {search_string}")
     with transaction():
-        data = DatabaseHelper.db_helper.search_entities(search_string)
+        entity_repository = EntityRepository()
+        data = DatabaseHelper.db_helper.search_entities(
+            entity_repository, search_string
+        )
     return jsonify(data)
 
 
@@ -88,11 +104,15 @@ def route__api__random():
 
     parsed_args = discograph.utils.parse_request_args(request.args)
     original_roles, original_year = parsed_args
-    log.debug(f"Roles: {original_roles}")
+    log.debug(f"Role names: {original_roles}")
     with transaction():
+        entity_repository = EntityRepository()
+        relation_repository = RelationRepository()
         try:
             entity_id, entity_type = DatabaseHelper.db_helper.get_random_entity(
-                roles=original_roles,
+                entity_repository,
+                relation_repository,
+                role_names=original_roles,
             )
             log.debug(f"    Found random entity: {entity_type}-{entity_id}")
         except Exception as e:

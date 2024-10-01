@@ -1,10 +1,11 @@
 from sqlalchemy import String, JSON, Integer, Float, Date
 from sqlalchemy.orm import Mapped, mapped_column
 
-from discograph.library.database.base_table import BaseTable
+from discograph import utils
+from discograph.library.database.base_table import Base
 
 
-class ReleaseTable(BaseTable):
+class ReleaseTable(Base):
     __tablename__ = "release"
 
     # COLUMNS
@@ -25,3 +26,6 @@ class ReleaseTable(BaseTable):
     title: Mapped[str] = mapped_column(String, nullable=True)
     tracklist: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
     random: Mapped[float] = mapped_column(Float)
+
+    def __repr__(self):
+        return utils.normalize_dict(utils.row2dict(self), skip_keys={"random"})

@@ -1,14 +1,17 @@
 import gzip
 import logging
-import pprint
+import sys
+from abc import abstractmethod
 from random import random
 from typing import List, Generator, Self
 
+from sortedcontainers import SortedSet
 from sqlalchemy.exc import DataError
 
+from discograph import utils
 from discograph.database import get_concurrency_count
 from discograph.library.database.base_repository import BaseRepository
-from discograph.library.loader.worker_pass_one import WorkerPassOne
+from discograph.library.fields.entity_type import EntityType
 from discograph.library.loader_utils import LoaderUtils
 from discograph.logging_config import LOGGING_TRACE
 
@@ -16,31 +19,37 @@ log = logging.getLogger(__name__)
 
 
 class LoaderBase:
-    BULK_INSERT_BATCH_SIZE = 10000
-    BULK_UPDATE_BATCH_SIZE = 1000
-    BULK_REPORTING_SIZE = 10000
-    MAX_RETRYS = 100
+    BULK_INSERT_BATCH_SIZE = 1000
+    BULK_UPDATE_BATCH_SIZE = 100
+    BULK_REPORTING_SIZE = 1000
+    # BULK_INSERT_BATCH_SIZE = 10000
+    # BULK_UPDATE_BATCH_SIZE = 1000
+    # BULK_REPORTING_SIZE = 10000
+    MAX_RETRYS = 10
     _tags_to_fields_mapping: dict = None
 
     @classmethod
     def loader_pass_one_manager(
         cls,
         repository: BaseRepository,
+        data_directory: str,
         date: str,
         xml_tag: str,
         id_attr: str,
         skip_without: List[str],
+        is_bulk_inserts=False,
     ) -> int:
         # Loader pass one.
+        set_of_updated_ids: SortedSet[int] = SortedSet()
 
         initial_count = repository.count()
-        inserted_count = 0
-        xml_path = LoaderUtils.get_xml_path(xml_tag, date)
+
+        processed_count = 0
+        xml_path = LoaderUtils.get_xml_path(data_directory, xml_tag, date)
         log.info(f"Loading data from {xml_path}")
         with gzip.GzipFile(xml_path, "r") as file_pointer:
             iterator = LoaderUtils.iterparse(file_pointer, xml_tag)
-            bulk_inserts = []
-            bulk_release_genre_inserts = []
+            bulk_records = []
             workers = []
             for i, element in enumerate(iterator):
                 data = None
@@ -54,77 +63,147 @@ class LoaderBase:
                     data["random"] = random()
                     # log.debug(f"data: {data}")
 
-                    bulk_inserts.append(data)
-                    inserted_count += 1
+                    set_of_updated_ids.add(int(data[id_attr]))
+
+                    bulk_records.append(data)
+                    processed_count += 1
+
                     if get_concurrency_count() > 1:
                         # Can do multi threading
-                        if len(bulk_inserts) >= LoaderBase.BULK_INSERT_BATCH_SIZE:
-                            worker = cls.insert_bulk(
-                                repository,
-                                bulk_inserts,
-                                inserted_count,
-                            )
+                        if len(bulk_records) >= LoaderBase.BULK_INSERT_BATCH_SIZE:
+                            if is_bulk_inserts:
+                                worker = cls.insert_bulk(
+                                    bulk_records,
+                                    processed_count,
+                                )
+                            else:
+                                worker = cls.update_bulk(
+                                    bulk_records,
+                                    processed_count,
+                                )
                             worker.start()
                             workers.append(worker)
-                            bulk_inserts.clear()
-                            bulk_release_genre_inserts.clear()
-                        if len(workers) > get_concurrency_count() * 2:
+                            bulk_records.clear()
+                        if len(workers) > get_concurrency_count():
                             worker = workers.pop(0)
-                            if LOGGING_TRACE:
-                                log.debug(f"wait for worker {len(workers)} in list")
-                            worker.join()
-                            if worker.exitcode > 0:
-                                log.debug(
-                                    f"worker {worker.name} exitcode: {worker.exitcode}"
-                                )
-                                raise Exception("Error in worker process")
-                            worker.terminate()
+                            cls.loader_wait_for_worker(worker)
 
                 except DataError as e:
-                    log.exception("Error in loader_pass_one", pprint.pformat(data))
+                    log.exception("Error in loader_pass_one", exc_info=True)
                     raise e
+
+            if len(bulk_records) > 0:
+                if is_bulk_inserts:
+                    worker = cls.insert_bulk(
+                        bulk_records,
+                        processed_count,
+                    )
+                else:
+                    worker = cls.update_bulk(
+                        bulk_records,
+                        processed_count,
+                    )
+                worker.start()
+                workers.append(worker)
+                bulk_records.clear()
 
             while len(workers) > 0:
                 worker = workers.pop(0)
-                if LOGGING_TRACE:
-                    log.debug(
-                        f"wait for worker {worker.name} - {len(workers)} left in list"
+                cls.loader_wait_for_worker(worker)
+
+            repository_count = repository.count()
+            log.debug(f"repository_count: {repository_count}")
+
+            new_inserts_count = repository_count - initial_count
+            log.debug(f"processed_count: {processed_count}")
+            log.debug(f"new_inserts_count: {new_inserts_count}")
+
+            if xml_tag == "artist":
+                entity_type = EntityType.ARTIST
+            elif xml_tag == "label":
+                entity_type = EntityType.LABEL
+            elif xml_tag == "release":
+                entity_type = None
+            set_of_database_ids = cls.get_set_of_ids(entity_type)
+
+            # Check if any records need to be deleted
+            # (present in database and not present in the xml dump)
+            ids_to_be_deleted = set_of_database_ids - set_of_updated_ids
+
+            log.debug(f"number of update ids  : {len(set_of_updated_ids)}")
+            log.debug(f"number of database ids: {len(set_of_database_ids)}")
+            log.debug(f"number to be deleted  : {len(ids_to_be_deleted)}")
+
+            number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE / 10)
+
+            if len(ids_to_be_deleted) > 0:
+                workers = []
+                batched_ids_to_be_deleted = utils.batched(
+                    ids_to_be_deleted, number_in_batch
+                )
+                for batch_of_ids_to_be_deleted in batched_ids_to_be_deleted:
+                    batch_of_tuples_to_be_deleted = map(
+                        lambda x: (x, entity_type), batch_of_ids_to_be_deleted
                     )
-                worker.join()
-                if worker.exitcode > 0:
-                    log.debug(f"worker {worker.name} exitcode: {worker.exitcode}")
-                    raise Exception("Error in worker process")
-                worker.terminate()
+                    worker = cls.delete_bulk(
+                        batch_of_tuples_to_be_deleted,
+                        len(batch_of_ids_to_be_deleted),
+                    )
+                    worker.start()
+                    workers.append(worker)
 
-            if len(bulk_inserts) > 0:
-                repository.save_all(bulk_inserts)
+                    if len(workers) > get_concurrency_count():
+                        worker = workers.pop(0)
+                        cls.loader_wait_for_worker(worker)
 
-            final_count = repository.count()
-            updated_count = final_count - initial_count
-            log.debug(f"inserted_count: {inserted_count}")
-            log.debug(f"updated_count: {updated_count}")
-            assert inserted_count == updated_count
-        return inserted_count
+                while len(workers) > 0:
+                    worker = workers.pop(0)
+                    cls.loader_wait_for_worker(worker)
+
+        return processed_count
 
     @classmethod
-    def insert_bulk(cls, repository, bulk_inserts, inserted_count):
-        worker = WorkerPassOne(
-            repository=repository,
-            bulk_inserts=bulk_inserts,
-            inserted_count=inserted_count,
-        )
-        return worker
+    @abstractmethod
+    def insert_bulk(cls, bulk_inserts, processed_count):
+        pass
+
+    @classmethod
+    @abstractmethod
+    def update_bulk(cls, bulk_updates, processed_count):
+        pass
+
+    @classmethod
+    @abstractmethod
+    def delete_bulk(cls, bulk_deletes, processed_count):
+        pass
+
+    @classmethod
+    @abstractmethod
+    def get_set_of_ids(cls, entity_type):
+        pass
+
+    @classmethod
+    def loader_wait_for_worker(cls, worker) -> None:
+        if LOGGING_TRACE:
+            log.debug(f"wait for worker {worker.name}")
+        worker.join()
+        worker.terminate()
+        if worker.exitcode > 0:
+            log.error(f"worker {worker.name} exitcode: {worker.exitcode}")
+            # raise Exception("Error in worker process")
+            sys.exit()
 
     @classmethod
     def load_from_xml(
         cls,
         domain_class,
+        data_directory: str,
         date: str,
         xml_tag: str,
         id_attr: str,
         skip_without: List[str],
     ) -> Generator[Self, None, None]:
-        xml_path = LoaderUtils.get_xml_path(xml_tag, date)
+        xml_path = LoaderUtils.get_xml_path(data_directory, xml_tag, date)
         log.info(f"Loading data from {xml_path}")
         with gzip.GzipFile(xml_path, "r") as file_pointer:
             iterator = LoaderUtils.iterparse(file_pointer, xml_tag)

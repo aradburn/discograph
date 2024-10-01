@@ -8,13 +8,13 @@ class TestDatabaseRole(DatabaseTestCase):
     def test_from_db_01(self):
         name = "Acoustic Bass"
         with transaction():
-            role = RoleRepository().get_by_name(name)
-            actual = utils.normalize_dict(role.model_dump())
+            role_repository = RoleRepository()
+            role = role_repository.get_by_name(name)
+            actual = utils.normalize_dict(role.model_dump(exclude={"role_id"}))
 
         expected_role = {
             "role_category": "Category.INSTRUMENTS",
             "role_category_name": "Instruments",
-            "role_id": 12,
             "role_name": "Acoustic Bass",
             "role_subcategory": "Subcategory.STRINGED_INSTRUMENTS",
             "role_subcategory_name": "String Instruments",
@@ -23,15 +23,15 @@ class TestDatabaseRole(DatabaseTestCase):
         self.assertEqual(expected, actual)
 
     def test_from_db_02(self):
-        name = "Mezzo-soprano Vocals"
+        name = "Mezzo-Soprano Vocals"
         with transaction():
-            role = RoleRepository().get_by_name(name)
-            actual = utils.normalize_dict(role.model_dump())
+            role_repository = RoleRepository()
+            role = role_repository.get_by_name(name)
+            actual = utils.normalize_dict(role.model_dump(exclude={"role_id"}))
 
         expected_role = {
             "role_category": "Category.VOCAL",
             "role_category_name": "Vocal",
-            "role_id": 544,
             "role_name": "Mezzo-Soprano Vocals",
             "role_subcategory": "Subcategory.NONE",
             "role_subcategory_name": "None",

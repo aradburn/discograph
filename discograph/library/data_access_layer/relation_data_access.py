@@ -11,6 +11,7 @@ log = logging.getLogger(__name__)
 
 
 class RelationDataAccess:
+
     @classmethod
     def from_release(cls, release: Release) -> List[Dict[str, Any]]:
         # log.debug(f"      release: {release}")
@@ -31,25 +32,32 @@ class RelationDataAccess:
             iterator = itertools.product(artist_pks, release.extra_artists)
         for entity_two_pk, credit in iterator:
             for roles in credit["roles"]:
-                role = cls.normalize_role(roles["name"])
-                if role in RoleType.aggregate_roles:
-                    if role not in aggregate_roles:
-                        aggregate_roles[role] = []
-                    aggregate_credit = (credit["id"], EntityType.ARTIST)
-                    aggregate_roles[role].append(aggregate_credit)
-                elif role in RoleType.role_definitions:
-                    entity_one_pk = (credit["id"], EntityType.ARTIST)
-                    triples.add((entity_one_pk, role, entity_two_pk))
+                input_role_str: str = roles["name"]
+                role_str_list = RoleDataAccess.normalise_role_names(input_role_str)
+                for role_str in role_str_list:
+                    role_name = RoleDataAccess.find_role(role_str)
+                    if role_name is not None:
+                        if role_name in RoleType.aggregate_roles:
+                            if role_name not in aggregate_roles:
+                                aggregate_roles[role_name] = []
+                            aggregate_credit = (credit["id"], EntityType.ARTIST)
+                            aggregate_roles[role_name].append(aggregate_credit)
+                        else:
+                            entity_one_pk = (credit["id"], EntityType.ARTIST)
+                            triples.add((entity_one_pk, role_name, entity_two_pk))
 
         if is_compilation:
             iterator = itertools.product(label_pks, release.companies)
         else:
             iterator = itertools.product(artist_pks, release.companies)
         for entity_one_pk, company in iterator:
-            role = cls.normalize_role(company["entity_type_name"])
-            if role in RoleType.role_definitions:
-                entity_two_pk = (company["id"], EntityType.LABEL)
-                triples.add((entity_one_pk, role, entity_two_pk))
+            input_role_str: str = company["entity_type_name"]
+            role_strs_list = RoleDataAccess.normalise_role_names(input_role_str)
+            for role_str in role_strs_list:
+                role_name = RoleDataAccess.find_role(role_str)
+                if role_name is not None:
+                    entity_two_pk = (company["id"], EntityType.LABEL)
+                    triples.add((entity_one_pk, role_name, entity_two_pk))
 
         all_track_artist_pks = set()
         for track in release.tracklist:
@@ -63,16 +71,19 @@ class RelationDataAccess:
             iterator = itertools.product(track_artist_pks, track["extra_artists"])
             for entity_two_pk, credit in iterator:
                 for roles in credit.get("roles", ()):
-                    role = cls.normalize_role(roles["name"])
-                    if role in RoleType.role_definitions:
-                        entity_one_pk = (credit["id"], EntityType.ARTIST)
-                        triples.add((entity_one_pk, role, entity_two_pk))
-        for role, aggregate_artists in aggregate_roles.items():
+                    input_role_str: str = roles["name"]
+                    role_strs_list = RoleDataAccess.normalise_role_names(input_role_str)
+                    for role_str in role_strs_list:
+                        role_name = RoleDataAccess.find_role(role_str)
+                        if role_name is not None:
+                            entity_one_pk = (credit["id"], EntityType.ARTIST)
+                            triples.add((entity_one_pk, role_name, entity_two_pk))
+        for role_name, aggregate_artists in aggregate_roles.items():
             iterator = itertools.product(all_track_artist_pks, aggregate_artists)
             for track_artist_pk, aggregate_artist_pk in iterator:
                 entity_one_pk = aggregate_artist_pk
                 entity_two_pk = track_artist_pk
-                triples.add((entity_one_pk, role, entity_two_pk))
+                triples.add((entity_one_pk, role_name, entity_two_pk))
         # log.debug(f"triples3: {triples}")
         triples = sorted(triples)
         # log.debug(f"      triples: {triples}")
@@ -144,23 +155,3 @@ class RelationDataAccess:
                     relation["year"] = release.release_date.year
             relations.append(relation)
         return relations
-
-    @staticmethod
-    def normalize_role(role: str) -> str:
-        if role in RoleType.aggregate_roles:
-            return role
-        if role in RoleType.role_definitions:
-            return role
-        # log.debug(f"role not found: {role}")
-        normalized_role = RoleDataAccess.normalize(role)
-        if normalized_role in RoleType.aggregate_roles:
-            return normalized_role
-        if normalized_role in RoleType.role_definitions:
-            return normalized_role
-        role_by = normalized_role + " By"
-        if role_by in RoleType.aggregate_roles:
-            return role_by
-        if role_by in RoleType.role_definitions:
-            return role_by
-        log.debug(f"role not found: {role}")
-        return role

@@ -1,12 +1,13 @@
 from sqlalchemy import String, JSON, PrimaryKeyConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from discograph.library.database.base_table import BaseTable
+from discograph import utils
+from discograph.library.database.base_table import Base
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.fields.int_enum import IntEnum
 
 
-class EntityTable(BaseTable):
+class EntityTable(Base):
     __tablename__ = "entity"
 
     # COLUMNS
@@ -27,3 +28,6 @@ class EntityTable(BaseTable):
         PrimaryKeyConstraint(entity_id, entity_type),
         {},
     )
+
+    def __repr__(self):
+        return utils.normalize_dict(utils.row2dict(self), skip_keys={"random"})

@@ -2,10 +2,10 @@ import logging
 from random import random
 from typing import Generator, Any, cast, List
 
-from sqlalchemy import Result, select, update, Select, String
+from sqlalchemy import Result, select, update, Select, String, delete, func
 
 from discograph import utils
-from discograph.exceptions import NotFoundError, DatabaseError
+from discograph.exceptions import NotFoundError, DatabaseError, UnprocessableError
 from discograph.library.database.base_repository import BaseRepository
 from discograph.library.database.entity_table import EntityTable
 from discograph.library.domain.entity import Entity
@@ -44,6 +44,26 @@ class EntityRepository(BaseRepository[EntityTable]):
         entity_dbs = [Entity.model_validate(instance) for instance in instances]
         return list(map(self._to_domain, entity_dbs))
 
+    def count_by_type(self, entity_type: EntityType) -> int:
+        query = (
+            select(func.count())
+            .select_from(self.schema_class)
+            .where(EntityTable.entity_type == entity_type)
+        )
+        result: Result = self.execute(query)
+        # result: Result = await self.execute(func.count(self.schema_class.id))
+        value = result.scalar()
+
+        if not isinstance(value, int):
+            raise UnprocessableError(
+                message=(
+                    "For some reason count function returned not an integer."
+                    f"Value: {value}"
+                ),
+            )
+
+        return value
+
     def all(self) -> Generator[Entity, None, None]:
         for instance in self._all():
             yield Entity.model_validate(instance)
@@ -55,12 +75,14 @@ class EntityRepository(BaseRepository[EntityTable]):
         )
         return self._get_one_by_query(query)
 
-    def get_batched_ids(self, entity_type: EntityType, num_in_batch: int):
-        all_ids = self._session.scalars(
+    def get_ids(self, entity_type: EntityType):
+        return self._session.scalars(
             select(EntityTable.entity_id).where(EntityTable.entity_type == entity_type)
             # select(ReleaseTable.release_id).order_by(ReleaseTable.release_id)
         ).all()
-        return utils.batched(all_ids, num_in_batch)
+
+    def get_batched_ids(self, entity_type: EntityType, num_in_batch: int):
+        return utils.batched(self.get_ids(entity_type), num_in_batch)
 
     def find_by_search_content(self, search_string: str) -> List[Entity]:
         # print(f"find_by_search_content")
@@ -105,7 +127,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         )
         return self._get_one_by_query(query)
 
-    def get_random_entity(self) -> Entity:
+    def get_random(self) -> Entity:
         n = random()
         query = (
             select(EntityTable)
@@ -144,7 +166,7 @@ class EntityRepository(BaseRepository[EntityTable]):
             .values(payload)
             .returning(self.schema_class)
         )
-        result: Result = self.execute(query)
+        result: Result = self._session.execute(query)
         # result: Result = await self.execute(query)
         self._session.flush()
         # await self._session.flush()
@@ -153,6 +175,17 @@ class EntityRepository(BaseRepository[EntityTable]):
             raise DatabaseError
 
         return schema
+
+    def delete_by_id(self, entity_id: int, entity_type: EntityType) -> None:
+        self.execute(
+            delete(self.schema_class).where(
+                (EntityTable.entity_id == entity_id)
+                & (EntityTable.entity_type == entity_type)
+            )
+        )
+        # await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))
+        # self._session.flush()
+        # await self._session.flush()
 
     def search_multi(self, entity_keys) -> List[Entity]:
         artist_ids: List[int] = []

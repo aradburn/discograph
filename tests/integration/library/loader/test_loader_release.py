@@ -2,6 +2,7 @@ import unittest
 from xml.etree import ElementTree
 
 from discograph import utils
+from discograph.config import TEST_DATA_DIR
 from discograph.library.loader.loader_release import LoaderRelease
 from discograph.library.loader_utils import LoaderUtils
 
@@ -169,7 +170,7 @@ class TestDatabaseRelease(unittest.TestCase):
 
     def test_release_from_element_01(self):
         # GIVEN
-        iterator = LoaderUtils.get_iterator("release", "test")
+        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "release", "testinsert")
         release_element = next(iterator)
 
         # WHEN
@@ -288,7 +289,7 @@ class TestDatabaseRelease(unittest.TestCase):
 
     def test_release_from_element_02(self):
         # GIVEN
-        iterator = LoaderUtils.get_iterator("release", "test")
+        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "release", "testinsert")
         next(iterator)
         next(iterator)
         next(iterator)

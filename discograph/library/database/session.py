@@ -5,16 +5,14 @@ from sqlalchemy.engine import ResultProxy
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.orm import Session, scoped_session
 
-from discograph.database import get_concurrency_count
 from discograph.exceptions import DatabaseError
-from discograph.library.database.database_helper import DatabaseHelper
-
-
-# __all__ = ("create_session", "CTX_SESSION")
 
 
 def get_session() -> Session:
     """Creates a new session to execute SQL queries."""
+    from discograph.database import get_concurrency_count
+    from discograph.library.database.database_helper import DatabaseHelper
+
     if get_concurrency_count() > 1:
         session = scoped_session(DatabaseHelper.session_factory)
     else:

@@ -1,6 +1,6 @@
 import collections
 
-from discograph.library.fields.role_type import RoleType
+from discograph.library.data_access_layer.role_data_access import RoleDataAccess
 
 
 class RoleEntry:
@@ -43,7 +43,7 @@ class RoleEntry:
 
     @classmethod
     def from_text(cls, text):
-        name = ""
+        role_name = ""
         current_buffer = ""
         details = []
         had_detail = False
@@ -52,7 +52,7 @@ class RoleEntry:
             if character == "[":
                 bracket_depth += 1
                 if bracket_depth == 1 and not had_detail:
-                    name = current_buffer
+                    role_name = current_buffer
                     current_buffer = ""
                     had_detail = True
                 elif 1 < bracket_depth:
@@ -67,11 +67,11 @@ class RoleEntry:
             else:
                 current_buffer += character
         if current_buffer and not had_detail:
-            name = current_buffer
-        name = name.strip()
-        detail = ", ".join(_.strip() for _ in details)
-        detail = detail or None
-        return cls(name=name, detail=detail)
+            role_name = current_buffer
+        role_name = role_name.strip()
+        role_detail = ", ".join(_.strip() for _ in details)
+        role_detail = role_detail or None
+        return cls(name=role_name, detail=role_detail)
 
     @classmethod
     def get_multiselect_mapping(cls):
@@ -80,18 +80,13 @@ class RoleEntry:
         #    'Member Of',
         #    ]
         mapping = collections.OrderedDict()
-        for role, categories in sorted(RoleType.role_definitions.items()):
-            if categories is None:
-                continue
-            # if categories is None or role in excluded_roles:
-            #    continue
-            if len(categories) == 1:
-                category_name = RoleType.category_names[categories[0]]
-            else:
-                category_name = RoleType.subcategory_names[categories[1]]
-            if category_name not in mapping:
-                mapping[category_name] = []
-            mapping[category_name].append(role)
+        for role_name in sorted(RoleDataAccess.role_name_to_role_id_lookup.keys()):
+            role_id = RoleDataAccess.role_name_to_role_id_lookup[role_name]
+            role_category = RoleDataAccess.role_id_to_role_category_lookup[role_id]
+
+            if role_category not in mapping:
+                mapping[role_category] = []
+            mapping[role_category].append(role_name)
         return mapping
 
     # PUBLIC PROPERTIES

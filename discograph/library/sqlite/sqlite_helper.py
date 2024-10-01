@@ -1,29 +1,29 @@
 import logging
 import pathlib
+from typing import Type, List
 
-from sqlalchemy import Engine, create_engine, text
+from sqlalchemy import Engine, create_engine, text, StaticPool
+from sqlalchemy.dialects.sqlite import insert, Insert
 from sqlalchemy.exc import DatabaseError
+from sqlalchemy.sql.dml import ReturningInsert
 
 from discograph.config import Configuration
-from discograph.library.database.database_helper import DatabaseHelper
-from discograph.library.loader.loader_entity import LoaderEntity
-from discograph.library.loader.loader_relation import LoaderRelation
-from discograph.library.loader.loader_release import LoaderRelease
-from discograph.library.loader.loader_role import LoaderRole
-from discograph.library.loader.updater_entity import UpdaterEntity
-from discograph.library.loader.updater_release import UpdaterRelease
+from discograph.library.database.database_helper import DatabaseHelper, ConcreteTable
 
 log = logging.getLogger(__name__)
 
 
 class SqliteHelper(DatabaseHelper):
+
     @staticmethod
     def setup_database(config: Configuration) -> Engine:
         log.info("Using Sqlite Database")
         # if config["TESTING"]:
         #     engine = create_engine(
-        #         "sqlite:///:memory:",
-        #         connect_args={"check_same_thread": False},
+        #         "sqlite://",
+        #         connect_args={
+        #             "check_same_thread": False,
+        #         },
         #         poolclass=StaticPool,
         #     )
         # else:
@@ -32,31 +32,21 @@ class SqliteHelper(DatabaseHelper):
         target_parent.mkdir(parents=True, exist_ok=True)
         log.info(f"Sqlite Database: {target_path}")
 
-        engine = create_engine(f"sqlite:///{target_path}")
-
-        # database = SqliteExtDatabase(
-        #     config["SQLITE_DATABASE_NAME"],
-        #     pragmas={
-        #         "journal_mode": "wal",
-        #         # 'check_same_thread': False,
-        #         # 'journal_mode': 'off',
-        #         "synchronous": 0,
-        #         "cache_size": 1000000,
-        #         # 'locking_mode': 'exclusive',
-        #         "temp_store": "memory",
-        #     },
-        #     timeout=20,
-        # )
-
+        engine = create_engine(
+            f"sqlite:///{target_path}",
+            connect_args={
+                "check_same_thread": False,
+            },
+            poolclass=StaticPool,
+        )
         return engine
 
     @staticmethod
-    def shutdown_database():
-        log.info("Shutting down database")
-        DatabaseHelper.engine.dispose()
+    def shutdown_database() -> None:
+        log.info("Shutting down Sqlite database")
 
     @staticmethod
-    def check_connection(config: Configuration, engine: Engine):
+    def check_connection(config: Configuration, engine: Engine) -> None:
         try:
             log.info("Check Sqlite database connection...")
 
@@ -66,75 +56,80 @@ class SqliteHelper(DatabaseHelper):
                 )
                 log.info(f"Database Version: {version.scalars().one_or_none()}")
 
-                connection.execute(text("pragma journal_mode=wal"))
-                connection.execute(text("pragma synchronous=0"))
-                connection.execute(text("pragma cache_size=10000000"))
-                connection.execute(text("pragma temp_store=memory"))
+                connection.execute(text("pragma journal_mode=MEMORY"))
+                # connection.execute(text("pragma journal_mode=wal"))
+                connection.execute(text("pragma synchronous=OFF"))
+                connection.execute(text("pragma cache_size=-10000"))
+                connection.execute(text("pragma temp_store=MEMORY"))
+                connection.execute(text("pragma foreign_keys=ON"))
+                connection.commit()
+                log.info("Database connected OK.")
+        except DatabaseError:
+            log.exception("Connection Error", exc_info=True)
 
-            log.info("Database connected OK.")
-        except DatabaseError as e:
-            log.exception("Connection Error", e)
-
-    @staticmethod
-    def load_tables(date: str):
+    @classmethod
+    def load_tables(cls, data_directory: str, date: str, is_bulk_inserts: bool) -> None:
         log.info("Load Sqlite tables")
-
-        log.debug("Load role pass 1")
-        LoaderRole().loader_pass_one(date)
-
-        log.debug("Load entity pass 1")
-        LoaderEntity().loader_pass_one(date)
-
-        log.debug("Load release pass 1")
-        LoaderRelease().loader_pass_one(date)
-
-        log.debug("Load entity pass 2")
-        LoaderEntity().loader_pass_two()
-
-        log.debug("Load release pass 2")
-        LoaderRelease().loader_pass_two()
-
-        log.debug("Load relation pass 1")
-        LoaderRelation().loader_relation_pass_one(date)
-
-        log.debug("Load entity pass 3")
-        LoaderEntity().loader_pass_three()
+        stages = cls.get_load_table_stages(data_directory, date, is_bulk_inserts)
+        for stage in stages:
+            stage()
 
         log.info("Load Sqlite done.")
 
-    @staticmethod
-    def update_tables(date: str):
-        log.info("Update Sqlite tables")
-
-        log.debug("Update entity pass 1")
-        UpdaterEntity().updater_pass_one(date)
-
-        log.debug("Update release pass 1")
-        UpdaterRelease().updater_pass_one(date)
-
-        log.debug("Update entity pass 2")
-        LoaderEntity().loader_pass_two()
-
-        log.debug("Update release pass 2")
-        LoaderRelease().loader_pass_two()
-
-        log.debug("Update relation pass 1")
-        LoaderRelation().loader_relation_pass_one(date)
-
-        log.debug("Update entity pass 3")
-        LoaderEntity().loader_pass_three()
-
-        log.info("Update Sqlite done.")
+    @classmethod
+    def load_table_stage(
+        cls, data_directory: str, date: str, is_bulk_inserts: bool, stage: int
+    ) -> None:
+        stages = cls.get_load_table_stages(data_directory, date, is_bulk_inserts)
+        log.debug(f"Run stage: {stage}")
+        stages[stage]()
 
     @classmethod
-    def create_tables(cls, tables=None):
+    def create_tables(cls, tables: List[str] = None) -> None:
         log.info("Create Sqlite tables")
         super().create_tables(tables=tables)
 
     @classmethod
-    def drop_tables(cls):
+    def drop_tables(cls, tables: List[str] = None) -> None:
         log.info("Drop Sqlite tables")
-        super().drop_tables()
+        super().drop_tables(tables=tables)
+
+    @staticmethod
+    def has_vacuum_tablename() -> bool:
+        return False
+
+    @staticmethod
+    def is_vacuum_full() -> bool:
+        return False
+
+    @staticmethod
+    def is_vacuum_analyze() -> bool:
+        return False
+
+    @staticmethod
+    def generate_insert_query(
+        schema_class: Type[ConcreteTable], values: dict, on_conflict_do_nothing=False
+    ) -> ReturningInsert[tuple[ConcreteTable]]:
+        if on_conflict_do_nothing:
+            return (
+                insert(schema_class)
+                .on_conflict_do_nothing()
+                .values(values)
+                .returning(schema_class)
+            )
+        else:
+            return insert(schema_class).values(values).returning(schema_class)
+
+    @staticmethod
+    def generate_insert_bulk_query(
+        schema_class: Type[ConcreteTable],
+        values_list: List[dict],
+        on_conflict_do_nothing=False,
+    ) -> Insert[tuple[ConcreteTable]]:
+        if on_conflict_do_nothing:
+            return insert(schema_class).on_conflict_do_nothing().values(values_list)
+        else:
+            return insert(schema_class).values(values_list)
 
     # @staticmethod
     # def get_entity(entity_type: EntityType, entity_id: int):

@@ -55,3 +55,103 @@ class TestAPI(AppTestCase):
     def test_relations_01(self):
         response = self.app.get("/api/artist/relations/32613")
         self.assertEqual("200 OK", response.status)
+
+        actual = json.loads(response.data.decode("utf-8"))
+        expected = {
+            "results": [
+                {
+                    "releases": {"2267734": 1990, "4625": 1990, "61862": 1993},
+                    "role": "Turntables",
+                },
+                {"releases": {"2455278": 2010}, "role": "Producer"},
+                {"releases": {"2455278": 2010}, "role": "Producer"},
+                {"releases": {"102382": 1995, "134822": 1996}, "role": "Producer"},
+                {
+                    "releases": {
+                        "1530077": 2002,
+                        "1741441": None,
+                        "2317370": 2009,
+                        "29372": 1992,
+                        "29373": 1992,
+                        "315067": 1992,
+                        "3564784": 1992,
+                        "549": 1992,
+                    },
+                    "role": "Producer",
+                },
+                {
+                    "releases": {
+                        "1530077": 2002,
+                        "1741441": None,
+                        "2317370": 2009,
+                        "29372": 1992,
+                        "29373": 1992,
+                        "315067": 1992,
+                        "3564784": 1992,
+                        "549": 1992,
+                    },
+                    "role": "Producer",
+                },
+                {"releases": {"315067": 1992}, "role": "Compiled On"},
+                {"releases": {"51781": 1993}, "role": "Compiled On"},
+                {"releases": {"51781": 1993}, "role": "Compiled On"},
+                {
+                    "releases": {
+                        "1530077": 2002,
+                        "1741441": None,
+                        "2317370": 2009,
+                        "29372": 1992,
+                        "29373": 1992,
+                        "3564784": 1992,
+                        "548125": 1992,
+                        "549": 1992,
+                    },
+                    "role": "Compiled On",
+                },
+                {"releases": {"170322": 1994}, "role": "Compiled On"},
+                {"releases": {"548125": 1992}, "role": "Compiled On"},
+                {"releases": {"2455278": 2010}, "role": "Remix"},
+                {"releases": {"2455278": 2010}, "role": "Remix"},
+                {
+                    "releases": {"2267734": 1990, "4625": 1990, "61862": 1993},
+                    "role": "Remix",
+                },
+                {"releases": {"89013": 1995}, "role": "Remix"},
+                {
+                    "releases": {"102382": 1995, "134822": 1996, "3097008": 1996},
+                    "role": "Mixed By",
+                },
+                {
+                    "releases": {"102382": 1995, "134822": 1996, "89013": 1995},
+                    "role": "Written By",
+                },
+                {
+                    "releases": {
+                        "1530077": 2002,
+                        "1741441": None,
+                        "2317370": 2009,
+                        "29372": 1992,
+                        "29373": 1992,
+                        "315067": 1992,
+                        "3564784": 1992,
+                        "549": 1992,
+                    },
+                    "role": "Written By",
+                },
+                {"releases": {"85213": 1994, "89013": 1995}, "role": "Written By"},
+                {
+                    "releases": {
+                        "1530077": 2002,
+                        "1741441": None,
+                        "2317370": 2009,
+                        "29372": 1992,
+                        "29373": 1992,
+                        "315067": 1992,
+                        "3564784": 1992,
+                        "549": 1992,
+                    },
+                    "role": "Written By",
+                },
+            ]
+        }
+        self.assertEqual(expected, actual)

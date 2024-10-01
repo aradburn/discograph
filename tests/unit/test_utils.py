@@ -1,6 +1,13 @@
+import datetime
 import unittest
 
 from discograph import utils
+from discograph.config import (
+    DISCOGS_ARTISTS_TYPE,
+    DISCOGS_RELEASES_TYPE,
+    DISCOGS_LABELS_TYPE,
+    DISCOGS_MASTERS_TYPE,
+)
 from discograph.library.fields.entity_type import EntityType
 
 
@@ -9,21 +16,24 @@ class TestUtils(unittest.TestCase):
         input_seq = (1, 2, 3, 4, 10, 11, 12, 13, 20, 21, 22, 23)
         num_chunks = 3
         result = tuple(utils.split_tuple(num_chunks, input_seq))
-        assert result == ((1, 2, 3, 4), (10, 11, 12, 13), (20, 21, 22, 23))
+        expected = ((1, 2, 3, 4), (10, 11, 12, 13), (20, 21, 22, 23))
+        self.assertEqual(expected, result)
 
     def test_split_tuple_2(self):
         input_seq = (1, 2, 3, 4, 10, 11, 12, 13, 20, 21, 22, 23, 24)
         num_chunks = 3
         result = tuple(utils.split_tuple(num_chunks, input_seq))
-        assert result == ((1, 2, 3, 4, 10), (11, 12, 13, 20, 21), (22, 23, 24))
-        assert len(result) == num_chunks
+        expected = ((1, 2, 3, 4, 10), (11, 12, 13, 20, 21), (22, 23, 24))
+        self.assertEqual(expected, result)
+        self.assertEqual(num_chunks, len(result))
 
     def test_split_tuple_3(self):
         input_seq = (1,)
         num_chunks = 3
         result = tuple(utils.split_tuple(num_chunks, input_seq))
-        assert result == ((1,),)
-        assert len(result) == 1
+        expected = ((1,),)
+        self.assertEqual(expected, result)
+        self.assertEqual(1, len(result))
 
     def test_split_tuple_4(self):
         with self.assertRaises(ValueError):
@@ -35,8 +45,9 @@ class TestUtils(unittest.TestCase):
         input_seq = (1, 2, 3, 4, 10, 11, 12, 13, 20, 21, 22, 23)
         num_chunks = 0
         result = tuple(utils.split_tuple(num_chunks, input_seq))
-        assert result == ((1, 2, 3, 4, 10, 11, 12, 13, 20, 21, 22, 23),)
-        assert len(result) == 1
+        expected = ((1, 2, 3, 4, 10, 11, 12, 13, 20, 21, 22, 23),)
+        self.assertEqual(expected, result)
+        self.assertEqual(1, len(result))
 
     def test_strip_input(self):
         input_str = """
@@ -229,3 +240,52 @@ class TestUtils(unittest.TestCase):
         actual = utils.strip_trailing_newline(input_str)
         expected = "{\n    aaa\n    bbb\n    ccc\n}"
         self.assertEqual(expected, actual)
+
+    def test_get_discogs_url(self):
+        input_date = datetime.datetime(2023, 8, 1)
+        result = utils.get_discogs_url(input_date, "xyz")
+        expected = "https://discogs-data-dumps.s3-us-west-2.amazonaws.com/data/2023/discogs_20230801_xyz.xml.gz"
+        self.assertEqual(expected, result)
+
+    def test_get_discogs_artists_url(self):
+        input_date = datetime.datetime(2023, 8, 1)
+        result = utils.get_discogs_url(input_date, DISCOGS_ARTISTS_TYPE)
+        expected = "https://discogs-data-dumps.s3-us-west-2.amazonaws.com/data/2023/discogs_20230801_artists.xml.gz"
+        self.assertEqual(expected, result)
+
+    def test_get_discogs_releases_url(self):
+        input_date = datetime.datetime(2023, 8, 1)
+        result = utils.get_discogs_url(input_date, DISCOGS_RELEASES_TYPE)
+        expected = "https://discogs-data-dumps.s3-us-west-2.amazonaws.com/data/2023/discogs_20230801_releases.xml.gz"
+        self.assertEqual(expected, result)
+
+    def test_get_discogs_labels_url(self):
+        input_date = datetime.datetime(2023, 8, 1)
+        result = utils.get_discogs_url(input_date, DISCOGS_LABELS_TYPE)
+        expected = "https://discogs-data-dumps.s3-us-west-2.amazonaws.com/data/2023/discogs_20230801_labels.xml.gz"
+        self.assertEqual(expected, result)
+
+    def test_get_discogs_masters_url(self):
+        input_date = datetime.datetime(2023, 8, 1)
+        result = utils.get_discogs_url(input_date, DISCOGS_MASTERS_TYPE)
+        expected = "https://discogs-data-dumps.s3-us-west-2.amazonaws.com/data/2023/discogs_20230801_masters.xml.gz"
+        self.assertEqual(expected, result)
+
+    def test_get_discogs_dump_dates(self):
+        start_date = datetime.datetime(2023, 8, 1)
+        end_date = datetime.datetime(2024, 6, 13)
+        result = utils.get_discogs_dump_dates(start_date, end_date)
+        expected = [
+            datetime.date(2023, 8, 1),
+            datetime.date(2023, 9, 1),
+            datetime.date(2023, 10, 1),
+            datetime.date(2023, 11, 1),
+            datetime.date(2023, 12, 1),
+            datetime.date(2024, 1, 1),
+            datetime.date(2024, 2, 1),
+            datetime.date(2024, 3, 1),
+            datetime.date(2024, 4, 1),
+            datetime.date(2024, 5, 1),
+            datetime.date(2024, 6, 1),
+        ]
+        self.assertEqual(expected, result)
