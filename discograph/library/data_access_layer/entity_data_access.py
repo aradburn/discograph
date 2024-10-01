@@ -129,11 +129,11 @@ class EntityDataAccess:
         # log.debug(f"            corpus after : {corpus}")
 
     @staticmethod
-    def normalize_search_content(string: str) -> str:
+    def normalise_search_content(string: str) -> str:
         string = string.lower()
-        # Transliterate the unicode string into a plain ASCII string
-        string = unidecode(string, "preserve")
+        string = utils.to_ascii(string)
         string = utils.STRIP_PATTERN.sub("", string)
+        string = utils.REMOVE_PUNCTUATION.sub("", string)
         return string
         # tsvector = func.to_tsvector("english", string)
         # return tsvector

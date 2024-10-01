@@ -7,6 +7,7 @@ import re
 import shutil
 import textwrap
 import time
+import unicodedata
 from collections.abc import Mapping
 from datetime import datetime, date
 from functools import wraps
@@ -261,17 +262,14 @@ def row2dict(row):
     return {c.name: getattr(row, c.name) for c in row.__table__.columns}
 
 
+def is_latin(string: str) -> bool:
+    return all(["LATIN" in unicodedata.name(c) for c in string])
+
+
 def to_ascii(string: str) -> str:
     # Transliterate the unicode string into a plain ASCII string
-    string = unidecode(string, "preserve")
-    return string
-
-
-def normalise_search_content(string: str) -> str:
-    string = string.lower()
-    string = to_ascii(string)
-    string = STRIP_PATTERN.sub("", string)
-    string = REMOVE_PUNCTUATION.sub("", string)
+    if is_latin(string):
+        string = unidecode(string, "preserve")
     return string
 
 

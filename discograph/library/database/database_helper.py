@@ -346,7 +346,7 @@ class DatabaseHelper(ABC):
                 name=entity.entity_name,
             )
             data.append(datum)
-            log.debug(f"    {datum}")
+            # log.debug(f"    {datum}")
         data = {"results": tuple(data)}
         log.debug(f"  set cache_key: {cache_key} data: {data}")
         cache.set(cache_key, data)

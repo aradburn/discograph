@@ -87,8 +87,12 @@ class EntityRepository(BaseRepository[EntityTable]):
     def find_by_search_content(self, search_string: str) -> List[Entity]:
         # print(f"find_by_search_content")
         query = select(EntityTable).where(
-            EntityTable.search_content.match(search_string)
+            EntityTable.search_content.like(search_string + "%")
         )
+        log.debug(f"search: {query}")
+        # query = select(EntityTable).where(
+        #     EntityTable.search_content.match(search_string)
+        # )
         return self._get_all_by_query(query)
 
     def create(self, entity: Entity) -> Entity:

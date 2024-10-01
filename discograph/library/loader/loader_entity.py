@@ -4,6 +4,7 @@ from random import random
 from sortedcontainers import SortedSet
 
 from discograph.database import get_concurrency_count
+from discograph.library.data_access_layer.entity_data_access import EntityDataAccess
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.entity_table import EntityTable
 from discograph.library.database.transaction import transaction
@@ -16,7 +17,7 @@ from discograph.library.loader.worker_entity_pass_three import WorkerEntityPassT
 from discograph.library.loader.worker_entity_pass_two import WorkerEntityPassTwo
 from discograph.library.loader.worker_entity_updater import WorkerEntityUpdater
 from discograph.library.loader_utils import LoaderUtils
-from discograph.utils import normalise_search_content, timeit
+from discograph.utils import timeit
 
 log = logging.getLogger(__name__)
 
@@ -245,7 +246,7 @@ class LoaderEntity(LoaderBase):
                 data["entity_metadata"][key] = data.pop(key)
         if "entity_name" in data and data.get("entity_name"):
             name = data.get("entity_name")
-            data["search_content"] = normalise_search_content(name)
+            data["search_content"] = EntityDataAccess.normalise_search_content(name)
         if element.tag == "artist":
             data["entity_type"] = EntityType.ARTIST
         elif element.tag == "label":
