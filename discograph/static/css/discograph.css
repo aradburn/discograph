@@ -19,6 +19,12 @@ body {
   padding-top: 70px;
   padding-bottom: 70px;
 }
+#nav-top {
+  background-image: linear-gradient(#ddd, #ccc 60%);
+}
+#nav-bottom {
+  background-image: linear-gradient(#ddd, #ccc 60%);
+}
 .navbar-title {
   color: #777777;
   transition: color ease-in-out 0.2s;
@@ -70,7 +76,7 @@ svg {
 }*/
 #svg {
   pointer-events: visible;
-  background-color: white;
+  background-color: #eee;
 }
 #svg text {
   font-variant-ligatures: none;

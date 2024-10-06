@@ -22,10 +22,10 @@ function dg_network_selectPage(page) {
     $('#paging .next-text').text(nextText);
 
     var filteredNodes = Array.from(dg.network.data.nodeMap.values()).filter(function(d) {
-        return (d.pages.indexOf(currentPage) != -1);
+        return (d.pages && d.pages.indexOf(currentPage) != -1);
     });
     var filteredLinks = Array.from(dg.network.data.linkMap.values()).filter(function(d) {
-        return (d.pages.indexOf(currentPage) != -1);
+        return (d.pages && d.pages.indexOf(currentPage) != -1);
     });
     dg.network.pageData.nodes.length = 0;
     dg.network.pageData.links.length = 0;
