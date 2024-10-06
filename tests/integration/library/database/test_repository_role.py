@@ -57,10 +57,12 @@ class TestRepositoryRole(RepositoryTestCase):
         # WHEN
         with transaction():
             repository = RoleRepository()
-            created_role1 = repository.create(role1)
-            created_role2 = repository.create(role2)
+            created_role_1 = repository.create(role1)
+            created_role_2 = repository.create(role2)
 
-            retrieved_role = repository.get(2)
+            retrieved_role_1 = repository.get(1)
+            retrieved_role_2 = repository.get(2)
 
         # THEN
-        self.assertEqual(created_role2, retrieved_role)
+        self.assertEqual(created_role_1, retrieved_role_1)
+        self.assertEqual(created_role_2, retrieved_role_2)

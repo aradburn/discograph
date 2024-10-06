@@ -57,7 +57,7 @@ class WorkerEntityUpdater(multiprocessing.Process):
 
                         # Update search_content
                         db_entity.search_content = (
-                            EntityDataAccess().normalize_search_content(
+                            EntityDataAccess.normalise_search_content(
                                 updated_entity.entity_name
                             )
                         )

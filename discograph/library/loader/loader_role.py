@@ -14,6 +14,7 @@ from discograph.library.domain.role import RoleUncommited
 from discograph.library.fields.role_type import RoleType
 from discograph.library.loader.loader_base import LoaderBase
 from discograph.library.loader_utils import LoaderUtils
+from discograph.logging_config import LOGGING_TRACE
 
 log = logging.getLogger(__name__)
 
@@ -101,9 +102,10 @@ class LoaderRole(LoaderBase):
         with open(INSTRUMENTS_PATH) as f:
             json_data = json.load(f)
             instruments_data = HornbostelSachs(**json_data)
-            # print(f"instruments_data: {instruments_data}")
+            if LOGGING_TRACE:
+                print(f"instruments_data: {instruments_data}")
+
             for key, instrument_entry in instruments_data.root.items():
-                # print(f"key: {key}")
                 instrument_class_key = key[0]
                 instrument_class = instruments_data.root.get(instrument_class_key).label
                 category_id = RoleType.Category.INSTRUMENTS
@@ -112,8 +114,7 @@ class LoaderRole(LoaderBase):
                     instrument_class
                 )
                 subcategory_name = RoleType.subcategory_names[subcategory_id]
-                # print(f"inst_class: {inst_class}")
-                # print(f"inst_subcategory: {inst_subcategory}")
+
                 for instrument_name in instrument_entry.instruments:
                     normalised_role_name_list = RoleDataAccess.normalise_role_names(
                         instrument_name
@@ -163,11 +164,12 @@ class LoaderRole(LoaderBase):
                         else:
                             subcategory_id = RoleType.Subcategory.NONE
                         subcategory_name = RoleType.subcategory_names[subcategory_id]
-                        # log.debug(f"role_name: {role_name}")
-                        # log.debug(f"category_id: {category_id}")
-                        # log.debug(f"category_name: {category_name}")
-                        # log.debug(f"subcategory_id: {subcategory_id}")
-                        # log.debug(f"subcategory_name: {subcategory_name}")
+                        if LOGGING_TRACE:
+                            log.debug(f"role_name: {role_name}")
+                            log.debug(f"category_id: {category_id}")
+                            log.debug(f"category_name: {category_name}")
+                            log.debug(f"subcategory_id: {subcategory_id}")
+                            log.debug(f"subcategory_name: {subcategory_name}")
 
                         # Add new role
                         new_role = RoleUncommited(
@@ -198,13 +200,15 @@ class LoaderRole(LoaderBase):
             for role_uncommitted in roles:
                 try:
                     role_repository.get_by_name(name=role_uncommitted.role_name)
-                    # log.debug(
-                    #     f"Role record already exists in db: {role_uncommitted.role_name}"
-                    # )
+                    if LOGGING_TRACE:
+                        log.debug(
+                            f"Role record already exists in db: {role_uncommitted.role_name}"
+                        )
                 except NotFoundError:
                     # Add new role
                     created_role = role_repository.create(role_uncommitted)
-                    # log.debug(f"Added role to db: {created_role}")
+                    if LOGGING_TRACE:
+                        log.debug(f"Added role to db: {created_role}")
                     role_repository.commit()
                     added_count += 1
 
@@ -236,26 +240,13 @@ class LoaderRole(LoaderBase):
         }
         for role_name in RoleDataAccess.role_id_to_role_name_lookup.values():
             RoleDataAccess.role_name_set.add(role_name)
-        # sorted_list = sorted(RoleDataAccess.role_name_set)
-        # for item in sorted_list:
-        #     log.debug(f"{item}")
+        if LOGGING_TRACE:
+            sorted_list = sorted(RoleDataAccess.role_name_set)
+            for item in sorted_list:
+                log.debug(f"{item}")
         log.debug(
             f"Loaded {len(RoleDataAccess.role_name_to_role_id_lookup)} roles from RoleRepository"
         )
-
-    # @classmethod
-    # def load_role_words(cls) -> None:
-    #     log.debug(f"Loading role words")
-    #     for role_name in RoleDataAccess.role_name_set:
-    #         role_name_words = role_name.split(" ")
-    #         for word in role_name_words:
-    #             lword = word.lower()
-    #             lword_only_letters = re.sub(r"\W", "", lword)
-    #             # print(f"{word} -> {lword_only_letters}")
-    #             if lword_only_letters is not None and lword_only_letters != "":
-    #                 RoleDataAccess.role_word_lookup.add(lword_only_letters)
-    #
-    #     log.debug(f"Loaded {len(RoleDataAccess.role_word_lookup)} role words")
 
     @classmethod
     def insert_bulk(cls, bulk_inserts, processed_count):

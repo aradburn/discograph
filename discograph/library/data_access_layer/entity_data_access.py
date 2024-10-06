@@ -1,8 +1,6 @@
 import logging
 from typing import Dict, Tuple, cast
 
-from unidecode import unidecode
-
 from discograph import utils
 from discograph.exceptions import NotFoundError
 from discograph.library.database.entity_repository import EntityRepository
@@ -135,6 +133,7 @@ class EntityDataAccess:
         string = utils.STRIP_PATTERN.sub("", string)
         string = utils.REMOVE_PUNCTUATION.sub("", string)
         return string
+        # TODO handle search
         # tsvector = func.to_tsvector("english", string)
         # return tsvector
 

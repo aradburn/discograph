@@ -12,7 +12,6 @@ from discograph.config import (
 )
 from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.library.database.database_helper import DatabaseHelper
-from discograph.library.loader.loader_role import LoaderRole
 from discograph.library.relation_grapher import RelationGrapher
 from discograph.logging_config import setup_logging, shutdown_logging
 

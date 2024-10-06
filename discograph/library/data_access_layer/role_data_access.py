@@ -80,9 +80,11 @@ class RoleDataAccess:
         def to_lower_upper(matches):
             return matches.group(1).lower() + matches.group(2).upper()
 
+        # noinspection PyUnusedLocal
         def lower(matches):
             return matches.group(1).lower()
 
+        # noinspection PyUnusedLocal
         def capitalize(matches):
             return "(" + matches.group(1).capitalize() + ")"
 
@@ -103,16 +105,8 @@ class RoleDataAccess:
         name = re.sub(r"-TO\b", " To", name, flags=re.IGNORECASE)
         name = re.sub(r"-AT\b", " At", name, flags=re.IGNORECASE)
         name = re.sub(r"-WITH\b", " With", name, flags=re.IGNORECASE)
-        # name = re.sub(r"(\s|-)+(BY|By|by)($|\s)", "", name)
-        # name = re.sub(r"(\s|-)+(TO|To|to)($|\s)", "", name)
-        # name = re.sub(r"(\s|-)+(AT|At|at)($|\s)", "", name)
         # name = re.sub(r"(\s|-)+(FOR|For|for)($|\s)", "", name)
         # name = re.sub(r"(\s|-)+(ON|On|on)($|\s)", "", name)
-        # name = re.sub(r"(\s|-)+(WITH|With|with)($|\s)", "", name)
-        # name = name.replace(" By", "")
-        # name = name.replace(" by", "")
-        # name = name.replace("-By", "")
-        # name = name.replace("-by", "")
 
         # Numbers that are instruments
         name_lower = name.lower()
@@ -133,7 +127,6 @@ class RoleDataAccess:
         )
         # Capitalise after hyphen
         name = re.sub(r"(-[a-z])", upper, name)
-        # print(f"{name}")
         # Do not capitalise before apostrophe
         # name = re.sub(r"( [A-Z]')", lower, name)
         # Capitalise after apostrophe if first letter

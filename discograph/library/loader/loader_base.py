@@ -52,7 +52,6 @@ class LoaderBase:
             bulk_records = []
             workers = []
             for i, element in enumerate(iterator):
-                data = None
                 try:
                     data = cls.tags_to_fields(element)
                     if skip_without:
