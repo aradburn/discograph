@@ -4,15 +4,15 @@ from discograph import utils
 from discograph.config import TEST_DATA_DIR
 from discograph.library.domain.entity import Entity
 from discograph.library.loader.loader_entity import LoaderEntity
-from discograph.library.loader_utils import LoaderUtils
+from discograph.library.loader.loader_utils import LoaderUtils
 
 
-class TestEntityLoader(unittest.TestCase):
+class TestLoaderEntity(unittest.TestCase):
     def test_from_element_01(self):
         iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "artist", "testinsert")
         element = next(iterator)
         entity = LoaderEntity().from_element(element)
-        actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
+        actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
         expected_entity = {
             "entities": {"aliases": {}, "groups": {}},
             "entity_id": 3,
@@ -77,7 +77,7 @@ class TestEntityLoader(unittest.TestCase):
         while element.find("name").text != "Seefeel":
             element = next(iterator)
         entity = LoaderEntity().from_element(element)
-        actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
+        actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
         expected_entity = {
             "entities": {
                 "members": {
@@ -114,7 +114,7 @@ class TestEntityLoader(unittest.TestCase):
         iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "label", "testinsert")
         element = next(iterator)
         entity = LoaderEntity().from_element(element)
-        actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
+        actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
         expected_entity = {
             "entities": {},
             "entity_id": 1,

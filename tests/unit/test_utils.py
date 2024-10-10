@@ -12,40 +12,48 @@ from discograph.library.fields.entity_type import EntityType
 
 
 class TestUtils(unittest.TestCase):
-    def test_split_tuple_1(self):
-        input_seq = (1, 2, 3, 4, 10, 11, 12, 13, 20, 21, 22, 23)
+    def test_split_list_1(self):
+        input_seq = [1, 2, 3, 4, 10, 11, 12, 13, 20, 21, 22, 23]
         num_chunks = 3
-        result = tuple(utils.split_tuple(num_chunks, input_seq))
-        expected = ((1, 2, 3, 4), (10, 11, 12, 13), (20, 21, 22, 23))
+        result = list(utils.split_list(num_chunks, input_seq))
+        expected = [[1, 2, 3, 4], [10, 11, 12, 13], [20, 21, 22, 23]]
         self.assertEqual(expected, result)
 
-    def test_split_tuple_2(self):
-        input_seq = (1, 2, 3, 4, 10, 11, 12, 13, 20, 21, 22, 23, 24)
+    def test_split_list_2(self):
+        input_seq = [1, 2, 3, 4, 10, 11, 12, 13, 20, 21, 22, 23, 24]
         num_chunks = 3
-        result = tuple(utils.split_tuple(num_chunks, input_seq))
-        expected = ((1, 2, 3, 4, 10), (11, 12, 13, 20, 21), (22, 23, 24))
+        result = list(utils.split_list(num_chunks, input_seq))
+        expected = [[1, 2, 3, 4, 10], [11, 12, 13, 20, 21], [22, 23, 24]]
         self.assertEqual(expected, result)
         self.assertEqual(num_chunks, len(result))
 
-    def test_split_tuple_3(self):
-        input_seq = (1,)
+    def test_split_list_3(self):
+        input_seq = [
+            1,
+        ]
         num_chunks = 3
-        result = tuple(utils.split_tuple(num_chunks, input_seq))
-        expected = ((1,),)
+        result = list(utils.split_list(num_chunks, input_seq))
+        expected = [
+            [
+                1,
+            ],
+        ]
         self.assertEqual(expected, result)
         self.assertEqual(1, len(result))
 
-    def test_split_tuple_4(self):
+    def test_split_list_4(self):
         with self.assertRaises(ValueError):
-            input_seq = ()
+            input_seq = []
             num_chunks = 3
-            tuple(utils.split_tuple(num_chunks, input_seq))
+            list(utils.split_list(num_chunks, input_seq))
 
-    def test_split_tuple_5(self):
-        input_seq = (1, 2, 3, 4, 10, 11, 12, 13, 20, 21, 22, 23)
+    def test_split_list_5(self):
+        input_seq = [1, 2, 3, 4, 10, 11, 12, 13, 20, 21, 22, 23]
         num_chunks = 0
-        result = tuple(utils.split_tuple(num_chunks, input_seq))
-        expected = ((1, 2, 3, 4, 10, 11, 12, 13, 20, 21, 22, 23),)
+        result = list(utils.split_list(num_chunks, input_seq))
+        expected = [
+            [1, 2, 3, 4, 10, 11, 12, 13, 20, 21, 22, 23],
+        ]
         self.assertEqual(expected, result)
         self.assertEqual(1, len(result))
 

@@ -9,6 +9,7 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.sql.dml import ReturningInsert, Insert
 
 from discograph.config import Configuration
+from discograph.library.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.library.database.base_table import Base, ConcreteTable
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.relation_release_year_repository import (
@@ -247,7 +248,9 @@ class DatabaseHelper(ABC):
         if data is not None:
             return data
 
-        entity = entity_repository.get(entity_id, entity_type)
+        entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity_id, entity_type
+        )
         if entity is None:
             return None
         if not on_mobile:
@@ -262,7 +265,9 @@ class DatabaseHelper(ABC):
             max_nodes=max_nodes,
             role_names=roles,
         )
-        data = relation_grapher.get_relation_graph(relation_repository)
+        data = relation_grapher.get_relation_graph(
+            entity_repository, relation_repository
+        )
         cache.set(cache_key, data)
         return data
 
@@ -355,23 +360,23 @@ class DatabaseHelper(ABC):
     @classmethod
     def get_relations_by_entity_id_and_entity_type(
         cls,
+        entity_repository: EntityRepository,
         relation_repository: RelationRepository,
         relation_release_year_repository: RelationReleaseYearRepository,
         entity_id: int,
         entity_type: EntityType,
     ) -> dict[str, Any]:
-        relations = relation_repository.find_by_entity_id_and_entity_type(
+        entity = entity_repository.get_by_entity_id_and_entity_type(
             entity_id, entity_type
         )
+        relations = relation_repository.find_by_entity(entity.id)
 
         data = []
         for relation in relations:
-            relation_release_years = relation_release_year_repository.get(
-                relation.relation_id
-            )
-            relation.releases = {}
+            relation_release_years = relation_release_year_repository.get(relation.id)
+            relation_releases = {}
             for relation_release_year in relation_release_years:
-                relation.releases[relation_release_year.release_id] = (
+                relation_releases[relation_release_year.release_id] = (
                     relation_release_year.year
                 )
 
@@ -380,7 +385,7 @@ class DatabaseHelper(ABC):
             #     continue
             datum = {
                 "role": relation.role,
-                "releases": relation.releases,
+                "releases": relation_releases,
             }
             data.append(datum)
         data = {"results": tuple(data)}
@@ -393,11 +398,10 @@ class DatabaseHelper(ABC):
         relation_release_year_repository: RelationReleaseYearRepository,
         key: dict[str, Any],
     ) -> Relation:
-        relation = relation_repository.find_by_key(key)
+        relation_internal = relation_repository.find_by_key(key)
+        relation = RelationDataAccess.to_relation(relation_internal)
 
-        relation_release_years = relation_release_year_repository.get(
-            relation.relation_id
-        )
+        relation_release_years = relation_release_year_repository.get(relation.id)
         relation.releases = {}
         for relation_release_year in relation_release_years:
             relation.releases[str(relation_release_year.release_id)] = (

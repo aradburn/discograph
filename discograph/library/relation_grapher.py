@@ -5,6 +5,7 @@ from typing import List, Dict, Tuple, OrderedDict
 
 from discograph import utils
 from discograph.library.data_access_layer.entity_data_access import EntityDataAccess
+from discograph.library.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.library.data_access_layer.role_data_access import RoleDataAccess
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.relation_repository import RelationRepository
@@ -100,7 +101,11 @@ class RelationGrapher(ABC):
         self.should_break_loop = False
         self.entity_keys_to_visit = set[tuple[int, EntityType]]()
 
-    def get_relation_graph(self, relation_repository: RelationRepository):
+    def get_relation_graph(
+        self,
+        entity_repository: EntityRepository,
+        relation_repository: RelationRepository,
+    ):
         log.debug(f"Searching around {self.center_entity.entity_name}...")
         provisional_role_names = self.relational_role_names
         # provisional_roles = list(self.relational_role_names)
@@ -111,7 +116,9 @@ class RelationGrapher(ABC):
         for distance in range(self.degree + 1):
             self.report_search_loop_start(distance)
             log.debug(f"    Search for: {self.entity_keys_to_visit}")
-            entities = self.search_entities(self.entity_keys_to_visit)
+            entities = self.search_entities(
+                entity_repository, self.entity_keys_to_visit
+            )
             # log.debug(f"    Search found entities: {entities}")
             relations: Dict[str, RelationResult] = {}
             self.process_entities(distance, entities)
@@ -124,7 +131,11 @@ class RelationGrapher(ABC):
                     distance, provisional_role_names, relations
                 )
                 self.search_via_relational_roles(
-                    relation_repository, distance, provisional_role_names, relations
+                    entity_repository=entity_repository,
+                    relation_repository=relation_repository,
+                    distance=distance,
+                    provisional_roles=provisional_role_names,
+                    relation_links=relations,
                 )
             self.test_loop_two(distance, relations)
             self.entity_keys_to_visit.clear()
@@ -162,7 +173,8 @@ class RelationGrapher(ABC):
 
     @staticmethod
     def search_entities(
-        entity_keys_to_visit: set[tuple[int, EntityType]]
+        entity_repository: EntityRepository,
+        entity_keys_to_visit: set[tuple[int, EntityType]],
     ) -> List[Entity]:
         log.debug(f"        Retrieving entities keys: {entity_keys_to_visit}")
         entities: List[Entity] = []
@@ -171,16 +183,18 @@ class RelationGrapher(ABC):
         step = 1000
         for start in range(0, stop, step):
             entity_key_slice = entity_keys_to_visit[start : start + step]
-            found = EntityRepository().search_multi(entity_key_slice)
+            found = entity_repository.search_multi(entity_key_slice)
             entities.extend(found)
             log.debug(f"            {start + 1}-{min(start + step, stop)} of {stop}")
         return entities
 
     def search_via_relational_roles(
         self,
+        *,
+        entity_repository: EntityRepository,
         relation_repository: RelationRepository,
-        distance,
-        provisional_roles,
+        distance: int,
+        provisional_roles: list[str],
         relation_links: Dict[str, RelationResult],
     ):
         for entity_key in sorted(self.entity_keys_to_visit):
@@ -204,12 +218,15 @@ class RelationGrapher(ABC):
                 log.debug(
                     f"            {start + 1}-{min(start + step, stop)} of {stop}"
                 )
-                relation_results = relation_repository.search_multi(
-                    entity_keys=key_slice, role_names=provisional_roles
+                relation_results = RelationDataAccess.search_multi(
+                    entity_repository=entity_repository,
+                    relation_repository=relation_repository,
+                    entity_keys=key_slice,
+                    role_names=provisional_roles,
                 )
                 for relation in relation_results:
                     relation_links[relation.link_key] = RelationResult(
-                        relation_id=relation.relation_id,
+                        id=relation.id,
                         entity_one_id=relation.entity_one_id,
                         entity_one_type=relation.entity_one_type,
                         entity_two_id=relation.entity_two_id,

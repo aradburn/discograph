@@ -33,9 +33,11 @@ def route__api__entity_type__relations__entity_id(entity_type, entity_id):
         raise BadRequestError(message="Bad Entity Id")
     entity_id = int(entity_id)
     with transaction():
+        entity_repository = EntityRepository()
         relation_repository = RelationRepository()
         relation_release_year_repository = RelationReleaseYearRepository()
         data = DatabaseHelper.db_helper.get_relations_by_entity_id_and_entity_type(
+            entity_repository,
             relation_repository,
             relation_release_year_repository,
             entity_id,

@@ -1,13 +1,14 @@
 import logging
 import multiprocessing
 from random import random
-from typing import List
+from typing import List, Any
 
 from sqlalchemy.exc import OperationalError, IntegrityError
 
 from discograph.database import get_concurrency_count
 from discograph.exceptions import NotFoundError, DatabaseError
 from discograph.library.data_access_layer.relation_data_access import RelationDataAccess
+from discograph.library.data_access_layer.role_data_access import RoleDataAccess
 from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.database.relation_release_year_repository import (
     RelationReleaseYearRepository,
@@ -26,7 +27,7 @@ log = logging.getLogger(__name__)
 
 
 class WorkerRelationPassOne(multiprocessing.Process):
-    def __init__(self, release_ids, current_total: int, total_count: int):
+    def __init__(self, release_ids: list[int], current_total: int, total_count: int):
         super().__init__()
         self.release_ids = release_ids
         self.current_total = current_total
@@ -48,11 +49,11 @@ class WorkerRelationPassOne(multiprocessing.Process):
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
 
-            for release_id in self.release_ids:
+            for id_ in self.release_ids:
 
                 try:
                     # log.debug(f"loader_pass_one ({annotation}): {release_id}")
-                    release = release_repository.get(release_id)
+                    release = release_repository.get(id_)
                     relation_dicts = RelationDataAccess.from_release(release)
                     if LOGGING_TRACE:
                         log.debug(
@@ -60,9 +61,7 @@ class WorkerRelationPassOne(multiprocessing.Process):
                             + f"(release_id:{release.release_id})\t[{len(relations)}] {release.title}"
                         )
                 except NotFoundError:
-                    log.debug(
-                        f"WorkerRelationPassOne release_id not found: {release_id}"
-                    )
+                    log.debug(f"WorkerRelationPassOne release_id not found: {id_}")
                 except DatabaseError as e:
                     log.error("Database Error in WorkerRelationPassOne")
                     # log.exception("Database Error in WorkerRelationPassOne", e)
@@ -81,7 +80,7 @@ class WorkerRelationPassOne(multiprocessing.Process):
                         new_relation_release_years = self.to_relation_release_years(
                             relation_repository=relation_repository,
                             relation_dict=relation_dict,
-                            release_id=release_id,
+                            release_id=id_,
                             year=year,
                         )
                         relation_release_years.extend(new_relation_release_years)
@@ -115,7 +114,7 @@ class WorkerRelationPassOne(multiprocessing.Process):
     def create_relation_bulk(
         cls,
         relation_repository: RelationRepository,
-        relations: List[RelationUncommitted],
+        relations: list[RelationUncommitted],
     ) -> None:
 
         # save, do nothing if already exists
@@ -136,36 +135,29 @@ class WorkerRelationPassOne(multiprocessing.Process):
                     relation_repository.create(relation, on_conflict_do_nothing=True)
                     relation_repository.commit()
                     # log.debug(f"inserted {len(relations)}")
-                except DatabaseError:
+                except DatabaseError as ex:
                     relation_repository.rollback()
                     # log.debug(f"Roll back create")
-                    # log.exception(e)
+                    log.exception(ex)
                 except IntegrityError:
                     relation_repository.rollback()
                     # log.exception("Integrity Error", exc_info=True)
                     # log.debug(f"Integrity Error, roll back create")
-                except OperationalError as e:
-                    relation_repository.rollback()
-                    log.debug(f"Record is locked in create")
-                    raise e
         except OperationalError as e:
             relation_repository.rollback()
-            log.debug(f"Record is locked in create")
+            log.debug(f"OperationalError in worker process")
             raise e
 
     @classmethod
     def to_relations_from_dict(
-        cls, relation_dicts: List[dict]
+        cls, relation_dicts: list[dict[str, Any]]
     ) -> List[RelationUncommitted]:
         relation_uncommitteds = []
         for relation_dict in relation_dicts:
             relation_uncommitted = RelationUncommitted(
-                entity_one_id=relation_dict["entity_one_id"],
-                entity_one_type=relation_dict["entity_one_type"],
-                entity_two_id=relation_dict["entity_two_id"],
-                entity_two_type=relation_dict["entity_two_type"],
+                subject=relation_dict["subject"],
                 role_name=relation_dict["role"],
-                # releases={},
+                object=relation_dict["object"],
                 random=random(),
             )
             relation_uncommitteds.append(relation_uncommitted)
@@ -181,12 +173,13 @@ class WorkerRelationPassOne(multiprocessing.Process):
     ) -> List[RelationReleaseYearUncommitted]:
         relation_release_years = []
         try:
+            role_name = relation_dict["role"]
+            role_id = RoleDataAccess.role_name_to_role_id_lookup[role_name]
+
             key = {
-                "entity_one_id": relation_dict["entity_one_id"],
-                "entity_one_type": relation_dict["entity_one_type"],
-                "entity_two_id": relation_dict["entity_two_id"],
-                "entity_two_type": relation_dict["entity_two_type"],
-                "role_name": relation_dict["role"],
+                "subject": relation_dict["subject"],
+                "role_id": role_id,
+                "object": relation_dict["object"],
             }
             relation_id = relation_repository.get_id_by_key(key)
             # log.debug(f"v: {relation_db.version_id}")

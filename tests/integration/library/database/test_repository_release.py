@@ -2,7 +2,7 @@ from discograph.config import TEST_DATA_DIR
 from discograph.library.database.release_repository import ReleaseRepository
 from discograph.library.database.transaction import transaction
 from discograph.library.loader.loader_release import LoaderRelease
-from discograph.library.loader_utils import LoaderUtils
+from discograph.library.loader.loader_utils import LoaderUtils
 from tests.integration.library.database.repository_test_case import RepositoryTestCase
 
 

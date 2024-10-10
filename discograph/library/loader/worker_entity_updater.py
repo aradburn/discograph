@@ -1,6 +1,7 @@
 import logging
 import multiprocessing
 import pprint
+from typing import Any
 
 from deepdiff import DeepDiff
 
@@ -18,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 class WorkerEntityUpdater(multiprocessing.Process):
-    def __init__(self, bulk_updates, processed_count):
+    def __init__(self, bulk_updates: list[dict[str, Any]], processed_count: int):
         super().__init__()
         self.bulk_updates = bulk_updates
         self.processed_count = processed_count
@@ -31,7 +32,7 @@ class WorkerEntityUpdater(multiprocessing.Process):
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
 
-        for i, data in enumerate(self.bulk_updates):
+        for data in self.bulk_updates:
             with transaction():
                 entity_repository = EntityRepository()
                 updated_entity = Entity(**data)
@@ -41,7 +42,7 @@ class WorkerEntityUpdater(multiprocessing.Process):
                             f"update: {updated_entity.entity_id}-{updated_entity.entity_type}"
                         )
 
-                    db_entity = entity_repository.get(
+                    db_entity = entity_repository.get_by_entity_id_and_entity_type(
                         updated_entity.entity_id, updated_entity.entity_type
                     )
 
@@ -90,9 +91,7 @@ class WorkerEntityUpdater(multiprocessing.Process):
                         is_changed = True
 
                     if is_changed:
-                        entity_repository.update(
-                            db_entity.entity_id, db_entity.entity_type, update_payload
-                        )
+                        entity_repository.update(db_entity.id, update_payload)
                         entity_repository.commit()
                         updated_count += 1
                 except NotFoundError:

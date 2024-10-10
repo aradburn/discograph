@@ -49,14 +49,7 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
             yield Release.model_validate(instance)
 
     def get(self, release_id: int) -> Release:
-        query = (
-            select(ReleaseTable)
-            # .options(
-            #     joinedload(getattr(self.schema_class, "user")),
-            #     joinedload(getattr(self.schema_class, "product")),
-            # )
-            .where(ReleaseTable.release_id == release_id)
-        )
+        query = select(ReleaseTable).where(ReleaseTable.release_id == release_id)
 
         result: Result = self.execute(query)
         # result: Result = await self.execute(query)

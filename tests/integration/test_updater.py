@@ -1,5 +1,6 @@
 from discograph import utils
 from discograph.exceptions import NotFoundError
+from discograph.library.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.relation_release_year_repository import (
@@ -21,8 +22,10 @@ class TestUpdater(UpdaterTestCase):
         # WHEN
         with transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get(entity_id, entity_type)
-            actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
+            entity = entity_repository.get_by_entity_id_and_entity_type(
+                entity_id, entity_type
+            )
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_entity = {
@@ -70,8 +73,10 @@ class TestUpdater(UpdaterTestCase):
         # WHEN
         with transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get(entity_id, entity_type)
-            actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
+            entity = entity_repository.get_by_entity_id_and_entity_type(
+                entity_id, entity_type
+            )
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_entity = {
@@ -128,8 +133,10 @@ class TestUpdater(UpdaterTestCase):
         # WHEN
         with transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get(entity_id, entity_type)
-            actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
+            entity = entity_repository.get_by_entity_id_and_entity_type(
+                entity_id, entity_type
+            )
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_entity = {
@@ -158,7 +165,9 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             entity_repository = EntityRepository()
             try:
-                entity = entity_repository.get(entity_id, entity_type)
+                entity = entity_repository.get_by_entity_id_and_entity_type(
+                    entity_id, entity_type
+                )
             except NotFoundError:
                 entity = None
 
@@ -173,8 +182,10 @@ class TestUpdater(UpdaterTestCase):
         # WHEN
         with transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get(entity_id, entity_type)
-            actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
+            entity = entity_repository.get_by_entity_id_and_entity_type(
+                entity_id, entity_type
+            )
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_entity = {
@@ -194,7 +205,7 @@ class TestUpdater(UpdaterTestCase):
             },
             "entity_name": "Planet E (Test Update)",
             "relation_counts": {"Released On": 1},
-            "search_content": "planet e (test update)",
+            "search_content": "planet e test update",
         }
         expected = utils.normalize_dict(expected_entity)
         self.assertEqual(expected, actual)
@@ -207,8 +218,10 @@ class TestUpdater(UpdaterTestCase):
         # WHEN
         with transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get(entity_id, entity_type)
-            actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
+            entity = entity_repository.get_by_entity_id_and_entity_type(
+                entity_id, entity_type
+            )
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_entity = {
@@ -237,8 +250,10 @@ class TestUpdater(UpdaterTestCase):
         # WHEN
         with transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get(entity_id, entity_type)
-            actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
+            entity = entity_repository.get_by_entity_id_and_entity_type(
+                entity_id, entity_type
+            )
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_entity = {
@@ -265,7 +280,9 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             entity_repository = EntityRepository()
             try:
-                entity = entity_repository.get(entity_id, entity_type)
+                entity = entity_repository.get_by_entity_id_and_entity_type(
+                    entity_id, entity_type
+                )
             except NotFoundError:
                 entity = None
 
@@ -280,7 +297,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"random"}))
+            actual = utils.normalize_dict(release.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_release = {
@@ -354,7 +371,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"random"}))
+            actual = utils.normalize_dict(release.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_release = {
@@ -445,7 +462,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"random"}))
+            actual = utils.normalize_dict(release.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_release = {
@@ -495,7 +512,13 @@ class TestUpdater(UpdaterTestCase):
                     "value": "WAP-54-B\u2081 MA.",
                 },
             ],
-            "labels": [{"catalog_number": "TEST99999999", "name": "Test Records"}],
+            "labels": [
+                {
+                    "catalog_number": "TEST99999999",
+                    "id": -2000000000,
+                    "name": "Test Records",
+                }
+            ],
             "master_id": 99999999,
             "notes": None,
             "release_date": "1994-09-03",
@@ -529,12 +552,22 @@ class TestUpdater(UpdaterTestCase):
 
     def test_relation_updated_01(self):
         # GIVEN
+        entity_one_id = 42
+        entity_one_type = EntityType.ARTIST
+        entity_two_id = 49
+        entity_two_type = EntityType.ARTIST
+        role = "Producer"
+
+        id_1 = RelationDataAccess.to_relation_internal_id(
+            entity_one_id, entity_one_type
+        )
+        id_2 = RelationDataAccess.to_relation_internal_id(
+            entity_two_id, entity_two_type
+        )
         key = dict(
-            entity_one_id=42,
-            entity_one_type=EntityType.ARTIST,
-            entity_two_id=49,
-            entity_two_type=EntityType.ARTIST,
-            role="Producer",
+            subject=id_1,
+            role=role,
+            object=id_2,
         )
 
         # WHEN
@@ -542,11 +575,11 @@ class TestUpdater(UpdaterTestCase):
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
             relation = DatabaseHelper.get_relation_by_key(
-                relation_repository, relation_release_year_repository, key
+                relation_repository,
+                relation_release_year_repository,
+                key,
             )
-            actual = utils.normalize_dict(
-                relation.model_dump(exclude={"relation_id", "version_id", "random"})
-            )
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_relation = {
@@ -563,12 +596,22 @@ class TestUpdater(UpdaterTestCase):
 
     def test_relation_updated_02(self):
         # GIVEN
+        entity_one_id = 49
+        entity_one_type = EntityType.ARTIST
+        entity_two_id = 23528
+        entity_two_type = EntityType.LABEL
+        role = "Released On"
+
+        id_1 = RelationDataAccess.to_relation_internal_id(
+            entity_one_id, entity_one_type
+        )
+        id_2 = RelationDataAccess.to_relation_internal_id(
+            entity_two_id, entity_two_type
+        )
         key = dict(
-            entity_one_id=49,
-            entity_one_type=EntityType.ARTIST,
-            entity_two_id=23528,
-            entity_two_type=EntityType.LABEL,
-            role="Released On",
+            subject=id_1,
+            role=role,
+            object=id_2,
         )
 
         # WHEN
@@ -576,11 +619,11 @@ class TestUpdater(UpdaterTestCase):
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
             relation = DatabaseHelper.get_relation_by_key(
-                relation_repository, relation_release_year_repository, key
+                relation_repository,
+                relation_release_year_repository,
+                key,
             )
-            actual = utils.normalize_dict(
-                relation.model_dump(exclude={"relation_id", "version_id", "random"})
-            )
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_relation = {
@@ -597,12 +640,22 @@ class TestUpdater(UpdaterTestCase):
 
     def test_relation_updated_03(self):
         # GIVEN
+        entity_one_id = 300407
+        entity_one_type = EntityType.ARTIST
+        entity_two_id = 49
+        entity_two_type = EntityType.ARTIST
+        role = "Producer"
+
+        id_1 = RelationDataAccess.to_relation_internal_id(
+            entity_one_id, entity_one_type
+        )
+        id_2 = RelationDataAccess.to_relation_internal_id(
+            entity_two_id, entity_two_type
+        )
         key = dict(
-            entity_one_id=300407,
-            entity_one_type=EntityType.ARTIST,
-            entity_two_id=49,
-            entity_two_type=EntityType.ARTIST,
-            role="Producer",
+            subject=id_1,
+            role=role,
+            object=id_2,
         )
 
         # WHEN
@@ -610,11 +663,11 @@ class TestUpdater(UpdaterTestCase):
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
             relation = DatabaseHelper.get_relation_by_key(
-                relation_repository, relation_release_year_repository, key
+                relation_repository,
+                relation_release_year_repository,
+                key,
             )
-            actual = utils.normalize_dict(
-                relation.model_dump(exclude={"relation_id", "version_id", "random"})
-            )
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_relation = {
@@ -631,12 +684,22 @@ class TestUpdater(UpdaterTestCase):
 
     def test_relation_updated_04(self):
         # GIVEN
+        entity_one_id = 445854
+        entity_one_type = EntityType.ARTIST
+        entity_two_id = 49
+        entity_two_type = EntityType.ARTIST
+        role = "Design"
+
+        id_1 = RelationDataAccess.to_relation_internal_id(
+            entity_one_id, entity_one_type
+        )
+        id_2 = RelationDataAccess.to_relation_internal_id(
+            entity_two_id, entity_two_type
+        )
         key = dict(
-            entity_one_id=445854,
-            entity_one_type=EntityType.ARTIST,
-            entity_two_id=49,
-            entity_two_type=EntityType.ARTIST,
-            role="Design",
+            subject=id_1,
+            role=role,
+            object=id_2,
         )
 
         # WHEN
@@ -644,11 +707,11 @@ class TestUpdater(UpdaterTestCase):
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
             relation = DatabaseHelper.get_relation_by_key(
-                relation_repository, relation_release_year_repository, key
+                relation_repository,
+                relation_release_year_repository,
+                key,
             )
-            actual = utils.normalize_dict(
-                relation.model_dump(exclude={"relation_id", "version_id", "random"})
-            )
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_relation = {
@@ -666,10 +729,8 @@ class TestUpdater(UpdaterTestCase):
     def test_relation_not_updated_01(self):
         # GIVEN
         key = dict(
-            entity_one_id=42,
-            entity_one_type=EntityType.ARTIST,
-            entity_two_id=41,
-            entity_two_type=EntityType.ARTIST,
+            subject=42,
+            object=41,
             role="Producer",
         )
 
@@ -678,11 +739,11 @@ class TestUpdater(UpdaterTestCase):
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
             relation = DatabaseHelper.get_relation_by_key(
-                relation_repository, relation_release_year_repository, key
+                relation_repository,
+                relation_release_year_repository,
+                key,
             )
-            actual = utils.normalize_dict(
-                relation.model_dump(exclude={"relation_id", "version_id", "random"})
-            )
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_relation = {
@@ -773,10 +834,8 @@ class TestUpdater(UpdaterTestCase):
     def test_relation_not_updated_02(self):
         # GIVEN
         key = dict(
-            entity_one_id=21209,
-            entity_one_type=EntityType.ARTIST,
-            entity_two_id=3771,
-            entity_two_type=EntityType.ARTIST,
+            subject=21209,
+            object=3771,
             role="Compiled By",
         )
 
@@ -785,11 +844,11 @@ class TestUpdater(UpdaterTestCase):
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
             relation = DatabaseHelper.get_relation_by_key(
-                relation_repository, relation_release_year_repository, key
+                relation_repository,
+                relation_release_year_repository,
+                key,
             )
-            actual = utils.normalize_dict(
-                relation.model_dump(exclude={"relation_id", "version_id", "random"})
-            )
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_relation = {
@@ -812,10 +871,8 @@ class TestUpdater(UpdaterTestCase):
     def test_relation_not_updated_03(self):
         # GIVEN
         key = dict(
-            entity_one_id=335173,
-            entity_one_type=EntityType.ARTIST,
-            entity_two_id=41,
-            entity_two_type=EntityType.ARTIST,
+            subject=335173,
+            object=41,
             role="Mastered By",
         )
 
@@ -824,11 +881,11 @@ class TestUpdater(UpdaterTestCase):
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
             relation = DatabaseHelper.get_relation_by_key(
-                relation_repository, relation_release_year_repository, key
+                relation_repository,
+                relation_release_year_repository,
+                key,
             )
-            actual = utils.normalize_dict(
-                relation.model_dump(exclude={"relation_id", "version_id", "random"})
-            )
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_relation = {

@@ -1,4 +1,5 @@
 from discograph import utils
+from discograph.library.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.database.transaction import transaction
 from discograph.library.fields.entity_type import EntityType
@@ -9,29 +10,37 @@ class TestDatabaseRelation(DatabaseTestCase):
 
     def test_from_db_01(self):
         # GIVEN
-        key = dict(
-            entity_one_id=42,
-            entity_one_type=EntityType.ARTIST,
-            entity_two_id=41,
-            entity_two_type=EntityType.ARTIST,
-            role="Producer",
-        )
+        entity_one_id = 42
+        entity_one_type = EntityType.ARTIST
+        entity_two_id = 41
+        entity_two_type = EntityType.ARTIST
 
         # WHEN
         with transaction():
             relation_repository = RelationRepository()
-            relation = relation_repository.find_by_key(key)
-            actual = utils.normalize_dict(
-                relation.model_dump(exclude={"relation_id", "random"})
+
+            id_1 = RelationDataAccess.to_relation_internal_id(
+                entity_one_id, entity_one_type
             )
+            id_2 = RelationDataAccess.to_relation_internal_id(
+                entity_two_id, entity_two_type
+            )
+            print(f"id_1: {id_1}")
+            print(f"id_2: {id_2}")
+            key = dict(
+                subject=id_1,
+                role="Producer",
+                object=id_2,
+            )
+
+            relation = relation_repository.find_by_key(key)
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_relation = {
-            "entity_one_id": 42,
-            "entity_one_type": "EntityType.ARTIST",
-            "entity_two_id": 41,
-            "entity_two_type": "EntityType.ARTIST",
-            "releases": None,
+            "subject": 42,
+            "role": "Producer",
+            "object": 41,
             # "releases": {
             #     "1000619": 2003,
             #     "1054046": None,
@@ -106,7 +115,6 @@ class TestDatabaseRelation(DatabaseTestCase):
             #     "870851": 2005,
             #     "8816": 1994,
             # },
-            "role": "Producer",
         }
 
         expected = utils.normalize_dict(expected_relation)
@@ -114,36 +122,41 @@ class TestDatabaseRelation(DatabaseTestCase):
 
     def test_from_db_02(self):
         # GIVEN
-        key = dict(
-            entity_one_id=21209,
-            entity_one_type=EntityType.ARTIST,
-            entity_two_id=3771,
-            entity_two_type=EntityType.ARTIST,
-            role="Compiled By",
-        )
+        entity_one_id = 21209
+        entity_one_type = EntityType.ARTIST
+        entity_two_id = 3771
+        entity_two_type = EntityType.ARTIST
 
         # WHEN
         with transaction():
             relation_repository = RelationRepository()
-            relation = relation_repository.find_by_key(key)
-            actual = utils.normalize_dict(
-                relation.model_dump(exclude={"relation_id", "random"})
+
+            id_1 = RelationDataAccess.to_relation_internal_id(
+                entity_one_id, entity_one_type
             )
+            id_2 = RelationDataAccess.to_relation_internal_id(
+                entity_two_id, entity_two_type
+            )
+            key = dict(
+                subject=id_1,
+                role="Compiled By",
+                object=id_2,
+            )
+
+            relation = relation_repository.find_by_key(key)
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_relation = {
-            "entity_one_id": 21209,
-            "entity_one_type": "EntityType.ARTIST",
-            "entity_two_id": 3771,
-            "entity_two_type": "EntityType.ARTIST",
-            "releases": None,
+            "subject": 21209,
+            "role": "Compiled By",
+            "object": 3771,
             # "releases": {
             #     "1112162": 1996,
             #     "1112454": 1996,
             #     "17268": 1994,
             #     "63148": 1994,
             # },
-            "role": "Compiled By",
         }
 
         expected = utils.normalize_dict(expected_relation)
@@ -151,28 +164,34 @@ class TestDatabaseRelation(DatabaseTestCase):
 
     def test_from_db_03(self):
         # GIVEN
-        key = dict(
-            entity_one_id=335173,
-            entity_one_type=EntityType.ARTIST,
-            entity_two_id=41,
-            entity_two_type=EntityType.ARTIST,
-            role="Mastered By",
-        )
+        entity_one_id = 335173
+        entity_one_type = EntityType.ARTIST
+        entity_two_id = 41
+        entity_two_type = EntityType.ARTIST
 
         # WHEN
         with transaction():
             relation_repository = RelationRepository()
-            relation = relation_repository.find_by_key(key)
-            actual = utils.normalize_dict(
-                relation.model_dump(exclude={"relation_id", "random"})
+
+            id_1 = RelationDataAccess.to_relation_internal_id(
+                entity_one_id, entity_one_type
+            )
+            id_2 = RelationDataAccess.to_relation_internal_id(
+                entity_two_id, entity_two_type
+            )
+            key = dict(
+                subject=id_1,
+                role="Mastered By",
+                object=id_2,
             )
 
+            relation = relation_repository.find_by_key(key)
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+
         expected_relation = {
-            "entity_one_id": 335173,
-            "entity_one_type": "EntityType.ARTIST",
-            "entity_two_id": 41,
-            "entity_two_type": "EntityType.ARTIST",
-            "releases": None,
+            "subject": 335173,
+            "role": "Mastered By",
+            "object": 41,
             # "releases": {
             #     "1255104": 2008,
             #     "1257383": 2008,
@@ -197,7 +216,6 @@ class TestDatabaseRelation(DatabaseTestCase):
             #     "593584": 2003,
             #     "870851": 2005,
             # },
-            "role": "Mastered By",
         }
 
         expected = utils.normalize_dict(expected_relation)

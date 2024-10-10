@@ -6,7 +6,7 @@ from discograph.library.loader.loader_role import LoaderRole
 from tests.integration.library.database.repository_test_case import RepositoryTestCase
 
 
-class TestRepositoryLoaderReleasePassTwo(RepositoryTestCase):
+class TestLoaderReleasePassTwo(RepositoryTestCase):
     def test_loader_release_pass_two(self):
         # GIVEN
         date = "testinsert"

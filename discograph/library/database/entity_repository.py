@@ -68,31 +68,73 @@ class EntityRepository(BaseRepository[EntityTable]):
         for instance in self._all():
             yield Entity.model_validate(instance)
 
-    def get(self, entity_id: int, entity_type: EntityType) -> Entity:
+    def get_by_id(self, id_: int) -> Entity:
+        query = select(EntityTable).where(EntityTable.id == id_)
+        return self._get_one_by_query(query)
+
+    def get_by_entity_id_and_entity_type(
+        self, entity_id: int, entity_type: EntityType
+    ) -> Entity:
         query = select(EntityTable).where(
             (EntityTable.entity_id == entity_id)
             & (EntityTable.entity_type == entity_type)
         )
         return self._get_one_by_query(query)
 
-    def get_ids(self, entity_type: EntityType):
+    def get_ids(self):
+        return self._session.scalars(select(EntityTable.id)).all()
+
+    def get_ids_by_type(self, entity_type: EntityType):
         return self._session.scalars(
-            select(EntityTable.entity_id).where(EntityTable.entity_type == entity_type)
-            # select(ReleaseTable.release_id).order_by(ReleaseTable.release_id)
+            select(EntityTable.id).where(EntityTable.entity_type == entity_type)
         ).all()
 
-    def get_batched_ids(self, entity_type: EntityType, num_in_batch: int):
-        return utils.batched(self.get_ids(entity_type), num_in_batch)
+    def get_entity_ids_by_type(self, entity_type: EntityType):
+        return self._session.scalars(
+            select(EntityTable.entity_id).where(EntityTable.entity_type == entity_type)
+        ).all()
+
+    def get_entity_id_by_entity_type_and_entity_name(
+        self, entity_type: EntityType, entity_name: str
+    ):
+        return self._session.execute(
+            select(EntityTable.entity_id).where(
+                (EntityTable.entity_name == entity_name)
+                & (EntityTable.entity_type == entity_type)
+            )
+        ).scalar_one_or_none()
+
+    def get_id_by_entity_type_and_entity_name(
+        self, entity_type: EntityType, entity_name: str
+    ):
+        return self._session.execute(
+            select(EntityTable.id).where(
+                (EntityTable.entity_name == entity_name)
+                & (EntityTable.entity_type == entity_type)
+            )
+        ).scalar_one_or_none()
+
+    def get_id_by_entity_type_and_entity_id(
+        self, entity_type: EntityType, entity_id: int
+    ):
+        return self._session.execute(
+            select(EntityTable.id).where(
+                (EntityTable.entity_id == entity_id)
+                & (EntityTable.entity_type == entity_type)
+            )
+        ).scalar_one_or_none()
+
+    def get_batched_ids(self, num_in_batch: int):
+        return utils.batched(self.get_ids(), num_in_batch)
+
+    # def get_batched_ids_by_type(self, entity_type: EntityType, num_in_batch: int):
+    #     return utils.batched(self.get_ids_by_type(entity_type), num_in_batch)
 
     def find_by_search_content(self, search_string: str) -> List[Entity]:
-        # print(f"find_by_search_content")
         query = select(EntityTable).where(
-            EntityTable.search_content.like(search_string + "%")
+            EntityTable.search_content.match(search_string)
         )
         log.debug(f"search: {query}")
-        # query = select(EntityTable).where(
-        #     EntityTable.search_content.match(search_string)
-        # )
         return self._get_all_by_query(query)
 
     def create(self, entity: Entity) -> Entity:
@@ -100,25 +142,17 @@ class EntityRepository(BaseRepository[EntityTable]):
         # instance: EntityTable = await self._save(schema.model_dump())
         return Entity.model_validate(instance)
 
-    # use all() def get_entity_iterator(self, entity_type: EntityType):
-    #     entity_ids = self._session.scalars(
-    #         select(EntityTable.entity_id).where(EntityTable.entity_type == entity_type)
-    #     ).all()
-    #     for entity_id in entity_ids:
-    #         entity = self.get(entity_id, entity_type)
-    #         yield entity
-
-    def get_chunked_entity_ids(self, entity_type: EntityType):
+    def get_chunked_entity_ids_by_type(self, entity_type: EntityType) -> list[int]:
         from discograph.database import get_concurrency_count
 
         all_ids = self._session.scalars(
-            select(EntityTable.entity_id)
+            select(EntityTable.id)
             .where(EntityTable.entity_type == entity_type)
-            .order_by(EntityTable.entity_id)
+            .order_by(EntityTable.id)
         ).all()
 
         num_chunks = get_concurrency_count()
-        return utils.split_tuple(num_chunks, all_ids)
+        return utils.split_list(num_chunks, all_ids)
 
     def get_by_type_and_name(self, entity_type: EntityType, entity_name: str) -> Entity:
         query = (
@@ -153,8 +187,7 @@ class EntityRepository(BaseRepository[EntityTable]):
 
     def update(
         self,
-        entity_id: int,
-        entity_type: EntityType,
+        id_: int,
         payload: dict[str, Any],
     ) -> EntityTable:
         """Updates an existed instance of the model in the related table.
@@ -163,10 +196,7 @@ class EntityRepository(BaseRepository[EntityTable]):
 
         query = (
             update(self.schema_class)
-            .where(
-                (EntityTable.entity_id == entity_id)
-                & (EntityTable.entity_type == entity_type)
-            )
+            .where(EntityTable.id == id_)
             .values(payload)
             .returning(self.schema_class)
         )
@@ -180,16 +210,20 @@ class EntityRepository(BaseRepository[EntityTable]):
 
         return schema
 
-    def delete_by_id(self, entity_id: int, entity_type: EntityType) -> None:
-        self.execute(
-            delete(self.schema_class).where(
-                (EntityTable.entity_id == entity_id)
-                & (EntityTable.entity_type == entity_type)
-            )
-        )
+    def delete_by_id(self, id_: int) -> None:
+        self.execute(delete(self.schema_class).where(EntityTable.id == id_))
         # await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))
         # self._session.flush()
         # await self._session.flush()
+
+    # def search_multi(self, entity_ids: list[int]) -> List[Entity]:
+    #     where_clause = cast(
+    #         "ColumnElement[bool]", EntityTable.entity_id.in_(entity_ids)
+    #     )
+    #
+    #     # log.debug(f"            search_multi where_clause: {where_clause}")
+    #     query = select(EntityTable).where(where_clause)
+    #     return self._get_all_by_query(query)
 
     def search_multi(self, entity_keys) -> List[Entity]:
         artist_ids: List[int] = []

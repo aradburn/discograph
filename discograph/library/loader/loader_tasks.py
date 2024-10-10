@@ -37,8 +37,8 @@ class LoaderSetupTask(luigi.Task):
         log.debug(f"Running loader setup task: {self.task_id}")
         logger1 = logging.getLogger("luigi")
         logger2 = logging.getLogger("luigi-interface")
-        log.debug(f"logger1: {logger1}")
-        log.debug(f"logger2: {logger2}")
+        # log.debug(f"logger1: {logger1}")
+        # log.debug(f"logger2: {logger2}")
         logging.getLogger("luigi").handlers = logging.getLogger("discograph").handlers
         logging.getLogger("luigi").propagate = False
         logging.getLogger("luigi").setLevel(logging.WARNING)
@@ -47,8 +47,8 @@ class LoaderSetupTask(luigi.Task):
         ).handlers
         logging.getLogger("luigi-interface").propagate = False
         logging.getLogger("luigi-interface").setLevel(logging.WARNING)
-        log.debug(f"logger1: {logger1}")
-        log.debug(f"logger2: {logger2}")
+        # log.debug(f"logger1: {logger1}")
+        # log.debug(f"logger2: {logger2}")
         self.output().done()
 
         yield LoaderTask(start_date=self.start_date, end_date=self.end_date)
@@ -167,9 +167,12 @@ class LoaderTaskForDateAndStage(luigi.Task):
             DATA_DIR, self.dump_date.strftime("%Y%m%d"), is_bulk_inserts=False
         )
         log.debug(f"Run stage: {self.stage}")
-        stages[self.stage]()
-        # Mark task done in the database
-        self.output().done()
+        try:
+            stages[self.stage]()
+            # Mark task done in the database
+            self.output().done()
+        except RuntimeError as e:
+            log.exception(e, exc_info=True)
 
 
 class DiscogsDownloaderTask(luigi.Task):

@@ -1,10 +1,12 @@
 import logging
 from random import random
+from typing import Any
 
 from sortedcontainers import SortedSet
 
 from discograph.database import get_concurrency_count
 from discograph.library.data_access_layer.entity_data_access import EntityDataAccess
+from discograph.library.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.entity_table import EntityTable
 from discograph.library.database.transaction import transaction
@@ -16,7 +18,7 @@ from discograph.library.loader.worker_entity_inserter import WorkerEntityInserte
 from discograph.library.loader.worker_entity_pass_three import WorkerEntityPassThree
 from discograph.library.loader.worker_entity_pass_two import WorkerEntityPassTwo
 from discograph.library.loader.worker_entity_updater import WorkerEntityUpdater
-from discograph.library.loader_utils import LoaderUtils
+from discograph.library.loader.loader_utils import LoaderUtils
 from discograph.utils import timeit
 
 log = logging.getLogger(__name__)
@@ -38,7 +40,7 @@ class LoaderEntity(LoaderBase):
                 data_directory=data_directory,
                 date=data_date,
                 xml_tag="artist",
-                id_attr=EntityTable.entity_id.name,
+                id_attr=EntityTable.id.name,
                 skip_without=["entity_name"],
                 is_bulk_inserts=is_bulk_inserts,
             )
@@ -50,14 +52,14 @@ class LoaderEntity(LoaderBase):
                 data_directory=data_directory,
                 date=data_date,
                 xml_tag="label",
-                id_attr=EntityTable.entity_id.name,
+                id_attr=EntityTable.id.name,
                 skip_without=["entity_name"],
                 is_bulk_inserts=is_bulk_inserts,
             )
         return artists_loaded + labels_loaded
 
     @classmethod
-    def insert_bulk(cls, bulk_inserts, inserted_count):
+    def insert_bulk(cls, bulk_inserts: list[dict[str, Any]], inserted_count: int):
         worker = WorkerEntityInserter(
             bulk_inserts=bulk_inserts,
             inserted_count=inserted_count,
@@ -65,7 +67,7 @@ class LoaderEntity(LoaderBase):
         return worker
 
     @classmethod
-    def update_bulk(cls, bulk_updates, processed_count):
+    def update_bulk(cls, bulk_updates: list[dict[str, Any]], processed_count: int):
         worker = WorkerEntityUpdater(
             bulk_updates=bulk_updates,
             processed_count=processed_count,
@@ -73,7 +75,7 @@ class LoaderEntity(LoaderBase):
         return worker
 
     @classmethod
-    def delete_bulk(cls, bulk_deletes, processed_count):
+    def delete_bulk(cls, bulk_deletes: list[int], processed_count: int):
         worker = WorkerEntityDeleter(
             bulk_deletes=bulk_deletes,
             processed_count=processed_count,
@@ -84,9 +86,9 @@ class LoaderEntity(LoaderBase):
     def get_set_of_ids(cls, entity_type):
         with transaction():
             entity_repository = EntityRepository()
-            ids = entity_repository.get_ids(entity_type)
-        set_of_ids = SortedSet(ids)
-        return set_of_ids
+            ids = entity_repository.get_ids_by_type(entity_type)
+        set_of_entity_ids = SortedSet(ids)
+        return set_of_entity_ids
 
     @classmethod
     @timeit
@@ -106,42 +108,14 @@ class LoaderEntity(LoaderBase):
 
         with transaction():
             entity_repository = EntityRepository()
-            total_count = entity_repository.count_by_type(EntityType.ARTIST)
-            entity_type: EntityType = EntityType.ARTIST
-            batched_entity_ids = entity_repository.get_batched_ids(
-                entity_type, number_in_batch
-            )
+            total_count = entity_repository.count()
+            batched_ids = entity_repository.get_batched_ids(number_in_batch)
 
         current_total = 0
 
         workers = []
-        for entity_ids in batched_entity_ids:
-            worker = worker_class(entity_type, entity_ids, current_total, total_count)
-            worker.start()
-            workers.append(worker)
-            current_total += number_in_batch
-
-            if len(workers) > get_concurrency_count():
-                worker = workers.pop(0)
-                cls.loader_wait_for_worker(worker)
-
-        while len(workers) > 0:
-            worker = workers.pop(0)
-            cls.loader_wait_for_worker(worker)
-
-        with transaction():
-            entity_repository = EntityRepository()
-            total_count = entity_repository.count_by_type(EntityType.LABEL)
-            entity_type: EntityType = EntityType.LABEL
-            batched_entity_ids = entity_repository.get_batched_ids(
-                entity_type, number_in_batch
-            )
-
-        current_total = 0
-
-        workers = []
-        for entity_ids in batched_entity_ids:
-            worker = worker_class(entity_type, entity_ids, current_total, total_count)
+        for ids in batched_ids:
+            worker = worker_class(ids, current_total, total_count)
             worker.start()
             workers.append(worker)
             current_total += number_in_batch
@@ -216,41 +190,45 @@ class LoaderEntity(LoaderBase):
     @classmethod
     def from_element(cls, element) -> Entity:
         data = cls.tags_to_fields(element)
-        data["relation_counts"] = {}
-        data["random"] = random()
-        # log.debug(f"from_element: {cls.entity_name} element: {element} data: {data}")
         return Entity(**data)
 
     @classmethod
     def preprocess_data(cls, data, element):
-        data["entity_metadata"] = {}
-        data["entities"] = {}
-        data["relation_counts"] = {}
-        for key in (
-            "aliases",
-            "groups",
-            "members",
-            "parent_label",
-            "sublabels",
-        ):
-            if key in data:
-                data["entities"][key] = data.pop(key)
-        for key in (
-            "contact_info",
-            "name_variations",
-            "profile",
-            "real_name",
-            "urls",
-        ):
-            if key in data:
-                data["entity_metadata"][key] = data.pop(key)
-        if "entity_name" in data and data.get("entity_name"):
-            name = data.get("entity_name")
-            data["search_content"] = EntityDataAccess.normalise_search_content(name)
-        if element.tag == "artist":
-            data["entity_type"] = EntityType.ARTIST
-        elif element.tag == "label":
-            data["entity_type"] = EntityType.LABEL
+        if element.tag == "artist" or element.tag == "label":
+            data["entity_metadata"] = {}
+            data["entities"] = {}
+            data["relation_counts"] = {}
+            for key in (
+                "aliases",
+                "groups",
+                "members",
+                "parent_label",
+                "sublabels",
+            ):
+                if key in data:
+                    data["entities"][key] = data.pop(key)
+            for key in (
+                "contact_info",
+                "name_variations",
+                "profile",
+                "real_name",
+                "urls",
+            ):
+                if key in data:
+                    data["entity_metadata"][key] = data.pop(key)
+            if "entity_name" in data and data.get("entity_name"):
+                name = data.get("entity_name")
+                data["search_content"] = EntityDataAccess.normalise_search_content(name)
+            if element.tag == "artist":
+                data["entity_type"] = EntityType.ARTIST
+            elif element.tag == "label":
+                data["entity_type"] = EntityType.LABEL
+            # data["element_id"] = int(element.get("id"))
+            data["entity_id"] = data["id"]
+            data["id"] = RelationDataAccess.to_relation_internal_id(
+                data["entity_id"], data["entity_type"]
+            )
+            data["random"] = random()
         return data
 
 
@@ -258,7 +236,7 @@ LoaderEntity._tags_to_fields_mapping = {
     "aliases": ("aliases", LoaderEntity.element_to_names),
     "contact_info": ("contact_info", LoaderUtils.element_to_string),
     "groups": ("groups", LoaderEntity.element_to_names),
-    "id": ("entity_id", LoaderUtils.element_to_integer),
+    "id": ("id", LoaderUtils.element_to_integer),
     "members": ("members", LoaderEntity.element_to_names_and_ids),
     "name": ("entity_name", LoaderUtils.element_to_string),
     "namevariations": ("name_variations", LoaderUtils.element_to_strings),

@@ -8,7 +8,7 @@ from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.transaction import transaction
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.loader.loader_release import LoaderRelease
-from discograph.library.loader_utils import LoaderUtils
+from discograph.library.loader.loader_utils import LoaderUtils
 from tests.integration.library.database.database_test_case import DatabaseTestCase
 
 
@@ -22,18 +22,23 @@ class TestDatabaseRelationFromRelease(DatabaseTestCase):
         # WHEN
         with transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess().resolve_references_from_release(
-                entity_repository, release_document, {}, spuriously=True
+            EntityDataAccess().resolve_release_references(
+                entity_repository, release_document
             )
-            relations = RelationDataAccess.from_release(release_document)
-            actual = utils.normalize_dict_list(relations)
+            relation_internal_dicts = RelationDataAccess.from_release(release_document)
+            relations_external_dicts = (
+                RelationDataAccess.relation_internal_dicts_to_relation_external_dicts(
+                    relation_internal_dicts
+                )
+            )
+            actual = utils.normalize_dict_list(relations_external_dicts)
 
         # THEN
         expected_relations = [
             {
                 "entity_one_id": 41,
                 "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": -1,
+                "entity_two_id": 23528,
                 "entity_two_type": EntityType.LABEL,
                 "release_id": 157,
                 "role": "Released On",
@@ -183,11 +188,16 @@ class TestDatabaseRelationFromRelease(DatabaseTestCase):
         release_document = LoaderRelease().from_element(release_element)
         with transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess().resolve_references_from_release(
-                entity_repository, release_document, {}, spuriously=True
+            EntityDataAccess().resolve_release_references(
+                entity_repository, release_document
             )
-            relations = RelationDataAccess.from_release(release_document)
-            actual = utils.normalize_dict_list(relations)
+            relation_internal_dicts = RelationDataAccess.from_release(release_document)
+            relations_external_dicts = (
+                RelationDataAccess.relation_internal_dicts_to_relation_external_dicts(
+                    relation_internal_dicts
+                )
+            )
+            actual = utils.normalize_dict_list(relations_external_dicts)
 
         expected_relations = [
             {
@@ -362,11 +372,16 @@ class TestDatabaseRelationFromRelease(DatabaseTestCase):
         release_document = LoaderRelease().from_element(release_element)
         with transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess().resolve_references_from_release(
-                entity_repository, release_document, {}, spuriously=True
+            EntityDataAccess().resolve_release_references(
+                entity_repository, release_document
             )
-            relations = RelationDataAccess.from_release(release_document)
-            actual = utils.normalize_dict_list(relations)
+            relation_internal_dicts = RelationDataAccess.from_release(release_document)
+            relations_external_dicts = (
+                RelationDataAccess.relation_internal_dicts_to_relation_external_dicts(
+                    relation_internal_dicts
+                )
+            )
+            actual = utils.normalize_dict_list(relations_external_dicts)
 
         expected_relations = [
             {
@@ -716,11 +731,16 @@ class TestDatabaseRelationFromRelease(DatabaseTestCase):
         release_document = LoaderRelease().from_element(release_element)
         with transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess().resolve_references_from_release(
-                entity_repository, release_document, {}, spuriously=True
+            EntityDataAccess().resolve_release_references(
+                entity_repository, release_document
             )
-            relations = RelationDataAccess.from_release(release_document)
-            actual = utils.normalize_dict_list(relations)
+            relation_internal_dicts = RelationDataAccess.from_release(release_document)
+            relations_external_dicts = (
+                RelationDataAccess.relation_internal_dicts_to_relation_external_dicts(
+                    relation_internal_dicts
+                )
+            )
+            actual = utils.normalize_dict_list(relations_external_dicts)
 
         expected_relations = [
             {
@@ -1422,12 +1442,17 @@ class TestDatabaseRelationFromRelease(DatabaseTestCase):
         print(f"release_document: {release_document}")
         with transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess().resolve_references_from_release(
-                entity_repository, release_document, {}, spuriously=True
+            EntityDataAccess().resolve_release_references(
+                entity_repository, release_document
             )
             print(f"release_document: {release_document}")
-            relations = RelationDataAccess.from_release(release_document)
-            actual = utils.normalize_dict_list(relations)
+            relation_internal_dicts = RelationDataAccess.from_release(release_document)
+            relations_external_dicts = (
+                RelationDataAccess.relation_internal_dicts_to_relation_external_dicts(
+                    relation_internal_dicts
+                )
+            )
+            actual = utils.normalize_dict_list(relations_external_dicts)
             print(f"actual: {actual}")
 
         expected_relations = [

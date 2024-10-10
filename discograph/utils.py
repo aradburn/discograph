@@ -12,7 +12,7 @@ from collections.abc import Mapping
 from datetime import datetime, date
 from functools import wraps
 from random import random
-from typing import Dict, List, Any
+from typing import List, Any
 
 import requests
 from dateutil.relativedelta import relativedelta
@@ -91,12 +91,12 @@ def parse_request_args(args):
     return roles, year
 
 
-def batched(iterable, n):
+def batched(iterable, n) -> list[Any]:
     # batched('ABCDEFG', 3) → ABC DEF G
     if n < 1:
         raise ValueError("n must be at least one")
     it = iter(iterable)
-    while batch := tuple(itertools.islice(it, n)):
+    while batch := list(itertools.islice(it, n)):
         yield batch
 
 
@@ -112,7 +112,7 @@ def batched(iterable, n):
 #         yield itertools.chain([peek], slice_iter)
 
 
-def split_tuple(num_chunks: int, seq):
+def split_list(num_chunks: int, seq) -> list[Any]:
     num_items = count(seq)
     # print(f"num_items: {num_items}")
     num_chunks = min(num_items, num_chunks)
@@ -227,7 +227,27 @@ def normalize_dict(obj: Any, skip_keys=None) -> str:
     return s
 
 
-def normalize_dict_list(list_obj: List[Dict]) -> str:
+def normalize_dict_list(list_obj: list[dict[str:Any]]) -> str:
+    def sorted_itemgetter(*items):
+        if len(items) == 1:
+            item = items[0]
+
+            def g(obj):
+                return obj[item]
+
+        else:
+
+            def g(obj):
+                return tuple(obj[item_] for item_ in items)
+
+        return g
+
+    if list_obj is None or len(list_obj) == 0:
+        return "[\n" + "\n]\n"
+
+    dict_keys = sorted(list_obj[0].keys())
+    sorted_list_obj = sorted(list_obj, key=sorted_itemgetter(*dict_keys))
+
     return (
         "[\n"
         + ",\n".join(
@@ -237,13 +257,13 @@ def normalize_dict_list(list_obj: List[Dict]) -> str:
                 ),
                 "    ",
             )
-            for _ in list_obj
+            for _ in sorted_list_obj
         )
         + "\n]\n"
     )
 
 
-def normalize_str_list(list_obj: List[str]) -> str:
+def normalize_str_list(list_obj: list[str]) -> str:
     return "[\n" + ",\n".join(textwrap.indent(_, "    ") for _ in list_obj) + "\n]\n"
 
 
@@ -263,10 +283,15 @@ def row2dict(row):
 
 
 def is_latin(string: str) -> bool:
-    return all(["LATIN" in unicodedata.name(c) for c in string])
+    try:
+        return all(["LATIN" in unicodedata.name(c) for c in string])
+    except ValueError:
+        return False
 
 
 def to_ascii(string: str) -> str:
+    if string is None:
+        return ""
     # Transliterate the unicode string into a plain ASCII string
     if is_latin(string):
         string = unidecode(string, "preserve")

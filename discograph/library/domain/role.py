@@ -24,4 +24,4 @@ class RoleUncommited(_RoleBase):
 class Role(_RoleBase):
     """Saved Role representation."""
 
-    role_id: int
+    id: int

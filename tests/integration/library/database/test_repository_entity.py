@@ -3,7 +3,7 @@ from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.transaction import transaction
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.loader.loader_entity import LoaderEntity
-from discograph.library.loader_utils import LoaderUtils
+from discograph.library.loader.loader_utils import LoaderUtils
 from tests.integration.library.database.repository_test_case import RepositoryTestCase
 
 
@@ -33,7 +33,9 @@ class TestRepositoryEntity(RepositoryTestCase):
             repository = EntityRepository()
             created_entity = repository.create(entity)
 
-            retrieved_entity = repository.get(1, EntityType.LABEL)
+            retrieved_entity = repository.get_by_entity_id_and_entity_type(
+                1, EntityType.LABEL
+            )
 
         # THEN
         self.assertEqual(created_entity, retrieved_entity)

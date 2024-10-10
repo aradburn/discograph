@@ -13,7 +13,7 @@ from discograph.library.domain.instruments import HornbostelSachs
 from discograph.library.domain.role import RoleUncommited
 from discograph.library.fields.role_type import RoleType
 from discograph.library.loader.loader_base import LoaderBase
-from discograph.library.loader_utils import LoaderUtils
+from discograph.library.loader.loader_utils import LoaderUtils
 from discograph.logging_config import LOGGING_TRACE
 
 log = logging.getLogger(__name__)
@@ -228,10 +228,8 @@ class LoaderRole(LoaderBase):
             role_repository = RoleRepository()
             roles = role_repository.all()
             for role in roles:
-                RoleDataAccess.role_id_to_role_name_lookup[role.role_id] = (
-                    role.role_name
-                )
-                RoleDataAccess.role_id_to_role_category_lookup[role.role_id] = (
+                RoleDataAccess.role_id_to_role_name_lookup[role.id] = role.role_name
+                RoleDataAccess.role_id_to_role_category_lookup[role.id] = (
                     role.role_category
                 )
 

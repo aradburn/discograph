@@ -21,7 +21,7 @@ class TestRepositoryRole(RepositoryTestCase):
             role_subcategory_name="subcategory_name_1",
         )
         expected_role = Role(
-            role_id=1,
+            id=1,
             role_name="role_name_1",
             role_category=RoleType.Category.INSTRUMENTS,
             role_subcategory=RoleType.Subcategory.KEYBOARD,

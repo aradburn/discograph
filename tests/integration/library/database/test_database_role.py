@@ -10,7 +10,7 @@ class TestDatabaseRole(DatabaseTestCase):
         with transaction():
             role_repository = RoleRepository()
             role = role_repository.get_by_name(name)
-            actual = utils.normalize_dict(role.model_dump(exclude={"role_id"}))
+            actual = utils.normalize_dict(role.model_dump(exclude={"id"}))
 
         expected_role = {
             "role_category": "Category.INSTRUMENTS",
@@ -27,7 +27,7 @@ class TestDatabaseRole(DatabaseTestCase):
         with transaction():
             role_repository = RoleRepository()
             role = role_repository.get_by_name(name)
-            actual = utils.normalize_dict(role.model_dump(exclude={"role_id"}))
+            actual = utils.normalize_dict(role.model_dump(exclude={"id"}))
 
         expected_role = {
             "role_category": "Category.VOCAL",

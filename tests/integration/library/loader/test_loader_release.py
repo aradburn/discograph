@@ -4,10 +4,10 @@ from xml.etree import ElementTree
 from discograph import utils
 from discograph.config import TEST_DATA_DIR
 from discograph.library.loader.loader_release import LoaderRelease
-from discograph.library.loader_utils import LoaderUtils
+from discograph.library.loader.loader_utils import LoaderUtils
 
 
-class TestDatabaseRelease(unittest.TestCase):
+class TestLoaderRelease(unittest.TestCase):
     def test_release_xml_parse(self):
         # GIVEN
         source = utils.normalize(
