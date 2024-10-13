@@ -1,5 +1,6 @@
 import logging
 import multiprocessing
+from typing import Any
 
 from sqlalchemy.exc import DatabaseError
 
@@ -14,7 +15,7 @@ log = logging.getLogger(__name__)
 class WorkerReleaseInserter(multiprocessing.Process):
     def __init__(
         self,
-        bulk_inserts,
+        bulk_inserts: list[dict[str, Any]],
         inserted_count,
     ):
         super().__init__()

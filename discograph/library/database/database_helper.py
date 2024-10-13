@@ -9,6 +9,8 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.sql.dml import ReturningInsert, Insert
 
 from discograph.config import Configuration
+from discograph.library.data_access_layer.entity_data_access import EntityDataAccess
+from discograph.library.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.library.database.base_table import Base, ConcreteTable
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.relation_release_year_repository import (
@@ -247,7 +249,9 @@ class DatabaseHelper(ABC):
         if data is not None:
             return data
 
-        entity = entity_repository.get(entity_id, entity_type)
+        entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity_id, entity_type
+        )
         if entity is None:
             return None
         if not on_mobile:
@@ -262,7 +266,9 @@ class DatabaseHelper(ABC):
             max_nodes=max_nodes,
             role_names=roles,
         )
-        data = relation_grapher.get_relation_graph(relation_repository)
+        data = relation_grapher.get_relation_graph(
+            entity_repository, relation_repository
+        )
         cache.set(cache_key, data)
         return data
 
@@ -328,17 +334,18 @@ class DatabaseHelper(ABC):
         from discograph.library.cache.cache_manager import cache
 
         search_query_url = URLIFY_REGEX.sub("+", search_string)
+        search_query_url = EntityDataAccess.normalise_search_content(search_query_url)
         cache_key = f"discograph:/api/search/{search_query_url}"
         log.debug(f"  get cache_key: {cache_key}")
         data = cache.get(cache_key)
         if data is not None:
-            log.debug(f"{cache_key}: CACHED")
-            for datum in data["results"]:
-                log.debug(f"    {datum}")
+            # log.debug(f"{cache_key}: CACHED")
+            # for datum in data["results"]:
+            #     log.debug(f"    {datum}")
             return data
 
         entities = entity_repository.find_by_search_content(search_string)
-        log.debug(f"{cache_key}: NOT CACHED")
+        # log.debug(f"{cache_key}: NOT CACHED")
         data = []
         for entity in entities:
             datum = dict(
@@ -348,30 +355,30 @@ class DatabaseHelper(ABC):
             data.append(datum)
             # log.debug(f"    {datum}")
         data = {"results": tuple(data)}
-        log.debug(f"  set cache_key: {cache_key} data: {data}")
+        # log.debug(f"  set cache_key: {cache_key} data: {data}")
         cache.set(cache_key, data)
         return data
 
     @classmethod
     def get_relations_by_entity_id_and_entity_type(
         cls,
+        entity_repository: EntityRepository,
         relation_repository: RelationRepository,
         relation_release_year_repository: RelationReleaseYearRepository,
         entity_id: int,
         entity_type: EntityType,
     ) -> dict[str, Any]:
-        relations = relation_repository.find_by_entity_id_and_entity_type(
+        entity = entity_repository.get_by_entity_id_and_entity_type(
             entity_id, entity_type
         )
+        relations = relation_repository.find_by_entity(entity.id)
 
         data = []
         for relation in relations:
-            relation_release_years = relation_release_year_repository.get(
-                relation.relation_id
-            )
-            relation.releases = {}
+            relation_release_years = relation_release_year_repository.get(relation.id)
+            relation_releases = {}
             for relation_release_year in relation_release_years:
-                relation.releases[relation_release_year.release_id] = (
+                relation_releases[relation_release_year.release_id] = (
                     relation_release_year.year
                 )
 
@@ -380,7 +387,7 @@ class DatabaseHelper(ABC):
             #     continue
             datum = {
                 "role": relation.role,
-                "releases": relation.releases,
+                "releases": relation_releases,
             }
             data.append(datum)
         data = {"results": tuple(data)}
@@ -393,11 +400,10 @@ class DatabaseHelper(ABC):
         relation_release_year_repository: RelationReleaseYearRepository,
         key: dict[str, Any],
     ) -> Relation:
-        relation = relation_repository.find_by_key(key)
+        relation_internal = relation_repository.find_by_key(key)
+        relation = RelationDataAccess.to_relation(relation_internal)
 
-        relation_release_years = relation_release_year_repository.get(
-            relation.relation_id
-        )
+        relation_release_years = relation_release_year_repository.get(relation.id)
         relation.releases = {}
         for relation_release_year in relation_release_years:
             relation.releases[str(relation_release_year.release_id)] = (

@@ -1,5 +1,6 @@
 __all__ = [
     "Entity",
+    # "EntityUncommitted",
 ]
 
 import logging
@@ -10,7 +11,7 @@ from discograph.library.fields.entity_type import EntityType
 log = logging.getLogger(__name__)
 
 
-class Entity(InternalDomainObject):
+class _EntityBase(InternalDomainObject):
     entity_id: int
     entity_type: EntityType
     entity_name: str
@@ -45,3 +46,13 @@ class Entity(InternalDomainObject):
             if "sublabels" in self.entities:
                 members = self.entities["sublabels"]
         return len(members)
+
+
+# class EntityUncommitted(_EntityBase):
+#     """This schema is used for creating an instance without an id before it is persisted into the database."""
+#
+#     pass
+
+
+class Entity(_EntityBase):
+    id: int

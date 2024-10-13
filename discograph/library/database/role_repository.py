@@ -20,7 +20,7 @@ class RoleRepository(BaseRepository[RoleTable]):
             yield Role.model_validate(instance)
 
     def get(self, role_id: int) -> Role:
-        query = select(RoleTable).where(RoleTable.role_id == role_id)
+        query = select(RoleTable).where(RoleTable.id == role_id)
 
         result: Result = self.execute(query)
         # result: Result = await self.execute(query)

@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 
 
 class WorkerRelationPassTwo(multiprocessing.Process):
-    def __init__(self, release_ids, current_total: int, total_count: int):
+    def __init__(self, release_ids: list[int], current_total: int, total_count: int):
         super().__init__()
         self.release_ids = release_ids
         self.current_total = current_total
@@ -42,13 +42,13 @@ class WorkerRelationPassTwo(multiprocessing.Process):
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
 
-        for release_id in self.release_ids:
+        for id_ in self.release_ids:
 
             with transaction():
                 release_repository = ReleaseRepository()
 
                 try:
-                    release = release_repository.get(release_id)
+                    release = release_repository.get(id_)
                     relations = RelationDataAccess.from_release(release)
                     if LOGGING_TRACE:
                         log.debug(
@@ -56,9 +56,7 @@ class WorkerRelationPassTwo(multiprocessing.Process):
                             + f"(release_id:{release.release_id})\t[{len(relations)}] {release.title}"
                         )
                 except NotFoundError:
-                    log.debug(
-                        f"WorkerRelationPassTwo release_id not found: {release_id}"
-                    )
+                    log.debug(f"WorkerRelationPassTwo release_id not found: {id_}")
                 except DatabaseError as e:
                     log.exception(
                         "Database Error in WorkerRelationPassTwo (getting relations from release)"
@@ -75,7 +73,7 @@ class WorkerRelationPassTwo(multiprocessing.Process):
                     new_relation_release_years = self.to_relation_release_years(
                         relation_repository=relation_repository,
                         relation_dict=relation_dict,
-                        release_id=release_id,
+                        release_id=id_,
                         year=year,
                     )
                     relation_release_years.extend(new_relation_release_years)
@@ -111,12 +109,11 @@ class WorkerRelationPassTwo(multiprocessing.Process):
         role_names = RoleDataAccess.normalise_role_names(relation_dict["role"])
         for role_name in role_names:
             try:
+                role_id = RoleDataAccess.role_name_to_role_id_lookup[role_name]
                 key = {
-                    "entity_one_id": relation_dict["entity_one_id"],
-                    "entity_one_type": relation_dict["entity_one_type"],
-                    "entity_two_id": relation_dict["entity_two_id"],
-                    "entity_two_type": relation_dict["entity_two_type"],
-                    "role_name": role_name,
+                    "subject": relation_dict["subject"],
+                    "role_id": role_id,
+                    "object": relation_dict["object"],
                 }
                 relation_id = relation_repository.get_id_by_key(key)
                 # log.debug(f"v: {relation_db.version_id}")

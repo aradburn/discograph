@@ -1,6 +1,7 @@
 import logging
 import multiprocessing
 import pprint
+from typing import Any
 
 from deepdiff import DeepDiff
 
@@ -17,7 +18,7 @@ log = logging.getLogger(__name__)
 
 
 class WorkerReleaseUpdater(multiprocessing.Process):
-    def __init__(self, bulk_updates, processed_count):
+    def __init__(self, bulk_updates: list[dict[str, Any]], processed_count: int):
         super().__init__()
         self.bulk_updates = bulk_updates
         self.processed_count = processed_count
@@ -30,7 +31,7 @@ class WorkerReleaseUpdater(multiprocessing.Process):
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
 
-        for i, data in enumerate(self.bulk_updates):
+        for data in self.bulk_updates:
             with transaction():
                 release_repository = ReleaseRepository()
                 updated_release = Release(**data)
@@ -41,7 +42,7 @@ class WorkerReleaseUpdater(multiprocessing.Process):
                         db_release,
                         updated_release,
                         exclude_paths=[
-                            "release_id",
+                            "id",
                             "random",
                             "dirty_fields",
                             "_dirty",

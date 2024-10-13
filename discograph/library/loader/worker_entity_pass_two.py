@@ -8,7 +8,7 @@ from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.entity_table import EntityTable
 from discograph.library.database.transaction import transaction
-from discograph.library.fields.entity_type import EntityType
+from discograph.library.domain.entity import Entity
 from discograph.library.loader.loader_base import LoaderBase
 from discograph.logging_config import LOGGING_TRACE
 
@@ -16,26 +16,22 @@ log = logging.getLogger(__name__)
 
 
 class WorkerEntityPassTwo(multiprocessing.Process):
-    def __init__(
-        self, entity_type: EntityType, entity_ids, current_total: int, total_count: int
-    ):
+    def __init__(self, ids: list[int], current_total: int, total_count: int):
         super().__init__()
-        self.entity_type = entity_type
-        self.entity_ids = entity_ids
+        self.ids = ids
         self.current_total = current_total
         self.total_count = total_count
 
     def run(self):
         proc_name = self.name
-        corpus = {}
 
         count = self.current_total
-        end_count = count + len(self.entity_ids)
+        end_count = count + len(self.ids)
 
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
 
-        for entity_id in self.entity_ids:
+        for id_ in self.ids:
             max_attempts = 10
             error = True
             while error and max_attempts != 0:
@@ -43,30 +39,34 @@ class WorkerEntityPassTwo(multiprocessing.Process):
                 with transaction():
                     entity_repository = EntityRepository()
                     try:
+                        entity = entity_repository.get_by_id(id_)
                         self.worker_pass_two_single(
                             entity_repository=entity_repository,
-                            entity_id=entity_id,
-                            entity_type=self.entity_type,
+                            entity=entity,
                             annotation=proc_name,
-                            corpus=corpus,
                         )
                     except NotFoundError:
                         log.warning(
-                            f"Database NotFoundError: {entity_id}-{self.entity_type} in process: {proc_name}"
+                            f"Database NotFoundError: {entity.entity_id}-{entity.entity_type} in process: {proc_name}"
                         )
                         entity_repository.rollback()
                         max_attempts -= 1
                         error = True
                     except DatabaseError as e:
                         log.exception(
-                            f"Database Error for entity: {entity_id}-{self.entity_type} in process: {proc_name}",
+                            f"Database Error for entity_id: {entity.entity_id}-{entity.entity_type} "
+                            + f"in process: {proc_name}",
                             exc_info=True,
                         )
                         raise e
 
             if error:
-                log.debug(f"Error in updating references for entity: {entity_id}")
-                raise Exception(f"Error in updating references for entity: {entity_id}")
+                log.debug(
+                    f"Error in updating references for entity_id: {entity.entity_id}"
+                )
+                raise Exception(
+                    f"Error in updating references for entity_id: {entity.entity_id}"
+                )
 
             count += 1
             if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == end_count:
@@ -80,26 +80,22 @@ class WorkerEntityPassTwo(multiprocessing.Process):
     def worker_pass_two_single(
         *,
         entity_repository: EntityRepository,
-        entity_id: int,
-        entity_type: EntityType,
+        entity: Entity,
         annotation="",
-        corpus=None,
     ):
-        # log.debug(f"id: {entity_id}-{entity_type}")
-        entity = entity_repository.get(entity_id, entity_type)
+        if LOGGING_TRACE:
+            log.debug(f"id: {entity.entity_id}-{entity.entity_type}")
 
-        corpus = corpus or {}
-        changed = EntityDataAccess.resolve_references_from_entity(
-            entity_repository, entity, corpus
-        )
+        changed = EntityDataAccess.resolve_entity_references(entity_repository, entity)
         if changed:
             if LOGGING_TRACE:
                 log.debug(
                     f"Entity (Pass 2) [{annotation}]\t"
-                    + f"          (id: {entity_id}-{entity_type}): {entity.entity_name}"
+                    + f"          (id: {entity.entity_id}-{entity.entity_type}): {entity.entity_name}"
                 )
             entity_repository.update(
-                entity_id, entity_type, {EntityTable.entities.key: entity.entities}
+                entity.id,
+                {EntityTable.entities.key: entity.entities},
             )
             entity_repository.commit()
 

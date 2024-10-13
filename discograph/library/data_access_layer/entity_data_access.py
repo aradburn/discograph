@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Tuple, cast
+from typing import Dict, cast
 
 from discograph import utils
 from discograph.exceptions import NotFoundError
@@ -14,11 +14,15 @@ log = logging.getLogger(__name__)
 
 
 class EntityDataAccess:
+    CACHE_ENTRY_IS_NULL = "___"
+    CACHE_KEY_SEPARATOR = "_"
+    LABEL_ENTITY_ID_OFFSET = 1000000000
+    MISSING_LABEL_ENTITY = -2000000000
+
     @staticmethod
-    def resolve_references_from_entity(
-        entity_repository: EntityRepository, entity: Entity, corpus: dict
+    def resolve_entity_references(
+        entity_repository: EntityRepository, entity: Entity
     ) -> bool:
-        # log.debug(f"entity: {self}")
         if not entity.entities:
             return False
 
@@ -28,103 +32,240 @@ class EntityDataAccess:
                 if section not in entity.entities:
                     continue
                 for entity_name in entity.entities[section].keys():
-                    key = (entity.entity_type, entity_name)
-                    EntityDataAccess.update_corpus(entity_repository, corpus, key)
-                    if key in corpus:
-                        entity.entities[section][entity_name] = corpus[key]
+                    id_ = EntityDataAccess.get_id_by_entity_type_and_entity_name(
+                        entity_repository, entity.entity_type, entity_name
+                    )
+                    if id_:
+                        entity.entities[section][entity_name] = id_
                         changed = True
         elif entity.entity_type == EntityType.LABEL:
             for section in ("parent_label", "sublabels"):
                 if section not in entity.entities:
                     continue
                 for entity_name in entity.entities[section].keys():
-                    key = (entity.entity_type, entity_name)
-                    EntityDataAccess.update_corpus(entity_repository, corpus, key)
-                    if key in corpus:
-                        entity.entities[section][entity_name] = corpus[key]
+                    id_ = EntityDataAccess.get_id_by_entity_type_and_entity_name(
+                        entity_repository, entity.entity_type, entity_name
+                    )
+                    if id_:
+                        entity.entities[section][entity_name] = id_
                         changed = True
         else:
             raise ValueError("Bad entity_type")
         return changed
 
     @staticmethod
-    def resolve_references_from_release(
-        entity_repository: EntityRepository, release: Release, corpus, spuriously=False
+    def resolve_release_references(
+        entity_repository: EntityRepository, release: Release
     ):
         changed = False
-        spurious_id = 0
-        for entry in release.labels:
-            name = entry["name"]
-            entity_key = (EntityType.LABEL, name)
-            if not spuriously:
-                # release_class_name = release.__class__.__qualname__
-                # release_module_name = release.__class__.__module__
-                # entity_class_name = release_class_name.replace("Release", "Entity")
-                # entity_module_name = release_module_name.replace("release", "entity")
-                # entity_class = getattr(
-                #     sys.modules[entity_module_name], entity_class_name
-                # )
 
-                EntityDataAccess.update_corpus(entity_repository, corpus, entity_key)
-            if entity_key in corpus:
-                entry["id"] = corpus[entity_key]
-                changed = True
-            elif spuriously:
-                spurious_id -= 1
-                corpus[entity_key] = spurious_id
-                entry["id"] = corpus[entity_key]
-                changed = True
+        # for entry in release.artists:
+        #     entity_type = EntityType.ARTIST
+        #     entity_id = entry["id"]
+        #     id_ = EntityDataAccess.get_internal_id_by_entity_type_and_entity_id(
+        #         entity_repository, entity_type, entity_id
+        #     )
+        #     if id_:
+        #         entry["id"] = id_
+        #     else:
+        #         entry["id"] = -entity_id
+        #     changed = True
+
+        # for entry in release.companies:
+        #     entity_type = EntityType.LABEL
+        #     entity_id = entry["id"]
+        #     id_ = EntityDataAccess.get_internal_id_by_entity_type_and_entity_id(
+        #         entity_repository, entity_type, entity_id
+        #     )
+        #     if id_:
+        #         entry["id"] = id_
+        #     else:
+        #         entry["id"] = -entity_id - 1000000000
+        #     changed = True
+        #
+        # for entry in release.extra_artists:
+        #     entity_type = EntityType.ARTIST
+        #     entity_id = entry["id"]
+        #     id_ = EntityDataAccess.get_internal_id_by_entity_type_and_entity_id(
+        #         entity_repository, entity_type, entity_id
+        #     )
+        #     if id_:
+        #         entry["id"] = id_
+        #     else:
+        #         entry["id"] = -entity_id
+        #     changed = True
+        #
+        # for entry in release.tracklist:
+        #     if "artists" in entry:
+        #         artists_list = entry["artists"]
+        #         for artist_entry in artists_list:
+        #             entity_type = EntityType.ARTIST
+        #             entity_id = artist_entry["id"]
+        #             id_ = EntityDataAccess.get_internal_id_by_entity_type_and_entity_id(
+        #                 entity_repository, entity_type, entity_id
+        #             )
+        #             if id_:
+        #                 artist_entry["id"] = id_
+        #             else:
+        #                 artist_entry["id"] = -entity_id
+        #             changed = True
+        #     if "extra_artists" in entry:
+        #         extra_artists_list = entry["extra_artists"]
+        #         for extra_artist_entry in extra_artists_list:
+        #             entity_type = EntityType.ARTIST
+        #             entity_id = extra_artist_entry["id"]
+        #             id_ = EntityDataAccess.get_internal_id_by_entity_type_and_entity_id(
+        #                 entity_repository, entity_type, entity_id
+        #             )
+        #             if id_:
+        #                 extra_artist_entry["id"] = id_
+        #             else:
+        #                 extra_artist_entry["id"] = -entity_id
+        #             changed = True
+
+        for entry in release.labels:
+            entity_type = EntityType.LABEL
+            entity_name = entry["name"]
+            id_ = entity_repository.get_entity_id_by_entity_type_and_entity_name(
+                entity_type, entity_name
+            )
+            if id_:
+                entry["id"] = id_
+            else:
+                entry["id"] = EntityDataAccess.MISSING_LABEL_ENTITY
+            changed = True
+
+        # for entry in release.companies:
+        #     entity_type = EntityType.LABEL
+        #     entity_name = entry["name"]
+        #     id_ = EntityDataAccess.get_internal_id_by_entity_type_and_entity_name(
+        #         entity_repository, entity_type, entity_name
+        #     )
+        #     if id_:
+        #         entry["id"] = id_
+        #     else:
+        #         entity_type = EntityType.ARTIST
+        #         entity_name = entry["name"]
+        #         id_ = EntityDataAccess.get_internal_id_by_entity_type_and_entity_name(
+        #             entity_repository, entity_type, entity_name
+        #         )
+        #         if id_:
+        #             entry["id"] = id_
+        #         else:
+        #             entry["id"] = -1000000001
+        #     changed = True
+
         return changed
 
+    # @staticmethod
+    # def resolve_references_from_release(
+    #     entity_repository: EntityRepository, release: Release, corpus, spuriously=False
+    # ):
+    #     changed = False
+    #     spurious_id = 0
+    #     for entry in release.labels:
+    #         name = entry["name"]
+    #         entity_key = (EntityType.LABEL, name)
+    #         if not spuriously:
+    #             # release_class_name = release.__class__.__qualname__
+    #             # release_module_name = release.__class__.__module__
+    #             # entity_class_name = release_class_name.replace("Release", "Entity")
+    #             # entity_module_name = release_module_name.replace("release", "entity")
+    #             # entity_class = getattr(
+    #             #     sys.modules[entity_module_name], entity_class_name
+    #             # )
+    #
+    #             EntityDataAccess.update_corpus(entity_repository, corpus, entity_key)
+    #         if entity_key in corpus:
+    #             entry["id"] = corpus[entity_key]
+    #             changed = True
+    #         elif spuriously:
+    #             spurious_id -= 1
+    #             corpus[entity_key] = spurious_id
+    #             entry["id"] = corpus[entity_key]
+    #             changed = True
+    #     return changed
+
     @staticmethod
-    def update_corpus(
+    def get_id_by_entity_type_and_entity_name(
         entity_repository: EntityRepository,
-        corpus: Dict,
-        entity_key: Tuple[EntityType, str],
-    ):
+        entity_type: EntityType,
+        entity_name: str,
+    ) -> int | None:
         from discograph.library.cache.cache_manager import cache
 
-        # log.debug(f"            corpus before: {corpus}")
-        if entity_key in corpus:
-            return
+        entity_key_str = (
+            f"{entity_name}{EntityDataAccess.CACHE_KEY_SEPARATOR}{entity_type}"
+        )
 
-        entity_type, entity_name = entity_key
-        entity_key_str = f"{entity_name}-{entity_type}"
-        entity_id = cache.get(entity_key_str)
-        if entity_id == "###":
-            return
+        id_ = cache.get(entity_key_str)
+        if id_ == EntityDataAccess.CACHE_ENTRY_IS_NULL:
+            return None
 
         # if entity_id is not None:
         #     log.debug(f"cache hit for {key_str}")
-        if entity_id is None:
+        if id_ is None:
             # log.debug(f"not cached, try db")
             try:
-                entity = entity_repository.get_by_type_and_name(
+                int_id = entity_repository.get_id_by_entity_type_and_entity_name(
                     entity_type, entity_name
                 )
-                entity_id = entity.entity_id
-                cache.set(entity_key_str, entity_id)
-                # log.debug(f"cache set for {key_str} -> {entity_id}")
-
-                # query = cls.select().where(
-                #     cls.entity_type == entity_type,
-                #     cls.entity_name == entity_name,
-                # )
-                # entity_id = query.get().entity_id
-                #
-                # cache.set(key_str, entity_id)
+                # Store the internal id, not entity_id
+                cache.set(entity_key_str, int_id)
+                # log.debug(f"cache set for {key_str} -> {int_id}")
+                id_ = int_id
 
             except NotFoundError:
                 if LOGGING_TRACE:
-                    log.debug(f"update_corpus key not found: {entity_key}")
-                entity_id = None
-                cache.set(entity_key_str, "###")
+                    log.debug(
+                        f"get_id_from_entity_type_and_entity_name key not found: {entity_key_str}"
+                    )
+                id_ = None
+                cache.set(entity_key_str, EntityDataAccess.CACHE_ENTRY_IS_NULL)
 
-        if entity_id is not None:
-            corpus[entity_key] = entity_id
-        # else:
-        #     log.debug(f"entity_id is None")
-        # log.debug(f"            corpus after : {corpus}")
+        return id_
+
+    # @staticmethod
+    # def update_corpus(
+    #     entity_repository: EntityRepository,
+    #     corpus: Dict,
+    #     entity_key: Tuple[EntityType, str],
+    # ):
+    #     from discograph.library.cache.cache_manager import cache
+    #
+    #     # log.debug(f"            corpus before: {corpus}")
+    #     if entity_key in corpus:
+    #         return
+    #
+    #     entity_type, entity_name = entity_key
+    #     entity_key_str = f"{entity_name}-{entity_type}"
+    #     entity_id = cache.get(entity_key_str)
+    #     if entity_id == "###":
+    #         return
+    #
+    #     # if entity_id is not None:
+    #     #     log.debug(f"cache hit for {key_str}")
+    #     if entity_id is None:
+    #         # log.debug(f"not cached, try db")
+    #         try:
+    #             entity = entity_repository.get_by_type_and_name(
+    #                 entity_type, entity_name
+    #             )
+    #             # Store the internal id, not entity_id
+    #             cache.set(entity_key_str, entity.id)
+    #             # log.debug(f"cache set for {key_str} -> {entity_id}")
+    #
+    #         except NotFoundError:
+    #             if LOGGING_TRACE:
+    #                 log.debug(f"update_corpus key not found: {entity_key}")
+    #             entity_id = None
+    #             cache.set(entity_key_str, "###")
+    #
+    #     if entity_id is not None:
+    #         corpus[entity_key] = entity_id
+    #     # else:
+    #     #     log.debug(f"entity_id is None")
+    #     # log.debug(f"            corpus after : {corpus}")
 
     @staticmethod
     def normalise_search_content(string: str) -> str:
@@ -177,7 +318,7 @@ class EntityDataAccess:
                         continue
                     ids = sorted((entity_id, entity.entity_id))
                     relation = RelationResult(
-                        relation_id=0,
+                        id=0,
                         entity_one_id=ids[0],
                         entity_one_type=entity.entity_type,
                         entity_two_id=ids[1],
@@ -196,7 +337,7 @@ class EntityDataAccess:
                         if not entity_id:
                             continue
                         relation = RelationResult(
-                            relation_id=0,
+                            id=0,
                             entity_one_id=entity.entity_id,
                             entity_one_type=entity.entity_type,
                             entity_two_id=entity_id,
@@ -213,7 +354,7 @@ class EntityDataAccess:
                         if not entity_id:
                             continue
                         relation = RelationResult(
-                            relation_id=0,
+                            id=0,
                             entity_one_id=entity_id,
                             entity_one_type=entity.entity_type,
                             entity_two_id=entity.entity_id,
@@ -232,7 +373,7 @@ class EntityDataAccess:
                     if not entity_id:
                         continue
                     relation = RelationResult(
-                        relation_id=0,
+                        id=0,
                         entity_one_id=entity.entity_id,
                         entity_one_type=entity.entity_type,
                         entity_two_id=entity_id,
@@ -249,7 +390,7 @@ class EntityDataAccess:
                     if not entity_id:
                         continue
                     relation = RelationResult(
-                        relation_id=0,
+                        id=0,
                         entity_one_id=entity_id,
                         entity_one_type=entity.entity_type,
                         entity_two_id=entity.entity_id,

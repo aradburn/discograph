@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 
 class WorkerReleasePassTwo(multiprocessing.Process):
-    def __init__(self, release_ids, current_total: int, total_count: int):
+    def __init__(self, release_ids: list[int], current_total: int, total_count: int):
         super().__init__()
         self.release_ids = release_ids
         self.current_total = current_total
@@ -24,7 +24,6 @@ class WorkerReleasePassTwo(multiprocessing.Process):
 
     def run(self):
         proc_name = self.name
-        corpus = {}
 
         count = self.current_total
         end_count = count + len(self.release_ids)
@@ -32,7 +31,7 @@ class WorkerReleasePassTwo(multiprocessing.Process):
         if get_concurrency_count() > 1:
             DatabaseHelper.initialize()
 
-        for release_id in self.release_ids:
+        for id_ in self.release_ids:
             with transaction():
                 entity_repository = EntityRepository()
                 release_repository = ReleaseRepository()
@@ -40,9 +39,8 @@ class WorkerReleasePassTwo(multiprocessing.Process):
                     self.loader_pass_two_single(
                         entity_repository=entity_repository,
                         release_repository=release_repository,
-                        release_id=release_id,
+                        id_=id_,
                         annotation=proc_name,
-                        corpus=corpus,
                     )
                 except DatabaseError as e:
                     log.exception("Database Error in WorkerReleasePassTwo:", e)
@@ -59,14 +57,16 @@ class WorkerReleasePassTwo(multiprocessing.Process):
         *,
         entity_repository: EntityRepository,
         release_repository: ReleaseRepository,
-        release_id,
+        id_,
         annotation="",
-        corpus=None,
     ):
-        release = release_repository.get(release_id)
-        corpus = corpus or {}
-        changed = EntityDataAccess().resolve_references_from_release(
-            entity_repository, release, corpus=corpus
+        release = release_repository.get(id_)
+        # log.debug(f"artists       before: {release.artists}")
+        # log.debug(f"tracklist before: {release.tracklist}")
+        # log.debug(f"labels        before: {release.labels}")
+        # log.debug(f"companies     before: {release.companies}")
+        changed = EntityDataAccess.resolve_release_references(
+            entity_repository, release
         )
         if changed:
             if LOGGING_TRACE:
@@ -74,10 +74,20 @@ class WorkerReleasePassTwo(multiprocessing.Process):
                     f"Release (Pass 2) [{annotation}]\t"
                     + f"          (id:{release.release_id}): {release.title}"
                 )
+            # log.debug(f"artists        after: {release.artists}")
+            # log.debug(f"tracklist  after: {release.tracklist}")
+            # log.debug(f"labels         after: {release.labels}")
+            # log.debug(f"companies      after: {release.companies}")
             release_repository.update(
-                release_id, {ReleaseTable.labels.key: release.labels}
+                id_,
+                {
+                    # ReleaseTable.artists.key: release.artists,
+                    # ReleaseTable.extra_artists.key: release.extra_artists,
+                    ReleaseTable.labels.key: release.labels,
+                    # ReleaseTable.companies.key: release.companies,
+                    # ReleaseTable.tracklist.key: release.tracklist,
+                },
             )
-            # flag_modified(release, cls.labels.key)
             release_repository.commit()
         elif LOGGING_TRACE:
             log.debug(

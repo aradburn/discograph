@@ -7,7 +7,7 @@ from tests.integration.app_test_case import AppTestCase
 class TestAPI(AppTestCase):
     def setUp(self):
         self.app = app.test_client()
-        self.app.debug = True
+        app.debug = True
 
     def test_network_01(self):
         response = self.app.get("/api/artist/network/2239")

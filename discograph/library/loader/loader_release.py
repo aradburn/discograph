@@ -1,5 +1,6 @@
 import logging
 from random import random
+from typing import Any
 
 from sortedcontainers import SortedSet
 
@@ -13,7 +14,7 @@ from discograph.library.loader.worker_release_deleter import WorkerReleaseDelete
 from discograph.library.loader.worker_release_inserter import WorkerReleaseInserter
 from discograph.library.loader.worker_release_pass_two import WorkerReleasePassTwo
 from discograph.library.loader.worker_release_updater import WorkerReleaseUpdater
-from discograph.library.loader_utils import LoaderUtils
+from discograph.library.loader.loader_utils import LoaderUtils
 from discograph.utils import timeit
 
 log = logging.getLogger(__name__)
@@ -48,7 +49,7 @@ class LoaderRelease(LoaderBase):
         return releases_loaded
 
     @classmethod
-    def insert_bulk(cls, bulk_inserts, inserted_count):
+    def insert_bulk(cls, bulk_inserts: list[dict[str, Any]], inserted_count: int):
         worker = WorkerReleaseInserter(
             bulk_inserts=bulk_inserts,
             inserted_count=inserted_count,
@@ -56,7 +57,7 @@ class LoaderRelease(LoaderBase):
         return worker
 
     @classmethod
-    def update_bulk(cls, bulk_updates, processed_count):
+    def update_bulk(cls, bulk_updates: list[dict[str, Any]], processed_count: int):
         worker = WorkerReleaseUpdater(
             bulk_updates=bulk_updates,
             processed_count=processed_count,
@@ -64,7 +65,7 @@ class LoaderRelease(LoaderBase):
         return worker
 
     @classmethod
-    def delete_bulk(cls, bulk_deletes, processed_count):
+    def delete_bulk(cls, bulk_deletes: list[int], processed_count: int):
         worker = WorkerReleaseDeleter(
             bulk_deletes=bulk_deletes,
             processed_count=processed_count,
@@ -185,6 +186,7 @@ class LoaderRelease(LoaderBase):
             return result
         for sub_element in element:
             data = {
+                # id gets filled in later in EntityDataAccess.resolve_references_from_release
                 "catalog_number": sub_element.get("catno"),
                 "name": sub_element.get("name"),
             }
@@ -266,18 +268,26 @@ class LoaderRelease(LoaderBase):
     @classmethod
     def from_element(cls, element) -> Release:
         data = cls.tags_to_fields(element)
-        data["release_id"] = int(element.get("id"))
-        if "identifiers" not in data:
-            data["identifiers"] = None
-        if "master_id" not in data:
-            data["master_id"] = None
-        if "notes" not in data:
-            data["notes"] = None
-        data["random"] = random()
         return Release(**data)
+
+    @classmethod
+    def preprocess_data(cls, data, element):
+        if element.tag == "release":
+            # print(f"el: {element}")
+            # print(f"el_id: {element.get('id')}")
+            data["release_id"] = int(element.get("id"))
+            if "identifiers" not in data:
+                data["identifiers"] = None
+            if "master_id" not in data:
+                data["master_id"] = None
+            if "notes" not in data:
+                data["notes"] = None
+            data["random"] = random()
+        return data
 
 
 LoaderRelease._tags_to_fields_mapping = {
+    "id": ("id", LoaderUtils.element_to_integer),
     "artists": ("artists", LoaderRelease.element_to_artist_credits),
     "companies": ("companies", LoaderRelease.element_to_company_credits),
     "country": ("country", LoaderUtils.element_to_string),

@@ -14,8 +14,10 @@ class TestDatabaseEntity(DatabaseTestCase):
         # WHEN
         with transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get(entity_id, entity_type)
-            actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
+            entity = entity_repository.get_by_entity_id_and_entity_type(
+                entity_id, entity_type
+            )
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
 
         # THEN
         expected_entity = {
@@ -90,8 +92,10 @@ class TestDatabaseEntity(DatabaseTestCase):
         # WHEN
         with transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get(entity_id, entity_type)
-            actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
+            entity = entity_repository.get_by_entity_id_and_entity_type(
+                entity_id, entity_type
+            )
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
 
         expected_entity = {
             "entities": {
@@ -147,8 +151,10 @@ class TestDatabaseEntity(DatabaseTestCase):
         # WHEN
         with transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get(entity_id, entity_type)
-            actual = utils.normalize_dict(entity.model_dump(exclude={"random"}))
+            entity = entity_repository.get_by_entity_id_and_entity_type(
+                entity_id, entity_type
+            )
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
 
         expected_entity = {
             "entities": {},

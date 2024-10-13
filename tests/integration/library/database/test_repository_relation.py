@@ -1,14 +1,18 @@
 from discograph import utils
 from discograph.config import TEST_DATA_DIR
+from discograph.library.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.database.transaction import transaction
-from discograph.library.domain.relation import Relation, RelationUncommitted
+from discograph.library.domain.relation import (
+    Relation,
+    RelationInternal,
+)
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.loader.loader_entity import LoaderEntity
 from discograph.library.loader.loader_role import LoaderRole
 from discograph.library.loader.worker_relation_pass_one import WorkerRelationPassOne
-from discograph.library.loader_utils import LoaderUtils
+from discograph.library.loader.loader_utils import LoaderUtils
 from tests.integration.library.database.repository_test_case import RepositoryTestCase
 
 
@@ -30,17 +34,22 @@ class TestRepositoryRelation(RepositoryTestCase):
             created_entity_2 = repository.create(entity_2)
             print(f"created_entity_2: {created_entity_2}")
 
-        relation = RelationUncommitted(
-            entity_one_id=created_entity_1.entity_id,
-            entity_one_type=created_entity_1.entity_type,
-            entity_two_id=created_entity_2.entity_id,
-            entity_two_type=created_entity_2.entity_type,
-            role_name="Composed By",
+        id_1 = RelationDataAccess.to_relation_internal_id(
+            created_entity_1.entity_id, created_entity_1.entity_type
+        )
+        id_2 = RelationDataAccess.to_relation_internal_id(
+            created_entity_2.entity_id, created_entity_2.entity_type
+        )
+        relation = RelationInternal(
+            id=1,
+            subject=id_1,
+            object=id_2,
+            role="Composed By",
             # releases={},
             random=0.0,
         )
         relation_dict = relation.model_dump()
-        relation_dict["role"] = relation.role_name
+        # relation_dict["role"] = relation.role_name
         relation_dicts = [relation_dict]
 
         # WHEN
@@ -48,9 +57,11 @@ class TestRepositoryRelation(RepositoryTestCase):
             relation_repository = RelationRepository()
             relations = WorkerRelationPassOne.to_relations_from_dict(relation_dicts)
 
-            created_relation = relation_repository.create(relations[0])
-            print(f"created_relation: {created_relation}")
+            created_relation_internal = relation_repository.create(relations[0])
+            print(f"created_relation_internal: {created_relation_internal}")
 
+            created_relation = RelationDataAccess.to_relation(created_relation_internal)
+            print(f"created_relation: {created_relation}")
             actual = utils.normalize_dict(
                 created_relation.model_dump(exclude={"random"})
             )
@@ -58,8 +69,7 @@ class TestRepositoryRelation(RepositoryTestCase):
 
         # THEN
         expected_relation = Relation(
-            relation_id=1,
-            # version_id=1,
+            id=1,
             entity_one_id=created_entity_1.entity_id,
             entity_one_type=created_entity_1.entity_type,
             entity_two_id=created_entity_2.entity_id,
@@ -229,13 +239,14 @@ class TestRepositoryRelation(RepositoryTestCase):
             # Get internal RelationDB
             relation_db = repository.get(1)
             # Convert to domain Relation
-            relation = repository._to_domain(relation_db)
+            relation_internal = repository._to_domain(relation_db)
+            relation = RelationDataAccess.to_relation(relation_internal)
+            print(f"relation: {relation}")
             actual = utils.normalize_dict(relation.model_dump(exclude={"random"}))
 
         # THEN
         expected_relation = Relation(
-            relation_id=1,
-            version_id=2,
+            id=1,
             entity_one_id=3,
             entity_one_type=EntityType.ARTIST,
             entity_two_id=5,

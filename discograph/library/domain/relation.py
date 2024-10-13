@@ -3,54 +3,66 @@ from typing import Dict, Any
 
 from discograph import utils
 from discograph.library.domain.base import InternalDomainObject
-from discograph.library.fields.entity_type import EntityType
 
 __all__ = [
     "RelationUncommitted",
     "RelationDB",
     "Relation",
+    "RelationInternal",
     "RelationResult",
 ]
+
+from discograph.library.fields.entity_type import EntityType
 
 log = logging.getLogger(__name__)
 
 
 class _RelationBase(InternalDomainObject):
-    entity_one_id: int
-    entity_one_type: EntityType
-    entity_two_id: int
-    entity_two_type: EntityType
-    # releases: Dict[str, int | None] | None = None
     random: float
 
 
 class RelationUncommitted(_RelationBase):
     """This schema is used for creating an instance without an id before it is persisted into the database."""
 
+    subject: int
     role_name: str
+    object: int
 
 
 class RelationDB(_RelationBase):
     """Saved Relation representation, database internal representation."""
 
-    relation_id: int
-    # version_id: int
-    role_id: int
+    id: int
+    subject: int
+    predicate: int
+    object: int
+
+
+class RelationInternal(_RelationBase):
+    """Saved Relation representation, database internal representation."""
+
+    id: int
+    subject: int
+    role: str
+    object: int
 
 
 class Relation(_RelationBase):
     """Domain Relation representation, public facing."""
 
-    relation_id: int
-    # version_id: int
+    id: int
+    entity_one_id: int
+    entity_one_type: EntityType
+    entity_two_id: int
+    entity_two_type: EntityType
     role: str
     releases: Dict[str, int | None] | None = None
 
 
-class RelationResult(_RelationBase):
+class RelationResult(Relation):
     """Domain Search result Relation representation, public facing."""
 
-    relation_id: int
+    id: int
     role: str
     distance: int | None = None
     pages: tuple | None = None

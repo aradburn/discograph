@@ -7,22 +7,21 @@ from discograph.library.loader.loader_role import LoaderRole
 from tests.integration.library.database.repository_test_case import RepositoryTestCase
 
 
-class TestRepositoryLoaderRelationPassOne(RepositoryTestCase):
+class TestLoaderRelationPassOne(RepositoryTestCase):
     def test_loader_relation_pass_one(self):
         # GIVEN
         date = "testinsert"
-        LoaderRole().load_all_roles()
-        LoaderEntity().loader_entity_pass_one(TEST_DATA_DIR, date, is_bulk_inserts=True)
-        LoaderRelease().loader_release_pass_one(
-            TEST_DATA_DIR, date, is_bulk_inserts=True
-        )
-        LoaderEntity().loader_entity_pass_two()
-        LoaderRelease().loader_release_pass_two()
+        LoaderRole.load_all_roles()
+        LoaderEntity.loader_entity_pass_one(TEST_DATA_DIR, date, is_bulk_inserts=True)
+        LoaderRelease.loader_release_pass_one(TEST_DATA_DIR, date, is_bulk_inserts=True)
+        LoaderEntity.loader_entity_pass_two()
+        LoaderRelease.loader_release_pass_two()
 
         # WHEN
-        LoaderRelation().loader_relation_pass_one(date)
+        LoaderRelation.loader_relation_pass_one(date)
 
         # THEN
-        expected = 15814
+        expected = 16550
+        # expected = 15814
         actual = RelationRepository().count()
         self.assertEqual(expected, actual)

@@ -50,7 +50,7 @@ class LoaderRelation(LoaderBase):
     @classmethod
     @timeit
     def loader_relation_pass_two(cls, date: str):
-        log.debug(f"loader relation pass two - date: {date}")
+        log.error(f"loader relation pass two - date: {date}")
 
         with transaction():
             release_repository = ReleaseRepository()

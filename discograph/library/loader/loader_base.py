@@ -1,9 +1,8 @@
 import gzip
 import logging
-import sys
 from abc import abstractmethod
 from random import random
-from typing import List, Generator, Self
+from typing import List, Generator, Self, Any
 
 from sortedcontainers import SortedSet
 from sqlalchemy.exc import DataError
@@ -12,7 +11,7 @@ from discograph import utils
 from discograph.database import get_concurrency_count
 from discograph.library.database.base_repository import BaseRepository
 from discograph.library.fields.entity_type import EntityType
-from discograph.library.loader_utils import LoaderUtils
+from discograph.library.loader.loader_utils import LoaderUtils
 from discograph.logging_config import LOGGING_TRACE
 
 log = logging.getLogger(__name__)
@@ -57,9 +56,9 @@ class LoaderBase:
                     if skip_without:
                         if any(not data.get(_) for _ in skip_without):
                             continue
-                    if element.get("id"):
-                        data[id_attr] = element.get("id")
-                    data["random"] = random()
+                    # if element.get("id"):
+                    #     data[id_attr] = element.get("id")
+                    # data["random"] = random()
                     # log.debug(f"data: {data}")
 
                     set_of_updated_ids.add(int(data[id_attr]))
@@ -140,12 +139,10 @@ class LoaderBase:
                 batched_ids_to_be_deleted = utils.batched(
                     ids_to_be_deleted, number_in_batch
                 )
+
                 for batch_of_ids_to_be_deleted in batched_ids_to_be_deleted:
-                    batch_of_tuples_to_be_deleted = map(
-                        lambda x: (x, entity_type), batch_of_ids_to_be_deleted
-                    )
                     worker = cls.delete_bulk(
-                        batch_of_tuples_to_be_deleted,
+                        batch_of_ids_to_be_deleted,
                         len(batch_of_ids_to_be_deleted),
                     )
                     worker.start()
@@ -163,17 +160,17 @@ class LoaderBase:
 
     @classmethod
     @abstractmethod
-    def insert_bulk(cls, bulk_inserts, processed_count):
+    def insert_bulk(cls, bulk_inserts: list[dict[str, Any]], processed_count: int):
         pass
 
     @classmethod
     @abstractmethod
-    def update_bulk(cls, bulk_updates, processed_count):
+    def update_bulk(cls, bulk_updates: list[dict[str, Any]], processed_count: int):
         pass
 
     @classmethod
     @abstractmethod
-    def delete_bulk(cls, bulk_deletes, processed_count):
+    def delete_bulk(cls, bulk_deletes: list[int], processed_count: int):
         pass
 
     @classmethod
@@ -189,8 +186,7 @@ class LoaderBase:
         worker.terminate()
         if worker.exitcode > 0:
             log.error(f"worker {worker.name} exitcode: {worker.exitcode}")
-            # raise Exception("Error in worker process")
-            sys.exit()
+            raise RuntimeError("Error in worker process")
 
     @classmethod
     def load_from_xml(
@@ -200,7 +196,7 @@ class LoaderBase:
         date: str,
         xml_tag: str,
         id_attr: str,
-        skip_without: List[str],
+        skip_without: list[str],
     ) -> Generator[Self, None, None]:
         xml_path = LoaderUtils.get_xml_path(data_directory, xml_tag, date)
         log.info(f"Loading data from {xml_path}")
@@ -225,11 +221,11 @@ class LoaderBase:
         pass
 
     @classmethod
-    def preprocess_data(cls, data: dict, element) -> dict:
+    def preprocess_data(cls, data: dict, element) -> dict[str, Any]:
         return data
 
     @classmethod
-    def tags_to_fields(cls, element, ignore_none=None, mapping=None) -> dict:
+    def tags_to_fields(cls, element, ignore_none=None, mapping=None) -> dict[str, Any]:
         data = {}
         mapping = mapping or cls._tags_to_fields_mapping
         for child_element in element:

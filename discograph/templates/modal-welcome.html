@@ -9,38 +9,55 @@
                 <h3>Hello music lovers!</h3>
             </div>
             <div class="modal-body">
-        
+
                 <p>Welcome to <strong>Discograph2</strong>, an interactive
-                visualization of relationships between artists, bands and
-                labels, based on data from the <a
-                href="http://discogs.com">Discogs.com</a> database.</p>
+                    visualization of relationships between artists, bands and
+                    labels, based on data from the <a
+                            href="http://discogs.com">Discogs.com</a> database.</p>
 
                 <p>Use the search box in the right corner to look for a
-                musical entity or click on the <strong>Discograph2</strong>
-                link in the left corner to find a random artist.</p>
+                    musical artist or label. Click on the <strong>Random</strong>
+                    link in the left corner to find a random artist.</p>
 
-                <p>When the graph appears, click and drag the nodes around.
-                Double-click on any node with a plus-sign to reveal more
-                connections, or use the <em>roles</em> selector in the bottom
-                right corner to show new types of connections.</p>
+                <p>The artists and labels are shown as a graph of connected nodes and links. When the graph appears,
+                    click and drag the nodes around.
+                    Double-click on any node with a plus-sign to re-centre the graph on that node. Use the
+                    <em>roles</em> selector in the bottom
+                    right corner to show new types of connections.</p>
 
                 <p>You can also click on any selected entity's name in the
-                lower left-hand corner to open their <a
-                href="http://discogs.com">Discogs.com</a> profile, or the
-                little eye icon next to their name to pull up a graph of their
-                musical proclivities</p>
+                    lower left-hand corner to open their <a
+                            href="http://discogs.com">Discogs.com</a> profile, or the
+                    little eye icon next to their name to pull up a graph of their
+                    musical proclivities</p>
 
+                <p>Originally made in 2015 by <a href="https://github.com/josiah-wolf-oberholtzer/discograph"
+                                                 target="_blank">Josiah Wolf Oberholtzer</a>.</p>
+                <p>Updated 2023 by <a href="http://andyradburn.co.uk" target="_blank">Andy Radburn</a>.</p>
+
+                <p><strong>Discograph2</strong> is made with a little help from these great tools and packages:</p>
+
+                <ul>
+                    <li><a href="http://python.org" target="_blank">Python 3</a></li>
+                    <li><a href="http://peewee.readthedocs.org" target="_blank">Peewee</a></li>
+                    <li><a href="http://d3js.org/" target="_blank">D3</a> and <a href="http://getbootstrap.com"
+                                                                                 target="_blank">Bootstrap CSS</a></li>
+                    <li><a href="http://machina-js.org/" target="_blank">Machina-JS</a></li>
+                    <li><a href="http://flask.pocoo.org" target="_blank">Flask</a>,
+                        <a href="http://gunicorn.org/" target="_blank">Gunicorn</a> and
+                        <a href="http://supervisord.org/" target="_blank">supervisor.d</a></li>
+                </ul>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-dismiss="modal">Let's Go!</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Start</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-$(document).ready(function() {
-    $('#modal-welcome').modal('show');
-});
+    $(document).ready(function() {
+        $('#modal-welcome').modal('show');
+    });
 </script>
 {% endif %}

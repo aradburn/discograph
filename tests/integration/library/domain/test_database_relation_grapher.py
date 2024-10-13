@@ -37,7 +37,7 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
                 degree=1,
                 role_names=roles,
             )
-            network = grapher.get_relation_graph(relation_repository)
+            network = grapher.get_relation_graph(entity_repository, relation_repository)
             actual = utils.normalize_dict(network)
             log.debug(f"network: {actual}")
 
@@ -180,7 +180,7 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
                 max_nodes=5,
                 role_names=roles,
             )
-            network = grapher.get_relation_graph(relation_repository)
+            network = grapher.get_relation_graph(entity_repository, relation_repository)
             actual = utils.normalize_dict(network)
             log.debug(f"network: {actual}")
 
@@ -321,7 +321,7 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
                 link_ratio=2,
                 role_names=roles,
             )
-            network = grapher.get_relation_graph(relation_repository)
+            network = grapher.get_relation_graph(entity_repository, relation_repository)
             actual = utils.normalize_dict(network)
 
         # THEN
@@ -458,14 +458,16 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
         with transaction():
             entity_repository = EntityRepository()
             relation_repository = RelationRepository()
-            artist = entity_repository.get(entity_id, entity_type)
+            artist = entity_repository.get_by_entity_id_and_entity_type(
+                entity_id, entity_type
+            )
             roles = ["Alias", "Member Of"]
             grapher = DatabaseTestCase.relation_grapher(
                 center_entity=artist,
                 degree=12,
                 role_names=roles,
             )
-            network = grapher.get_relation_graph(relation_repository)
+            network = grapher.get_relation_graph(entity_repository, relation_repository)
             actual = utils.normalize_dict(network)
 
         expected_network = {
@@ -701,7 +703,7 @@ class TestDatabaseRelationGrapher(DatabaseTestCase):
                 degree=2,
                 role_names=roles,
             )
-            network = grapher.get_relation_graph(relation_repository)
+            network = grapher.get_relation_graph(entity_repository, relation_repository)
             actual = utils.normalize_dict(network)
 
         # THEN

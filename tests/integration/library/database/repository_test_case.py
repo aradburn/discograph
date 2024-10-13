@@ -25,7 +25,8 @@ class RepositoryTestCase(unittest.TestCase):
 
     # noinspection PyPep8Naming
     def __init__(self, methodName="runTest"):
-        if self.__class__.__name__.startswith("TestRepository"):
+        ignore_test_prefixes = ("TestRepository", "TestLoader")
+        if self.__class__.__name__.startswith(ignore_test_prefixes):
             # don't run these tests in the abstract base implementation
             methodName = "runTestIgnoreInBaseClass"
             # methodName = "runNoTestsInBaseClass"
