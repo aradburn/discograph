@@ -134,7 +134,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         query = select(EntityTable).where(
             EntityTable.search_content.match(search_string)
         )
-        log.debug(f"search: {query}")
+        # log.debug(f"search: {query}")
         return self._get_all_by_query(query)
 
     def create(self, entity: Entity) -> Entity:

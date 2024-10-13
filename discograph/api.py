@@ -25,7 +25,7 @@ blueprint = Blueprint("api", __name__, template_folder="templates")
 def route__api__entity_type__relations__entity_id(entity_type, entity_id):
     from discograph.library.database.database_helper import DatabaseHelper
 
-    log.debug(f"entityType: {entity_type}")
+    # log.debug(f"entityType: {entity_type}")
     entity_type = EntityType[entity_type.upper()]
     if entity_type not in (EntityType.ARTIST, EntityType.LABEL):
         raise BadRequestError(message="Bad Entity Type")
@@ -53,18 +53,18 @@ def route__api__entity_type__relations__entity_id(entity_type, entity_id):
 def route__api__entity_type__network__entity_id(entity_type, entity_id):
     from discograph.library.database.database_helper import DatabaseHelper
 
-    log.debug(f"entityType: {entity_type}")
+    # log.debug(f"entityType: {entity_type}")
     entity_type = EntityType[entity_type.upper()]
     if entity_type not in (
         EntityType.ARTIST,
         EntityType.LABEL,
     ):
         raise BadRequestError(message="Bad Entity Type")
-    log.debug(f"entityType: {entity_type}")
+    # log.debug(f"entityType: {entity_type}")
     if not entity_id.isnumeric():
         raise BadRequestError(message="Bad Entity Id")
     entity_id = int(entity_id)
-    log.debug(f"entity_id: {entity_id}")
+    # log.debug(f"entity_id: {entity_id}")
     parsed_args = discograph.utils.parse_request_args(request.args)
     original_roles, original_year = parsed_args
     # noinspection PyUnresolvedReferences
@@ -106,7 +106,7 @@ def route__api__random():
 
     parsed_args = discograph.utils.parse_request_args(request.args)
     original_roles, original_year = parsed_args
-    log.debug(f"Role names: {original_roles}")
+    # log.debug(f"Role names: {original_roles}")
     with transaction():
         entity_repository = EntityRepository()
         relation_repository = RelationRepository()

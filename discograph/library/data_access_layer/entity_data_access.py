@@ -402,5 +402,5 @@ class EntityDataAccess:
                         pages=None,
                     )
                     relations[relation.link_key] = relation
-        log.debug(f"            structural_roles_to_relations relations: {relations}")
+        # log.debug(f"            structural_roles_to_relations relations: {relations}")
         return relations

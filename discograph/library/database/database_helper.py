@@ -9,6 +9,7 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.sql.dml import ReturningInsert, Insert
 
 from discograph.config import Configuration
+from discograph.library.data_access_layer.entity_data_access import EntityDataAccess
 from discograph.library.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.library.database.base_table import Base, ConcreteTable
 from discograph.library.database.entity_repository import EntityRepository
@@ -333,17 +334,18 @@ class DatabaseHelper(ABC):
         from discograph.library.cache.cache_manager import cache
 
         search_query_url = URLIFY_REGEX.sub("+", search_string)
+        search_query_url = EntityDataAccess.normalise_search_content(search_query_url)
         cache_key = f"discograph:/api/search/{search_query_url}"
         log.debug(f"  get cache_key: {cache_key}")
         data = cache.get(cache_key)
         if data is not None:
-            log.debug(f"{cache_key}: CACHED")
-            for datum in data["results"]:
-                log.debug(f"    {datum}")
+            # log.debug(f"{cache_key}: CACHED")
+            # for datum in data["results"]:
+            #     log.debug(f"    {datum}")
             return data
 
         entities = entity_repository.find_by_search_content(search_string)
-        log.debug(f"{cache_key}: NOT CACHED")
+        # log.debug(f"{cache_key}: NOT CACHED")
         data = []
         for entity in entities:
             datum = dict(
@@ -353,7 +355,7 @@ class DatabaseHelper(ABC):
             data.append(datum)
             # log.debug(f"    {datum}")
         data = {"results": tuple(data)}
-        log.debug(f"  set cache_key: {cache_key} data: {data}")
+        # log.debug(f"  set cache_key: {cache_key} data: {data}")
         cache.set(cache_key, data)
         return data
 
