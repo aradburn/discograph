@@ -784,6 +784,7 @@
         transform
     }) {
         dg.network.layers.root.attr("transform", transform);
+        dg_network_node_check_tooltip()
     }
     LINK_DEBOUNCE_TIME = 250
     LINK_OUT_TRANSITION_TIME = 500
@@ -1136,6 +1137,8 @@
     }
 
     function dg_network_node_check_tooltip() {
+        nodeToolTip.hide();
+        linkToolTip.hide();
         var el = nodeToolTip.rootElement;
         //    var el = nodeToolTip.getNodeEl();
         if (el) {
@@ -1886,19 +1889,19 @@
                     return response.results;
                 },
                 rateLimitBy: 'debounce',
-                rateLimitWait: 300,
+                rateLimitWait: 1000,
             },
         });
         var inputElement = $("#typeahead");
         var loadingElement = $("#search .loading");
         inputElement.typeahead({
-                hint: true,
+                hint: false,
                 highlight: true,
-                minLength: 2,
+                minLength: 4,
             }, {
                 name: "results",
                 display: "name",
-                limit: 20,
+                limit: 100,
                 source: dg_typeahead_bloodhound,
                 templates: {
                     suggestion: function(data) {
@@ -1946,7 +1949,7 @@
         if (datum) {
             $("#typeahead").typeahead("close");
             $("#typeahead").blur();
-            $('.navbar-toggle').click();
+            //        $('.navbar-toggle').click();
             $(window).trigger({
                 type: 'discograph:request-network',
                 entityKey: datum,

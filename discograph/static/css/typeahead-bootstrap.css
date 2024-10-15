@@ -46,8 +46,9 @@ span.twitter-typeahead {
 .input-group.input-group-sm span.twitter-typeahead .tt-dropdown-menu {
   top: 28px !important;
 }
-.twitter-typeahead > .form-control{
+.twitter-typeahead > .form-control {
   width: inherit !important;
+  padding: 8px 12px;
 }
 .tt-suggestion.tt-cursor {
     color: #fff;

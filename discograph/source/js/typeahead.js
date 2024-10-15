@@ -9,20 +9,20 @@ function dg_typeahead_init() {
                 return response.results;
             },
             rateLimitBy: 'debounce',
-            rateLimitWait: 300,
+            rateLimitWait: 1000,
         },
     });
     var inputElement = $("#typeahead");
     var loadingElement = $("#search .loading");
     inputElement.typeahead(
         {
-            hint: true,
+            hint: false,
             highlight: true,
-            minLength: 2,
+            minLength: 4,
         }, {
             name: "results",
             display: "name",
-            limit: 20,
+            limit: 100,
             source: dg_typeahead_bloodhound,
             templates: {
                 suggestion: function(data) {
@@ -70,7 +70,7 @@ function dg_typeahead_navigate() {
     if (datum) {
         $("#typeahead").typeahead("close");
         $("#typeahead").blur();
-        $('.navbar-toggle').click();
+//        $('.navbar-toggle').click();
         $(window).trigger({
             type: 'discograph:request-network',
             entityKey: datum,
