@@ -230,6 +230,8 @@ function dg_network_node_tooltip(d) {
 }
 
 function dg_network_node_check_tooltip() {
+    nodeToolTip.hide();
+    linkToolTip.hide();
     var el = nodeToolTip.rootElement;
 //    var el = nodeToolTip.getNodeEl();
     if (el) {
