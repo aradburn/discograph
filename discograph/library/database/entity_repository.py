@@ -1,5 +1,4 @@
 import logging
-from random import random
 from typing import Generator, Any, cast, List
 
 from sqlalchemy import Result, select, update, Select, String, delete, func
@@ -65,8 +64,24 @@ class EntityRepository(BaseRepository[EntityTable]):
         return value
 
     def all(self) -> Generator[Entity, None, None]:
-        for instance in self._all():
-            yield Entity.model_validate(instance)
+        query = select(EntityTable)
+        with self._session.execute(
+            query, execution_options={"yield_per": 1000}
+        ) as results:
+            for partition in results.partitions():
+                # partition is an iterable that will be at most 100 items
+                for row in partition:
+                    yield Entity.model_validate(row[0])
+
+    def all_ids_and_names(self) -> Generator[tuple[int, str], None, None]:
+        query = select(EntityTable.id, EntityTable.entity_name)
+        with self._session.execute(
+            query, execution_options={"yield_per": 1000}
+        ) as results:
+            for partition in results.partitions():
+                # partition is an iterable that will be at most 1000 items
+                for row in partition:
+                    yield row
 
     def get_by_id(self, id_: int) -> Entity:
         query = select(EntityTable).where(EntityTable.id == id_)
@@ -142,18 +157,6 @@ class EntityRepository(BaseRepository[EntityTable]):
         # instance: EntityTable = await self._save(schema.model_dump())
         return Entity.model_validate(instance)
 
-    def get_chunked_entity_ids_by_type(self, entity_type: EntityType) -> list[int]:
-        from discograph.database import get_concurrency_count
-
-        all_ids = self._session.scalars(
-            select(EntityTable.id)
-            .where(EntityTable.entity_type == entity_type)
-            .order_by(EntityTable.id)
-        ).all()
-
-        num_chunks = get_concurrency_count()
-        return utils.split_list(num_chunks, all_ids)
-
     def get_by_type_and_name(self, entity_type: EntityType, entity_name: str) -> Entity:
         query = (
             select(EntityTable)
@@ -165,15 +168,14 @@ class EntityRepository(BaseRepository[EntityTable]):
         )
         return self._get_one_by_query(query)
 
-    def get_random(self) -> Entity:
-        n = random()
+    def get_random_by_id(self, id_: int) -> Entity:
         query = (
             select(EntityTable)
             .where(
-                (EntityTable.random > n)
+                (EntityTable.id == id_)
                 & (EntityTable.entity_type == EntityType.ARTIST)
-                # & (cast(EntityTable.entities, String) != "{}")
-                # & (cast(EntityTable.relation_counts, String) != "{}")
+                & (cast(EntityTable.entities, String) != "{}")
+                & (cast(EntityTable.relation_counts, String) != "{}")
                 & (
                     (EntityTable.relation_counts["Member Of"].cast(String) != "{}")
                     | (EntityTable.relation_counts["Alias"].cast(String) != "{}")
@@ -184,6 +186,26 @@ class EntityRepository(BaseRepository[EntityTable]):
             .limit(1)
         )
         return self._get_one_by_query(query)
+
+    # def get_random(self) -> Entity:
+    #     n = random()
+    #     query = (
+    #         select(EntityTable)
+    #         .where(
+    #             (EntityTable.random >= n)
+    #             & (EntityTable.entity_type == EntityType.ARTIST)
+    #             # # & (cast(EntityTable.entities, String) != "{}")
+    #             # # & (cast(EntityTable.relation_counts, String) != "{}")
+    #             # & (
+    #             #     (EntityTable.relation_counts["Member Of"].cast(String) != "{}")
+    #             #     | (EntityTable.relation_counts["Alias"].cast(String) != "{}")
+    #             #     | (EntityTable.entities["members"].cast(String) != "{}")
+    #             # )
+    #         )
+    #         .order_by(EntityTable.random)
+    #         .limit(1)
+    #     )
+    #     return self._get_one_by_query(query)
 
     def update(
         self,

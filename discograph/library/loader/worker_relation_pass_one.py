@@ -62,10 +62,10 @@ class WorkerRelationPassOne(multiprocessing.Process):
                         )
                 except NotFoundError:
                     log.debug(f"WorkerRelationPassOne release_id not found: {id_}")
-                except DatabaseError as e:
-                    log.error("Database Error in WorkerRelationPassOne")
-                    # log.exception("Database Error in WorkerRelationPassOne", e)
-                    raise e
+                except DatabaseError:
+                    log.error("Error in WorkerRelationPassOne worker")
+                    # log.exception("Error in WorkerRelationPassOne worker", exc_info=True)
+                    raise
 
                 relations = self.to_relations_from_dict(relation_dicts)
 

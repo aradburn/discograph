@@ -134,4 +134,4 @@ def main():
 if __name__ == "__main__":
     # Flask development server, not to be used in production
     main()
-    app.run(debug=True)
+    app.run(debug=False)

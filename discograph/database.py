@@ -15,6 +15,7 @@ threading_model: ThreadingModel | None = None
 
 
 def setup_database(config) -> "DatabaseHelper":
+    from discograph.library.loader.loader_entity import LoaderEntity
     from discograph.library.loader.loader_role import LoaderRole
     from discograph.library.database.database_helper import DatabaseHelper
 
@@ -78,6 +79,8 @@ def setup_database(config) -> "DatabaseHelper":
     db_helper.create_tables(ALL_DATABASE_TABLE_NAMES)
 
     LoaderRole.load_roles_into_database()
+
+    db_helper.text_search_index = LoaderEntity.loader_init_text_search_index()
 
     return db_helper
 

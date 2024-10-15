@@ -3,11 +3,14 @@ from typing import Dict, cast
 
 from discograph import utils
 from discograph.exceptions import NotFoundError
+from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.domain.entity import Entity
 from discograph.library.domain.relation import RelationResult
 from discograph.library.domain.release import Release
 from discograph.library.fields.entity_type import EntityType
+from discograph.library.full_text_search.text_search_index import TextSearchIndex
+from discograph.library.loader.loader_base import LoaderBase
 from discograph.logging_config import LOGGING_TRACE
 
 log = logging.getLogger(__name__)
@@ -16,8 +19,6 @@ log = logging.getLogger(__name__)
 class EntityDataAccess:
     CACHE_ENTRY_IS_NULL = "___"
     CACHE_KEY_SEPARATOR = "_"
-    LABEL_ENTITY_ID_OFFSET = 1000000000
-    MISSING_LABEL_ENTITY = -2000000000
 
     @staticmethod
     def resolve_entity_references(
@@ -129,10 +130,7 @@ class EntityDataAccess:
             id_ = entity_repository.get_entity_id_by_entity_type_and_entity_name(
                 entity_type, entity_name
             )
-            if id_:
-                entry["id"] = id_
-            else:
-                entry["id"] = EntityDataAccess.MISSING_LABEL_ENTITY
+            entry["id"] = Entity.to_entity_label_id(id_)
             changed = True
 
         # for entry in release.companies:
@@ -268,17 +266,6 @@ class EntityDataAccess:
     #     # log.debug(f"            corpus after : {corpus}")
 
     @staticmethod
-    def normalise_search_content(string: str) -> str:
-        string = string.lower()
-        string = utils.to_ascii(string)
-        string = utils.STRIP_PATTERN.sub("", string)
-        string = utils.REMOVE_PUNCTUATION.sub("", string)
-        return string
-        # TODO handle search
-        # tsvector = func.to_tsvector("english", string)
-        # return tsvector
-
-    @staticmethod
     def roles_to_relation_count(entity: Entity, roles) -> int:
         count = 0
         relation_counts = entity.relation_counts or {}
@@ -404,3 +391,61 @@ class EntityDataAccess:
                     relations[relation.link_key] = relation
         # log.debug(f"            structural_roles_to_relations relations: {relations}")
         return relations
+
+    @staticmethod
+    def normalise_search_content(string: str) -> str:
+        string = string.lower()
+        string = utils.to_ascii(string)
+        string = utils.STRIP_PATTERN.sub("", string)
+        string = string.strip()
+        return string
+
+    @staticmethod
+    def init_text_search_index(
+        entity_repository: EntityRepository, index: TextSearchIndex
+    ) -> None:
+        count = 0
+        for id_, entity_name in entity_repository.all_ids_and_names():
+            index.index_entry(id_, entity_name)
+            count += 1
+            if count % (LoaderBase.BULK_REPORTING_SIZE * 100) == 0:
+                log.debug(f"Indexed {count} entities")
+
+    @staticmethod
+    def search_entities(search_string):
+        from discograph.utils import URLIFY_REGEX
+        from discograph.library.cache.cache_manager import cache
+
+        normalised_search_string = EntityDataAccess.normalise_search_content(
+            search_string
+        )
+
+        search_query_url = URLIFY_REGEX.sub("+", normalised_search_string)
+        cache_key = f"discograph:/api/search/{search_query_url}"
+        # log.debug(f"  get cache_key: {cache_key}")
+        data = cache.get(cache_key)
+        if data is not None:
+            log.debug(f"{cache_key}: CACHED")
+            # for datum in data["results"]:
+            #     log.debug(f"    {datum}")
+            return data
+
+        documents = DatabaseHelper.db_helper.search_text_index(normalised_search_string)
+        # log.debug(f"search results: {documents}")
+
+        # entities = entity_repository.find_by_search_content(search_string)
+        # log.debug(f"{cache_key}: NOT CACHED")
+        data = []
+        for document in documents:
+            entity_id, entity_type = Entity.to_entity_external_id(document[0])
+            json_entity_key = Entity.to_json_entity_key(entity_id, entity_type)
+            datum = dict(
+                key=json_entity_key,
+                name=document[1],
+            )
+            data.append(datum)
+            # log.debug(f"    {datum}")
+        data = {"results": tuple(data)}
+        # log.debug(f"  set cache_key: {cache_key} data: {data}")
+        cache.set(cache_key, data)
+        return data

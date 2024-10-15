@@ -115,7 +115,7 @@ class RelationGrapher(ABC):
         distance = 0
         for distance in range(self.degree + 1):
             self.report_search_loop_start(distance)
-            log.debug(f"    Search for: {self.entity_keys_to_visit}")
+            # log.debug(f"    Search for: {self.entity_keys_to_visit}")
             entities = self.search_entities(
                 entity_repository, self.entity_keys_to_visit
             )
@@ -176,7 +176,7 @@ class RelationGrapher(ABC):
         entity_repository: EntityRepository,
         entity_keys_to_visit: set[tuple[int, EntityType]],
     ) -> List[Entity]:
-        log.debug(f"        Retrieving entities keys: {entity_keys_to_visit}")
+        # log.debug(f"        Retrieving entities keys: {entity_keys_to_visit}")
         entities: List[Entity] = []
         entity_keys_to_visit = list(entity_keys_to_visit)
         stop = len(entity_keys_to_visit)

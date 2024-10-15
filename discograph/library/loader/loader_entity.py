@@ -6,12 +6,12 @@ from sortedcontainers import SortedSet
 
 from discograph.database import get_concurrency_count
 from discograph.library.data_access_layer.entity_data_access import EntityDataAccess
-from discograph.library.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.entity_table import EntityTable
 from discograph.library.database.transaction import transaction
 from discograph.library.domain.entity import Entity
 from discograph.library.fields.entity_type import EntityType
+from discograph.library.full_text_search.text_search_index import TextSearchIndex
 from discograph.library.loader.loader_base import LoaderBase
 from discograph.library.loader.worker_entity_deleter import WorkerEntityDeleter
 from discograph.library.loader.worker_entity_inserter import WorkerEntityInserter
@@ -139,6 +139,19 @@ class LoaderEntity(LoaderBase):
             entity_repository.vacuum(has_tablename, is_full, is_analyze)
 
     @classmethod
+    @timeit
+    def loader_init_text_search_index(cls) -> TextSearchIndex:
+        log.debug(f"loader entity init text search index")
+        text_search_index = TextSearchIndex()
+
+        with transaction():
+            entity_repository = EntityRepository()
+            EntityDataAccess.init_text_search_index(
+                entity_repository, text_search_index
+            )
+        return text_search_index
+
+    @classmethod
     def element_to_names(cls, names):
         result = {}
         if names is None or not len(names):
@@ -225,7 +238,7 @@ class LoaderEntity(LoaderBase):
                 data["entity_type"] = EntityType.LABEL
             # data["element_id"] = int(element.get("id"))
             data["entity_id"] = data["id"]
-            data["id"] = RelationDataAccess.to_relation_internal_id(
+            data["id"] = Entity.to_entity_internal_id(
                 data["entity_id"], data["entity_type"]
             )
             data["random"] = random()

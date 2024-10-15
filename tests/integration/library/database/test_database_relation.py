@@ -19,10 +19,10 @@ class TestDatabaseRelation(DatabaseTestCase):
         with transaction():
             relation_repository = RelationRepository()
 
-            id_1 = RelationDataAccess.to_relation_internal_id(
+            id_1 = RelationDataAccess.to_entity_internal_id(
                 entity_one_id, entity_one_type
             )
-            id_2 = RelationDataAccess.to_relation_internal_id(
+            id_2 = RelationDataAccess.to_entity_internal_id(
                 entity_two_id, entity_two_type
             )
             print(f"id_1: {id_1}")
@@ -131,10 +131,10 @@ class TestDatabaseRelation(DatabaseTestCase):
         with transaction():
             relation_repository = RelationRepository()
 
-            id_1 = RelationDataAccess.to_relation_internal_id(
+            id_1 = RelationDataAccess.to_entity_internal_id(
                 entity_one_id, entity_one_type
             )
-            id_2 = RelationDataAccess.to_relation_internal_id(
+            id_2 = RelationDataAccess.to_entity_internal_id(
                 entity_two_id, entity_two_type
             )
             key = dict(
@@ -173,10 +173,10 @@ class TestDatabaseRelation(DatabaseTestCase):
         with transaction():
             relation_repository = RelationRepository()
 
-            id_1 = RelationDataAccess.to_relation_internal_id(
+            id_1 = RelationDataAccess.to_entity_internal_id(
                 entity_one_id, entity_one_type
             )
-            id_2 = RelationDataAccess.to_relation_internal_id(
+            id_2 = RelationDataAccess.to_entity_internal_id(
                 entity_two_id, entity_two_type
             )
             key = dict(

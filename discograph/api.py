@@ -88,14 +88,10 @@ def route__api__entity_type__network__entity_id(entity_type, entity_id):
 @blueprint.route("/search/<search_string>")
 @decorators.limit(max_requests=120, period=60)
 def route__api__search(search_string):
-    from discograph.library.database.database_helper import DatabaseHelper
+    from discograph.library.data_access_layer.entity_data_access import EntityDataAccess
 
     log.debug(f"search_string: {search_string}")
-    with transaction():
-        entity_repository = EntityRepository()
-        data = DatabaseHelper.db_helper.search_entities(
-            entity_repository, search_string
-        )
+    data = EntityDataAccess.search_entities(search_string)
     return jsonify(data)
 
 

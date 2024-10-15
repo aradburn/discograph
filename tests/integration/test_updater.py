@@ -558,12 +558,8 @@ class TestUpdater(UpdaterTestCase):
         entity_two_type = EntityType.ARTIST
         role = "Producer"
 
-        id_1 = RelationDataAccess.to_relation_internal_id(
-            entity_one_id, entity_one_type
-        )
-        id_2 = RelationDataAccess.to_relation_internal_id(
-            entity_two_id, entity_two_type
-        )
+        id_1 = RelationDataAccess.to_entity_internal_id(entity_one_id, entity_one_type)
+        id_2 = RelationDataAccess.to_entity_internal_id(entity_two_id, entity_two_type)
         key = dict(
             subject=id_1,
             role=role,
@@ -602,12 +598,8 @@ class TestUpdater(UpdaterTestCase):
         entity_two_type = EntityType.LABEL
         role = "Released On"
 
-        id_1 = RelationDataAccess.to_relation_internal_id(
-            entity_one_id, entity_one_type
-        )
-        id_2 = RelationDataAccess.to_relation_internal_id(
-            entity_two_id, entity_two_type
-        )
+        id_1 = RelationDataAccess.to_entity_internal_id(entity_one_id, entity_one_type)
+        id_2 = RelationDataAccess.to_entity_internal_id(entity_two_id, entity_two_type)
         key = dict(
             subject=id_1,
             role=role,
@@ -646,12 +638,8 @@ class TestUpdater(UpdaterTestCase):
         entity_two_type = EntityType.ARTIST
         role = "Producer"
 
-        id_1 = RelationDataAccess.to_relation_internal_id(
-            entity_one_id, entity_one_type
-        )
-        id_2 = RelationDataAccess.to_relation_internal_id(
-            entity_two_id, entity_two_type
-        )
+        id_1 = RelationDataAccess.to_entity_internal_id(entity_one_id, entity_one_type)
+        id_2 = RelationDataAccess.to_entity_internal_id(entity_two_id, entity_two_type)
         key = dict(
             subject=id_1,
             role=role,
@@ -690,12 +678,8 @@ class TestUpdater(UpdaterTestCase):
         entity_two_type = EntityType.ARTIST
         role = "Design"
 
-        id_1 = RelationDataAccess.to_relation_internal_id(
-            entity_one_id, entity_one_type
-        )
-        id_2 = RelationDataAccess.to_relation_internal_id(
-            entity_two_id, entity_two_type
-        )
+        id_1 = RelationDataAccess.to_entity_internal_id(entity_one_id, entity_one_type)
+        id_2 = RelationDataAccess.to_entity_internal_id(entity_two_id, entity_two_type)
         key = dict(
             subject=id_1,
             role=role,

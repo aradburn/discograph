@@ -42,9 +42,10 @@ class WorkerReleasePassTwo(multiprocessing.Process):
                         id_=id_,
                         annotation=proc_name,
                     )
-                except DatabaseError as e:
-                    log.exception("Database Error in WorkerReleasePassTwo:", e)
-                    raise e
+                except DatabaseError:
+                    log.error("Error in WorkerReleasePassTwo worker")
+                    # log.exception("Error in WorkerReleasePassTwo worker", exc_info=True)
+                    raise
 
             count += 1
             if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == end_count:

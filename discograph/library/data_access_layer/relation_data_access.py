@@ -3,10 +3,10 @@ import logging
 from typing import List, Dict, Any
 
 from discograph.exceptions import NotFoundError
-from discograph.library.data_access_layer.entity_data_access import EntityDataAccess
 from discograph.library.data_access_layer.role_data_access import RoleDataAccess
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.relation_repository import RelationRepository
+from discograph.library.domain.entity import Entity
 from discograph.library.domain.relation import Relation, RelationInternal
 from discograph.library.domain.release import Release
 from discograph.library.fields.entity_type import EntityType
@@ -61,11 +61,14 @@ class RelationDataAccess:
             for role_str in role_strs_list:
                 role_name = RoleDataAccess.find_role(role_str)
                 if role_name is not None:
+                    object_id = Entity.to_entity_internal_id(
+                        company["id"], EntityType.LABEL
+                    )
                     triples.add(
                         (
                             subject_id,
                             role_name,
-                            company["id"] + EntityDataAccess.LABEL_ENTITY_ID_OFFSET,
+                            object_id,
                         )
                     )
 
@@ -126,12 +129,16 @@ class RelationDataAccess:
         # log.debug(f"get_release_setup artists: {artist_pks}")
         label_ids: set[int] = set()
         for label in release.labels:
-            label_id = label.get("id")
-            if label_id:
-                if label_id != EntityDataAccess.MISSING_LABEL_ENTITY:
-                    label_ids.add(label_id + EntityDataAccess.LABEL_ENTITY_ID_OFFSET)
-                else:
-                    label_ids.add(label_id)
+            entity_id = label.get("id")
+            label_internal_id = Entity.to_entity_internal_id(
+                entity_id, EntityType.LABEL
+            )
+            label_ids.add(label_internal_id)
+            # if label_id:
+            #     if label_id != EntityDataAccess.MISSING_LABEL_ENTITY:
+            #         label_ids.add(label_id + EntityDataAccess.LABEL_ENTITY_ID_OFFSET)
+            #     else:
+            #         label_ids.add(label_id)
 
         # log.debug(f"get_release_setup labels: {label_pks}")
         if len(artist_ids) == 1 and release.artists[0]["name"] == "Various":
@@ -301,13 +308,6 @@ class RelationDataAccess:
     ) -> list[Relation]:
         pass
 
-    @classmethod
-    def to_relation_internal_id(cls, entity_id: int, entity_type: EntityType) -> int:
-        if entity_type == EntityType.ARTIST:
-            return entity_id
-        else:
-            return entity_id + EntityDataAccess.LABEL_ENTITY_ID_OFFSET
-
     # @classmethod
     # def to_relation_external_id(cls, id: int) -> int:
     #     if entity_type == EntityType.ARTIST:
@@ -318,28 +318,12 @@ class RelationDataAccess:
     @classmethod
     def to_relation(cls, relation_internal: RelationInternal) -> Relation | None:
         try:
-            if relation_internal.subject == EntityDataAccess.MISSING_LABEL_ENTITY:
-                entity_one_id = -1
-                entity_one_type = EntityType.LABEL
-            elif relation_internal.subject >= EntityDataAccess.LABEL_ENTITY_ID_OFFSET:
-                entity_one_id = (
-                    relation_internal.subject - EntityDataAccess.LABEL_ENTITY_ID_OFFSET
-                )
-                entity_one_type = EntityType.LABEL
-            else:
-                entity_one_id = relation_internal.subject
-                entity_one_type = EntityType.ARTIST
-            if relation_internal.object == EntityDataAccess.MISSING_LABEL_ENTITY:
-                entity_two_id = -1
-                entity_two_type = EntityType.LABEL
-            elif relation_internal.object >= EntityDataAccess.LABEL_ENTITY_ID_OFFSET:
-                entity_two_id = (
-                    relation_internal.object - EntityDataAccess.LABEL_ENTITY_ID_OFFSET
-                )
-                entity_two_type = EntityType.LABEL
-            else:
-                entity_two_id = relation_internal.object
-                entity_two_type = EntityType.ARTIST
+            entity_one_id, entity_one_type = Entity.to_entity_external_id(
+                relation_internal.subject
+            )
+            entity_two_id, entity_two_type = Entity.to_entity_external_id(
+                relation_internal.object
+            )
             return Relation(
                 id=relation_internal.id,
                 entity_one_id=entity_one_id,

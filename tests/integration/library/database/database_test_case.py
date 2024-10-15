@@ -13,6 +13,7 @@ from discograph.config import (
 )
 from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.library.database.database_helper import DatabaseHelper
+from discograph.library.loader.loader_entity import LoaderEntity
 from discograph.library.relation_grapher import RelationGrapher
 from discograph.logging_config import setup_logging, shutdown_logging
 
@@ -26,7 +27,14 @@ class DatabaseTestCase(unittest.TestCase):
 
     # noinspection PyPep8Naming
     def __init__(self, methodName="runTest"):
-        if self.__class__.__name__.startswith("TestDatabase"):
+        ignore_test_prefixes = (
+            "TestDatabase",
+            "TestEntity",
+            "TestRelease",
+            "TestRelation",
+            "TestRole",
+        )
+        if self.__class__.__name__.startswith(ignore_test_prefixes):
             # don't run these tests in the abstract base implementation
             methodName = "runTestIgnoreInBaseClass"
             # methodName = "runNoTestsInBaseClass"
@@ -54,6 +62,9 @@ class DatabaseTestCase(unittest.TestCase):
                 # LoaderRole.load_roles_into_database()
                 cls._db_helper.load_tables(
                     TEST_DATA_DIR, "testinsert", is_bulk_inserts=True
+                )
+                cls._db_helper.text_search_index = (
+                    LoaderEntity.loader_init_text_search_index()
                 )
 
     @classmethod

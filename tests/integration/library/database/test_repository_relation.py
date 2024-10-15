@@ -34,10 +34,10 @@ class TestRepositoryRelation(RepositoryTestCase):
             created_entity_2 = repository.create(entity_2)
             print(f"created_entity_2: {created_entity_2}")
 
-        id_1 = RelationDataAccess.to_relation_internal_id(
+        id_1 = RelationDataAccess.to_entity_internal_id(
             created_entity_1.entity_id, created_entity_1.entity_type
         )
-        id_2 = RelationDataAccess.to_relation_internal_id(
+        id_2 = RelationDataAccess.to_entity_internal_id(
             created_entity_2.entity_id, created_entity_2.entity_type
         )
         relation = RelationInternal(

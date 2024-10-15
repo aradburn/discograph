@@ -45,7 +45,7 @@ class TestAPI(AppTestCase):
         self.assertCountEqual(expected["results"], actual["results"])
 
     def test_search_02(self):
-        response = self.app.get("/api/search/Chris+Morris")
+        response = self.app.get("/api/search/Chris%20Morris")
         self.assertEqual("200 OK", response.status)
 
         actual = json.loads(response.data.decode("utf-8"))

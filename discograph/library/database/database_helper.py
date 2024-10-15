@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.sql.dml import ReturningInsert, Insert
 
 from discograph.config import Configuration
-from discograph.library.data_access_layer.entity_data_access import EntityDataAccess
+from discograph.exceptions import NotFoundError
 from discograph.library.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.library.database.base_table import Base, ConcreteTable
 from discograph.library.database.entity_repository import EntityRepository
@@ -19,6 +19,7 @@ from discograph.library.database.relation_release_year_repository import (
 from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.domain.relation import Relation
 from discograph.library.fields.entity_type import EntityType
+from discograph.library.full_text_search.text_search_index import TextSearchIndex
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +39,10 @@ class DatabaseHelper(ABC):
     db_helper: Type["DatabaseHelper"] | None = None
     idx_entity_one_id: Index | None = None
     idx_entity_two_id: Index | None = None
+
+    text_search_index: TextSearchIndex
+
+    entity_count_cached = 0
 
     MAX_NODES = 400
     MAX_NODES_MOBILE = 25
@@ -298,11 +303,21 @@ class DatabaseHelper(ABC):
             counter = 0
 
             while True:
-                entity = entity_repository.get_random()
+                if DatabaseHelper.entity_count_cached == 0:
+                    DatabaseHelper.entity_count_cached = entity_repository.count()
+                random_id = random.randint(1, DatabaseHelper.entity_count_cached)
+                try:
+                    entity = entity_repository.get_random_by_id(random_id)
+                    # entity = entity_repository.get_by_id(random_id)
+                except NotFoundError:
+                    counter += 1
+                    entity = None
+                    continue
+
                 relation_counts = entity.relation_counts
                 entities = entity.entities
                 # log.debug(f"relation_counts: {relation_counts}")
-                counter = counter + 1
+                counter += 1
                 if entity.entity_type == EntityType.LABEL:
                     log.debug("random skip label")
                     continue
@@ -315,49 +330,23 @@ class DatabaseHelper(ABC):
                     )
                     and entity.entity_type == EntityType.ARTIST
                 ):
-                    log.debug(f"random node: {entity}")
+                    log.debug(f"random node: {entity} counter: {counter}")
                     break
                 else:
-                    log.debug(f"random fail: {entity}")
+                    log.debug(f"random fail: {entity} counter: {counter}")
 
                 if counter >= 1000:
                     log.debug("random count expired")
                     break
 
-            entity_id, entity_type = entity.entity_id, entity.entity_type
+            if entity:
+                entity_id, entity_type = entity.entity_id, entity.entity_type
+            else:
+                entity_id = 0
+                entity_type = EntityType.ARTIST
+
         assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
         return entity_id, entity_type
-
-    @staticmethod
-    def search_entities(entity_repository: EntityRepository, search_string):
-        from discograph.utils import URLIFY_REGEX
-        from discograph.library.cache.cache_manager import cache
-
-        search_query_url = URLIFY_REGEX.sub("+", search_string)
-        search_query_url = EntityDataAccess.normalise_search_content(search_query_url)
-        cache_key = f"discograph:/api/search/{search_query_url}"
-        log.debug(f"  get cache_key: {cache_key}")
-        data = cache.get(cache_key)
-        if data is not None:
-            # log.debug(f"{cache_key}: CACHED")
-            # for datum in data["results"]:
-            #     log.debug(f"    {datum}")
-            return data
-
-        entities = entity_repository.find_by_search_content(search_string)
-        # log.debug(f"{cache_key}: NOT CACHED")
-        data = []
-        for entity in entities:
-            datum = dict(
-                key=entity.json_entity_key,
-                name=entity.entity_name,
-            )
-            data.append(datum)
-            # log.debug(f"    {datum}")
-        data = {"results": tuple(data)}
-        # log.debug(f"  set cache_key: {cache_key} data: {data}")
-        cache.set(cache_key, data)
-        return data
 
     @classmethod
     def get_relations_by_entity_id_and_entity_type(
@@ -410,3 +399,7 @@ class DatabaseHelper(ABC):
                 relation_release_year.year
             )
         return relation
+
+    @classmethod
+    def search_text_index(cls, search_text):
+        return cls.text_search_index.search(search_text)
