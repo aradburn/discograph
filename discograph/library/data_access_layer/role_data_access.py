@@ -28,6 +28,7 @@ class RoleDataAccess:
 
     ALTERNATIVES = {
         "arranger": "Arranged By",
+        "arrangements": "Arranged By",
         "art": "Artwork",
         "beat": "Beats",
         "cgi": "CGI",
@@ -37,10 +38,13 @@ class RoleDataAccess:
         "darbouka": "Darbuka",
         "dj": "DJ",
         "dj mix": "DJ Mix",
+        "ft": "Featuring",
         "lyrics": "Lyrics By",
         "mixed": "Mixed By",
         "keys": "Keyboards",
         "Kurai": "Quray",
+        "mix": "Mixed By",
+        "mixer": "Mixed By",
         "mixing": "Mixed By",
         "music": "Music By",
         "programmer": "Programmed By",
@@ -53,8 +57,10 @@ class RoleDataAccess:
         "vocalist": "Vocals",
         "vocal": "Vocals",
         "vibes": "Vibraphone",
+        "voices": "Vocals",
         "vox": "Vocals",
         "writer": "Written By",
+        "writing": "Written By",
         "words": "Words By",
     }
 
