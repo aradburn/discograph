@@ -8,7 +8,6 @@ from flask import make_response
 from flask import render_template
 from flask import request
 from flask_compress import Compress
-from flask_mobility import Mobility
 from sqlalchemy.orm import scoped_session, sessionmaker
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -36,7 +35,7 @@ def setup_application():
     app.register_blueprint(api.blueprint, url_prefix="/api")
     app.register_blueprint(ui.blueprint)
     app.wsgi_app = ProxyFix(app.wsgi_app)
-    Mobility(app)
+    # Mobility(app)
     Compress(app)
     DatabaseHelper.flask_db_session = scoped_session(
         sessionmaker(autocommit=False, autoflush=False, bind=DatabaseHelper.engine)

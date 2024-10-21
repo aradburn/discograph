@@ -15,7 +15,6 @@ threading_model: ThreadingModel | None = None
 
 
 def setup_database(config) -> "DatabaseHelper":
-    from discograph.library.loader.loader_entity import LoaderEntity
     from discograph.library.loader.loader_role import LoaderRole
     from discograph.library.database.database_helper import DatabaseHelper
 

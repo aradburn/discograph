@@ -1,23 +1,41 @@
-[build-system]
-requires = ["setuptools>=70.0"]
-build-backend = "setuptools.build_meta"
-
-[project]
+[tool.poetry]
 name = "discograph"
-version = "2.0.1"
-authors = [
-    { name = "Andrew Radburn", email = "andy.radburn@outlook.com" },
-    { name = "Josiah Wolf Oberholtzer", email = "josiah.oberholtzer@gmail.com" },
-]
+version = "2.1.0"
 description = "Interactive visualization of the Discogs database"
-readme = "README.md"
-requires-python = ">=3.12"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+authors = [
+    "Andy Radburn <andy.radburn@outlook.com>",
+    "Josiah Wolf Oberholtzer <josiah.oberholtzer@gmail.com>",
 ]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+luigi = "^3.5.2"
+sqlalchemy = "^2.0.36"
+pg-temp = "^0.9.1"
+fakeredis = "^2.25.1"
+psycopg2-binary = "^2.9.10"
+pydantic = "^2.9.2"
+pytest = "^8.3.3"
+deepdiff = "^8.0.1"
+python-dateutil = "^2.9.0.post0"
+requests = "^2.32.3"
+rapidfuzz = "^3.10.0"
+toolz = "^1.0.0"
+flask-compress = "^1.17"
+flask-caching = "^2.3.0"
+unidecode = "^1.3.8"
+python-dotenv = "^1.0.1"
+flask = "^3.0.3"
+starlette = "^0.41.0"
+uvicorn = "^0.32.0"
 
 [project.urls]
 Homepage = "https://github.com/aradburn/discograph"
 Issues = "https://github.com/aradburn/discograph/issues"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -35,8 +35,8 @@ class LoaderSetupTask(luigi.Task):
 
     def run(self):
         log.debug(f"Running loader setup task: {self.task_id}")
-        logger1 = logging.getLogger("luigi")
-        logger2 = logging.getLogger("luigi-interface")
+        # logger1 = logging.getLogger("luigi")
+        # logger2 = logging.getLogger("luigi-interface")
         # log.debug(f"logger1: {logger1}")
         # log.debug(f"logger2: {logger2}")
         logging.getLogger("luigi").handlers = logging.getLogger("discograph").handlers

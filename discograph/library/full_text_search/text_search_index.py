@@ -1,6 +1,5 @@
 import logging
 import math
-import sys
 from collections import Counter
 
 from discograph.utils import calculate_size

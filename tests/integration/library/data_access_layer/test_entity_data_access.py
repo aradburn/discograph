@@ -14,7 +14,7 @@ class TestEntityDataAccess(DatabaseTestCase):
             entity_repository = EntityRepository()
             EntityDataAccess.init_text_search_index(entity_repository, index)
 
-        self.assertEqual(7128, len(index.index.items()))
+        self.assertEqual(7312, len(index.index.items()))
         self.assertEqual(6216, len(index.documents.items()))
 
     # def test_text_search_lookup(self):

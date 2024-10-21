@@ -2,7 +2,6 @@
 This module is responsible for describing internal application errors.
 """
 
-
 from typing import Any
 
 from starlette import status
@@ -49,9 +48,7 @@ class UnprocessableError(BaseError):
         any sorts of conditions.
         """
 
-        super().__init__(
-            message=message, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
-        )
+        super().__init__(message=message, status_code=status.HTTP_406_NOT_ACCEPTABLE)
 
 
 class NotFoundError(BaseError):

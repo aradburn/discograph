@@ -126,34 +126,6 @@ def split_list(num_chunks: int, seq) -> list[Any]:
 
 
 def normalize(argument: str, indent: int | str | None = None) -> str:
-    """
-    Normalizes string.
-
-    ..  container:: example
-
-        >>> string = r'''
-        ...     foo
-        ...         bar
-        ... '''
-        >>> print(string)
-        <BLANKLINE>
-            foo
-                bar
-        <BLANKLINE>
-
-        >>> print(utils.normalize(string))
-        foo
-            bar
-
-        >>> print(utils.normalize(string, indent=4))
-            foo
-                bar
-
-        >>> print(utils.normalize(string, indent='* '))
-        * foo
-        *     bar
-
-    """
     string = argument.replace("\t", "    ")
     lines = string.split("\n")
     while lines and (not lines[0] or lines[0].isspace()):

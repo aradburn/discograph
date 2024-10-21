@@ -4,6 +4,7 @@ from discograph.library.data_access_layer.relation_data_access import RelationDa
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.database.transaction import transaction
+from discograph.library.domain.entity import Entity
 from discograph.library.domain.relation import (
     Relation,
     RelationInternal,
@@ -34,10 +35,10 @@ class TestRepositoryRelation(RepositoryTestCase):
             created_entity_2 = repository.create(entity_2)
             print(f"created_entity_2: {created_entity_2}")
 
-        id_1 = RelationDataAccess.to_entity_internal_id(
+        id_1 = Entity.to_entity_internal_id(
             created_entity_1.entity_id, created_entity_1.entity_type
         )
-        id_2 = RelationDataAccess.to_entity_internal_id(
+        id_2 = Entity.to_entity_internal_id(
             created_entity_2.entity_id, created_entity_2.entity_type
         )
         relation = RelationInternal(
