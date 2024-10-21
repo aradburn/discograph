@@ -1,11 +1,28 @@
 import logging
 import math
+import sys
 from collections import Counter
+
+from discograph.utils import calculate_size
 
 log = logging.getLogger(__name__)
 
 
 class TextSearchIndex:
+    STOP_WORDS = {
+        "the",
+        "and",
+        "a",
+        "of",
+        "studio",
+        "studios",
+        "productions",
+        "music",
+        "records",
+        "recordings",
+        "entertainment",
+    }
+
     def __init__(self):
         self.index: dict[str, set[int]] = {}
         self.documents: dict[int, str] = {}
@@ -20,6 +37,8 @@ class TextSearchIndex:
 
         normalised_text = EntityDataAccess.normalise_search_content(text)
         for token in normalised_text.split():
+            if token in TextSearchIndex.STOP_WORDS:
+                continue
             if token not in self.index:
                 self.index[token] = set[int]()
             self.index[token].add(id_)
@@ -82,6 +101,8 @@ class TextSearchIndex:
 
             score = 0.0
             for token in analyzed_query:
+                if token in TextSearchIndex.STOP_WORDS:
+                    continue
                 tf = term_frequencies.get(token, 0)
                 # tf = document.term_frequency(token)
                 idf = self.inverse_document_frequency(token)
@@ -89,3 +110,21 @@ class TextSearchIndex:
             results.append((document, score))
         ranked = sorted(results, key=lambda doc: doc[1], reverse=True)
         return [ranked_item[0] for ranked_item in ranked]
+
+    def list_stop_words(self) -> list[str]:
+        results = {}
+        for key, words in self.index.items():
+            if len(words) > 10000:
+                # print(f"{key}: {len(words)}")
+                results[key] = len(words)
+        log.debug(f"found {len(results)} stop words")
+        sorted_results = sorted(results.items(), key=lambda item: int(item[1]))
+        for entry in sorted_results:
+            print(f"{entry[0]}: {entry[1]}")
+        return list(results.keys())
+
+    def print_sizes(self) -> None:
+        size_index = calculate_size(self.index)
+        size_documents = calculate_size(self.documents)
+        log.debug(f"size of index    : {size_index}")
+        log.debug(f"size of documents: {size_documents}")

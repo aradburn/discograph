@@ -39,9 +39,9 @@ def loader_main():
     atexit.register(shutdown_database, config)
 
     # Run the loader process between these dates
-    start_date = datetime.date(2024, 6, 1)
+    start_date = datetime.date(2024, 7, 1)
     # start_date = datetime.date(2023, 10, 1)
-    end_date = datetime.date(2024, 6, 1)
+    end_date = datetime.date(2024, 7, 1)
     # end_date = datetime.datetime.now()
     tasks = [LoaderSetupTask(start_date=start_date, end_date=end_date)]
     luigi_run_result = luigi.build(

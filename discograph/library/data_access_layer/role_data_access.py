@@ -26,6 +26,38 @@ class RoleDataAccess:
     BRACKETS = re.compile(r"[({\[［].*[)}\]］]")
     DIGITS_AND_SPECIAL_CHARACTERS = re.compile(r"^\d+[-.)]*$|^[-*+.?/!`—•]+$")
 
+    ALTERNATIVES = {
+        "arranger": "Arranged By",
+        "art": "Artwork",
+        "beat": "Beats",
+        "cgi": "CGI",
+        "cgi artist": "CGI Artist",
+        "composer": "Composed By",
+        "conducted by": "Conductor",
+        "darbouka": "Darbuka",
+        "dj": "DJ",
+        "dj mix": "DJ Mix",
+        "lyrics": "Lyrics By",
+        "mixed": "Mixed By",
+        "keys": "Keyboards",
+        "Kurai": "Quray",
+        "mixing": "Mixed By",
+        "music": "Music By",
+        "programmer": "Programmed By",
+        "remiz": "Remix",
+        "remixer": "Remixed By",
+        "rythm": "Rhythm",
+        "singer": "Vocals",
+        "sax": "Saxophone",
+        "synths": "Synthesizers",
+        "vocalist": "Vocals",
+        "vocal": "Vocals",
+        "vibes": "Vibraphone",
+        "vox": "Vocals",
+        "writer": "Written By",
+        "words": "Words By",
+    }
+
     @staticmethod
     def normalise_role_names(input_name: str) -> List[str]:
         # original_name = input_name
@@ -437,29 +469,7 @@ class RoleDataAccess:
     def substitute_role_alternatives(role_name: str) -> str:
         # Replacements
         role_name_lower = role_name.lower()
-        if role_name_lower == "art":
-            role_name = "Artwork"
-        elif role_name_lower == "dj":
-            role_name = "DJ"
-        elif role_name_lower == "cgi":
-            role_name = "CGI"
-        elif role_name_lower == "dj mix":
-            role_name = "DJ Mix"
-        elif role_name_lower == "cgi artist":
-            role_name = "CGI Artist"
-        elif role_name_lower == "vibes":
-            role_name = "Vibraphone"
-        elif role_name_lower == "remiz":
-            role_name = "Remix"
-        elif role_name_lower == "mixing":
-            role_name = "Mixed By"
-        elif (
-            role_name_lower == "singer"
-            or role_name_lower == "vox"
-            or role_name_lower == "vocalist"
-        ):
-            role_name = "Vocals"
-        elif role_name_lower == "rythm":
-            role_name = "Rhythm"
-
+        for alt in RoleDataAccess.ALTERNATIVES.items():
+            if role_name_lower == alt[0]:
+                return alt[1]
         return role_name

@@ -397,6 +397,14 @@ class EntityDataAccess:
         string = string.lower()
         string = utils.to_ascii(string)
         string = utils.STRIP_PATTERN.sub("", string)
+        string = string.replace("not on label", "")
+        string = string.replace("self released", "")
+        string = string.replace("self-released", "")
+        string = string.replace("(", "")
+        string = string.replace(")", "")
+        string = string.replace("&", "")
+        string = string.replace('"', "")
+        string = string.replace(".", "")
         string = string.strip()
         return string
 
@@ -410,6 +418,7 @@ class EntityDataAccess:
             count += 1
             if count % (LoaderBase.BULK_REPORTING_SIZE * 100) == 0:
                 log.debug(f"Indexed {count} entities")
+        index.print_sizes()
 
     @staticmethod
     def search_entities(search_string):

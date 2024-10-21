@@ -5,6 +5,7 @@ import logging
 import math
 import re
 import shutil
+import sys
 import textwrap
 import time
 import unicodedata
@@ -345,3 +346,27 @@ def get_discogs_dump_dates(start_date: date, end_date: date) -> List[date]:
         date_list.append(month_date)
         curr_date += relativedelta(months=1)
     return date_list
+
+
+def calculate_size(obj):
+    size = sys.getsizeof(obj)
+    if isinstance(obj, dict):
+        size += sum(calculate_size(v) for v in obj.values())
+        size += sum(calculate_size(k) for k in obj.keys())
+    elif isinstance(obj, (list, tuple, set)):
+        size += sum(calculate_size(v) for v in obj)
+    elif isinstance(obj, bytes):
+        size += len(obj)
+    elif isinstance(obj, str):
+        size += len(obj.encode("utf-8"))
+    elif isinstance(obj, type(None)):
+        size += 0
+    elif isinstance(obj, (int, float)):
+        size += sys.getsizeof(obj)
+    else:
+        size += sum(
+            calculate_size(getattr(obj, attr))
+            for attr in dir(obj)
+            if not callable(getattr(obj, attr)) and not attr.startswith("__")
+        )
+    return size

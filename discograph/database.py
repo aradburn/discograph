@@ -80,8 +80,6 @@ def setup_database(config) -> "DatabaseHelper":
 
     LoaderRole.load_roles_into_database()
 
-    db_helper.text_search_index = LoaderEntity.loader_init_text_search_index()
-
     return db_helper
 
 

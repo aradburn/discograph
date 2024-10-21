@@ -20,6 +20,7 @@ from discograph.database import setup_database, shutdown_database
 from discograph.exceptions import NotFoundError, BaseError
 from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
 from discograph.library.database.database_helper import DatabaseHelper
+from discograph.library.loader.loader_entity import LoaderEntity
 from discograph.logging_config import setup_logging, shutdown_logging
 
 log = logging.getLogger(__name__)
@@ -126,6 +127,10 @@ def main():
     setup_cache(config)
     setup_database(config)
     setup_application()
+    DatabaseHelper.db_helper.text_search_index = (
+        LoaderEntity.loader_init_text_search_index()
+    )
+
     # Note reverse order (last in first out), logging is the last to be shutdown
     atexit.register(shutdown_logging)
     atexit.register(shutdown_cache)
