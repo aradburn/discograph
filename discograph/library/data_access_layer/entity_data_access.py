@@ -1,5 +1,9 @@
 import logging
+import re
+from math import tanh
 from typing import Dict, cast
+
+import rapidfuzz
 
 from discograph import utils
 from discograph.exceptions import NotFoundError
@@ -405,6 +409,7 @@ class EntityDataAccess:
         string = string.replace("&", "")
         string = string.replace('"', "")
         string = string.replace(".", "")
+        string = string.replace(",", "")
         string = string.strip()
         return string
 
@@ -442,10 +447,13 @@ class EntityDataAccess:
         documents = DatabaseHelper.db_helper.search_text_index(normalised_search_string)
         # log.debug(f"search results: {documents}")
 
-        # entities = entity_repository.find_by_search_content(search_string)
+        sorted_documents = EntityDataAccess.sort_search_results(
+            search_string, documents
+        )
+
         # log.debug(f"{cache_key}: NOT CACHED")
         data = []
-        for document in documents:
+        for document in sorted_documents:
             entity_id, entity_type = Entity.to_entity_external_id(document[0])
             json_entity_key = Entity.to_json_entity_key(entity_id, entity_type)
             datum = dict(
@@ -453,8 +461,50 @@ class EntityDataAccess:
                 name=document[1],
             )
             data.append(datum)
-            # log.debug(f"    {datum}")
+            log.debug(f"    {datum}")
         data = {"results": tuple(data)}
         # log.debug(f"  set cache_key: {cache_key} data: {data}")
         cache.set(cache_key, data)
         return data
+
+    @staticmethod
+    def sort_search_results(
+        search_string: str,
+        documents: list[tuple[int, str]],
+    ) -> list[tuple[int, str]]:
+        scored_documents: list[tuple[float, tuple[int, str]]] = list()
+        for document in documents:
+            candidate_name = document[1]
+            score = rapidfuzz.distance.JaroWinkler.normalized_distance(
+                search_string, candidate_name
+            )
+
+            matched_digits = re.match(r"(.*) \((\d+)\)", candidate_name)
+
+            # Boost candidates that match and order by the number in brackets
+            # eg. Test (1) is better than Test (23)
+            if matched_digits:
+                digits = matched_digits.group(2)
+                if matched_digits.group(1) == search_string:
+                    score += 1.0 + (100.0 - int(digits))
+
+            # Boost candidates that start with the given search string
+            if candidate_name.lower().startswith(search_string.lower()):
+                score += 1
+
+            # Boost candidates that are an exact match
+            if candidate_name.lower() == search_string.lower():
+                score += 100.0
+
+            # Penalise candidates that differ in length (longer or shorter)
+            len_diff = abs(len(candidate_name) - len(search_string)) / 100.0
+            score -= len_diff
+
+            scored_documents.append((score, document))
+        sorted_documents = sorted(
+            scored_documents,
+            key=lambda scored_document: scored_document[0],
+            reverse=True,
+        )
+        result_documents = [sorted_document[1] for sorted_document in sorted_documents]
+        return result_documents

@@ -28,7 +28,7 @@ app: Flask = Flask(__name__.split(".")[0])
 # app: Flask = Flask(__name__)
 
 
-def setup_application():
+def setup_application() -> None:
     global app
 
     app.register_blueprint(api.blueprint, url_prefix="/api")
