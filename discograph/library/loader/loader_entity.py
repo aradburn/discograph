@@ -1,9 +1,12 @@
 import logging
+import pickle
+from pathlib import Path
 from random import random
 from typing import Any
 
 from sortedcontainers import SortedSet
 
+from discograph.config import TEXT_SEARCH_PATH
 from discograph.database import get_concurrency_count
 from discograph.library.data_access_layer.entity_data_access import EntityDataAccess
 from discograph.library.database.entity_repository import EntityRepository
@@ -142,6 +145,18 @@ class LoaderEntity(LoaderBase):
     @timeit
     def loader_init_text_search_index(cls) -> TextSearchIndex:
         log.debug(f"loader entity init text search index")
+
+        try:
+            text_search_index = cls.load_text_search_index_from_file(TEXT_SEARCH_PATH)
+        except FileNotFoundError:
+            text_search_index = cls.loader_init_text_search_index_from_database()
+            cls.save_text_search_index_to_file(TEXT_SEARCH_PATH, text_search_index)
+        return text_search_index
+
+    @classmethod
+    @timeit
+    def loader_init_text_search_index_from_database(cls) -> TextSearchIndex:
+        log.debug(f"loader entity init text search index from database")
         text_search_index = TextSearchIndex()
 
         with transaction():
@@ -150,6 +165,31 @@ class LoaderEntity(LoaderBase):
                 entity_repository, text_search_index
             )
         return text_search_index
+
+    @classmethod
+    @timeit
+    def load_text_search_index_from_file(cls, filename: Path) -> TextSearchIndex:
+        log.debug(f"load text search index from file: {filename}")
+
+        # open a file, where you stored the pickled data
+        with open(filename, "rb") as file:
+            # read pickle dump information from that file
+            text_search_index: TextSearchIndex = pickle.load(file)
+
+        return text_search_index
+
+    @classmethod
+    @timeit
+    def save_text_search_index_to_file(
+        cls, filename: Path, text_search_index: TextSearchIndex
+    ) -> None:
+        log.debug(f"save text search index to file: {filename}")
+
+        # open a file, where you ant to store the data
+        with open(filename, "wb") as file:
+            # dump information to that file
+            # noinspection PyTypeChecker
+            pickle.dump(text_search_index, file)
 
     @classmethod
     def element_to_names(cls, names):
