@@ -29,6 +29,7 @@ module.exports = function(grunt) {
                     'source/js/network/*.js',
                     'source/js/svg.js',
                     'source/js/relations.js',
+                    'source/js/roles.js',
                     'source/js/typeahead.js',
                     'source/js/fsm.js',
                     'source/js/init.js',
