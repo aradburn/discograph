@@ -11,7 +11,7 @@ from discograph.config import (
     ALL_DATABASE_TABLE_NAMES,
     DATABASE_TABLE_NAMES_WITHOUT_ROLE,
 )
-from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
+from discograph.library.cache.cache_manager import CacheManager
 from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.loader.loader_entity import LoaderEntity
 from discograph.library.relation_grapher import RelationGrapher
@@ -49,7 +49,7 @@ class DatabaseTestCase(unittest.TestCase):
         # log.info(f"DatabaseTestCase setUpClass: {cls.__name__}")
         # log.info(f"DatabaseTestCase _config: {cls._config}")
         if cls._config is not None:
-            setup_cache(cls._config)
+            CacheManager.setup_cache(cls._config)
             try:
                 cls._db_helper = database.setup_database(cls._config)
             except DatabaseError:
@@ -73,7 +73,7 @@ class DatabaseTestCase(unittest.TestCase):
         # release resources
         if cls._config is not None:
             database.shutdown_database(cls._config)
-            shutdown_cache()
+            CacheManager.shutdown_cache()
             shutdown_logging()
 
     def setUp(self):

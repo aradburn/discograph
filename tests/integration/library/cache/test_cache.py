@@ -5,7 +5,8 @@ from discograph.config import (
     SqliteDevelopmentConfiguration,
     PostgresDevelopmentConfiguration,
 )
-from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
+from discograph.library.cache.cache_manager import CacheManager
+
 from discograph.logging_config import setup_logging, shutdown_logging
 
 
@@ -19,20 +20,20 @@ class TestCache(unittest.TestCase):
         shutdown_logging()
 
     def test_01(self):
-        setup_cache(vars(SqliteTestConfiguration))
+        CacheManager.setup_cache(vars(SqliteTestConfiguration))
 
-        from discograph.library.cache.cache_manager import cache
+        cache = CacheManager.get_cache()
 
         print(f"test cache: {cache}")
 
         assert cache is not None
-        shutdown_cache()
+        CacheManager.shutdown_cache()
 
     def test_02(self):
         cache_key = "test_key"
-        setup_cache(vars(SqliteTestConfiguration))
+        CacheManager.setup_cache(vars(SqliteTestConfiguration))
 
-        from discograph.library.cache.cache_manager import cache
+        cache = CacheManager.get_cache()
 
         print(f"test cache: {cache}")
         assert cache is not None
@@ -48,9 +49,9 @@ class TestCache(unittest.TestCase):
 
     def test_03(self):
         cache_key = "test_key"
-        setup_cache(vars(SqliteTestConfiguration))
+        CacheManager.setup_cache(vars(SqliteTestConfiguration))
 
-        from discograph.library.cache.cache_manager import cache
+        cache = CacheManager.get_cache()
 
         print(f"test cache: {cache}")
         assert cache is not None
@@ -70,20 +71,20 @@ class TestCache(unittest.TestCase):
         assert actual == expected
 
     def test_04(self):
-        setup_cache(vars(SqliteDevelopmentConfiguration))
+        CacheManager.setup_cache(vars(SqliteDevelopmentConfiguration))
 
-        from discograph.library.cache.cache_manager import cache
+        cache = CacheManager.get_cache()
 
         print(f"test cache: {cache}")
 
         assert cache is not None
-        shutdown_cache()
+        CacheManager.shutdown_cache()
 
     def test_05(self):
         cache_key = "test_key"
-        setup_cache(vars(SqliteDevelopmentConfiguration))
+        CacheManager.setup_cache(vars(SqliteDevelopmentConfiguration))
 
-        from discograph.library.cache.cache_manager import cache
+        cache = CacheManager.get_cache()
 
         print(f"test cache: {cache}")
         assert cache is not None
@@ -99,9 +100,9 @@ class TestCache(unittest.TestCase):
 
     def test_06(self):
         cache_key = "test_key"
-        setup_cache(vars(SqliteDevelopmentConfiguration))
+        CacheManager.setup_cache(vars(SqliteDevelopmentConfiguration))
 
-        from discograph.library.cache.cache_manager import cache
+        cache = CacheManager.get_cache()
 
         print(f"test cache: {cache}")
         assert cache is not None
@@ -121,20 +122,20 @@ class TestCache(unittest.TestCase):
         assert actual == expected
 
     def test_postgres_01(self):
-        setup_cache(vars(PostgresDevelopmentConfiguration))
+        CacheManager.setup_cache(vars(PostgresDevelopmentConfiguration))
 
-        from discograph.library.cache.cache_manager import cache
+        cache = CacheManager.get_cache()
 
         print(f"test cache: {cache}")
 
         assert cache is not None
-        shutdown_cache()
+        CacheManager.shutdown_cache()
 
     def test_postgres_02(self):
         cache_key = "test_key"
-        setup_cache(vars(PostgresDevelopmentConfiguration))
+        CacheManager.setup_cache(vars(PostgresDevelopmentConfiguration))
 
-        from discograph.library.cache.cache_manager import cache
+        cache = CacheManager.get_cache()
 
         print(f"test cache: {cache}")
         assert cache is not None
@@ -150,9 +151,9 @@ class TestCache(unittest.TestCase):
 
     def test_postgres_03(self):
         cache_key = "test_key"
-        setup_cache(vars(PostgresDevelopmentConfiguration))
+        CacheManager.setup_cache(vars(PostgresDevelopmentConfiguration))
 
-        from discograph.library.cache.cache_manager import cache
+        cache = CacheManager.get_cache()
 
         print(f"test cache: {cache}")
         assert cache is not None
