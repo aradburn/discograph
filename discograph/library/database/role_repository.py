@@ -4,6 +4,7 @@ from typing import Generator
 from sqlalchemy import Result, select
 
 from discograph.exceptions import NotFoundError
+from discograph.library.cache.cache_manager import CacheManager
 from discograph.library.database.base_repository import BaseRepository
 from discograph.library.database.role_table import RoleTable
 from discograph.library.domain.role import Role, RoleUncommited
@@ -31,7 +32,7 @@ class RoleRepository(BaseRepository[RoleTable]):
         return Role.model_validate(instance)
 
     def get_by_name(self, name: str) -> Role:
-        from discograph.library.cache.cache_manager import cache
+        cache = CacheManager.get_cache()
 
         role_key_str = f"ROLE-{name}"
         role = cache.get(role_key_str)

@@ -10,6 +10,7 @@ from sqlalchemy.sql.dml import ReturningInsert, Insert
 
 from discograph.config import Configuration
 from discograph.exceptions import NotFoundError
+from discograph.library.cache.cache_manager import CacheManager
 from discograph.library.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.library.database.base_table import Base, ConcreteTable
 from discograph.library.database.entity_repository import EntityRepository
@@ -22,13 +23,6 @@ from discograph.library.fields.entity_type import EntityType
 from discograph.library.full_text_search.text_search_index import TextSearchIndex
 
 log = logging.getLogger(__name__)
-
-
-# class Base(DeclarativeBase):
-#     pass
-#
-#
-# ConcreteTable = TypeVar("ConcreteTable", bound=Base)
 
 
 class DatabaseHelper(ABC):
@@ -234,8 +228,9 @@ class DatabaseHelper(ABC):
         on_mobile=False,
         roles=None,
     ):
-        from discograph.library.cache.cache_manager import cache
         from discograph.library.relation_grapher import RelationGrapher
+
+        cache = CacheManager.get_cache()
 
         assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
         template = "discograph:/api/{entity_type}/network/{entity_id}"
@@ -249,7 +244,7 @@ class DatabaseHelper(ABC):
             roles=roles,
         )
         # cache_key = cache_key.format(entity_type, entity_id)
-        # log.debug(f"  get cache_key: {cache_key}")
+        log.debug(f"  get cache_key: {cache_key}")
         data = cache.get(cache_key)
         if data is not None:
             return data
