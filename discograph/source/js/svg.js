@@ -18,7 +18,13 @@ function dg_svg_set_size() {
         .attr("height", dg.dimensions[1])
         .attr("viewBox", "0 0 " + dg.svg_dimensions[0] + " " + dg.svg_dimensions[1])
         .attr("preserveAspectRatio", "none");
-//        .attr("transform", "scale(" + 1.0 / dg.dpr + ")");
+}
+
+function dg_svg_reset_size() {
+    $("#svg").css({
+      width: '',
+      height: ''
+    });
 }
 
 function dg_svg_setupDefs() {

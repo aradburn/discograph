@@ -11,9 +11,11 @@ from flask import url_for
 
 import discograph.utils
 from discograph.exceptions import BadRequestError, NotFoundError
+from discograph.library.data_access_layer.role_data_access import RoleDataAccess
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.database.transaction import transaction
+from discograph.library.domain.role import RoleJSTreeWrapper
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.role_entry import RoleEntry
 
@@ -32,7 +34,7 @@ default_roles = (
 
 @blueprint.route("/")
 def route__index():
-    initial_json = "var dgData = null;"
+    initial_json = "var dgNetwork = null; var dgRoles = null;"
     # noinspection PyUnresolvedReferences
     # on_mobile = request.MOBILE
     parsed_args = discograph.utils.parse_request_args(request.args)
@@ -60,16 +62,17 @@ def route__index():
     return response
 
 
-@blueprint.route("/<entity_type>/<entity_id>")
-def route__entity_type__entity_id(entity_type, entity_id):
+@blueprint.route("/<entity_type_str>/<entity_id>")
+def route__entity_type__entity_id(entity_type_str, entity_id):
     from discograph.library.database.database_helper import DatabaseHelper
 
     parsed_args = discograph.utils.parse_request_args(request.args)
-    original_roles, original_year = parsed_args
-    if not original_roles:
-        original_roles = default_roles
-    entity_type = EntityType[entity_type.upper()]
-    if entity_type not in (EntityType.ARTIST, EntityType.LABEL):
+    requested_roles, requested_year = parsed_args
+    if not requested_roles:
+        requested_roles = default_roles
+    try:
+        entity_type = EntityType.from_str(entity_type_str.upper())
+    except NotImplementedError:
         raise BadRequestError(message="Bad Entity Type")
     if not entity_id.isnumeric():
         raise BadRequestError(message="Bad Entity Id")
@@ -79,31 +82,42 @@ def route__entity_type__entity_id(entity_type, entity_id):
     with transaction():
         entity_repository = EntityRepository()
         relation_repository = RelationRepository()
-        data = DatabaseHelper.db_helper.get_network(
+        network_data = DatabaseHelper.db_helper.get_network(
             entity_repository,
             relation_repository,
             entity_id,
             entity_type,
             # on_mobile=on_mobile,
-            roles=original_roles,
+            roles=requested_roles,
         )
-    if data is None:
-        raise NotFoundError(message="No Data")
-    initial_json = json.dumps(
-        data,
+    if network_data is None:
+        raise NotFoundError(message="No Network Data")
+    network_json = json.dumps(
+        network_data,
         sort_keys=True,
         indent=4,
         separators=(",", ": "),
     )
-    initial_json = f"var dgData = {initial_json};"
-    entity_name = data["center"]["name"]
+
+    roles_data = RoleJSTreeWrapper(
+        core=RoleDataAccess.role_jstree,
+        checkbox={"keep_selected_style": False},
+        plugins=["checkbox"],
+    )
+    roles_json = roles_data.model_dump_json()
+    initial_json = (
+        f"var dgNetwork = {network_json};\n" + f"var dgRoles = {roles_json};\n"
+    )
+    log.debug(f"initial_json: {initial_json}")
+
+    entity_name = network_data["center"]["name"]
     key = f"{entity_type.name.lower()}-{entity_id}"
     # url = '/{}/{}'.format(entity_type, entity_id)
     url = url_for(
         request.endpoint,
-        entity_type=entity_type.name.lower(),
+        entity_type_str=entity_type.name.lower(),
         entity_id=entity_id,
-        roles=original_roles,
+        roles=requested_roles,
     )
     title = f"Discograph2: {entity_name}"
     multiselect_mapping = RoleEntry.get_multiselect_mapping()
@@ -116,8 +130,8 @@ def route__entity_type__entity_id(entity_type, entity_id):
         og_title=f'Discograph2: The "{entity_name}" network',
         og_url=url,
         # on_mobile=on_mobile,
-        original_roles=original_roles,
-        original_year=original_year,
+        original_roles=requested_roles,
+        original_year=requested_year,
         title=title,
     )
     response = make_response(rendered_template)

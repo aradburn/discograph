@@ -222,6 +222,7 @@ class RelationDataAccess:
                 entity_id, entity_type
             )
             if entity:
+                log.debug(f"find_by_entity_and_roles: {entity.id} [{role_ids}]")
                 entity_relations = relation_repository.find_by_entity_and_roles(
                     entity.id, role_ids
                 )

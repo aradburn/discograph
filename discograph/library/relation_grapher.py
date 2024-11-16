@@ -107,6 +107,8 @@ class RelationGrapher(ABC):
         relation_repository: RelationRepository,
     ):
         log.debug(f"Searching around {self.center_entity.entity_name}...")
+        log.debug(f"  structural_role_names  {self.structural_role_names}")
+        log.debug(f"  relational_role_names  {self.relational_role_names}")
         provisional_role_names = self.relational_role_names
         # provisional_roles = list(self.relational_role_names)
         self.report_search_start()

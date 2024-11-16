@@ -1,11 +1,12 @@
 import atexit
 import datetime
 import logging
+import sys
 
 import luigi
 
 from discograph.config import PostgresDevelopmentConfiguration
-from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
+from discograph.library.cache.cache_manager import CacheManager
 from discograph.library.loader.loader_tasks import LoaderSetupTask
 from discograph.logging_config import setup_logging, shutdown_logging
 
@@ -30,12 +31,23 @@ def loader_main():
     # log.info(f"DATABASE_HOST: {os.getenv('DISCOGRAPH_DATABASE_HOST')}")
     # log.info(f"DATABASE_NAME: {os.getenv('DISCOGRAPH_DATABASE_NAME')}")
     config = PostgresDevelopmentConfiguration()
-    setup_cache(config)
+
+    # Setup Cache
+    CacheManager.setup_cache(config)
+    cache = CacheManager.get_cache()
+    print(f"cache: {cache}")
+    if cache is None:
+        log.error("Cache not set")
+        sys.exit()
+    else:
+        log.debug("Clearing cache")
+        CacheManager.clear()
+
     setup_database(config)
 
     # Note reverse order (last in first out), logging is the last to be shutdown
     atexit.register(shutdown_logging)
-    atexit.register(shutdown_cache)
+    atexit.register(CacheManager.shutdown_cache)
     atexit.register(shutdown_database, config)
 
     # Run the loader process between these dates

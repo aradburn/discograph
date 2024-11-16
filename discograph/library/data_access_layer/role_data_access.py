@@ -6,6 +6,7 @@ from typing import Dict, List, Set
 
 from rapidfuzz import process
 
+from discograph.library.domain.role import RoleJSTree
 from discograph.library.fields.role_type import RoleType
 
 log = logging.getLogger(__name__)
@@ -18,7 +19,9 @@ class RoleDataAccess:
     role_name_set: Set[str] = set()
     role_id_to_role_category_lookup: Dict[int, RoleType.Category] = {}
     role_id_to_role_name_lookup: Dict[int, str] = {}
-    # role_word_lookup: Set[str] = set()
+    role_jstree: RoleJSTree = RoleJSTree()
+    # role_tree: Dict[str, Dict[str, list[str]]] = {}
+    # role_categories: Set[str] = set()
 
     # REGEXs
     SPLIT_CHARACTERS = re.compile(r" & |&|＆| and | And |/|; |\+| - |・| Und | Et ")
@@ -479,3 +482,17 @@ class RoleDataAccess:
             if role_name_lower == alt[0]:
                 return alt[1]
         return role_name
+
+    @staticmethod
+    def get_all_roles() -> dict:
+        roles = []
+        for role_id, role_name in RoleDataAccess.role_id_to_role_name_lookup.items():
+            role_category = RoleDataAccess.role_id_to_role_category_lookup[role_id]
+            role = {
+                "id": role_id,
+                "role_name": role_name,
+                "role_category": role_category.name,
+            }
+            roles.append(role)
+        data = {"roles": roles}
+        return data

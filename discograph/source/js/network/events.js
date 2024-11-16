@@ -38,8 +38,8 @@ function dg_network_dragended(event) {
 function dg_network_start() {
     dg.network.isRunningLayout = true;
     dg.network.tick = 0;
-    $('#network-running')
-                .addClass('glyphicon-animate glyphicon-refresh');
+    $('#network-running').show();
+//                .addClass('glyphicon-animate glyphicon-refresh');
     dg.network.layers.link.selectAll('.link')
         .classed('noninteractive', false);
     dg.network.layers.node.selectAll('.node')
@@ -47,8 +47,8 @@ function dg_network_start() {
 }
 
 function dg_network_end(event) {
-    $('#network-running')
-                .removeClass('glyphicon-animate glyphicon-refresh');
+    $('#network-running').hide();
+//                .removeClass('glyphicon-animate glyphicon-refresh');
     dg.network.layers.link.selectAll('.link')
         .classed('noninteractive', false);
     dg.network.layers.node.selectAll('.node')

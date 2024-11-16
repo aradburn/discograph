@@ -35,5 +35,10 @@ function dg_network_reset_transform() {
 
 function dg_network_zoomed({transform}) {
     dg.network.layers.root.attr("transform", transform);
-    dg_network_node_check_tooltip()
+    dg_network_hide_tooltips()
+}
+
+function dg_network_hide_tooltips() {
+    nodeToolTip.hide();
+    linkToolTip.hide();
 }

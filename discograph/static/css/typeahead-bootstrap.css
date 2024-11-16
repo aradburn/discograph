@@ -67,7 +67,7 @@ span.twitter-typeahead {
 
 .tt-menu {
     min-width: 160px;
-    margin-top: 38px;
+    margin-top: 0px;
     padding: 5px 0;
     background-color: #ffffff;
     border: 1px solid #cccccc;

@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 
 URLIFY_REGEX = re.compile(r"\s+", re.MULTILINE)
 ARG_ROLES_REGEX = re.compile(r"^roles(\[\d*\])?$")
-STRIP_PATTERN = re.compile(r"\(\d+\)")
+STRIP_PATTERN = re.compile(r"\(\d+\)|not on label|self[ -]released|[()&\".,]")
 # STRIP_PATTERN = re.compile(r"(\(\d+\)|[^(\w\s)]+)")
 # REMOVE_PUNCTUATION = re.compile(r"[^\w\s]")
 WORD_PATTERN = re.compile(r"\s+")

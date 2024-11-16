@@ -1,3 +1,4 @@
+import json
 import logging
 
 from flask import Blueprint
@@ -7,11 +8,13 @@ from flask import request
 import discograph.utils
 from discograph import decorators
 from discograph.exceptions import BadRequestError, NotFoundError, DatabaseError
+from discograph.library.data_access_layer.role_data_access import RoleDataAccess
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.relation_release_year_repository import (
     RelationReleaseYearRepository,
 )
 from discograph.library.database.relation_repository import RelationRepository
+from discograph.library.database.role_repository import RoleRepository
 from discograph.library.database.transaction import transaction
 from discograph.library.fields.entity_type import EntityType
 
@@ -20,14 +23,15 @@ log = logging.getLogger(__name__)
 blueprint = Blueprint("api", __name__, template_folder="templates")
 
 
-@blueprint.route("/<entity_type>/relations/<entity_id>")
+@blueprint.route("/<entity_type_str>/relations/<entity_id>")
 @decorators.limit(max_requests=60, period=60)
-def route__api__entity_type__relations__entity_id(entity_type, entity_id):
+def route__api__entity_type__relations__entity_id(entity_type_str, entity_id):
     from discograph.library.database.database_helper import DatabaseHelper
 
     # log.debug(f"entityType: {entity_type}")
-    entity_type = EntityType[entity_type.upper()]
-    if entity_type not in (EntityType.ARTIST, EntityType.LABEL):
+    try:
+        entity_type = EntityType.from_str(entity_type_str.upper())
+    except NotImplementedError:
         raise BadRequestError(message="Bad Entity Type")
     if not entity_id.isnumeric():
         raise BadRequestError(message="Bad Entity Id")
@@ -48,17 +52,15 @@ def route__api__entity_type__relations__entity_id(entity_type, entity_id):
     return jsonify(data)
 
 
-@blueprint.route("/<entity_type>/network/<entity_id>")
+@blueprint.route("/<entity_type_str>/network/<entity_id>")
 @decorators.limit(max_requests=60, period=60)
-def route__api__entity_type__network__entity_id(entity_type, entity_id):
+def route__api__entity_type__network__entity_id(entity_type_str, entity_id):
     from discograph.library.database.database_helper import DatabaseHelper
 
     # log.debug(f"entityType: {entity_type}")
-    entity_type = EntityType[entity_type.upper()]
-    if entity_type not in (
-        EntityType.ARTIST,
-        EntityType.LABEL,
-    ):
+    try:
+        entity_type = EntityType.from_str(entity_type_str.upper())
+    except NotImplementedError:
         raise BadRequestError(message="Bad Entity Type")
     # log.debug(f"entityType: {entity_type}")
     if not entity_id.isnumeric():
@@ -117,5 +119,12 @@ def route__api__random():
             log.error(f"{e}")
             raise DatabaseError(message="Database error")
 
-    data = {f"center": f"{entity_type.name.lower()}-{entity_id}"}
+    data = {"center": f"{entity_type.name.lower()}-{entity_id}"}
     return jsonify(data)
+
+
+@blueprint.route("/roles")
+@decorators.limit(max_requests=60, period=60)
+def route__api__role():
+    role_data = RoleDataAccess.get_all_roles()
+    return jsonify(role_data)

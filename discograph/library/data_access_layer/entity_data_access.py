@@ -1,12 +1,12 @@
 import logging
 import re
-from math import tanh
 from typing import Dict, cast
 
 import rapidfuzz
 
 from discograph import utils
 from discograph.exceptions import NotFoundError
+from discograph.library.cache.cache_manager import CacheManager
 from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.domain.entity import Entity
@@ -17,6 +17,7 @@ from discograph.library.full_text_search.text_search_index import TextSearchInde
 from discograph.library.loader.loader_base import LoaderBase
 from discograph.logging_config import LOGGING_TRACE
 
+# TODO tidy up
 log = logging.getLogger(__name__)
 
 
@@ -194,7 +195,7 @@ class EntityDataAccess:
         entity_type: EntityType,
         entity_name: str,
     ) -> int | None:
-        from discograph.library.cache.cache_manager import cache
+        cache = CacheManager.get_cache()
 
         entity_key_str = (
             f"{entity_name}{EntityDataAccess.CACHE_KEY_SEPARATOR}{entity_type}"
@@ -399,17 +400,7 @@ class EntityDataAccess:
     @staticmethod
     def normalise_search_content(string: str) -> str:
         string = string.lower()
-        string = utils.to_ascii(string)
         string = utils.STRIP_PATTERN.sub("", string)
-        string = string.replace("not on label", "")
-        string = string.replace("self released", "")
-        string = string.replace("self-released", "")
-        string = string.replace("(", "")
-        string = string.replace(")", "")
-        string = string.replace("&", "")
-        string = string.replace('"', "")
-        string = string.replace(".", "")
-        string = string.replace(",", "")
         string = string.strip()
         return string
 
@@ -423,12 +414,13 @@ class EntityDataAccess:
             count += 1
             if count % (LoaderBase.BULK_REPORTING_SIZE * 100) == 0:
                 log.debug(f"Indexed {count} entities")
-        index.print_sizes()
+        # index.print_sizes()
 
     @staticmethod
     def search_entities(search_string):
         from discograph.utils import URLIFY_REGEX
-        from discograph.library.cache.cache_manager import cache
+
+        cache = CacheManager.get_cache()
 
         normalised_search_string = EntityDataAccess.normalise_search_content(
             search_string

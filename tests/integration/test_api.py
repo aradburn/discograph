@@ -155,3 +155,13 @@ class TestAPI(AppTestCase):
             ]
         }
         self.assertEqual(expected, actual)
+
+    def test_roles_01(self):
+        response = self.app.get("/api/roles")
+        self.assertEqual("200 OK", response.status)
+
+        actual = json.loads(response.data.decode("utf-8"))
+        self.assertIsNotNone(actual)
+        self.assertIsNotNone(actual["roles"])
+        expected = 4117
+        self.assertEqual(expected, len(actual["roles"]))

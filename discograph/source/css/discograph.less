@@ -9,20 +9,19 @@ body {
     z-index: -1;
 }
 
-body {
-    padding-top: 70px;
-    padding-bottom: 70px;
-}
-
 #nav-top {
-    background-image: linear-gradient(#ddd, #ccc 60%);
+    background-image: linear-gradient(#13808577 0%, #53466677 140%);
+/*    background-image: linear-gradient(#ddd, #ccc 60%);*/
+}
+#side-menu {
+    background-color: #1C575A !important;
 }
 #nav-bottom {
     background-image: linear-gradient(#ddd, #ccc 60%);
 }
 
 .navbar-title {
-    color: #777777;
+    /*color: #777777;*/
     transition: color ease-in-out .2s;
     display: block;
     text-align:center;
@@ -33,53 +32,18 @@ body {
     font-size: 18px;
     line-height: 20px;
 }
-/*
-.navbar.navbar-default .navbar-header{
-  float: none;
-}*/
 
 .tt-menu {
-   max-height: 70vh;
-   overflow-y: auto;
-   background-color: #fff;
+    width: 100%;
+    max-height: 70vh;
+    overflow-y: auto;
+    background-color: #fff;
 }
 
 #flash {
-  margin: auto;
-  width: 50%;
+    margin: auto;
+    width: 50%;
 }
-
-#svg-container-fluid {
-    position: absolute;
-    /*
-    top: 70px;
-    bottom: 70px;*/
-    left: 0px;
-    right: 0px;
-}
-
-svg {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    display: block;
-/*
-    position: absolute;
-    top: 0;
-    left: 0;
-*/
-/*    z-index: -1;*/
-}
-
-/*
-#svg-container {
-    margin: 0;
-    top: 0;
-    left: 0;
-    position: fixed;
-    z-index: -1;
-    overflow: scroll;
-}*/
 
 #svg {
     pointer-events: visible;
@@ -112,15 +76,6 @@ a {
     }
 }
 
-.navbar-collapse.in {
-    overflow-y: visible;
-}
-
-#brand,
-form .clear,
-.navbar-nav a {
-    cursor: pointer;
-}
 
 /* NETWORK */
 
@@ -375,33 +330,6 @@ form .clear,
     visibility: hidden;
 }
 
-.glyphicon-animate {
-    -webkit-animation: spin 2s infinite linear;
-    -moz-animation: spin 2s infinite linear;
-    -o-animation: spin 2s infinite linear;
-    animation: spin 2s infinite linear;
-}
-
-@-moz-keyframes spin {
-    0% { -moz-transform: rotate(0deg); }
-    100% { -moz-transform: rotate(359deg); }
-}
-
-@-webkit-keyframes spin {
-    0% { -webkit-transform: rotate(0deg); }
-    100% { -webkit-transform: rotate(359deg); }
-}
-    
-@-o-keyframes spin {
-    0% { -o-transform: rotate(0deg); }
-    100% { -o-transform: rotate(359deg); }
-}
-
-@keyframes spin {
-    0% { -webkit-transform: rotate(0deg); transform: rotate(0deg); }
-    100% { -webkit-transform: rotate(359deg); transform: rotate(359deg); }
-}
-
 .truncate {
     white-space: nowrap;
     overflow: hidden;
@@ -425,7 +353,6 @@ form .clear,
     font-size: 1.0em;
     padding: 2px 4px;
     background-color: #ffffcc;
-    /*background: rgba(101,115,126, 0.6);*/
     color: #111;
     border-radius: 6px;
     border: 2px solid #800026;
@@ -448,7 +375,6 @@ form .clear,
     font-size: 1.0em;
     padding: 0px;
     background-color: #ffeda0;
-    /*background: rgba(101,115,126, 0.6);*/
     color: #111;
     opacity: 1.0;
     border-radius: 6px;
@@ -471,7 +397,7 @@ form .clear,
         }
         &:nth-child(2) {
             font-size: 0.8em;
-            line-height: 1.0em;
+            line-height: 1.1em;
             border-width: 0px;
             margin: 0;
         }
@@ -481,9 +407,6 @@ form .clear,
             margin-top: 0;
         }
     }
-}
-
-.select2 {
 }
 
 .YlOrRd .q0-9 {fill:rgb(255,255,204)}

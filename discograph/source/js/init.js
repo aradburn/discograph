@@ -6,6 +6,7 @@ $(document).ready(function() {
     dg_svg_init();
     dg_network_init();
     dg_relations_init();
+    dg_roles_init();
     dg_loading_init();
     dg_typeahead_init();
 
@@ -78,27 +79,24 @@ function dg_window_init() {
     console.log("window devicePixelRatio: ", dg.dpr);
 
     svgContainer = d.getElementById('svg-container-fluid');
-    svgContainer.style.top = $("#nav-top").css( "height" );
-    svgContainer.style.bottom = $("#nav-bottom").css( "height" );
     dg.dimensions = [
-        svgContainer.clientWidth * VIEWPORT_SIZE_MULTIPLIER * dg.dpr,
-        svgContainer.clientHeight * VIEWPORT_SIZE_MULTIPLIER * dg.dpr,
+        svgContainer.clientWidth,
+        svgContainer.clientHeight,
     ];
-
-    console.log("window dimensions: ", dg.dimensions);
+    console.log("svg panel dimensions: ", dg.dimensions);
 
     dg.svg_dimensions = [
-        dg.dimensions[0],
-        dg.dimensions[1],
+        dg.dimensions[0] * VIEWPORT_SIZE_MULTIPLIER * dg.dpr,
+        dg.dimensions[1] * VIEWPORT_SIZE_MULTIPLIER * dg.dpr,
     ];
-    console.log("svg dimensions: ", dg.svg_dimensions);
+    console.log("svg coord dimensions: ", dg.svg_dimensions);
 
     // All nodes start at center of the screen
     dg.network.newNodeCoords = [
         dg.svg_dimensions[0] / 2,
         dg.svg_dimensions[1] / 2,
     ];
-    console.log("newNodeCoords: ", dg.network.newNodeCoords);
+    console.log("svg newNodeCoords: ", dg.network.newNodeCoords);
 }
 
 function dg_show_message(type, message) {
