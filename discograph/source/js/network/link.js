@@ -20,7 +20,6 @@ function dg_network_onLinkEnter(linkEnter) {
             var role = parts.slice(2, 2 + parts.length - 4).join('-')
             var classes = [
                 "link",
-//                "link-" + d.key,
                 role,
                 ];
             return classes.join(" ");

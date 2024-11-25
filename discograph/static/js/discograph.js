@@ -11,12 +11,20 @@
         }
     }
 
+    function clamp(num, lower, upper) {
+        return Math.min(Math.max(num, lower), upper);
+    }
+
     function dg_color_artist_class(d) {
-        return 'q' + ((d.distance * 2) + 1) + '-9';
+        var index = clamp(d.distance + 1, 0, 8);
+        //    var index = clamp((d.distance * 2) + 1, 0, 8);
+        return 'q' + index + '-9';
     }
 
     function dg_color_label_class(d) {
-        return 'q' + ((d.distance * 2) + 2) + '-9';
+        var index = clamp(d.distance + 2, 0, 8);
+        //    var index = clamp((d.distance * 2) + 2, 0, 8);
+        return 'q' + index + '-9';
     }
     dg.loading = {};
 
@@ -329,15 +337,13 @@
         } else if (d.role == 'Released On') {
             return LINK_DISTANCE_RELEASED_ON;
         } else {
-            //        var dist = d.source.distance == 0 || d.target.distance == 0 || d.source.distance == 3 || d.target.distance == 3 ? 1.0 : (d.source.distance + d.target.distance) / 2.0
             return LINK_DISTANCE;
-            //        return LINK_DISTANCE * dist + (random() * LINK_DISTANCE_RANDOM * dist);
         }
     }
 
     function nodeStrength(d, i) {
         if (d.distance) {
-            var dist = 4 - d.distance;
+            var dist = 4 - clamp(d.distance, 0, 3);
             return dist * NODE_STRENGTH;
         } else if (d.isIntermediate) {
             return NODE_STRENGTH / 10;
@@ -348,23 +354,11 @@
         }
     }
 
-    //function nodeStrength(d, i) {
-    //    if (d.distance) {
-    //        var dist = 4 - d.distance;
-    //        return dist * NODE_STRENGTH;
-    //    } else if (d.isIntermediate) {
-    //        return Math.hypot(d.x - dg.svg_dimensions[0] / 2, d.y - dg.svg_dimensions[1] / 2) <= 300 ? 3 * NODE_STRENGTH : NODE_STRENGTH / 2;
-    //    } else {
-    //        return 0;
-    //    }
-    //}
-
     function gravityStrength(d, i) {
-        var dist = d.distance ? 3 - d.distance : 1.0;
+        var dist = d.distance ? 4 - clamp(d.distance, 0, 3) : 1.0;
         var maxDimension = Math.max(dg.svg_dimensions[0], dg.svg_dimensions[1]);
         var scaling = dist / 10.0;
         var radialDistance = (maxDimension - Math.max(d.x - dg.svg_dimensions[0] / 2, d.y - dg.svg_dimensions[1] / 2)) / maxDimension;
-        //        var radialDistance = (maxDimension - Math.hypot(d.x - dg.svg_dimensions[0] / 2, d.y - dg.svg_dimensions[1] / 2)) / maxDimension;
         var g = radialDistance * scaling;
         return g;
     }
@@ -386,13 +380,13 @@
             return d.key
         }
         var nodeData = dg.network.pageData.nodes.filter(function(d) {
-            return (!d.isIntermediate) && (d.pages.indexOf(dg.network.pageData.currentPage) != -1);
+            return !d.isIntermediate;
         })
-        // console.log("nodeData: ", nodeData);
+        console.log("nodeData: ", nodeData);
         var linkData = dg.network.pageData.links.filter(function(d) {
-            return (!d.isSpline) && (d.pages.indexOf(dg.network.pageData.currentPage) != -1);
+            return !d.isSpline;
         })
-        // console.log("linkData: ", linkData);
+        console.log("linkData: ", linkData);
 
         dg.network.selections.halo = dg.network.layers.halo.selectAll(".node");
         dg.network.selections.halo = dg.network.selections.halo.data(nodeData, keyFunc);
@@ -406,10 +400,9 @@
         dg.network.selections.link = dg.network.layers.link.selectAll(".link");
         dg.network.selections.link = dg.network.selections.link.data(linkData, keyFunc);
 
-        var clusterNodes = dg.network.pageData.nodes
-            .filter(function(d) {
-                return d.cluster !== undefined;
-            });
+        var clusterNodes = dg.network.pageData.nodes.filter(function(d) {
+            return d.cluster !== undefined;
+        });
         var hullGroup = d3.group(clusterNodes, function(d) {
             return d.cluster;
         }).values();
@@ -728,7 +721,6 @@
     }
 
     function dg_network_onHullEnter(hullEnter) {
-        console.log("hullEnter", hullEnter);
         var hullGroup = hullEnter
             .append("g")
             .attr("class", function(d) {
@@ -813,7 +805,6 @@
                 var role = parts.slice(2, 2 + parts.length - 4).join('-')
                 var classes = [
                     "link",
-                    //                "link-" + d.key,
                     role,
                 ];
                 return classes.join(" ");
@@ -1182,41 +1173,6 @@
             link: null,
         },
     };
-
-    function dg_network_selectPage(page) {
-        if ((page >= 1) && (page <= dg.network.data.pageCount)) {
-            dg.network.pageData.currentPage = page;
-        } else {
-            dg.network.pageData.currentPage = 1;
-        }
-        var currentPage = dg.network.pageData.currentPage;
-        var pageCount = dg.network.data.pageCount;
-        if (currentPage == 1) {
-            var prevPage = pageCount;
-        } else {
-            var prevPage = currentPage - 1;
-        }
-        var prevText = prevPage + ' / ' + pageCount;
-        if (currentPage == pageCount) {
-            var nextPage = 1;
-        } else {
-            var nextPage = currentPage + 1;
-        }
-        var nextText = nextPage + ' / ' + pageCount;
-        $('#paging .previous-text').text(prevText);
-        $('#paging .next-text').text(nextText);
-
-        var filteredNodes = Array.from(dg.network.data.nodeMap.values()).filter(function(d) {
-            return (d.pages && d.pages.indexOf(currentPage) != -1);
-        });
-        var filteredLinks = Array.from(dg.network.data.linkMap.values()).filter(function(d) {
-            return (d.pages && d.pages.indexOf(currentPage) != -1);
-        });
-        dg.network.pageData.nodes.length = 0;
-        dg.network.pageData.links.length = 0;
-        Array.prototype.push.apply(dg.network.pageData.nodes, filteredNodes);
-        Array.prototype.push.apply(dg.network.pageData.links, filteredLinks);
-    }
     LABEL_OFFSET_Y = 9
 
     function dg_network_getNodeText(d) {
@@ -1225,21 +1181,19 @@
             name = name.slice(0, 50) + "...";
         }
         if (dg.debug) {
-            var pages = '[' + d.pages + ']';
-            return pages + ' ' + name;
+            name = name + dg_network_getNodeDebug(d);
         }
         return name;
-        //    return name + dg_network_getNodeDebug(d);
     }
 
     function dg_network_getNodeDebug(d) {
         var links = d.links !== undefined ? d.links.length : 0;
         return " dist: " + d.distance +
-            " rad: " + d.radius +
-            " lnk: " + links +
+            " radi: " + d.radius +
+            " link: " + links +
             " miss: " + d.missing +
-            //           " clu: " + d.cluster +
-            " col: " + dg_color_class(d);
+            " clus: " + d.cluster +
+            " colr: " + dg_color_class(d);
     }
 
 
@@ -1254,6 +1208,9 @@
                     //                d.key,
                     d.key.split('-')[0],
                 ];
+                if (d.cluster !== undefined) {
+                    classes.push("cluster")
+                }
                 return classes.join(" ");
             })
         textEnter.append("text")
@@ -1364,9 +1321,15 @@
         var group = d3.select(this);
         var path = group.select('path');
         path.attr('d', dg_network_spline(d));
-        path.classed('distance-0', d.source.distance == 0);
-        path.classed('distance-1', d.source.distance == 1);
-        path.classed('distance-2', d.source.distance == 2);
+        path.classed('distance-0', Math.min(d.source.distance, d.target.distance) == 0);
+        path.classed('distance-1', Math.min(d.source.distance, d.target.distance) == 1);
+        path.classed('distance-2', Math.min(d.source.distance, d.target.distance) == 2);
+        path.classed('distance-3', Math.min(d.source.distance, d.target.distance) == 3);
+        path.classed('distance-4', Math.min(d.source.distance, d.target.distance) == 4);
+        path.classed('distance-5', Math.min(d.source.distance, d.target.distance) == 5);
+        path.classed('distance-6', Math.min(d.source.distance, d.target.distance) == 6);
+        path.classed('distance-7', Math.min(d.source.distance, d.target.distance) == 7);
+        path.classed('distance-8', Math.min(d.source.distance, d.target.distance) == 8);
         var x1 = d.source.x,
             y1 = d.source.y,
             x2 = d.target.x,
@@ -1925,6 +1888,34 @@
         }
     }
 
+    function dg_isNumeric(obj) {
+        return !Array.isArray(obj) && (obj - parseFloat(obj) + 1) >= 0;
+    }
+
+    function dg_roles_get_selected() {
+        var selected_roles = $("#jstree_div").jstree().get_selected(true);
+        console.log("Selected roles: ", selected_roles);
+
+        var keysToRemove = [];
+        selected_roles.forEach(role_entry => {
+            console.log("role_entry: ", role_entry);
+            if (!dg_isNumeric(role_entry.id)) {
+                keysToRemove.push(...role_entry.children);
+            }
+        });
+        console.log("keysToRemove: ", keysToRemove);
+
+        var pruned_roles = [];
+        selected_roles.forEach(role_entry => {
+            if (!keysToRemove.includes(role_entry.id)) {
+                pruned_roles.push(role_entry.text);
+            }
+        });
+
+        console.log("Pruned roles: ", pruned_roles);
+        return pruned_roles;
+    }
+
     function dg_typeahead_init() {
         var dg_typeahead_bloodhound = new Bloodhound({
             datumTokenizer: Bloodhound.tokenizers.whitespace,
@@ -1948,7 +1939,7 @@
             }, {
                 name: "results",
                 display: "name",
-                limit: 100,
+                limit: 1000,
                 source: dg_typeahead_bloodhound,
                 templates: {
                     suggestion: function(data) {
@@ -2028,12 +2019,12 @@
             $(window).on('discograph:show-radial', function(event) {
                 self.showRadial();
             });
-            $(window).on('select2:selecting', function(event) {
-                self.rolesBackup = $('#filter select').val();
-            });
-            $(window).on('select2:unselecting', function(event) {
-                self.rolesBackup = $('#filter select').val();
-            });
+            //        $(window).on('select2:selecting', function(event) {
+            //            self.rolesBackup = $('#filter select').val();
+            //        });
+            //        $(window).on('select2:unselecting', function(event) {
+            //            self.rolesBackup = $('#filter select').val();
+            //        });
             window.onpopstate = function(event) {
                 console.log("FSM window.onpopstate: ", event);
                 if (!event || !event.state || !event.state.key) {
@@ -2074,7 +2065,6 @@
                 if (self.state == 'viewing-network') {
                     console.log("start d3 layout");
                     //                dg_network_processJson(dg.network.data.json);
-                    //                dg_network_selectPage(1);
                     //                dg_network_startForceLayout();
                     dg_network_forceLayout_restart(ALPHA / 10.0);
                 }
@@ -2139,14 +2129,6 @@
                 'select-entity': function(entityKey, fixed) {
                     console.log("VIEWING-NETWORK select-entity", entityKey, fixed);
                     dg.network.pageData.selectedNodeKey = entityKey;
-                    if (entityKey !== null) {
-                        var selectedNode = dg.network.data.nodeMap.get(entityKey);
-                        //                    var currentPage = dg.network.pageData.currentPage;
-                        //                    if (selectedNode.pages.indexOf(currentPage) == -1) {
-                        //                        dg.network.pageData.selectedNodeKey = null;
-                        //                    }
-                    }
-                    entityKey = dg.network.pageData.selectedNodeKey;
                     if (entityKey !== null) {
                         var nodeOn = dg.network.layers.root.selectAll('#' + entityKey);
                         var nodeOff = dg.network.layers.root.selectAll('.node:not(#' + entityKey + ')');
@@ -2237,17 +2219,11 @@
                     if (pushHistory === true) {
                         this.pushState(entityKey, params);
                     }
-                    //                dg.network.data.pageCount = data.pages;
-                    //                dg.network.pageData.currentPage = 1;
-                    //                if (data.pages > 1) {
-                    //                    $('#paging').fadeIn();
-                    //                } else {
-                    //                    $('#paging').fadeOut();
-                    //                }
                     console.log("received-network dg_network_processJson");
                     dg_network_processJson(data);
                     console.log("received-network dg_network_selectPage");
-                    dg_network_selectPage(1);
+                    dg.network.pageData.nodes = Array.from(dg.network.data.nodeMap.values());
+                    dg.network.pageData.links = Array.from(dg.network.data.linkMap.values());
                     dg_network_reset_transform()
                     console.log("received-network dg_network_startForceLayout");
                     dg_network_startForceLayout();
@@ -2325,8 +2301,9 @@
             var entityId = entityKey.split('-')[1];
             var url = '/api/' + entityType + '/network/' + entityId;
             var params = {
-                'roles': $('#filter select').val()
+                'roles': dg_roles_get_selected()
             };
+            //        var params = {'roles': $('#filter select').val()};
             if (params.roles) {
                 url += '?' + decodeURIComponent($.param(params));
             }
@@ -2420,26 +2397,6 @@
             console.log("selectEntity: ", entityKey);
             this.handle('select-entity', entityKey, fixed);
         },
-        //    selectNextPage: function() {
-        //        var page = dg.network.pageData.currentPage + 1;
-        //        if (dg.network.data.pageCount < page) {
-        //            page = 1;
-        //        }
-        //        this.selectPage(page);
-        //    },
-        //    selectPreviousPage: function() {
-        //        var page = dg.network.pageData.currentPage - 1;
-        //        if (page == 0) {
-        //            page = dg.network.data.pageCount;
-        //        }
-        //        this.selectPage(page);
-        //    },
-        //    selectPage: function(page) {
-        //        console.log("selectPage");
-        //        dg_network_selectPage(page);
-        //        dg_network_startForceLayout();
-        //        this.selectEntity(dg.network.pageData.selectedNodeKey, true);
-        //    },
         showNetwork: function() {
             this.handle('show-network');
         },
@@ -2456,11 +2413,6 @@
         toggleNetwork: function(status) {
             console.log("toggleNetwork: ", status);
             if (status) {
-                //            if (1 < dg.network.data.json.pages) {
-                //                $('#paging').fadeIn();
-                //            } else {
-                //                $('#paging').fadeOut();
-                //            }
                 console.log("dg.network.layers.root: ", dg.network.layers.root);
                 dg.network.layers.root
                     .transition()
@@ -2475,7 +2427,6 @@
                 ////                    dg.network.forceLayout.restart()
                 //                });
             } else {
-                //            $('#paging').fadeOut();
                 console.log("toggleNetwork: stop");
                 dg.network.forceLayout.stop()
                 dg.network.layers.root
@@ -2561,33 +2512,21 @@
             event.preventDefault();
             dg_svg_print(dg.svg_dimensions[0], dg.svg_dimensions[1]);
         });
-        $('#paging .next a').on("click", function(event) {
-            $(this).trigger({
-                type: 'discograph:select-next-page',
-            });
-            $(this).tooltip('hide');
-        });
-        $('#paging .previous a').on("click", function(event) {
-            $(this).trigger({
-                type: 'discograph:select-previous-page',
-            });
-            $(this).tooltip('hide');
-        });
-        $('#filter-roles').select2().on('select2:select', function(event) {
-            $(window).trigger({
-                type: 'discograph:request-network',
-                entityKey: dg.network.data.json.center.key,
-                pushHistory: true,
-            });
-        });
-        $('#filter-roles').select2().on('select2:unselect', function(event) {
-            $(window).trigger({
-                type: 'discograph:request-network',
-                entityKey: dg.network.data.json.center.key,
-                pushHistory: true,
-            });
-        });
-        $('#filter').fadeIn(3000);
+        //    $('#filter-roles').select2().on('select2:select', function(event) {
+        //        $(window).trigger({
+        //            type: 'discograph:request-network',
+        //            entityKey: dg.network.data.json.center.key,
+        //            pushHistory: true,
+        //        });
+        //    });
+        //    $('#filter-roles').select2().on('select2:unselect', function(event) {
+        //        $(window).trigger({
+        //            type: 'discograph:request-network',
+        //            entityKey: dg.network.data.json.center.key,
+        //            pushHistory: true,
+        //        });
+        //    });
+        //    $('#filter').fadeIn(3000);
 
         // Tooltip from Bootstrap
         $('[data-toggle="tooltip"]').tooltip();

@@ -9,11 +9,13 @@ body {
   z-index: -1;
 }
 #nav-top {
-  background-image: linear-gradient(#13808577 0%, #53466677 140%);
+  background-image: linear-gradient(#4D8C6F55 0%, #46735ebb 100%);
+  /*    background-image: linear-gradient(#13808577 0%, #53466677 140%);*/
   /*    background-image: linear-gradient(#ddd, #ccc 60%);*/
 }
 #side-menu {
-  background-color: #1C575A !important;
+  background-color: #1C5A51 !important;
+  /* background-color: #1C575A !important;*/
 }
 #nav-bottom {
   background-image: linear-gradient(#ddd, #ccc 60%);
@@ -59,12 +61,6 @@ a .input-group-addon {
 a .input-group-addon:active {
   background-color: #ccc;
 }
-#paging {
-  pointer-events: none;
-}
-#paging a {
-  pointer-events: visible;
-}
 /* NETWORK */
 #networkLayer .link {
   opacity: 0.5;
@@ -80,6 +76,11 @@ a .input-group-addon:active {
             }
         }*/
 }
+#networkLayer .link path {
+  /*    &.distance-0 {
+                opacity: 0.6;
+            }*/
+}
 #networkLayer .link path.inner {
   fill: none;
   /*     marker-end: url(#arrowhead);
@@ -90,18 +91,30 @@ a .input-group-addon:active {
   stroke: #000;
 }
 #networkLayer .link path.distance-0 {
-  opacity: 0.6;
-  stroke-width: 4;
-  /*    stroke: #700;*/
+  stroke-width: 6;
 }
 #networkLayer .link path.distance-1 {
-  stroke-width: 3;
-  /*    stroke: #300;*/
+  stroke-width: 5;
 }
 #networkLayer .link path.distance-2 {
-  stroke-width: 2;
+  stroke-width: 4;
 }
 #networkLayer .link path.distance-3 {
+  stroke-width: 3;
+}
+#networkLayer .link path.distance-4 {
+  stroke-width: 2;
+}
+#networkLayer .link path.distance-5 {
+  stroke-width: 2;
+}
+#networkLayer .link path.distance-6 {
+  stroke-width: 2;
+}
+#networkLayer .link path.distance-7 {
+  stroke-width: 2;
+}
+#networkLayer .link path.distance-8 {
   stroke-width: 2;
 }
 #networkLayer .link text {
@@ -189,7 +202,7 @@ a .input-group-addon:active {
 #networkLayer .node text.outer {
   pointer-events: none;
   font: 10px 'Open Sans', sans-serif;
-  stroke: #fff;
+  stroke: #FFFFFF77;
   stroke-width: 3px;
   fill: none;
   dominant-baseline: middle;
@@ -197,7 +210,7 @@ a .input-group-addon:active {
 }
 #networkLayer .node text.icon {
   cursor: pointer;
-  fill: #fff;
+  fill: #FFFFFF;
   font-family: 'Glyphicons Halflings';
   font-style: normal;
   font-weight: 200;
@@ -234,6 +247,9 @@ a .input-group-addon:active {
 }
 #networkLayer .node.selected.label .more {
   fill: #fff;
+}
+#networkLayer .cluster text.outer {
+  stroke: #FFFFFFFF;
 }
 /* RADIAL */
 #relationsLayer g.segment.selected path.arc {

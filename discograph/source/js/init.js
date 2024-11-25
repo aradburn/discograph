@@ -29,33 +29,21 @@ $(document).ready(function() {
         event.preventDefault();
         dg_svg_print(dg.svg_dimensions[0], dg.svg_dimensions[1]);
     });
-    $('#paging .next a').on("click", function(event) {
-        $(this).trigger({
-            type: 'discograph:select-next-page', 
-        });
-        $(this).tooltip('hide');
-    });
-    $('#paging .previous a').on("click", function(event) {
-        $(this).trigger({
-            type: 'discograph:select-previous-page',
-        });
-        $(this).tooltip('hide');
-    });
-    $('#filter-roles').select2().on('select2:select', function(event) {
-        $(window).trigger({
-            type: 'discograph:request-network',
-            entityKey: dg.network.data.json.center.key,
-            pushHistory: true,
-        });
-    });
-    $('#filter-roles').select2().on('select2:unselect', function(event) {
-        $(window).trigger({
-            type: 'discograph:request-network',
-            entityKey: dg.network.data.json.center.key,
-            pushHistory: true,
-        });
-    });
-    $('#filter').fadeIn(3000);
+//    $('#filter-roles').select2().on('select2:select', function(event) {
+//        $(window).trigger({
+//            type: 'discograph:request-network',
+//            entityKey: dg.network.data.json.center.key,
+//            pushHistory: true,
+//        });
+//    });
+//    $('#filter-roles').select2().on('select2:unselect', function(event) {
+//        $(window).trigger({
+//            type: 'discograph:request-network',
+//            entityKey: dg.network.data.json.center.key,
+//            pushHistory: true,
+//        });
+//    });
+//    $('#filter').fadeIn(3000);
 
     // Tooltip from Bootstrap
     $('[data-toggle="tooltip"]').tooltip();

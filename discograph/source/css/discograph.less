@@ -10,11 +10,13 @@ body {
 }
 
 #nav-top {
-    background-image: linear-gradient(#13808577 0%, #53466677 140%);
+    background-image: linear-gradient(#4D8C6F55 0%, #46735ebb 100%);
+/*    background-image: linear-gradient(#13808577 0%, #53466677 140%);*/
 /*    background-image: linear-gradient(#ddd, #ccc 60%);*/
 }
 #side-menu {
-    background-color: #1C575A !important;
+    background-color: #1C5A51 !important
+   /* background-color: #1C575A !important;*/
 }
 #nav-bottom {
     background-image: linear-gradient(#ddd, #ccc 60%);
@@ -69,13 +71,6 @@ a {
     }
 }
 
-#paging {
-    pointer-events: none;
-    a {
-        pointer-events: visible;
-    }
-}
-
 
 /* NETWORK */
 
@@ -92,21 +87,19 @@ a {
                 stroke-width: 1;
                 stroke: #000;
             }
-            &.distance-0 {
+        /*    &.distance-0 {
                 opacity: 0.6;
-                stroke-width: 4;
-            /*    stroke: #700;*/
-            }
-            &.distance-1 {
-                stroke-width: 3;
-            /*    stroke: #300;*/
-            }
-            &.distance-2 {
-                stroke-width: 2;
-            }
-            &.distance-3 {
-                stroke-width: 2;
-            }
+            }*/
+
+            &.distance-0 { stroke-width: 6;}
+            &.distance-1 { stroke-width: 5;}
+            &.distance-2 { stroke-width: 4;}
+            &.distance-3 { stroke-width: 3;}
+            &.distance-4 { stroke-width: 2;}
+            &.distance-5 { stroke-width: 2;}
+            &.distance-6 { stroke-width: 2;}
+            &.distance-7 { stroke-width: 2;}
+            &.distance-8 { stroke-width: 2;}
         }
         text {
             cursor: help;
@@ -204,7 +197,6 @@ a {
             stroke: none;
         }
         text {
-            //display: none;
             &.inner {
                 pointer-events: none;
                 font: 10px 'Open Sans', sans-serif;
@@ -216,7 +208,7 @@ a {
             &.outer {
                 pointer-events: none;
                 font: 10px 'Open Sans', sans-serif;
-                stroke: #fff;
+                stroke: #FFFFFF77;
                 stroke-width: 3px;
                 fill: none;
                 dominant-baseline: middle;
@@ -224,7 +216,7 @@ a {
             }
             &.icon {
                 cursor: pointer;
-                fill: #fff;
+                fill: #FFFFFF;
                 font-family: 'Glyphicons Halflings';
                 font-style: normal;
                 font-weight: 200;
@@ -261,6 +253,13 @@ a {
                 .more {
                     fill: #fff;
                 }
+            }
+        }
+    }
+    .cluster {
+        text {
+            &.outer {
+                stroke: #FFFFFFFF;
             }
         }
     }

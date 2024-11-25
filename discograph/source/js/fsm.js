@@ -22,12 +22,12 @@ var DiscographFsm = machina.Fsm.extend({
         $(window).on('discograph:show-radial', function(event) {
             self.showRadial();
         });
-        $(window).on('select2:selecting', function(event) {
-            self.rolesBackup = $('#filter select').val();
-        });
-        $(window).on('select2:unselecting', function(event) {
-            self.rolesBackup = $('#filter select').val();
-        });
+//        $(window).on('select2:selecting', function(event) {
+//            self.rolesBackup = $('#filter select').val();
+//        });
+//        $(window).on('select2:unselecting', function(event) {
+//            self.rolesBackup = $('#filter select').val();
+//        });
         window.onpopstate = function(event) {
             console.log("FSM window.onpopstate: ", event);
             if (!event || !event.state || !event.state.key) {
@@ -68,7 +68,6 @@ var DiscographFsm = machina.Fsm.extend({
             if (self.state == 'viewing-network') {
                 console.log("start d3 layout");
 //                dg_network_processJson(dg.network.data.json);
-//                dg_network_selectPage(1);
 //                dg_network_startForceLayout();
                 dg_network_forceLayout_restart(ALPHA / 10.0);
             }
@@ -131,14 +130,6 @@ var DiscographFsm = machina.Fsm.extend({
             'select-entity': function(entityKey, fixed) {
                 console.log("VIEWING-NETWORK select-entity", entityKey, fixed);
                 dg.network.pageData.selectedNodeKey = entityKey;
-                if (entityKey !== null) {
-                    var selectedNode = dg.network.data.nodeMap.get(entityKey);
-//                    var currentPage = dg.network.pageData.currentPage;
-//                    if (selectedNode.pages.indexOf(currentPage) == -1) {
-//                        dg.network.pageData.selectedNodeKey = null;
-//                    }
-                }
-                entityKey = dg.network.pageData.selectedNodeKey;
                 if (entityKey !== null) {
                     var nodeOn = dg.network.layers.root.selectAll('#' + entityKey);
                     var nodeOff = dg.network.layers.root.selectAll('.node:not(#' + entityKey + ')');
@@ -225,17 +216,11 @@ var DiscographFsm = machina.Fsm.extend({
                 if (pushHistory === true) {
                     this.pushState(entityKey, params);
                 }
-//                dg.network.data.pageCount = data.pages;
-//                dg.network.pageData.currentPage = 1;
-//                if (data.pages > 1) {
-//                    $('#paging').fadeIn();
-//                } else {
-//                    $('#paging').fadeOut();
-//                }
                 console.log("received-network dg_network_processJson");
                 dg_network_processJson(data);
                 console.log("received-network dg_network_selectPage");
-                dg_network_selectPage(1);
+                dg.network.pageData.nodes = Array.from(dg.network.data.nodeMap.values());
+                dg.network.pageData.links = Array.from(dg.network.data.linkMap.values());
                 dg_network_reset_transform()
                 console.log("received-network dg_network_startForceLayout");
                 dg_network_startForceLayout();
@@ -302,7 +287,8 @@ var DiscographFsm = machina.Fsm.extend({
         var entityType = entityKey.split('-')[0];
         var entityId = entityKey.split('-')[1];
         var url = '/api/' + entityType + '/network/' + entityId;
-        var params = {'roles': $('#filter select').val()};
+        var params = {'roles': dg_roles_get_selected()};
+//        var params = {'roles': $('#filter select').val()};
         if (params.roles) {
             url += '?' + decodeURIComponent($.param(params));
         }
@@ -391,26 +377,6 @@ var DiscographFsm = machina.Fsm.extend({
         console.log("selectEntity: ", entityKey);
         this.handle('select-entity', entityKey, fixed);
     },
-//    selectNextPage: function() {
-//        var page = dg.network.pageData.currentPage + 1;
-//        if (dg.network.data.pageCount < page) {
-//            page = 1;
-//        }
-//        this.selectPage(page);
-//    },
-//    selectPreviousPage: function() {
-//        var page = dg.network.pageData.currentPage - 1;
-//        if (page == 0) {
-//            page = dg.network.data.pageCount;
-//        }
-//        this.selectPage(page);
-//    },
-//    selectPage: function(page) {
-//        console.log("selectPage");
-//        dg_network_selectPage(page);
-//        dg_network_startForceLayout();
-//        this.selectEntity(dg.network.pageData.selectedNodeKey, true);
-//    },
     showNetwork: function() {
         this.handle('show-network');
     },
@@ -427,11 +393,6 @@ var DiscographFsm = machina.Fsm.extend({
     toggleNetwork: function(status) {
         console.log("toggleNetwork: ", status);
         if (status) {
-//            if (1 < dg.network.data.json.pages) {
-//                $('#paging').fadeIn();
-//            } else {
-//                $('#paging').fadeOut();
-//            }
             console.log("dg.network.layers.root: ", dg.network.layers.root);
             dg.network.layers.root
                 .transition()
@@ -446,7 +407,6 @@ var DiscographFsm = machina.Fsm.extend({
 ////                    dg.network.forceLayout.restart()
 //                });
         } else {
-//            $('#paging').fadeOut();
             console.log("toggleNetwork: stop");
             dg.network.forceLayout.stop()
             dg.network.layers.root

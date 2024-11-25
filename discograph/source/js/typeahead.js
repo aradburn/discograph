@@ -22,7 +22,7 @@ function dg_typeahead_init() {
         }, {
             name: "results",
             display: "name",
-            limit: 100,
+            limit: 1000,
             source: dg_typeahead_bloodhound,
             templates: {
                 suggestion: function(data) {
