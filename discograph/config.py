@@ -27,6 +27,9 @@ TEST_DATA_ROLES_NORMALISED_PATH = os.path.join(
 TEST_DATA_ROLES_OUTPUT_PATH = os.path.join(
     TEST_DATA_ROLES_DIR, "test_data_roles_output.tsv"
 )
+TEST_TEXT_SEARCH_DIR = os.path.join(ROOT_DIR, "tests", "data_text_search")
+TEST_TEXT_SEARCH_PATH = Path(TEST_TEXT_SEARCH_DIR, "text_search.data")
+
 LOGGING_DIR = os.path.join(ROOT_DIR, "logs")
 LOGGING_FILE = os.path.join(LOGGING_DIR, "discograph.log")
 LOGGING_ERROR_FILE = os.path.join(LOGGING_DIR, "error.log")
@@ -134,7 +137,7 @@ class PostgresTestConfiguration(Configuration):
     TESTING = True
     DATABASE = DatabaseType.POSTGRES
     POSTGRES_DATABASE_NAME = "test_discograph"
-    POSTGRES_ROOT = "/usr/lib/postgresql/16"
+    POSTGRES_ROOT = "/usr/lib/postgresql/17"
     POSTGRES_DATA = os.path.join(tempfile.gettempdir(), "pg_temp", "test")
     APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.PROCESS
