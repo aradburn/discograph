@@ -1,4 +1,3 @@
-import json
 import logging
 
 from flask import Blueprint
@@ -14,7 +13,6 @@ from discograph.library.database.relation_release_year_repository import (
     RelationReleaseYearRepository,
 )
 from discograph.library.database.relation_repository import RelationRepository
-from discograph.library.database.role_repository import RoleRepository
 from discograph.library.database.transaction import transaction
 from discograph.library.fields.entity_type import EntityType
 

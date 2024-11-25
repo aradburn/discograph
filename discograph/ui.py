@@ -35,8 +35,6 @@ default_roles = (
 @blueprint.route("/")
 def route__index():
     initial_json = "var dgNetwork = null; var dgRoles = null;"
-    # noinspection PyUnresolvedReferences
-    # on_mobile = request.MOBILE
     parsed_args = discograph.utils.parse_request_args(request.args)
     original_roles, original_year = parsed_args
     if not original_roles:
@@ -53,7 +51,6 @@ def route__index():
         multiselect_mapping=multiselect_mapping,
         og_title="Discograph2",
         og_url=url,
-        # on_mobile=on_mobile,
         original_roles=original_roles,
         original_year=original_year,
         title="Discograph2",
@@ -78,7 +75,6 @@ def route__entity_type__entity_id(entity_type_str, entity_id):
         raise BadRequestError(message="Bad Entity Id")
     entity_id = int(entity_id)
 
-    # on_mobile = request.MOBILE
     with transaction():
         entity_repository = EntityRepository()
         relation_repository = RelationRepository()
@@ -87,7 +83,6 @@ def route__entity_type__entity_id(entity_type_str, entity_id):
             relation_repository,
             entity_id,
             entity_type,
-            # on_mobile=on_mobile,
             roles=requested_roles,
         )
     if network_data is None:
@@ -108,7 +103,7 @@ def route__entity_type__entity_id(entity_type_str, entity_id):
     initial_json = (
         f"var dgNetwork = {network_json};\n" + f"var dgRoles = {roles_json};\n"
     )
-    log.debug(f"initial_json: {initial_json}")
+    # log.debug(f"initial_json: {initial_json}")
 
     entity_name = network_data["center"]["name"]
     key = f"{entity_type.name.lower()}-{entity_id}"
@@ -129,7 +124,6 @@ def route__entity_type__entity_id(entity_type_str, entity_id):
         multiselect_mapping=multiselect_mapping,
         og_title=f'Discograph2: The "{entity_name}" network',
         og_url=url,
-        # on_mobile=on_mobile,
         original_roles=requested_roles,
         original_year=requested_year,
         title=title,

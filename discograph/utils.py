@@ -24,7 +24,6 @@ from discograph.config import (
     DISCOGS_BASE_URL,
     DISCOGS_PATH,
 )
-from discograph.library.data_access_layer.role_data_access import RoleDataAccess
 
 log = logging.getLogger(__name__)
 
@@ -71,6 +70,8 @@ class SkipFilter:
 
 
 def parse_request_args(args):
+    from discograph.library.data_access_layer.role_data_access import RoleDataAccess
+
     year = None
     roles = set()
     for key in args:
@@ -87,9 +88,23 @@ def parse_request_args(args):
         elif ARG_ROLES_REGEX.match(key):
             value = args.getlist(key)
             for role in value:
-                if role in RoleDataAccess.role_name_to_role_id_lookup.keys():
+                log.debug(f"Requested role: {role}")
+                if role in RoleDataAccess.role_category_to_role_name_lookup.keys():
+                    log.debug(f"Requested role found: {role}")
+                    for role_entry in RoleDataAccess.role_category_to_role_name_lookup[
+                        role
+                    ]:
+                        log.debug(f"Requested role_entry: {role_entry}")
+                        if (
+                            role_entry
+                            in RoleDataAccess.role_name_to_role_id_lookup.keys()
+                        ):
+                            roles.add(role_entry)
+                elif role in RoleDataAccess.role_name_to_role_id_lookup.keys():
                     roles.add(role)
+
     roles = list(sorted(roles))
+    log.debug(f"Requested roles: {roles}")
     return roles, year
 
 
