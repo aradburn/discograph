@@ -2,3 +2,4 @@ discograph.conf
 node_modules
 locals.py
 package-lock.json
+/data_text_search/text_search.data
