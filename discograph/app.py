@@ -15,7 +15,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from discograph import api
 from discograph import ui
-from discograph.config import PostgresProductionConfiguration
+from discograph.config import PostgresProductionConfiguration, TEXT_SEARCH_PATH
 from discograph.database import setup_database, shutdown_database
 from discograph.exceptions import NotFoundError, BaseError
 from discograph.library.cache.cache_manager import CacheManager
@@ -144,7 +144,7 @@ def main():
     # Setup Application
     setup_application()
     DatabaseHelper.db_helper.text_search_index = (
-        LoaderEntity.loader_init_text_search_index()
+        LoaderEntity.loader_init_text_search_index(TEXT_SEARCH_PATH)
     )
 
     # Note reverse order (last in first out), logging is the last to be shutdown
