@@ -57,7 +57,7 @@ class TestDatabaseRelease(DatabaseTestCase):
                 },
             ],
             "labels": [
-                {"catalog_number": "WAP54", "id": 23528, "name": "Warp Records"}
+                {"catalog_number": "WAP54", "id": 1000023528, "name": "Warp Records"}
             ],
             "master_id": 1315,
             "notes": None,
@@ -103,7 +103,9 @@ class TestDatabaseRelease(DatabaseTestCase):
                     "value": "DISCTRONICS S HIA 2 CD 01",
                 },
             ],
-            "labels": [{"catalog_number": "HIACD2", "id": 233, "name": "Beyond"}],
+            "labels": [
+                {"catalog_number": "HIACD2", "id": 1000000233, "name": "Beyond"}
+            ],
             "master_id": 21103,
             "notes": None,
             "release_date": "1994-01-01",

@@ -16,17 +16,17 @@ class TestRepositoryRole(RepositoryTestCase):
         role = RoleUncommited(
             role_name="role_name_1",
             role_category=RoleType.Category.INSTRUMENTS,
-            role_subcategory=RoleType.Subcategory.KEYBOARD,
-            role_category_name="category_name_1",
-            role_subcategory_name="subcategory_name_1",
+            role_subcategory=RoleType.Subcategory.KEYBOARDS,
+            role_category_name=RoleType.Category.INSTRUMENTS.name,
+            role_subcategory_name=RoleType.Subcategory.KEYBOARDS.name,
         )
         expected_role = Role(
             id=1,
             role_name="role_name_1",
             role_category=RoleType.Category.INSTRUMENTS,
-            role_subcategory=RoleType.Subcategory.KEYBOARD,
-            role_category_name="category_name_1",
-            role_subcategory_name="subcategory_name_1",
+            role_subcategory=RoleType.Subcategory.KEYBOARDS,
+            role_category_name=RoleType.Category.INSTRUMENTS.name,
+            role_subcategory_name=RoleType.Subcategory.KEYBOARDS.name,
         )
 
         # WHEN
@@ -42,16 +42,16 @@ class TestRepositoryRole(RepositoryTestCase):
         role1 = RoleUncommited(
             role_name="role_name_1",
             role_category=RoleType.Category.INSTRUMENTS,
-            role_subcategory=RoleType.Subcategory.KEYBOARD,
-            role_category_name="category_name_1",
-            role_subcategory_name="subcategory_name_1",
+            role_subcategory=RoleType.Subcategory.KEYBOARDS,
+            role_category_name=RoleType.Category.INSTRUMENTS.name,
+            role_subcategory_name=RoleType.Subcategory.KEYBOARDS.name,
         )
         role2 = RoleUncommited(
             role_name="role_name_2",
             role_category=RoleType.Category.REMIX,
             role_subcategory=RoleType.Subcategory.NONE,
-            role_category_name="category_name_2",
-            role_subcategory_name="subcategory_name_2",
+            role_category_name=RoleType.Category.REMIX.name,
+            role_subcategory_name=RoleType.Subcategory.NONE.name,
         )
 
         # WHEN

@@ -9,9 +9,11 @@ from discograph.config import (
     Configuration,
     ALL_DATABASE_TABLE_NAMES,
     DATABASE_TABLE_NAMES_WITHOUT_ROLE,
+    TEST_TEXT_SEARCH_PATH,
 )
 from discograph.library.cache.cache_manager import CacheManager
 from discograph.library.database.database_helper import DatabaseHelper
+from discograph.library.loader.loader_entity import LoaderEntity
 from discograph.library.relation_grapher import RelationGrapher
 from discograph.logging_config import setup_logging, shutdown_logging
 
@@ -49,6 +51,9 @@ class RepositoryTestCase(unittest.TestCase):
                 cls._db_helper.create_tables(ALL_DATABASE_TABLE_NAMES)
                 # LoaderRole.load_roles_into_database()
                 # Note: No data loading, empty repositories
+                cls._db_helper.text_search_index = (
+                    LoaderEntity.loader_init_text_search_index(TEST_TEXT_SEARCH_PATH)
+                )
 
     @classmethod
     def tearDownClass(cls):
