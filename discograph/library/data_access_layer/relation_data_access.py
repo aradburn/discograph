@@ -61,14 +61,11 @@ class RelationDataAccess:
             for role_str in role_strs_list:
                 role_name = RoleDataAccess.find_role(role_str)
                 if role_name is not None:
-                    object_id = Entity.to_entity_internal_id(
-                        company["id"], EntityType.LABEL
-                    )
                     triples.add(
                         (
                             subject_id,
                             role_name,
-                            object_id,
+                            company["id"],
                         )
                     )
 
@@ -126,26 +123,16 @@ class RelationDataAccess:
         is_compilation = False
         # log.debug(f"get_release_setup release: {release}")
         artist_ids: set[int] = set(artist["id"] for artist in release.artists)
-        # log.debug(f"get_release_setup artists: {artist_pks}")
-        label_ids: set[int] = set()
-        for label in release.labels:
-            entity_id = label.get("id")
-            label_internal_id = Entity.to_entity_internal_id(
-                entity_id, EntityType.LABEL
-            )
-            label_ids.add(label_internal_id)
-            # if label_id:
-            #     if label_id != EntityDataAccess.MISSING_LABEL_ENTITY:
-            #         label_ids.add(label_id + EntityDataAccess.LABEL_ENTITY_ID_OFFSET)
-            #     else:
-            #         label_ids.add(label_id)
+        # log.debug(f"get_release_setup artists: {artist_ids}")
+        label_ids: set[int] = set(label["id"] for label in release.labels)
+        # log.debug(f"get_release_setup labels: {label_ids}")
 
-        # log.debug(f"get_release_setup labels: {label_pks}")
         if len(artist_ids) == 1 and release.artists[0]["name"] == "Various":
             is_compilation = True
             artist_ids.clear()
             for track in release.tracklist:
                 artist_ids.update(artist["id"] for artist in track.get("artists", ()))
+            # log.debug(f"get_release_setup various artists: {artist_ids}")
 
         # for format_ in release.formats:
         #    for description in format_.get('descriptions', ()):
@@ -202,7 +189,6 @@ class RelationDataAccess:
     def search_multi(
         cls,
         *,
-        entity_repository: EntityRepository,
         relation_repository: RelationRepository,
         entity_keys: list[tuple[int, EntityType]],
         role_names: list[str],
@@ -218,20 +204,22 @@ class RelationDataAccess:
         ]
 
         for entity_id, entity_type in entity_keys:
-            entity = entity_repository.get_by_entity_id_and_entity_type(
-                entity_id, entity_type
+            _id = Entity.to_entity_internal_id(entity_id, entity_type)
+            # entity = entity_repository.get_by_entity_id_and_entity_type(
+            #     entity_id, entity_type
+            # )
+            log.debug(f"find_by_entity_and_roles: {_id} {role_ids}")
+            entity_relations = relation_repository.find_by_entity_and_roles(
+                _id, role_ids
             )
-            if entity:
-                log.debug(f"find_by_entity_and_roles: {entity.id} [{role_ids}]")
-                entity_relations = relation_repository.find_by_entity_and_roles(
-                    entity.id, role_ids
-                )
-                relation_internals.extend(entity_relations)
+            log.debug(f"    found entity_relations: {entity_relations}")
+            relation_internals.extend(entity_relations)
 
         relations = [
             RelationDataAccess.to_relation(relation_internal)
             for relation_internal in relation_internals
         ]
+        log.debug(f"    -> relations: {relations}")
         return relations
 
     # def search_bimulti(

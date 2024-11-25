@@ -85,7 +85,7 @@ class WorkerReleasePassTwo(multiprocessing.Process):
                     # ReleaseTable.artists.key: release.artists,
                     # ReleaseTable.extra_artists.key: release.extra_artists,
                     ReleaseTable.labels.key: release.labels,
-                    # ReleaseTable.companies.key: release.companies,
+                    ReleaseTable.companies.key: release.companies,
                     # ReleaseTable.tracklist.key: release.tracklist,
                 },
             )

@@ -77,18 +77,6 @@ class EntityDataAccess:
         #         entry["id"] = -entity_id
         #     changed = True
 
-        # for entry in release.companies:
-        #     entity_type = EntityType.LABEL
-        #     entity_id = entry["id"]
-        #     id_ = EntityDataAccess.get_internal_id_by_entity_type_and_entity_id(
-        #         entity_repository, entity_type, entity_id
-        #     )
-        #     if id_:
-        #         entry["id"] = id_
-        #     else:
-        #         entry["id"] = -entity_id - 1000000000
-        #     changed = True
-        #
         # for entry in release.extra_artists:
         #     entity_type = EntityType.ARTIST
         #     entity_id = entry["id"]
@@ -130,64 +118,30 @@ class EntityDataAccess:
         #             changed = True
 
         for entry in release.labels:
-            entity_type = EntityType.LABEL
-            entity_name = entry["name"]
-            id_ = entity_repository.get_entity_id_by_entity_type_and_entity_name(
-                entity_type, entity_name
-            )
-            entry["id"] = Entity.to_entity_label_id(id_)
+            if "id" in entry:
+                id_ = entry["id"]
+            else:
+                entity_type = EntityType.LABEL
+                entity_name = entry["name"]
+                id_ = entity_repository.get_entity_id_by_entity_type_and_entity_name(
+                    entity_type, entity_name
+                )
+            entry["id"] = Entity.to_entity_label_internal_id(id_)
             changed = True
 
-        # for entry in release.companies:
-        #     entity_type = EntityType.LABEL
-        #     entity_name = entry["name"]
-        #     id_ = EntityDataAccess.get_internal_id_by_entity_type_and_entity_name(
-        #         entity_repository, entity_type, entity_name
-        #     )
-        #     if id_:
-        #         entry["id"] = id_
-        #     else:
-        #         entity_type = EntityType.ARTIST
-        #         entity_name = entry["name"]
-        #         id_ = EntityDataAccess.get_internal_id_by_entity_type_and_entity_name(
-        #             entity_repository, entity_type, entity_name
-        #         )
-        #         if id_:
-        #             entry["id"] = id_
-        #         else:
-        #             entry["id"] = -1000000001
-        #     changed = True
+        for entry in release.companies:
+            if "id" in entry:
+                id_ = entry["id"]
+            else:
+                entity_type = EntityType.LABEL
+                entity_name = entry["name"]
+                id_ = entity_repository.get_entity_id_by_entity_type_and_entity_name(
+                    entity_type, entity_name
+                )
+            entry["id"] = Entity.to_entity_label_internal_id(id_)
+            changed = True
 
         return changed
-
-    # @staticmethod
-    # def resolve_references_from_release(
-    #     entity_repository: EntityRepository, release: Release, corpus, spuriously=False
-    # ):
-    #     changed = False
-    #     spurious_id = 0
-    #     for entry in release.labels:
-    #         name = entry["name"]
-    #         entity_key = (EntityType.LABEL, name)
-    #         if not spuriously:
-    #             # release_class_name = release.__class__.__qualname__
-    #             # release_module_name = release.__class__.__module__
-    #             # entity_class_name = release_class_name.replace("Release", "Entity")
-    #             # entity_module_name = release_module_name.replace("release", "entity")
-    #             # entity_class = getattr(
-    #             #     sys.modules[entity_module_name], entity_class_name
-    #             # )
-    #
-    #             EntityDataAccess.update_corpus(entity_repository, corpus, entity_key)
-    #         if entity_key in corpus:
-    #             entry["id"] = corpus[entity_key]
-    #             changed = True
-    #         elif spuriously:
-    #             spurious_id -= 1
-    #             corpus[entity_key] = spurious_id
-    #             entry["id"] = corpus[entity_key]
-    #             changed = True
-    #     return changed
 
     @staticmethod
     def get_id_by_entity_type_and_entity_name(
@@ -290,6 +244,9 @@ class EntityDataAccess:
                     count += len(cast(Dict, entity.entities["sublabels"]))
             else:
                 count += relation_counts.get(role, 0)
+        log.debug(
+            f"roles_to_relation_count entity: {entity} roles: {roles} -> {count})"
+        )
         return count
 
     @staticmethod
@@ -319,7 +276,6 @@ class EntityDataAccess:
                         releases=None,
                         role=role,
                         distance=None,
-                        pages=None,
                     )
                     relations[relation.link_key] = relation
             role = "Member Of"
@@ -338,7 +294,6 @@ class EntityDataAccess:
                             releases=None,
                             role=role,
                             distance=None,
-                            pages=None,
                         )
                         relations[relation.link_key] = relation
                 if "members" in entity.entities:
@@ -355,7 +310,6 @@ class EntityDataAccess:
                             releases=None,
                             role=role,
                             distance=None,
-                            pages=None,
                         )
                         relations[relation.link_key] = relation
         elif entity.entity_type == EntityType.LABEL and "Sublabel Of" in roles:
@@ -374,7 +328,6 @@ class EntityDataAccess:
                         releases=None,
                         role=role,
                         distance=None,
-                        pages=None,
                     )
                     relations[relation.link_key] = relation
             if "sublabels" in entity.entities:
@@ -391,7 +344,6 @@ class EntityDataAccess:
                         releases=None,
                         role=role,
                         distance=None,
-                        pages=None,
                     )
                     relations[relation.link_key] = relation
         # log.debug(f"            structural_roles_to_relations relations: {relations}")
@@ -478,11 +430,13 @@ class EntityDataAccess:
             if matched_digits:
                 digits = matched_digits.group(2)
                 if matched_digits.group(1) == search_string:
-                    score += 1.0 + (100.0 - int(digits))
+                    score += 1.0 + (1000.0 - int(digits)) / 1000.0
+                else:
+                    score += (1000.0 - int(digits)) / 1000.0
 
             # Boost candidates that start with the given search string
             if candidate_name.lower().startswith(search_string.lower()):
-                score += 1
+                score += 1.0
 
             # Boost candidates that are an exact match
             if candidate_name.lower() == search_string.lower():

@@ -203,8 +203,8 @@ class RelationRepository(BaseRepository[RelationTable]):
         query = (
             select(RelationTable)
             .where(
-                ((RelationTable.predicate == id_) | (RelationTable.object == id_))
-                & (RelationTable.id.in_(role_ids))
+                ((RelationTable.subject == id_) | (RelationTable.object == id_))
+                & (RelationTable.predicate.in_(role_ids))
             )
             .order_by(
                 RelationTable.predicate,

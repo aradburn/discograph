@@ -14,7 +14,6 @@ from discograph.library.domain.instruments import HornbostelSachs
 from discograph.library.domain.role import (
     RoleUncommited,
     Role,
-    RoleJSTree,
     RoleJSTreeState,
     RoleJSTreeEntry,
 )
@@ -35,8 +34,8 @@ class LoaderRole(LoaderBase):
         log.debug(f"Loading initial roles ")
 
         # Read from each source of roles and save into database, deduplicating role names as we go
-        default_roles = LoaderRole.load_roles_from_files()
-        LoaderRole.save_roles(default_roles)
+        file_roles = LoaderRole.load_roles_from_files()
+        LoaderRole.save_roles(file_roles)
 
         hornbostel_sachs_roles = LoaderRole.load_hornbostel_sachs_instruments()
         LoaderRole.save_roles(hornbostel_sachs_roles)
@@ -257,6 +256,8 @@ class LoaderRole(LoaderBase):
     @classmethod
     def build_role_tree(cls, roles: list[Role]) -> None:
         for category_name in sorted(RoleType.category_names.values()):
+            # Wrap category and subcategory names to prevent clashes with actual names
+            # wrapped_category_name = f"[{category_name}]"
             state = RoleJSTreeState(opened=False, disabled=False, selected=False)
             tree_entry = RoleJSTreeEntry(
                 id=category_name,
@@ -269,11 +270,17 @@ class LoaderRole(LoaderBase):
             )
             # log.debug(f"tree_entry: {tree_entry.model_dump_json()}")
             RoleDataAccess.role_jstree.data.append(tree_entry)
+
+            # Add empty array to category lookup
+            RoleDataAccess.role_category_to_role_name_lookup[category_name] = []
+
         for subcategory_name in sorted(RoleType.subcategory_names.values()):
             if (
                 subcategory_name
                 is not RoleType.subcategory_names[RoleType.Subcategory.NONE]
             ):
+                # Wrap category and subcategory names to prevent clashes with actual names
+                # wrapped_subcategory_name = f"({subcategory_name})"
                 state = RoleJSTreeState(opened=False, disabled=False, selected=False)
                 tree_entry = RoleJSTreeEntry(
                     id=subcategory_name,
@@ -286,6 +293,10 @@ class LoaderRole(LoaderBase):
                 )
                 # log.debug(f"tree_entry: {tree_entry.model_dump_json()}")
                 RoleDataAccess.role_jstree.data.append(tree_entry)
+
+                # Add empty array to category lookup
+                RoleDataAccess.role_category_to_role_name_lookup[subcategory_name] = []
+
         for role in sorted(
             roles,
             key=lambda k: (
@@ -294,11 +305,12 @@ class LoaderRole(LoaderBase):
                 k.model_dump()["role_name"],
             ),
         ):
-            # log.debug(f"role: {role}")
             if role.role_subcategory is not RoleType.Subcategory.NONE:
                 parent = role.role_subcategory_name
             else:
                 parent = role.role_category_name
+            # log.debug(f"role: {role}")
+            # log.debug(f"parent: {parent}")
 
             # Preselect the roles in default_roles
             if role.role_name in default_roles:
@@ -316,6 +328,11 @@ class LoaderRole(LoaderBase):
             )
             # log.debug(f"tree_entry: {tree_entry.model_dump_json()}")
             RoleDataAccess.role_jstree.data.append(tree_entry)
+
+            RoleDataAccess.role_category_to_role_name_lookup[parent].append(
+                role.role_name
+            )
+
             # if role.role_category_name not in RoleDataAccess.role_tree:
             #     RoleDataAccess.role_tree[role.role_category_name] = {}
             # if (
@@ -329,6 +346,9 @@ class LoaderRole(LoaderBase):
             #     role.role_subcategory_name
             # ].append(role.role_name)
         # log.debug(f"role jstree: {RoleDataAccess.role_jstree}")
+        # log.debug(
+        #     f"role category lookup: {RoleDataAccess.role_category_to_role_name_lookup}"
+        # )
 
     @classmethod
     def insert_bulk(cls, bulk_inserts, processed_count):

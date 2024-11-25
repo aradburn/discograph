@@ -7,7 +7,6 @@ class TrellisNode:
         "_missing",
         "_missing_by_page",
         "_entity",
-        "_pages",
         "_parentage",
         "_parents",
         "_siblings",
@@ -22,7 +21,6 @@ class TrellisNode:
         self._missing = 0
         self._missing_by_page = {}
         self._entity = entity
-        self._pages = set()
         self._parentage = None
         self._parents = set()
         self._siblings = set()
@@ -54,7 +52,6 @@ class TrellisNode:
             "links": tuple(sorted(self.links)),
             "missing": self.missing,
             "name": self.entity.entity_name,
-            "pages": tuple(sorted(self.pages)),
             "size": self.entity.size,
             "type": self.entity.json_entity_key.split("-")[0],
         }
@@ -67,9 +64,7 @@ class TrellisNode:
     def get_neighbors(self):
         neighbors = set()
         neighbors.update(self.parents)
-        for sibling in self.siblings:
-            if sibling.pages.intersection(self.pages):
-                neighbors.add(sibling)
+        neighbors.update(self.siblings)
         neighbors.update(self.children)
         return neighbors
 
@@ -130,10 +125,6 @@ class TrellisNode:
     @property
     def missing_by_page(self):
         return self._missing_by_page
-
-    @property
-    def pages(self):
-        return self._pages
 
     @property
     def parents(self):

@@ -75,10 +75,12 @@ class WorkerEntityPassThree(multiprocessing.Process):
                 relation.subject,
                 relation.object,
             )
-            _relation_counts[relation.role].add(key)
+            _relation_counts.get(relation.role).add(key)
+        # log.debug(f"_relation_counts: {_relation_counts}")
 
         for role, keys in _relation_counts.items():
             _relation_counts[role] = len(keys)
+        # log.debug(f"_relation_counts counted: {_relation_counts}")
 
         try:
             # Update the relation counts for this entity

@@ -237,24 +237,3 @@ class PostgresHelper(DatabaseHelper):
             return insert(schema_class).on_conflict_do_nothing().values(values_list)
         else:
             return insert(schema_class).values(values_list)
-
-    # @classmethod
-    # def build_search_text_query(cls, search_string) -> ColumnElement[bool]:
-    #     return cls.search_content.match(search_string)
-    #     # search_string = search_string.lower()
-    #     # # Transliterate the unicode string into a plain ASCII string
-    #     # search_string = unidecode(search_string, "preserve")
-    #     # search_string = ",".join(search_string.split())
-    #     # # TODO fix search_string injection
-    #     # query = f"""
-    #     #     SELECT entity_type,
-    #     #         entity_id,
-    #     #         name,
-    #     #         ts_rank_cd(search_content, query, 63) AS rank
-    #     #     FROM postgresentity,
-    #     #         to_tsquery({search_string}) query
-    #     #     WHERE query @@ search_content
-    #     #     ORDER BY rank DESC
-    #     #     LIMIT 100
-    #     #     """
-    #     # return query

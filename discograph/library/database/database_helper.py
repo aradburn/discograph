@@ -41,7 +41,7 @@ class DatabaseHelper(ABC):
     MAX_NODES = 400
     MAX_NODES_MOBILE = 25
 
-    MAX_DEGREE = 3
+    MAX_DEGREE = 5
     # was 12
     MAX_DEGREE_MOBILE = 3
 

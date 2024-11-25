@@ -6,7 +6,6 @@ from discograph.library.database.release_repository import ReleaseRepository
 from discograph.library.database.transaction import transaction
 from discograph.library.loader.loader_base import LoaderBase
 from discograph.library.loader.worker_relation_pass_one import WorkerRelationPassOne
-from discograph.library.loader.worker_relation_pass_two import WorkerRelationPassTwo
 from discograph.utils import timeit
 
 log = logging.getLogger(__name__)
@@ -35,38 +34,6 @@ class LoaderRelation(LoaderBase):
         workers = []
         for release_ids in batched_release_ids:
             worker = WorkerRelationPassOne(release_ids, current_total, total_count)
-            worker.start()
-            workers.append(worker)
-            current_total += number_in_batch
-
-            if len(workers) > get_concurrency_count():
-                worker = workers.pop(0)
-                cls.loader_wait_for_worker(worker)
-
-        while len(workers) > 0:
-            worker = workers.pop(0)
-            cls.loader_wait_for_worker(worker)
-
-    @classmethod
-    @timeit
-    def loader_relation_pass_two(cls, date: str):
-        log.error(f"loader relation pass two - date: {date}")
-
-        with transaction():
-            release_repository = ReleaseRepository()
-            total_count = release_repository.count()
-            if total_count > LoaderBase.BULK_INSERT_BATCH_SIZE * 10:
-                number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
-            else:
-                number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE / 10)
-
-            batched_release_ids = release_repository.get_batched_ids(number_in_batch)
-
-        current_total = 0
-
-        workers = []
-        for release_ids in batched_release_ids:
-            worker = WorkerRelationPassTwo(release_ids, current_total, total_count)
             worker.start()
             workers.append(worker)
             current_total += number_in_batch

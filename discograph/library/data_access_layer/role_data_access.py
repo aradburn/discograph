@@ -20,7 +20,7 @@ class RoleDataAccess:
     role_id_to_role_category_lookup: Dict[int, RoleType.Category] = {}
     role_id_to_role_name_lookup: Dict[int, str] = {}
     role_jstree: RoleJSTree = RoleJSTree()
-    # role_tree: Dict[str, Dict[str, list[str]]] = {}
+    role_category_to_role_name_lookup: Dict[str, list[str]] = {}
     # role_categories: Set[str] = set()
 
     # REGEXs

@@ -56,10 +56,15 @@ class _EntityBase(InternalDomainObject):
     @staticmethod
     def to_entity_internal_id(entity_id: int, entity_type: EntityType) -> int:
         if entity_type == EntityType.ARTIST:
+            assert entity_id != MISSING_LABEL_ENTITY
+            assert entity_id < LABEL_ENTITY_ID_OFFSET
             return entity_id
         else:
             if entity_id != MISSING_LABEL_ENTITY:
-                return entity_id + LABEL_ENTITY_ID_OFFSET
+                if entity_id < LABEL_ENTITY_ID_OFFSET:
+                    return entity_id + LABEL_ENTITY_ID_OFFSET
+                else:
+                    return entity_id
             else:
                 return MISSING_LABEL_ENTITY
 
@@ -77,9 +82,9 @@ class _EntityBase(InternalDomainObject):
         return entity_id, entity_type
 
     @staticmethod
-    def to_entity_label_id(entity_id: int | None) -> int:
+    def to_entity_label_internal_id(entity_id: int | None) -> int:
         if entity_id:
-            return entity_id
+            return Entity.to_entity_internal_id(entity_id, EntityType.LABEL)
         else:
             return MISSING_LABEL_ENTITY
 
