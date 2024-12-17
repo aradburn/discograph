@@ -22,7 +22,6 @@ class _EntityBase(InternalDomainObject):
     entity_metadata: dict | list
     entities: dict | list
     search_content: str
-    random: float
 
     # PUBLIC PROPERTIES
 

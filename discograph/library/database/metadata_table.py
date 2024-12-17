@@ -29,4 +29,4 @@ class MetadataTable(Base):
     )
 
     def __repr__(self):
-        return utils.normalize_dict(utils.row2dict(self), skip_keys={"random"})
+        return utils.normalize_dict(utils.row2dict(self))

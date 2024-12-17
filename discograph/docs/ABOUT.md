@@ -47,7 +47,6 @@ The `entities` table looks like this:
 - `entity_type` (1 == Artist, 2 == Label)
 - `entity_id` (the Discogs database id)
 - `name`
-- `random` (random float for efficiently looking up random entities)
 - `metadata` (ANV, profile, etc.)
 - `entities` (JSON store of entity IDS for aliases, parent/sublabels, members/groups) (this simplifies many queries)
 - `relation_counts` (precomputed counts of # of relations of each time involving this entity, for optimizing graph

@@ -1,6 +1,5 @@
 import logging
 import multiprocessing
-from random import random
 from typing import List, Any
 
 from sqlalchemy.exc import OperationalError, IntegrityError
@@ -158,7 +157,6 @@ class WorkerRelationPassOne(multiprocessing.Process):
                 subject=relation_dict["subject"],
                 role_name=relation_dict["role"],
                 object=relation_dict["object"],
-                random=random(),
             )
             relation_uncommitteds.append(relation_uncommitted)
         return relation_uncommitteds

@@ -1,7 +1,6 @@
 import logging
 import pickle
 from pathlib import Path
-from random import random
 from typing import Any
 
 from sortedcontainers import SortedSet
@@ -281,7 +280,6 @@ class LoaderEntity(LoaderBase):
             data["id"] = Entity.to_entity_internal_id(
                 data["entity_id"], data["entity_type"]
             )
-            data["random"] = random()
         return data
 
 

@@ -74,7 +74,6 @@ class TestUtils(unittest.TestCase):
             "entity_one_type": "EntityType.ARTIST",
             "entity_two_id": 307,
             "entity_two_type": "EntityType.ARTIST",
-            "random": None,
             "releases": None,
             "role": "Member Of",
         }
@@ -86,7 +85,6 @@ class TestUtils(unittest.TestCase):
                 "entity_one_type": "EntityType.ARTIST",
                 "entity_two_id": 307,
                 "entity_two_type": "EntityType.ARTIST",
-                "random": null,
                 "releases": null,
                 "role": "Member Of"
             }
@@ -141,7 +139,6 @@ class TestUtils(unittest.TestCase):
                 "entity_two_id": 3603,
                 "entity_two_type": "EntityType.ARTIST",
                 "role": "Member Of",
-                "random": None,
             },
         }
 
@@ -160,7 +157,6 @@ class TestUtils(unittest.TestCase):
                     "entity_one_type": "EntityType.ARTIST",
                     "entity_two_id": 3603,
                     "entity_two_type": "EntityType.ARTIST",
-                    "random": null,
                     "role": "Member Of"
                 }
             }
@@ -174,7 +170,6 @@ class TestUtils(unittest.TestCase):
                 "entity_one_type": "EntityType.ARTIST",
                 "entity_two_id": 307,
                 "entity_two_type": "EntityType.ARTIST",
-                "random": None,
                 "releases": None,
                 "role": "Member Of",
             },
@@ -183,7 +178,6 @@ class TestUtils(unittest.TestCase):
                 "entity_one_type": "EntityType.ARTIST",
                 "entity_two_id": 3603,
                 "entity_two_type": "EntityType.ARTIST",
-                "random": None,
                 "releases": None,
                 "role": "Member Of",
             },
@@ -196,7 +190,6 @@ class TestUtils(unittest.TestCase):
                 "entity_one_type": "EntityType.ARTIST",
                 "entity_two_id": 307,
                 "entity_two_type": "EntityType.ARTIST",
-                "random": null,
                 "releases": null,
                 "role": "Member Of"
             },
@@ -205,7 +198,6 @@ class TestUtils(unittest.TestCase):
                 "entity_one_type": "EntityType.ARTIST",
                 "entity_two_id": 3603,
                 "entity_two_type": "EntityType.ARTIST",
-                "random": null,
                 "releases": null,
                 "role": "Member Of"
             }

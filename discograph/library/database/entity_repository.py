@@ -1,7 +1,7 @@
 import logging
 from typing import Generator, Any, cast, List
 
-from sqlalchemy import Result, select, update, Select, String, delete, func
+from sqlalchemy import Result, select, update, Select, delete, func
 
 from discograph import utils
 from discograph.exceptions import NotFoundError, DatabaseError, UnprocessableError
@@ -168,24 +168,24 @@ class EntityRepository(BaseRepository[EntityTable]):
         )
         return self._get_one_by_query(query)
 
-    def get_random_by_id(self, id_: int) -> Entity:
-        query = (
-            select(EntityTable)
-            .where(
-                (EntityTable.id == id_)
-                & (EntityTable.entity_type == EntityType.ARTIST)
-                & (cast(EntityTable.entities, String) != "{}")
-                & (cast(EntityTable.relation_counts, String) != "{}")
-                & (
-                    (EntityTable.relation_counts["Member Of"].cast(String) != "{}")
-                    | (EntityTable.relation_counts["Alias"].cast(String) != "{}")
-                    | (EntityTable.entities["members"].cast(String) != "{}")
-                )
-            )
-            .order_by(EntityTable.random)
-            .limit(1)
-        )
-        return self._get_one_by_query(query)
+    # def get_random_by_id(self, id_: int) -> Entity:
+    #     query = (
+    #         select(EntityTable)
+    #         .where(
+    #             (EntityTable.id == id_)
+    #             & (EntityTable.entity_type == EntityType.ARTIST)
+    #             & (cast(EntityTable.entities, String) != "{}")
+    #             & (cast(EntityTable.relation_counts, String) != "{}")
+    #             & (
+    #                 (EntityTable.relation_counts["Member Of"].cast(String) != "{}")
+    #                 | (EntityTable.relation_counts["Alias"].cast(String) != "{}")
+    #                 | (EntityTable.entities["members"].cast(String) != "{}")
+    #             )
+    #         )
+    #         .order_by(EntityTable.random)
+    #         .limit(1)
+    #     )
+    #     return self._get_one_by_query(query)
 
     # def get_random(self) -> Entity:
     #     n = random()

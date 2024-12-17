@@ -173,8 +173,6 @@ def normalize(argument: str, indent: int | str | None = None) -> str:
 
 
 def normalize_dict(obj: Any, skip_keys=None) -> str:
-    if skip_keys is None:
-        skip_keys = ["random"]
     preprocessor = SkipFilter(keys=skip_keys)
 
     def list_public_attributes(input_var):

@@ -30,7 +30,7 @@ class TestDatabaseRelation(DatabaseTestCase):
             )
 
             relation = relation_repository.find_by_key(key)
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -136,7 +136,7 @@ class TestDatabaseRelation(DatabaseTestCase):
             )
 
             relation = relation_repository.find_by_key(key)
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -174,7 +174,7 @@ class TestDatabaseRelation(DatabaseTestCase):
             )
 
             relation = relation_repository.find_by_key(key)
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         expected_relation = {
             "subject": 335173,

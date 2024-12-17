@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 
 class _RelationBase(InternalDomainObject):
-    random: float
+    pass
 
 
 class RelationUncommitted(_RelationBase):

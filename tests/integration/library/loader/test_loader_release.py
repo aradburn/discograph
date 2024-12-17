@@ -122,7 +122,7 @@ class TestLoaderRelease(unittest.TestCase):
 
         # WHEN
         release = LoaderRelease().from_element(release_element)
-        actual = utils.normalize_dict(release.model_dump(exclude={"random"}))
+        actual = utils.normalize_dict(release.model_dump())
 
         # THEN
         expected_release = {
@@ -175,7 +175,7 @@ class TestLoaderRelease(unittest.TestCase):
 
         # WHEN
         release = LoaderRelease().from_element(release_element)
-        actual = utils.normalize_dict(release.model_dump(exclude={"random"}))
+        actual = utils.normalize_dict(release.model_dump())
 
         # THEN
         expected = utils.normalize(
@@ -300,7 +300,7 @@ class TestLoaderRelease(unittest.TestCase):
 
         # WHEN
         release = LoaderRelease().from_element(release_element)
-        actual = utils.normalize_dict(release.model_dump(exclude={"random"}))
+        actual = utils.normalize_dict(release.model_dump())
 
         # THEN
         expected = utils.normalize(

@@ -246,3 +246,4 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 
 
+/tests/data_text_search/text_search.data

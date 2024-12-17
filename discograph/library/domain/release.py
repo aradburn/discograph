@@ -24,4 +24,3 @@ class Release(InternalDomainObject):
     styles: List[str] | None = None
     title: str
     tracklist: List[Dict[str, Any]] | None = None
-    random: float

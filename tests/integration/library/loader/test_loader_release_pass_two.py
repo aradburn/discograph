@@ -24,7 +24,7 @@ class TestLoaderReleasePassTwo(DatabaseTestCase):
         with transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
 
         # THEN
         expected_release = {
@@ -98,7 +98,7 @@ class TestLoaderReleasePassTwo(DatabaseTestCase):
         with transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
 
         # THEN
         expected_release = {
@@ -206,7 +206,7 @@ class TestLoaderReleasePassTwo(DatabaseTestCase):
         with transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
 
         # THEN
         expected_release = {

@@ -1,5 +1,4 @@
 import logging
-from random import random
 from typing import Any
 
 from sortedcontainers import SortedSet
@@ -282,7 +281,6 @@ class LoaderRelease(LoaderBase):
                 data["master_id"] = None
             if "notes" not in data:
                 data["notes"] = None
-            data["random"] = random()
         return data
 
 

@@ -43,7 +43,6 @@ class WorkerReleaseUpdater(multiprocessing.Process):
                         updated_release,
                         exclude_paths=[
                             "id",
-                            "random",
                             "dirty_fields",
                             "_dirty",
                             "root.labels[0]['id']",

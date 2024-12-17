@@ -17,7 +17,7 @@ class TestDatabaseEntity(DatabaseTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {
@@ -95,7 +95,7 @@ class TestDatabaseEntity(DatabaseTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         expected_entity = {
             "entities": {
@@ -154,7 +154,7 @@ class TestDatabaseEntity(DatabaseTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         expected_entity = {
             "entities": {},

@@ -28,7 +28,7 @@ class TestLoaderEntityPassThree(DatabaseTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {
@@ -78,7 +78,7 @@ class TestLoaderEntityPassThree(DatabaseTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {
@@ -156,7 +156,7 @@ class TestLoaderEntityPassThree(DatabaseTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {
@@ -231,7 +231,7 @@ class TestLoaderEntityPassThree(DatabaseTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {
@@ -268,7 +268,7 @@ class TestLoaderEntityPassThree(DatabaseTestCase):
                 entity_id, entity_type
             )
             print(f"entity: {entity}")
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {
@@ -318,7 +318,7 @@ class TestLoaderEntityPassThree(DatabaseTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {

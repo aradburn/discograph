@@ -1,5 +1,6 @@
 import logging
 import math
+import random
 from collections import Counter
 
 from discograph.utils import calculate_size
@@ -25,6 +26,7 @@ class TextSearchIndex:
     def __init__(self):
         self.index: dict[str, set[int]] = {}
         self.documents: dict[int, str] = {}
+        self.keys: list[int] = []
 
     def index_entry(self, id_: int, text: str) -> None:
         from discograph.library.data_access_layer.entity_data_access import (
@@ -33,6 +35,7 @@ class TextSearchIndex:
 
         # Save the original document to return when searched for
         self.documents[id_] = text
+        self.keys.append(id_)
 
         normalised_text = EntityDataAccess.normalise_search_content(text)
         for token in normalised_text.split():
@@ -125,5 +128,12 @@ class TextSearchIndex:
     def print_sizes(self) -> None:
         size_index = calculate_size(self.index)
         size_documents = calculate_size(self.documents)
+        size_keys = calculate_size(self.keys)
         log.debug(f"size of index    : {size_index}")
         log.debug(f"size of documents: {size_documents}")
+        log.debug(f"size of keys: {size_keys}")
+
+    def get_random_id(self) -> int:
+        count = len(self.keys)
+        random_index = random.randint(0, count)
+        return self.keys[random_index]

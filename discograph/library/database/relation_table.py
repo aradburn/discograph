@@ -1,5 +1,4 @@
 from sqlalchemy import (
-    Float,
     ForeignKey,
     Index,
     Integer,
@@ -28,7 +27,6 @@ class RelationTable(Base):
     # entity_two_id: Mapped[int] = mapped_column(Integer)
     # entity_two_type: Mapped[EntityType] = mapped_column(IntEnum(EntityType))
     # role_id: Mapped[int] = mapped_column(ForeignKey(RoleTable.role_id))
-    random: Mapped[float] = mapped_column(Float)
 
     __table_args__ = (
         Index(
@@ -52,4 +50,4 @@ class RelationTable(Base):
     )
 
     def __repr__(self):
-        return utils.normalize_dict(utils.row2dict(self), skip_keys={"random"})
+        return utils.normalize_dict(utils.row2dict(self), skip_keys={})

@@ -1,5 +1,4 @@
 import logging
-import random
 from abc import ABC, abstractmethod
 from functools import partial
 from typing import Type, List, Any
@@ -18,6 +17,7 @@ from discograph.library.database.relation_release_year_repository import (
     RelationReleaseYearRepository,
 )
 from discograph.library.database.relation_repository import RelationRepository
+from discograph.library.domain.entity import Entity
 from discograph.library.domain.relation import Relation
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.full_text_search.text_search_index import TextSearchIndex
@@ -275,70 +275,82 @@ class DatabaseHelper(ABC):
     @staticmethod
     def get_random_entity(
         entity_repository: EntityRepository,
-        relation_repository: RelationRepository,
-        role_names: List[str] = None,
     ) -> tuple[int, EntityType]:
 
-        structural_roles = [
-            "Alias",
-            "Member Of",
-            "Sublabel Of",
-        ]
-        if role_names and any(_ not in structural_roles for _ in role_names):
-            relation = relation_repository.get_random(role_names=role_names)
-            entity_choice = random.randint(1, 2)
-            if entity_choice == 1:
-                entity_type = relation.entity_one_type
-                entity_id = relation.entity_one_id
-            else:
-                entity_type = relation.entity_two_type
-                entity_id = relation.entity_two_id
-            log.debug("random link")
-        else:
-            counter = 0
+        # structural_roles = [
+        #     "Alias",
+        #     "Member Of",
+        #     "Sublabel Of",
+        # ]
+        # if role_names and any(_ not in structural_roles for _ in role_names):
+        #     relation = relation_repository.get_random(role_names=role_names)
+        #     entity_choice = random.randint(1, 2)
+        #     if entity_choice == 1:
+        #         entity_type = relation.entity_one_type
+        #         entity_id = relation.entity_one_id
+        #     else:
+        #         entity_type = relation.entity_two_type
+        #         entity_id = relation.entity_two_id
+        #     log.debug("random link")
+        # else:
+        counter = 0
 
-            while True:
-                if DatabaseHelper.entity_count_cached == 0:
-                    DatabaseHelper.entity_count_cached = entity_repository.count()
-                random_id = random.randint(1, DatabaseHelper.entity_count_cached)
-                try:
-                    entity = entity_repository.get_random_by_id(random_id)
-                    # entity = entity_repository.get_by_id(random_id)
-                except NotFoundError:
-                    counter += 1
-                    entity = None
-                    continue
-
-                relation_counts = entity.relation_counts
-                entities = entity.entities
-                # log.debug(f"relation_counts: {relation_counts}")
+        while True:
+            random_id = DatabaseHelper.search_get_random_id()
+            entity_id, entity_type = Entity.to_entity_external_id(random_id)
+            if entity_type == EntityType.LABEL:
+                log.debug("random skip label")
+                entity = None
+                continue
+            try:
+                entity = entity_repository.get_by_id(random_id)
+            except NotFoundError:
+                log.debug("random not found")
                 counter += 1
-                if entity.entity_type == EntityType.LABEL:
-                    log.debug("random skip label")
-                    continue
-                if (
-                    relation_counts is not None
-                    and (
-                        "Member Of" in relation_counts
-                        or "Alias" in relation_counts
-                        or "members" in entities
-                    )
-                    and entity.entity_type == EntityType.ARTIST
-                ):
-                    log.debug(f"random node: {entity} counter: {counter}")
-                    break
-                else:
-                    log.debug(f"random fail: {entity} counter: {counter}")
+                entity = None
+                continue
 
-                if counter >= 1000:
-                    log.debug("random count expired")
-                    break
+            # if DatabaseHelper.entity_count_cached == 0:
+            #     DatabaseHelper.entity_count_cached = entity_repository.count()
+            # random_id = random.randint(1, DatabaseHelper.entity_count_cached)
+            # try:
+            #     entity = entity_repository.get_random_by_id(random_id)
+            #     # entity = entity_repository.get_by_id(random_id)
+            # except NotFoundError:
+            #     counter += 1
+            #     entity = None
+            #     continue
 
-            if entity:
-                entity_id, entity_type = entity.entity_id, entity.entity_type
+            relation_counts = entity.relation_counts
+            entities = entity.entities
+            # log.debug(f"relation_counts: {relation_counts}")
+            counter += 1
+            if entity.entity_type == EntityType.LABEL:
+                log.debug("random skip label")
+                continue
+            if (
+                relation_counts is not None
+                and (
+                    "Member Of" in relation_counts
+                    or "Alias" in relation_counts
+                    or "members" in entities
+                )
+                and entity.entity_type == EntityType.ARTIST
+            ):
+                log.debug(f"random node: {entity} counter: {counter}")
+                break
             else:
-                entity_id = 0
-                entity_type = EntityType.ARTIST
+                log.debug(f"random fail: {entity} counter: {counter}")
+
+            if counter >= 1000:
+                log.debug("random count expired")
+                break
+
+        if entity:
+            entity_id, entity_type = entity.entity_id, entity.entity_type
+        else:
+            entity_id = 0
+            entity_type = EntityType.ARTIST
 
         assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
         return entity_id, entity_type
@@ -398,3 +410,7 @@ class DatabaseHelper(ABC):
     @classmethod
     def search_text_index(cls, search_text):
         return cls.text_search_index.search(search_text)
+
+    @classmethod
+    def search_get_random_id(cls):
+        return cls.text_search_index.get_random_id()

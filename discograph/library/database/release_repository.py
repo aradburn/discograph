@@ -1,5 +1,4 @@
 import logging
-from random import random
 from typing import Generator, Any, List
 
 from sqlalchemy import Result, select, update, Select, delete
@@ -70,16 +69,16 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
     def get_batched_ids(self, num_in_batch: int):
         return utils.batched(self.get_ids(), num_in_batch)
 
-    def get_random_release(self) -> Release:
-        n = random()
-        query = (
-            select(ReleaseTable)
-            .where(ReleaseTable.random > n)
-            .order_by(ReleaseTable.random)
-            .limit(1)
-        )
-        t = self._get_one_by_query(query)
-        return t
+    # def get_random_release(self) -> Release:
+    #     n = random()
+    #     query = (
+    #         select(ReleaseTable)
+    #         .where(ReleaseTable.random > n)
+    #         .order_by(ReleaseTable.random)
+    #         .limit(1)
+    #     )
+    #     t = self._get_one_by_query(query)
+    #     return t
 
     def update(
         self,

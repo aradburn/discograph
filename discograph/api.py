@@ -100,17 +100,11 @@ def route__api__search(search_string):
 def route__api__random():
     from discograph.library.database.database_helper import DatabaseHelper
 
-    parsed_args = discograph.utils.parse_request_args(request.args)
-    original_roles, original_year = parsed_args
-    # log.debug(f"Role names: {original_roles}")
     with transaction():
         entity_repository = EntityRepository()
-        relation_repository = RelationRepository()
         try:
             entity_id, entity_type = DatabaseHelper.db_helper.get_random_entity(
-                entity_repository,
-                relation_repository,
-                role_names=original_roles,
+                entity_repository
             )
             log.debug(f"    Found random entity: {entity_type}-{entity_id}")
         except Exception as e:

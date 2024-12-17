@@ -320,7 +320,6 @@ class RelationDataAccess:
                 entity_two_id=entity_two_id,
                 entity_two_type=entity_two_type,
                 role=relation_internal.role,
-                random=relation_internal.random,
             )
         except NotFoundError:
             return None
@@ -343,14 +342,11 @@ class RelationDataAccess:
         relation_internal_dict: dict[str, Any],
     ) -> dict[str, Any] | None:
         relation_internal_dict["id"] = 0
-        relation_internal_dict["random"] = 0
         relation_internal = RelationInternal.model_validate(relation_internal_dict)
         relation = RelationDataAccess.to_relation(relation_internal)
         if relation is None:
             return None
-        relation_external_dict = relation.model_dump(
-            exclude={"id", "random", "releases"}
-        )
+        relation_external_dict = relation.model_dump(exclude={"id", "releases"})
         relation_external_dict["release_id"] = relation_internal_dict["release_id"]
         relation_external_dict["year"] = relation_internal_dict["year"]
         return relation_external_dict

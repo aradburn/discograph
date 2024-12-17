@@ -10,7 +10,7 @@ class TestDatabaseRelease(DatabaseTestCase):
         with transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"random"}))
+            actual = utils.normalize_dict(release.model_dump())
 
         expected_release = {
             "artists": [{"id": 41, "name": "Autechre"}],
@@ -80,7 +80,7 @@ class TestDatabaseRelease(DatabaseTestCase):
         with transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"random"}))
+            actual = utils.normalize_dict(release.model_dump())
 
         expected_release = {
             "artists": [{"id": 939, "name": "Higher Intelligence Agency, The"}],

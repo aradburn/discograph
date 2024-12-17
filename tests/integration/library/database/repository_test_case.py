@@ -46,6 +46,7 @@ class RepositoryTestCase(unittest.TestCase):
                 cls._db_helper = database.setup_database(cls._config)
             except DatabaseError:
                 log.error("Error in database setup")
+                cls._db_helper.drop_tables(ALL_DATABASE_TABLE_NAMES)
             else:
                 cls._db_helper.drop_tables(DATABASE_TABLE_NAMES_WITHOUT_ROLE)
                 cls._db_helper.create_tables(ALL_DATABASE_TABLE_NAMES)

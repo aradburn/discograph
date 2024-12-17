@@ -232,7 +232,6 @@ class RelationGrapher(ABC):
                         entity_one_type=relation.entity_one_type,
                         entity_two_id=relation.entity_two_id,
                         entity_two_type=relation.entity_two_type,
-                        random=relation.random,
                         releases=relation.releases,
                         role=relation.role,
                         distance=None,

@@ -46,7 +46,7 @@ class TestLoaderRelationPassOne(DatabaseTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -159,7 +159,7 @@ class TestLoaderRelationPassOne(DatabaseTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -202,7 +202,7 @@ class TestLoaderRelationPassOne(DatabaseTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -314,7 +314,7 @@ class TestLoaderRelationPassOne(DatabaseTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -355,7 +355,7 @@ class TestLoaderRelationPassOne(DatabaseTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -394,7 +394,7 @@ class TestLoaderRelationPassOne(DatabaseTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -431,7 +431,7 @@ class TestLoaderRelationPassOne(DatabaseTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {

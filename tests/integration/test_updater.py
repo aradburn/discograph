@@ -25,7 +25,7 @@ class TestUpdater(UpdaterTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {
@@ -76,7 +76,7 @@ class TestUpdater(UpdaterTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {
@@ -136,7 +136,7 @@ class TestUpdater(UpdaterTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {
@@ -185,7 +185,7 @@ class TestUpdater(UpdaterTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {
@@ -221,7 +221,7 @@ class TestUpdater(UpdaterTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {
@@ -253,7 +253,7 @@ class TestUpdater(UpdaterTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {
@@ -297,7 +297,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
 
         # THEN
         expected_release = {
@@ -371,7 +371,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
 
         # THEN
         expected_release = {
@@ -464,7 +464,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
 
         # THEN
         expected_release = {
@@ -577,7 +577,7 @@ class TestUpdater(UpdaterTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -617,7 +617,7 @@ class TestUpdater(UpdaterTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -657,7 +657,7 @@ class TestUpdater(UpdaterTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -697,7 +697,7 @@ class TestUpdater(UpdaterTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -729,7 +729,7 @@ class TestUpdater(UpdaterTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -834,7 +834,7 @@ class TestUpdater(UpdaterTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -871,7 +871,7 @@ class TestUpdater(UpdaterTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
