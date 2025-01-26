@@ -108,8 +108,8 @@ def route__api__random():
             )
             log.debug(f"    Found random entity: {entity_type}-{entity_id}")
         except Exception as e:
-            log.error(f"{e}")
-            raise DatabaseError(message="Database error")
+            log.error(f"API /random error: {e}")
+            raise DatabaseError(message="API error")
 
     data = {"center": f"{entity_type.name.lower()}-{entity_id}"}
     return jsonify(data)

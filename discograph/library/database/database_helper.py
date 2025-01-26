@@ -34,7 +34,7 @@ class DatabaseHelper(ABC):
     idx_entity_one_id: Index | None = None
     idx_entity_two_id: Index | None = None
 
-    text_search_index: TextSearchIndex
+    text_search_index: TextSearchIndex | None = None
 
     entity_count_cached = 0
 
@@ -333,7 +333,8 @@ class DatabaseHelper(ABC):
                 and (
                     "Member Of" in relation_counts
                     or "Alias" in relation_counts
-                    or "members" in entities
+                    or ("members" in entities and len(entities["members"]) > 0)
+                    or ("groups" in entities and len(entities["groups"]) > 0)
                 )
                 and entity.entity_type == EntityType.ARTIST
             ):

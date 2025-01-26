@@ -56,7 +56,7 @@ function dg_network_onNodeEnterElementConstruction(nodeEnter) {
         .attr("class", function(d) {
             var classes = [
                 "outer",
-                dg_color_class(d),
+                dg_node_color_class(d),
             ];
             return classes.join(" ");
         })
@@ -66,7 +66,7 @@ function dg_network_onNodeEnterElementConstruction(nodeEnter) {
         .attr("class", function(d) {
             var classes = [
                 "inner",
-                dg_color_class(d),
+                dg_node_color_class(d),
             ];
             return classes.join(" ");
         })
@@ -81,7 +81,7 @@ function dg_network_onNodeEnterElementConstruction(nodeEnter) {
         .attr("class", function(d) {
             var classes = [
                 "inner",
-                dg_color_class(d),
+                dg_node_color_class(d),
             ];
             return classes.join(" ");
         })
@@ -147,7 +147,7 @@ function dg_network_onNodeUpdate(nodeUpdate) {
         .attr("class", function(d) {
             var classes = [
                 "outer",
-                dg_color_class(d),
+                dg_node_color_class(d),
             ];
             return classes.join(" ");
         })
@@ -155,7 +155,7 @@ function dg_network_onNodeUpdate(nodeUpdate) {
         .attr("class", function(d) {
             var classes = [
                 "inner",
-                dg_color_class(d),
+                dg_node_color_class(d),
             ];
             return classes.join(" ");
         })

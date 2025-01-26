@@ -105,3 +105,7 @@ function dg_clear_messages(delay) {
             $('#flash').empty();
         }, delay);
 }
+
+function clamp(num, lower, upper) {
+    return Math.min(Math.max(num, lower), upper);
+}

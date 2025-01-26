@@ -63,7 +63,7 @@ a .input-group-addon:active {
 }
 /* NETWORK */
 #networkLayer .link {
-  opacity: 0.5;
+  opacity: 0.7;
   /*    &.highlighted {
             opacity: 0.5;
             path {
@@ -76,11 +76,6 @@ a .input-group-addon:active {
             }
         }*/
 }
-#networkLayer .link path {
-  /*    &.distance-0 {
-                opacity: 0.6;
-            }*/
-}
 #networkLayer .link path.inner {
   fill: none;
   /*     marker-end: url(#arrowhead);
@@ -88,7 +83,7 @@ a .input-group-addon:active {
                 stroke-linecap: round;
                 stroke-linejoin: round;*/
   stroke-width: 1;
-  stroke: #000;
+  /*     stroke: #000;*/
 }
 #networkLayer .link path.distance-0 {
   stroke-width: 6;
@@ -138,9 +133,9 @@ a .input-group-addon:active {
 }
 #networkLayer .link.member-of path.inner,
 #networkLayer .link.sublabel-of path.inner {
-  opacity: 0.5;
+  opacity: 0.7;
   /*     marker-end: url(#aggregate);*/
-  stroke: #00BD20;
+  /*     stroke: #00BD20;*/
   /*     stroke-dasharray: 0, 0;*/
 }
 #networkLayer .link.released-on path.inner {
@@ -370,219 +365,273 @@ a .input-group-addon:active {
   line-height: 1.4em;
   margin-top: 0;
 }
-.YlOrRd .q0-9 {
+.YlOrRd .color-0 {
   fill: #ffffcc;
 }
-.YlOrRd .q1-9 {
+.YlOrRd .color-1 {
   fill: #ffeda0;
 }
-.YlOrRd .q2-9 {
+.YlOrRd .color-2 {
   fill: #fed976;
 }
-.YlOrRd .q3-9 {
+.YlOrRd .color-3 {
   fill: #feb24c;
 }
-.YlOrRd .q4-9 {
+.YlOrRd .color-4 {
   fill: #fd8d3c;
 }
-.YlOrRd .q5-9 {
+.YlOrRd .color-5 {
   fill: #fc4e2a;
 }
-.YlOrRd .q6-9 {
+.YlOrRd .color-6 {
   fill: #e31a1c;
 }
-.YlOrRd .q7-9 {
+.YlOrRd .color-7 {
   fill: #bd0026;
 }
-.YlOrRd .q8-9 {
+.YlOrRd .color-8 {
   fill: #800026;
 }
-.YlGnBu .q0-9 {
+.YlGnBu .color-0 {
   fill: #ffffd9;
 }
-.YlGnBu .q1-9 {
+.YlGnBu .color-1 {
   fill: #edf8b1;
 }
-.YlGnBu .q2-9 {
+.YlGnBu .color-2 {
   fill: #c7e9b4;
 }
-.YlGnBu .q3-9 {
+.YlGnBu .color-3 {
   fill: #7fcdbb;
 }
-.YlGnBu .q4-9 {
+.YlGnBu .color-4 {
   fill: #41b6c4;
 }
-.YlGnBu .q5-9 {
+.YlGnBu .color-5 {
   fill: #1d91c0;
 }
-.YlGnBu .q6-9 {
+.YlGnBu .color-6 {
   fill: #225ea8;
 }
-.YlGnBu .q7-9 {
+.YlGnBu .color-7 {
   fill: #253494;
 }
-.YlGnBu .q8-9 {
+.YlGnBu .color-8 {
   fill: #081d58;
 }
-.RdGnBl .q8-9 {
+.RdGnBl .color-8 {
   fill: #ff0000;
 }
-.RdGnBl .q7-9 {
+.RdGnBl .color-7 {
   fill: #ff004c;
 }
-.RdGnBl .q6-9 {
+.RdGnBl .color-6 {
   fill: #f25f2d;
 }
-.RdGnBl .q5-9 {
+.RdGnBl .color-5 {
   fill: #dc8926;
 }
-.RdGnBl .q4-9 {
+.RdGnBl .color-4 {
   fill: #c5a841;
 }
-.RdGnBl .q3-9 {
+.RdGnBl .color-3 {
   fill: #b1c16c;
 }
-.RdGnBl .q2-9 {
+.RdGnBl .color-2 {
   fill: #a8d39c;
 }
-.RdGnBl .q1-9 {
+.RdGnBl .color-1 {
   fill: #b0e1c7;
 }
-.RdGnBl .q0-9 {
+.RdGnBl .color-0 {
   fill: #ccece6;
 }
-.RdGnLb .q8-9 {
+.RdGnLb .color-8 {
   fill: #ff0000;
 }
-.RdGnLb .q7-9 {
+.RdGnLb .color-7 {
   fill: #df6e00;
 }
-.RdGnLb .q6-9 {
+.RdGnLb .color-6 {
   fill: #b99800;
 }
-.RdGnLb .q5-9 {
+.RdGnLb .color-5 {
   fill: #93b628;
 }
-.RdGnLb .q4-9 {
+.RdGnLb .color-4 {
   fill: #70cc72;
 }
-.RdGnLb .q3-9 {
+.RdGnLb .color-3 {
   fill: #5cdcb1;
 }
-.RdGnLb .q2-9 {
+.RdGnLb .color-2 {
   fill: #73e8e2;
 }
-.RdGnLb .q1-9 {
+.RdGnLb .color-1 {
   fill: #a8f0ff;
 }
-.RdGnLb .q0-9 {
+.RdGnLb .color-0 {
   fill: #b0e1c7;
 }
-.Palette1 .q0-9 {
+.Palette1 .color-0 {
   fill: #ff0000;
 }
-.Palette1 .q1-9 {
+.Palette1 .color-1 {
   fill: #f55700;
 }
-.Palette1 .q2-9 {
+.Palette1 .color-2 {
   fill: #e87d00;
 }
-.Palette1 .q3-9 {
+.Palette1 .color-3 {
   fill: #da9a00;
 }
-.Palette1 .q4-9 {
+.Palette1 .color-4 {
   fill: #ccb211;
 }
-.Palette1 .q5-9 {
+.Palette1 .color-5 {
   fill: #bfc744;
 }
-.Palette1 .q6-9 {
+.Palette1 .color-6 {
   fill: #b5da6d;
 }
-.Palette1 .q7-9 {
+.Palette1 .color-7 {
   fill: #afeb96;
 }
-.Palette1 .q8-9 {
+.Palette1 .color-8 {
   fill: #afeb96;
 }
-.Palette2 .q0-9 {
+.Palette2 .color-0 {
   fill: #d53e4f;
 }
-.Palette2 .q1-9 {
+.Palette2 .color-1 {
   fill: #f46d43;
 }
-.Palette2 .q2-9 {
+.Palette2 .color-2 {
   fill: #fdae61;
 }
-.Palette2 .q3-9 {
+.Palette2 .color-3 {
   fill: #fee08b;
 }
-.Palette2 .q4-9 {
+.Palette2 .color-4 {
   fill: #ffffbf;
 }
-.Palette2 .q5-9 {
+.Palette2 .color-5 {
   fill: #e6f598;
 }
-.Palette2 .q6-9 {
+.Palette2 .color-6 {
   fill: #abdda4;
 }
-.Palette2 .q7-9 {
+.Palette2 .color-7 {
   fill: #66c2a5;
 }
-.Palette2 .q8-9 {
+.Palette2 .color-8 {
   fill: #3288bd;
 }
-.Palette3 .q8-9 {
-  fill: #ffffcc;
-}
-.Palette3 .q7-9 {
-  fill: #ffeda0;
-}
-.Palette3 .q6-9 {
-  fill: #fed976;
-}
-.Palette3 .q5-9 {
-  fill: #feb24c;
-}
-.Palette3 .q4-9 {
-  fill: #fd8d3c;
-}
-.Palette3 .q3-9 {
-  fill: #fc4e2a;
-}
-.Palette3 .q2-9 {
-  fill: #e31a1c;
-}
-.Palette3 .q1-9 {
-  fill: #bd0026;
-}
-.Palette3 .q0-9 {
+.Palette3 .color-0 {
   fill: #800026;
 }
-.Palette4 .q0-9 {
+.Palette3 .color-1 {
+  fill: #bd0026;
+}
+.Palette3 .color-2 {
+  fill: #e31a1c;
+}
+.Palette3 .color-3 {
+  fill: #fc4e2a;
+}
+.Palette3 .color-4 {
+  fill: #fd8d3c;
+}
+.Palette3 .color-5 {
+  fill: #feb24c;
+}
+.Palette3 .color-6 {
+  fill: #fed976;
+}
+.Palette3 .color-7 {
+  fill: #ffeda0;
+}
+.Palette3 .color-8 {
+  fill: #ffffcc;
+}
+.Palette4 .color-0 {
   fill: #23682e;
 }
-.Palette4 .q1-9 {
+.Palette4 .color-1 {
   fill: #347a3d;
 }
-.Palette4 .q2-9 {
+.Palette4 .color-2 {
   fill: #448b4c;
 }
-.Palette4 .q3-9 {
+.Palette4 .color-3 {
   fill: #549e5b;
 }
-.Palette4 .q4-9 {
+.Palette4 .color-4 {
   fill: #64b16b;
 }
-.Palette4 .q5-9 {
+.Palette4 .color-5 {
   fill: #74c47c;
 }
-.Palette4 .q6-9 {
+.Palette4 .color-6 {
   fill: #85d78d;
 }
-.Palette4 .q7-9 {
+.Palette4 .color-7 {
   fill: #96eb9e;
 }
-.Palette4 .q8-9 {
+.Palette4 .color-8 {
   fill: #a7ffaf;
+}
+.LinkRedPalette .color-0 {
+  stroke: #800026;
+}
+.LinkRedPalette .color-1 {
+  stroke: #bd0026;
+}
+.LinkRedPalette .color-2 {
+  stroke: #e31a1c;
+}
+.LinkRedPalette .color-3 {
+  stroke: #fc4e2a;
+}
+.LinkRedPalette .color-4 {
+  stroke: #fd8d3c;
+}
+.LinkRedPalette .color-5 {
+  stroke: #feb24c;
+}
+.LinkRedPalette .color-6 {
+  stroke: #fed976;
+}
+.LinkRedPalette .color-7 {
+  stroke: #ffeda0;
+}
+.LinkRedPalette .color-8 {
+  stroke: #ffffcc;
+}
+.LinkGreenPalette .color-0 {
+  stroke: #23682e;
+}
+.LinkGreenPalette .color-1 {
+  stroke: #347a3d;
+}
+.LinkGreenPalette .color-2 {
+  stroke: #448b4c;
+}
+.LinkGreenPalette .color-3 {
+  stroke: #549e5b;
+}
+.LinkGreenPalette .color-4 {
+  stroke: #64b16b;
+}
+.LinkGreenPalette .color-5 {
+  stroke: #74c47c;
+}
+.LinkGreenPalette .color-6 {
+  stroke: #85d78d;
+}
+.LinkGreenPalette .color-7 {
+  stroke: #96eb9e;
+}
+.LinkGreenPalette .color-8 {
+  stroke: #a7ffaf;
 }

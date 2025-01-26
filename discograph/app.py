@@ -143,8 +143,8 @@ def main():
 
     # Setup Application
     setup_application()
-    DatabaseHelper.db_helper.text_search_index = (
-        LoaderEntity.loader_init_text_search_index(TEXT_SEARCH_PATH)
+    DatabaseHelper.text_search_index = LoaderEntity.loader_init_text_search_index(
+        TEXT_SEARCH_PATH
     )
 
     # Note reverse order (last in first out), logging is the last to be shutdown

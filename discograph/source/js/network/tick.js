@@ -71,15 +71,6 @@ function dg_network_tick_link(d, i) {
     var group = d3.select(this);
     var path = group.select('path');
     path.attr('d', dg_network_spline(d));
-    path.classed('distance-0', Math.min(d.source.distance, d.target.distance) == 0);
-    path.classed('distance-1', Math.min(d.source.distance, d.target.distance) == 1);
-    path.classed('distance-2', Math.min(d.source.distance, d.target.distance) == 2);
-    path.classed('distance-3', Math.min(d.source.distance, d.target.distance) == 3);
-    path.classed('distance-4', Math.min(d.source.distance, d.target.distance) == 4);
-    path.classed('distance-5', Math.min(d.source.distance, d.target.distance) == 5);
-    path.classed('distance-6', Math.min(d.source.distance, d.target.distance) == 6);
-    path.classed('distance-7', Math.min(d.source.distance, d.target.distance) == 7);
-    path.classed('distance-8', Math.min(d.source.distance, d.target.distance) == 8);
     var x1 = d.source.x,
         y1 = d.source.y,
         x2 = d.target.x,

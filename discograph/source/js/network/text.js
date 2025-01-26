@@ -18,7 +18,7 @@ function dg_network_getNodeDebug(d) {
            " link: " + links +
            " miss: " + d.missing +
            " clus: " + d.cluster +
-           " colr: " + dg_color_class(d);
+           " colr: " + dg_node_color_class(d);
 }
 
 

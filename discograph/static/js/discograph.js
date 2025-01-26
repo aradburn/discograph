@@ -3,28 +3,33 @@
         version: "0.2"
     };
 
-    function dg_color_class(d) {
+    function dg_node_color_class(d) {
         if (d.type == 'artist') {
-            return dg_color_artist_class(d);
+            return dg_node_color_artist_class(d);
         } else {
-            return dg_color_label_class(d);
+            return dg_node_color_label_class(d);
         }
     }
 
-    function clamp(num, lower, upper) {
-        return Math.min(Math.max(num, lower), upper);
-    }
-
-    function dg_color_artist_class(d) {
+    function dg_node_color_artist_class(d) {
         var index = clamp(d.distance + 1, 0, 8);
-        //    var index = clamp((d.distance * 2) + 1, 0, 8);
-        return 'q' + index + '-9';
+        return 'color-' + index;
     }
 
-    function dg_color_label_class(d) {
+    function dg_node_color_label_class(d) {
         var index = clamp(d.distance + 2, 0, 8);
-        //    var index = clamp((d.distance * 2) + 2, 0, 8);
-        return 'q' + index + '-9';
+        return 'color-' + index;
+    }
+
+    function dg_link_color_class(d) {
+        var distance = Math.min(d.source.distance, d.target.distance);
+        if (distance == 0) {
+            distance = 2;
+        } else {
+            distance = 5;
+        }
+        var index = clamp(distance, 0, 8);
+        return 'color-' + index;
     }
     dg.loading = {};
 
@@ -785,13 +790,12 @@
     }
     LINK_DEBOUNCE_TIME = 250
     LINK_OUT_TRANSITION_TIME = 500
-
+    LINK_PALETTE = "LinkGreenPalette"
 
     /* Initialize link tooltip */
     var linkToolTip = d3.tip()
         .attr('class', 'd3-link-tooltip')
         .direction('n')
-        //    .rootElement(e => )
         .offset([20, 0])
         .html(dg_network_link_tooltip);
 
@@ -806,6 +810,7 @@
                 var classes = [
                     "link",
                     role,
+                    LINK_PALETTE,
                 ];
                 return classes.join(" ");
             });
@@ -816,7 +821,14 @@
     function dg_network_onLinkEnterElementConstruction(linkEnter) {
         linkEnter
             .append("path")
-            .attr("class", "inner");
+            .attr("class", function(d) {
+                var classes = [
+                    "inner",
+                    "distance-" + Math.min(d.source.distance, d.target.distance),
+                    dg_link_color_class(d),
+                ];
+                return classes.join(" ");
+            });
         linkEnter
             .append("text")
             .attr('class', 'outer')
@@ -947,7 +959,7 @@
             .attr("class", function(d) {
                 var classes = [
                     "outer",
-                    dg_color_class(d),
+                    dg_node_color_class(d),
                 ];
                 return classes.join(" ");
             })
@@ -957,7 +969,7 @@
             .attr("class", function(d) {
                 var classes = [
                     "inner",
-                    dg_color_class(d),
+                    dg_node_color_class(d),
                 ];
                 return classes.join(" ");
             })
@@ -972,7 +984,7 @@
             .attr("class", function(d) {
                 var classes = [
                     "inner",
-                    dg_color_class(d),
+                    dg_node_color_class(d),
                 ];
                 return classes.join(" ");
             })
@@ -1048,7 +1060,7 @@
             .attr("class", function(d) {
                 var classes = [
                     "outer",
-                    dg_color_class(d),
+                    dg_node_color_class(d),
                 ];
                 return classes.join(" ");
             })
@@ -1056,7 +1068,7 @@
             .attr("class", function(d) {
                 var classes = [
                     "inner",
-                    dg_color_class(d),
+                    dg_node_color_class(d),
                 ];
                 return classes.join(" ");
             })
@@ -1193,7 +1205,7 @@
             " link: " + links +
             " miss: " + d.missing +
             " clus: " + d.cluster +
-            " colr: " + dg_color_class(d);
+            " colr: " + dg_node_color_class(d);
     }
 
 
@@ -1321,15 +1333,6 @@
         var group = d3.select(this);
         var path = group.select('path');
         path.attr('d', dg_network_spline(d));
-        path.classed('distance-0', Math.min(d.source.distance, d.target.distance) == 0);
-        path.classed('distance-1', Math.min(d.source.distance, d.target.distance) == 1);
-        path.classed('distance-2', Math.min(d.source.distance, d.target.distance) == 2);
-        path.classed('distance-3', Math.min(d.source.distance, d.target.distance) == 3);
-        path.classed('distance-4', Math.min(d.source.distance, d.target.distance) == 4);
-        path.classed('distance-5', Math.min(d.source.distance, d.target.distance) == 5);
-        path.classed('distance-6', Math.min(d.source.distance, d.target.distance) == 6);
-        path.classed('distance-7', Math.min(d.source.distance, d.target.distance) == 7);
-        path.classed('distance-8', Math.min(d.source.distance, d.target.distance) == 8);
         var x1 = d.source.x,
             y1 = d.source.y,
             x2 = d.target.x,
@@ -2587,6 +2590,10 @@
             function() {
                 $('#flash').empty();
             }, delay);
+    }
+
+    function clamp(num, lower, upper) {
+        return Math.min(Math.max(num, lower), upper);
     }
     if (typeof define === "function" && define.amd) define(dg);
     else if (typeof module === "object" && module.exports) module.exports = dg;
