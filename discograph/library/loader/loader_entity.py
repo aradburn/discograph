@@ -2,6 +2,7 @@ import logging
 import pickle
 from pathlib import Path
 from typing import Any
+from xml.etree.ElementTree import Element
 
 from sortedcontainers import SortedSet
 
@@ -203,14 +204,20 @@ class LoaderEntity(LoaderBase):
         return result
 
     @classmethod
-    def element_to_names_and_ids(cls, names_and_ids):
+    def element_to_names_and_ids(cls, names_and_ids: Element):
+        # print(f"names_and_ids1: {[(item.tag, item.text) for item in names_and_ids]}")
         result = {}
         if names_and_ids is None or not len(names_and_ids):
             return result
-        for i in range(0, len(names_and_ids), 2):
-            discogs_id = int(names_and_ids[i].text)
-            name = names_and_ids[i + 1].text
-            result[name] = discogs_id
+        for item in names_and_ids:
+            if item.tag == "name":
+                result[item.text] = 0
+        # for i in range(0, len(names_and_ids), 2):
+        #     id_str = names_and_ids[i].text
+        #     if id_str is not None:
+        #         discogs_id = int()
+        #     name = names_and_ids[i + 1].text
+        #     result[name] = discogs_id
         return result
 
     @classmethod

@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 
 class PostgresHelper(DatabaseHelper):
-    postgres_test_db: TempDB = None
+    postgres_test_db: TempDB | None = None
     _is_test: bool = False
 
     @staticmethod
@@ -72,8 +72,8 @@ class PostgresHelper(DatabaseHelper):
                     shutil.rmtree(socket_path)
 
                 options = {
-                    "work_mem": "300MB",
-                    "maintenance_work_mem": "300MB",
+                    "work_mem": "100MB",
+                    "maintenance_work_mem": "100MB",
                     "effective_cache_size": "2GB",
                     "max_connections": get_concurrency_count() + 4,
                     "shared_buffers": "3GB",

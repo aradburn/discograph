@@ -91,14 +91,14 @@ class LoaderUtils:
 
     @staticmethod
     def element_to_datetime(element):
-        if element is None:
+        if element is None or element.text is None:
             return None
         date_string = element.text.strip()
         return LoaderUtils.parse_release_date(date_string)
 
     @staticmethod
     def element_to_integer(element):
-        if element is not None:
+        if element is not None and element.text is not None:
             return int(element.text)
         return None
 

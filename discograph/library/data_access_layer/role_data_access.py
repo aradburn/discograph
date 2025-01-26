@@ -30,10 +30,22 @@ class RoleDataAccess:
     DIGITS_AND_SPECIAL_CHARACTERS = re.compile(r"^\d+[-.)]*$|^[-*+.?/!`—•]+$")
 
     ALTERNATIVES = {
+        "accordeon": "Accordion",
+        "accordian": "Accordion",
+        "acordeon": "Accordion",
+        "acordeón": "Accordion",
+        "agogo": "Agogô",
         "arranger": "Arranged By",
         "arrangements": "Arranged By",
         "art": "Artwork",
+        "bassguitar": "Bass Guitar",
+        "bateria": "Drums",
+        "batterie": "Drums",
         "beat": "Beats",
+        "bodhran": "Bodhrán",
+        "bongo": "Bongos",
+        "cajon": "Cajón",
+        "celeste": "Celesta",
         "cgi": "CGI",
         "cgi artist": "CGI Artist",
         "composer": "Composed By",

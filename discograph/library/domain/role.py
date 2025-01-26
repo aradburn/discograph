@@ -7,6 +7,8 @@ __all__ = [
     "RoleJSTreeWrapper",
 ]
 
+from dataclasses import field
+
 from discograph.library.domain.base import InternalDomainObject
 from discograph.library.fields.role_type import RoleType
 
@@ -48,7 +50,7 @@ class RoleJSTreeEntry(InternalDomainObject):
 
 
 class RoleJSTree(InternalDomainObject):
-    data: list[RoleJSTreeEntry] = []
+    data: list[RoleJSTreeEntry] = field(default_factory=list)
 
 
 class RoleJSTreeWrapper(InternalDomainObject):

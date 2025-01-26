@@ -46,10 +46,19 @@ class RelationDataAccess:
                         if role_name in RoleType.aggregate_roles:
                             if role_name not in aggregate_roles:
                                 aggregate_roles[role_name] = []
-                            aggregate_credit_id = credit["id"]
-                            aggregate_roles[role_name].append(aggregate_credit_id)
+                            if "id" in credit:
+                                aggregate_credit_id = credit["id"]
+                                aggregate_roles[role_name].append(aggregate_credit_id)
                         else:
-                            triples.add((credit["id"], role_name, object_id))
+                            if "id" in credit:
+                                triples.add((credit["id"], role_name, object_id))
+                            # TODO find missing id
+                            # else:
+                            # entity_type = EntityType.ARTIST
+                            # entity_id = entry["id"]
+                            # id_ = EntityDataAccess.get_internal_id_by_entity_type_and_entity_id(
+                            #     entity_repository, entity_type, entity_id
+                            # )
 
         if is_compilation:
             iterator = itertools.product(label_ids, release.companies)
@@ -61,17 +70,20 @@ class RelationDataAccess:
             for role_str in role_strs_list:
                 role_name = RoleDataAccess.find_role(role_str)
                 if role_name is not None:
-                    triples.add(
-                        (
-                            subject_id,
-                            role_name,
-                            company["id"],
+                    if "id" in company:
+                        triples.add(
+                            (
+                                subject_id,
+                                role_name,
+                                company["id"],
+                            )
                         )
-                    )
 
         all_track_artist_ids = set()
         for track in release.tracklist:
-            track_artist_ids = set(artist["id"] for artist in track.get("artists", ()))
+            track_artist_ids = set(
+                artist["id"] for artist in track.get("artists", ()) if "id" in artist
+            )
             all_track_artist_ids.update(track_artist_ids)
             if not track.get("extra_artists"):
                 continue
@@ -84,8 +96,16 @@ class RelationDataAccess:
                     for role_str in role_strs_list:
                         role_name = RoleDataAccess.find_role(role_str)
                         if role_name is not None:
-                            subject_id = credit["id"]
-                            triples.add((subject_id, role_name, object_id))
+                            if "id" in credit:
+                                subject_id = credit["id"]
+                                triples.add((subject_id, role_name, object_id))
+                            # TODO find missing id
+                            # else:
+                            # entity_type = EntityType.ARTIST
+                            # entity_id = entry["id"]
+                            # id_ = EntityDataAccess.get_internal_id_by_entity_type_and_entity_id(
+                            #     entity_repository, entity_type, entity_id
+                            # )
         for role_name, aggregate_artists in aggregate_roles.items():
             iterator = itertools.product(all_track_artist_ids, aggregate_artists)
             for track_artist_id, aggregate_artist_id in iterator:
@@ -122,16 +142,24 @@ class RelationDataAccess:
     def get_release_setup(cls, release) -> tuple[set[int], set[int], bool]:
         is_compilation = False
         # log.debug(f"get_release_setup release: {release}")
-        artist_ids: set[int] = set(artist["id"] for artist in release.artists)
+        artist_ids: set[int] = set(
+            artist["id"] for artist in release.artists if "id" in artist
+        )
         # log.debug(f"get_release_setup artists: {artist_ids}")
-        label_ids: set[int] = set(label["id"] for label in release.labels)
+        label_ids: set[int] = set(
+            label["id"] for label in release.labels if "id" in label
+        )
         # log.debug(f"get_release_setup labels: {label_ids}")
 
         if len(artist_ids) == 1 and release.artists[0]["name"] == "Various":
             is_compilation = True
             artist_ids.clear()
             for track in release.tracklist:
-                artist_ids.update(artist["id"] for artist in track.get("artists", ()))
+                artist_ids.update(
+                    artist["id"]
+                    for artist in track.get("artists", ())
+                    if "id" in artist
+                )
             # log.debug(f"get_release_setup various artists: {artist_ids}")
 
         # for format_ in release.formats:
