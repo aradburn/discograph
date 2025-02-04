@@ -18,6 +18,8 @@ INSTRUMENTS_DIR = os.path.join(ROOT_DIR, "discograph", "data_instruments")
 INSTRUMENTS_PATH = os.path.join(INSTRUMENTS_DIR, "hornbostelSachs.json")
 TEXT_SEARCH_DIR = os.path.join(ROOT_DIR, "discograph", "data_text_search")
 TEXT_SEARCH_PATH = Path(TEXT_SEARCH_DIR, "text_search.data")
+ENTITY_DETAILS_PATH = Path(TEXT_SEARCH_DIR, "entity_details.data")
+
 TEST_DATA_DIR = os.path.join(ROOT_DIR, "tests", "data")
 TEST_DATA_ROLES_DIR = os.path.join(ROOT_DIR, "tests", "data_roles")
 TEST_DATA_ROLES_PATH = os.path.join(TEST_DATA_ROLES_DIR, "test_data_roles.tsv")

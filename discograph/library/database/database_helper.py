@@ -20,6 +20,7 @@ from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.domain.entity import Entity
 from discograph.library.domain.relation import Relation
 from discograph.library.fields.entity_type import EntityType
+from discograph.library.full_text_search.entity_details_index import EntityDetailsIndex
 from discograph.library.full_text_search.text_search_index import TextSearchIndex
 
 log = logging.getLogger(__name__)
@@ -35,6 +36,7 @@ class DatabaseHelper(ABC):
     idx_entity_two_id: Index | None = None
 
     text_search_index: TextSearchIndex | None = None
+    entity_details_index: EntityDetailsIndex | None = None
 
     entity_count_cached = 0
 

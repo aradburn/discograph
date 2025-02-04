@@ -17,12 +17,14 @@ from discograph import ui
 from discograph.config import (
     PostgresDevelopmentConfiguration,
     TEXT_SEARCH_PATH,
+    ENTITY_DETAILS_PATH,
 )
 from discograph.database import setup_database, shutdown_database
 from discograph.exceptions import NotFoundError, BaseError
 from discograph.library.cache.cache_manager import CacheManager
 from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.loader.loader_entity import LoaderEntity
+from discograph.library.loader.loader_release import LoaderRelease
 from discograph.logging_config import setup_logging, shutdown_logging
 
 log = logging.getLogger(__name__)
@@ -138,6 +140,9 @@ def main():
 
     setup_database(config)
     setup_application()
+    DatabaseHelper.entity_details_index = (
+        LoaderRelease.loader_init_entity_details_index(ENTITY_DETAILS_PATH)
+    )
     DatabaseHelper.text_search_index = LoaderEntity.loader_init_text_search_index(
         TEXT_SEARCH_PATH
     )

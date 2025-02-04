@@ -9,7 +9,7 @@ from discograph.exceptions import NotFoundError
 from discograph.library.cache.cache_manager import CacheManager
 from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.database.entity_repository import EntityRepository
-from discograph.library.domain.entity import Entity
+from discograph.library.domain.entity import Entity, LABEL_ENTITY_ID_OFFSET
 from discograph.library.domain.relation import RelationResult
 from discograph.library.domain.release import Release
 from discograph.library.fields.entity_type import EntityType
@@ -413,6 +413,7 @@ class EntityDataAccess:
     ) -> list[tuple[int, str]]:
         scored_documents: list[tuple[float, tuple[int, str]]] = list()
         for document in documents:
+            candidate_id = document[0]
             candidate_name = document[1]
             score = rapidfuzz.distance.JaroWinkler.normalized_distance(
                 search_string, candidate_name
@@ -440,6 +441,10 @@ class EntityDataAccess:
             # Penalise candidates that differ in length (longer or shorter)
             len_diff = abs(len(candidate_name) - len(search_string)) / 100.0
             score -= len_diff
+
+            # Put artists before labels
+            if candidate_id >= LABEL_ENTITY_ID_OFFSET:
+                score -= 10.0
 
             scored_documents.append((score, document))
         sorted_documents = sorted(
