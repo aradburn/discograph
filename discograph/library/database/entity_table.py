@@ -20,7 +20,6 @@ class EntityTable(Base):
     entity_metadata: Mapped[dict | list] = mapped_column(type_=JSON, nullable=False)
     entities: Mapped[dict | list] = mapped_column(type_=JSON, nullable=False)
     search_content: Mapped[str] = mapped_column(String, nullable=False)
-    random: Mapped[float]
 
     __table_args__ = (
         Index(
@@ -44,4 +43,4 @@ class EntityTable(Base):
     # )
 
     def __repr__(self):
-        return utils.normalize_dict(utils.row2dict(self), skip_keys={"random"})
+        return utils.normalize_dict(utils.row2dict(self), skip_keys={})

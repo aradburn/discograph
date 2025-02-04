@@ -4,6 +4,7 @@ from discograph.library.data_access_layer.relation_data_access import RelationDa
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.database.transaction import transaction
+from discograph.library.domain.entity import Entity
 from discograph.library.domain.relation import (
     Relation,
     RelationInternal,
@@ -34,10 +35,10 @@ class TestRepositoryRelation(RepositoryTestCase):
             created_entity_2 = repository.create(entity_2)
             print(f"created_entity_2: {created_entity_2}")
 
-        id_1 = RelationDataAccess.to_relation_internal_id(
+        id_1 = Entity.to_entity_internal_id(
             created_entity_1.entity_id, created_entity_1.entity_type
         )
-        id_2 = RelationDataAccess.to_relation_internal_id(
+        id_2 = Entity.to_entity_internal_id(
             created_entity_2.entity_id, created_entity_2.entity_type
         )
         relation = RelationInternal(
@@ -46,7 +47,6 @@ class TestRepositoryRelation(RepositoryTestCase):
             object=id_2,
             role="Composed By",
             # releases={},
-            random=0.0,
         )
         relation_dict = relation.model_dump()
         # relation_dict["role"] = relation.role_name
@@ -62,9 +62,7 @@ class TestRepositoryRelation(RepositoryTestCase):
 
             created_relation = RelationDataAccess.to_relation(created_relation_internal)
             print(f"created_relation: {created_relation}")
-            actual = utils.normalize_dict(
-                created_relation.model_dump(exclude={"random"})
-            )
+            actual = utils.normalize_dict(created_relation.model_dump())
             print(f"actual: {actual}")
 
         # THEN
@@ -76,11 +74,8 @@ class TestRepositoryRelation(RepositoryTestCase):
             entity_two_type=created_entity_2.entity_type,
             role="Composed By",
             # releases={},
-            random=0.0,
         )
-        expected = utils.normalize_dict(
-            expected_relation.model_dump(exclude={"random"})
-        )
+        expected = utils.normalize_dict(expected_relation.model_dump())
         self.assertEqual(expected, actual)
 
     # def test_02_update(self):
@@ -242,7 +237,7 @@ class TestRepositoryRelation(RepositoryTestCase):
             relation_internal = repository._to_domain(relation_db)
             relation = RelationDataAccess.to_relation(relation_internal)
             print(f"relation: {relation}")
-            actual = utils.normalize_dict(relation.model_dump(exclude={"random"}))
+            actual = utils.normalize_dict(relation.model_dump())
 
         # THEN
         expected_relation = Relation(
@@ -253,10 +248,7 @@ class TestRepositoryRelation(RepositoryTestCase):
             entity_two_type=EntityType.ARTIST,
             role="Composed By",
             # releases={"635": 1994},
-            random=0.0,
         )
-        expected = utils.normalize_dict(
-            expected_relation.model_dump(exclude={"random"})
-        )
+        expected = utils.normalize_dict(expected_relation.model_dump())
         print(f"expected: {expected}")
         self.assertEqual(expected, actual)

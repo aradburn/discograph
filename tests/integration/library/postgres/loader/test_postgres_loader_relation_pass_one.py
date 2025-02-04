@@ -1,13 +1,13 @@
 from tests.integration.library.loader.test_loader_relation_pass_one import (
     TestLoaderRelationPassOne,
 )
-from tests.integration.library.postgres.postgres_repository_test_case import (
-    PostgresRepositoryTestCase,
+from tests.integration.library.postgres.postgres_database_test_case import (
+    PostgresDatabaseTestCase,
 )
 
 
 class TestPostgresLoaderRelationPassOne(
-    PostgresRepositoryTestCase, TestLoaderRelationPassOne
+    PostgresDatabaseTestCase, TestLoaderRelationPassOne
 ):
     # Run all tests in TestLoaderRelationPassOne
     pass

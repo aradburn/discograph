@@ -1,60 +1,135 @@
-<nav id="nav-bottom" class="navbar navbar-default navbar-fixed-bottom">
+<nav id="nav-bottom" class="navbar fixed-bottom navbar-expand-lg bg-body-tertiary p-2">
     <div class="container-fluid">
-        <div class="navbar-header">
-            <button type="button" class="navbar-toggle collapsed"
-                    data-toggle="collapse" data-target="#nav-bottom-details">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <div class="navbar-brand hidden" id="entity-details">
-                <p>
-                    <!--                    <a class="navbar-link" id="entity-relations" data-toggle="tooltip" -->
-                    <!--                        title="see their relation breakdown"><span -->
-                    <!--                        class="glyphicon glyphicon-eye-open"></span></a>-->
-                    &nbsp;
-                    <a class="navbar-link" id="entity-link" href="#" target="_blank"
-                       data-toggle="tooltip" title="See them on discogs.com">
-                        <span class="glyphicon glyphicon-new-window"></span>
-                        <span id="entity-name">Band Name</span>
-                    </a>
-                </p>
+
+        <div id="entity-details"
+             class="navbar-text flex-grow-1
+                    px-3 py-2
+                    fs-5 d-flex justify-content-center
+                    col-lg-2 col-md-2 col-sm-12 col-12
+                    order-lg-1 order-md-1 order-sm-1 order-1">
+
+            <!--                    <a class="navbar-link" id="entity-relations" data-toggle="tooltip" -->
+            <!--                        title="see their relation breakdown"><span -->
+            <!--                        class="glyphicon glyphicon-eye-open"></span></a>-->
+
+            <div id="entity-link"
+                 href="#" target="_blank"
+                 data-toggle="tooltip" title="See them on discogs.com"
+                 role="button">
+                <span class="bi bi-box-arrow-right px-2"></span>
+                <span id="entity-name">Band Name</span>
             </div>
         </div>
-        <div class="collapse navbar-collapse" id="nav-bottom-details">
-            <ul class="nav navbar-nav navbar-right">
-                <li id="print" data-toggle="tooltip" title="Save image to file">
-                    <a>PRINT
-                        <span class="glyphicon glyphicon-print" style="font-size: 0.9em;"></span>
-                    </a>
-                </li>
-                <li id="stop-layout" data-toggle="tooltip" title="Stop data layout">
-                    <a>STOP LAYOUT
-                        <span class="glyphicon glyphicon-stop" style="font-size: 0.9em;"></span>
-                    </a>
-                </li>
-                <li id="start-layout" data-toggle="tooltip" title="Jiggle data layout">
-                    <a>JIGGLE LAYOUT
-                        <span class="glyphicon glyphicon-flash" style="font-size: 0.9em;"></span>
-                    </a>
-                </li>
-            </ul>
-            <form id="filter" class="navbar-form navbar-right" style="display: none" action="#">
-                <select id="filter-roles" multiple="multiple" name="roles" class="form-control" style="width: 100%">
-                    {% for category, roles in multiselect_mapping.items() %}
-                    <optgroup label="{{ category }}">
-                        {% for role in roles %}
-                        {% if role in original_roles %}
-                        <option value="{{ role }}" selected>{{ role }}</option>
-                        {% else %}
-                        <option value="{{ role }}">{{ role }}</option>
-                        {% endif %}
-                        {% endfor %}
-                    </optgroup>
-                    {% endfor %}
-                </select>
-            </form>
+
+        <!--        <div id="navbar-bottom-title"-->
+        <!--             class="navbar-title-->
+        <!--                    px-3 py-2-->
+        <!--                    h-100 d-inline-block-->
+        <!--                    col-lg-1 col-md-1 col-sm-1 col-1-->
+        <!--                    order-lg-2 order-md-2 order-sm-2 order-2">-->
+        <!--            <span id="navbar-status"></span>-->
+        <!--            <div class="text-center">-->
+        <!--                <div id="page-loading"-->
+        <!--                     class="spinner-border spinner-border-sm"-->
+        <!--                     role="status">-->
+        <!--                    <span class="visually-hidden">Loading...</span>-->
+        <!--                </div>-->
+        <!--            </div>-->
+        <!--            <div class="text-center">-->
+        <!--                <div id="network-running"-->
+        <!--                     class="spinner-border spinner-border-sm"-->
+        <!--                     role="status">-->
+        <!--                    <span class="visually-hidden">Loading...</span>-->
+        <!--                </div>-->
+        <!--            </div>-->
+        <!--        </div>-->
+
+        <!--        <div id="jstree-container">-->
+        <!--            <ul>-->
+        <!--                <li>Root node-->
+        <!--                    <ul>-->
+        <!--                        <li>Child node 1</li>-->
+        <!--                        <li>Child node 2</li>-->
+        <!--                    </ul>-->
+        <!--                </li>-->
+        <!--            </ul>-->
+        <!--        </div>-->
+
+        <div class="navbar-text
+                    px-2 py-2
+                    fs-5 d-flex justify-content-center
+                    col-lg-2 col-md-2 col-sm-2 col-2
+                    order-md-4 order-4">
+            <div id="entity-relations"
+                 class="d-flex flex-row"
+                 data-toggle="tooltip" title="Show details"
+                 role="button">
+                <i class="bi bi-eye px-1 py-0"></i>
+                <div class="collapse navbar-collapse px-1 py-0">DETAILS</div>
+            </div>
         </div>
+
+        <div class="navbar-text
+                    px-2 py-2
+                    fs-5 d-flex justify-content-center
+                    col-lg-2 col-md-2 col-sm-2 col-2
+                    order-md-4 order-4">
+            <div id="roles"
+                 class="d-flex flex-row"
+                 data-toggle="tooltip" title="Select roles"
+                 role="button"
+                 data-bs-toggle="offcanvas" data-bs-target="#roles-offcanvas"
+                 aria-controls="roles-offcanvas">
+                <i class="bi bi-person px-1 py-0"></i>
+                <div class="collapse navbar-collapse px-1 py-0">ROLES</div>
+            </div>
+        </div>
+
+        <div class="navbar-text
+                    px-2 py-2
+                    fs-5 d-flex justify-content-center
+                    col-lg-2 col-md-2 col-sm-2 col-2
+                    order-md-4 order-4">
+            <div id="print" class="d-flex flex-row" data-toggle="tooltip" title="Save image to file" role="button">
+                <i class="bi bi-printer px-1 py-0"></i>
+                <div class="collapse navbar-collapse px-1 py-0">PRINT</div>
+            </div>
+        </div>
+
+        <div class="navbar-text
+                    px-2 py-2
+                    fs-5 d-flex justify-content-center
+                    col-lg-2 col-md-2 col-sm-2 col-2
+                    order-md-4 order-4">
+            <div id="stop-layout" class="d-flex flex-row" data-toggle="tooltip" title="Stop data layout" role="button">
+                <i class="bi bi-sign-stop px-1 py-0"></i>
+                <div class="collapse navbar-collapse px-1 py-0">STOP LAYOUT</div>
+            </div>
+        </div>
+
+        <div class="navbar-text
+                    px-2 py-2
+                    fs-5 d-flex justify-content-center
+                    col-lg-2 col-md-2 col-sm-2 col-2
+                    order-md-4 order-4">
+            <div id="start-layout" class="d-flex flex-row" data-toggle="tooltip" title="Jiggle data layout"
+                 role="button">
+                <i class="bi bi-lightning px-1 py-0"></i>
+                <div class="collapse navbar-collapse px-1 py-0">JIGGLE LAYOUT</div>
+            </div>
+        </div>
+
     </div>
 </nav>
+
+<div id="roles-offcanvas"
+     class="offcanvas offcanvas-bottom w-75 h-100 mx-auto"
+     tabindex="-1" aria-labelledby="offcanvasBottomLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="offcanvasBottomLabel">Roles</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body small">
+        ...
+    </div>
+</div>

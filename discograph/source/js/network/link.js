@@ -1,12 +1,11 @@
 LINK_DEBOUNCE_TIME = 250
 LINK_OUT_TRANSITION_TIME = 500
-
+LINK_PALETTE = "LinkGreenPalette"
 
 /* Initialize link tooltip */
 var linkToolTip = d3.tip()
     .attr('class', 'd3-link-tooltip')
     .direction('n')
-//    .rootElement(e => )
     .offset([20, 0])
     .html(dg_network_link_tooltip);
 
@@ -20,9 +19,9 @@ function dg_network_onLinkEnter(linkEnter) {
             var role = parts.slice(2, 2 + parts.length - 4).join('-')
             var classes = [
                 "link",
-//                "link-" + d.key,
                 role,
-                ];
+                LINK_PALETTE,
+            ];
             return classes.join(" ");
         });
     dg_network_onLinkEnterElementConstruction(linkEnter);
@@ -32,7 +31,14 @@ function dg_network_onLinkEnter(linkEnter) {
 function dg_network_onLinkEnterElementConstruction(linkEnter) {
     linkEnter
         .append("path")
-        .attr("class", "inner");
+        .attr("class", function(d) {
+           var classes = [
+               "inner",
+               "distance-" + Math.min(d.source.distance, d.target.distance),
+               dg_link_color_class(d),
+           ];
+           return classes.join(" ");
+       });
     linkEnter
         .append("text")
         .attr('class', 'outer')

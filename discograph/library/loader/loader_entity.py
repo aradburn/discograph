@@ -1,17 +1,19 @@
 import logging
-from random import random
+import pickle
+from pathlib import Path
 from typing import Any
+from xml.etree.ElementTree import Element
 
 from sortedcontainers import SortedSet
 
 from discograph.database import get_concurrency_count
 from discograph.library.data_access_layer.entity_data_access import EntityDataAccess
-from discograph.library.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.entity_table import EntityTable
 from discograph.library.database.transaction import transaction
 from discograph.library.domain.entity import Entity
 from discograph.library.fields.entity_type import EntityType
+from discograph.library.full_text_search.text_search_index import TextSearchIndex
 from discograph.library.loader.loader_base import LoaderBase
 from discograph.library.loader.worker_entity_deleter import WorkerEntityDeleter
 from discograph.library.loader.worker_entity_inserter import WorkerEntityInserter
@@ -115,6 +117,7 @@ class LoaderEntity(LoaderBase):
 
         workers = []
         for ids in batched_ids:
+            # log.debug(f"batched ids: {ids}")
             worker = worker_class(ids, current_total, total_count)
             worker.start()
             workers.append(worker)
@@ -139,6 +142,56 @@ class LoaderEntity(LoaderBase):
             entity_repository.vacuum(has_tablename, is_full, is_analyze)
 
     @classmethod
+    @timeit
+    def loader_init_text_search_index(cls, text_search_path: Path) -> TextSearchIndex:
+        log.debug(f"loader entity init text search index")
+
+        try:
+            text_search_index = cls.load_text_search_index_from_file(text_search_path)
+        except FileNotFoundError:
+            text_search_index = cls.loader_init_text_search_index_from_database()
+            cls.save_text_search_index_to_file(text_search_path, text_search_index)
+        return text_search_index
+
+    @classmethod
+    @timeit
+    def loader_init_text_search_index_from_database(cls) -> TextSearchIndex:
+        log.debug(f"loader entity init text search index from database")
+        text_search_index = TextSearchIndex()
+
+        with transaction():
+            entity_repository = EntityRepository()
+            EntityDataAccess.init_text_search_index(
+                entity_repository, text_search_index
+            )
+        return text_search_index
+
+    @classmethod
+    @timeit
+    def load_text_search_index_from_file(cls, filename: Path) -> TextSearchIndex:
+        log.debug(f"load text search index from file: {filename}")
+
+        # open a file, where you stored the pickled data
+        with open(filename, "rb") as file:
+            # read pickle dump information from that file
+            text_search_index: TextSearchIndex = pickle.load(file)
+
+        return text_search_index
+
+    @classmethod
+    @timeit
+    def save_text_search_index_to_file(
+        cls, filename: Path, text_search_index: TextSearchIndex
+    ) -> None:
+        log.debug(f"save text search index to file: {filename}")
+
+        # open a file, where you ant to store the data
+        with open(filename, "wb") as file:
+            # dump information to that file
+            # noinspection PyTypeChecker
+            pickle.dump(text_search_index, file)
+
+    @classmethod
     def element_to_names(cls, names):
         result = {}
         if names is None or not len(names):
@@ -151,14 +204,20 @@ class LoaderEntity(LoaderBase):
         return result
 
     @classmethod
-    def element_to_names_and_ids(cls, names_and_ids):
+    def element_to_names_and_ids(cls, names_and_ids: Element):
+        # print(f"names_and_ids1: {[(item.tag, item.text) for item in names_and_ids]}")
         result = {}
         if names_and_ids is None or not len(names_and_ids):
             return result
-        for i in range(0, len(names_and_ids), 2):
-            discogs_id = int(names_and_ids[i].text)
-            name = names_and_ids[i + 1].text
-            result[name] = discogs_id
+        for item in names_and_ids:
+            if item.tag == "name":
+                result[item.text] = 0
+        # for i in range(0, len(names_and_ids), 2):
+        #     id_str = names_and_ids[i].text
+        #     if id_str is not None:
+        #         discogs_id = int()
+        #     name = names_and_ids[i + 1].text
+        #     result[name] = discogs_id
         return result
 
     @classmethod
@@ -225,10 +284,9 @@ class LoaderEntity(LoaderBase):
                 data["entity_type"] = EntityType.LABEL
             # data["element_id"] = int(element.get("id"))
             data["entity_id"] = data["id"]
-            data["id"] = RelationDataAccess.to_relation_internal_id(
+            data["id"] = Entity.to_entity_internal_id(
                 data["entity_id"], data["entity_type"]
             )
-            data["random"] = random()
         return data
 
 

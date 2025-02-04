@@ -6,21 +6,19 @@ function dg_network_getNodeText(d) {
         name = name.slice(0, 50) + "...";
     }
     if (dg.debug) {
-        var pages = '[' + d.pages + ']';
-        return pages + ' ' + name;
+        name = name + dg_network_getNodeDebug(d);
     }
     return name;
-//    return name + dg_network_getNodeDebug(d);
 }
 
 function dg_network_getNodeDebug(d) {
     var links = d.links !== undefined ? d.links.length : 0;
     return " dist: " + d.distance +
-           " rad: " + d.radius +
-           " lnk: " + links +
+           " radi: " + d.radius +
+           " link: " + links +
            " miss: " + d.missing +
-//           " clu: " + d.cluster +
-           " col: " + dg_color_class(d);
+           " clus: " + d.cluster +
+           " colr: " + dg_node_color_class(d);
 }
 
 
@@ -35,6 +33,9 @@ function dg_network_onTextEnter(textEnter) {
 //                d.key,
                 d.key.split('-')[0],
                 ];
+            if (d.cluster !== undefined) {
+                classes.push("cluster")
+            }
             return classes.join(" ");
         })
     textEnter.append("text")

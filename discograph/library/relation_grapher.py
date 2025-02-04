@@ -107,19 +107,21 @@ class RelationGrapher(ABC):
         relation_repository: RelationRepository,
     ):
         log.debug(f"Searching around {self.center_entity.entity_name}...")
+        log.debug(f"  structural_role_names  {self.structural_role_names}")
+        log.debug(f"  relational_role_names  {self.relational_role_names}")
         provisional_role_names = self.relational_role_names
         # provisional_roles = list(self.relational_role_names)
         self.report_search_start()
         self.clear()
         self.entity_keys_to_visit.add(self.center_entity.entity_key)
-        distance = 0
         for distance in range(self.degree + 1):
             self.report_search_loop_start(distance)
+            log.debug(f"    distance: {distance}")
             log.debug(f"    Search for: {self.entity_keys_to_visit}")
             entities = self.search_entities(
                 entity_repository, self.entity_keys_to_visit
             )
-            # log.debug(f"    Search found entities: {entities}")
+            log.debug(f"    Search found entities: {entities}")
             relations: Dict[str, RelationResult] = {}
             self.process_entities(distance, entities)
             if not self.entity_keys_to_visit or self.should_break_loop:
@@ -131,7 +133,6 @@ class RelationGrapher(ABC):
                     distance, provisional_role_names, relations
                 )
                 self.search_via_relational_roles(
-                    entity_repository=entity_repository,
                     relation_repository=relation_repository,
                     distance=distance,
                     provisional_roles=provisional_role_names,
@@ -142,8 +143,8 @@ class RelationGrapher(ABC):
             self.process_relations(relations)
         self.build_trellis()
         # self.cross_reference(distance)
-        pages = self.partition_trellis(distance)
-        self.page_entities(pages)
+        # pages = self.partition_trellis(distance)
+        # self.page_entities(pages)
         self.find_clusters()
         for node in self.nodes.values():
             expected_count = EntityDataAccess.roles_to_relation_count(
@@ -167,7 +168,6 @@ class RelationGrapher(ABC):
             },
             "links": json_links,
             "nodes": json_nodes,
-            "pages": len(pages),
         }
         return network
 
@@ -176,7 +176,7 @@ class RelationGrapher(ABC):
         entity_repository: EntityRepository,
         entity_keys_to_visit: set[tuple[int, EntityType]],
     ) -> List[Entity]:
-        log.debug(f"        Retrieving entities keys: {entity_keys_to_visit}")
+        # log.debug(f"        Retrieving entities keys: {entity_keys_to_visit}")
         entities: List[Entity] = []
         entity_keys_to_visit = list(entity_keys_to_visit)
         stop = len(entity_keys_to_visit)
@@ -191,7 +191,6 @@ class RelationGrapher(ABC):
     def search_via_relational_roles(
         self,
         *,
-        entity_repository: EntityRepository,
         relation_repository: RelationRepository,
         distance: int,
         provisional_roles: list[str],
@@ -207,7 +206,9 @@ class RelationGrapher(ABC):
             )
             if 0 < distance and self.max_links < relational_count:
                 self.entity_keys_to_visit.remove(entity_key)
-                log.debug(f"            Pre-pruned {entity.name} [{relational_count}]")
+                log.debug(
+                    f"            Pre-pruned {entity.entity_name} [{relational_count}]"
+                )
         if provisional_roles and distance < self.degree:
             log.debug("        Retrieving relational relations")
             keys = sorted(self.entity_keys_to_visit)
@@ -219,11 +220,11 @@ class RelationGrapher(ABC):
                     f"            {start + 1}-{min(start + step, stop)} of {stop}"
                 )
                 relation_results = RelationDataAccess.search_multi(
-                    entity_repository=entity_repository,
                     relation_repository=relation_repository,
                     entity_keys=key_slice,
                     role_names=provisional_roles,
                 )
+                log.debug(f"                relation_results: {relation_results}")
                 for relation in relation_results:
                     relation_links[relation.link_key] = RelationResult(
                         id=relation.id,
@@ -231,11 +232,9 @@ class RelationGrapher(ABC):
                         entity_one_type=relation.entity_one_type,
                         entity_two_id=relation.entity_two_id,
                         entity_two_type=relation.entity_two_type,
-                        random=relation.random,
                         releases=relation.releases,
                         role=relation.role,
                         distance=None,
-                        pages=None,
                     )
 
     # @staticmethod
@@ -277,41 +276,41 @@ class RelationGrapher(ABC):
         #
         # log.debug(pprint.pformat(cluster_map))
 
-    @staticmethod
-    def page_naively(pages, trellis_nodes_by_distance):
-        log.debug("        Paging by naively...")
-        index = 0
-        for distance in sorted(trellis_nodes_by_distance):
-            while trellis_nodes_by_distance[distance]:
-                trellis_node = trellis_nodes_by_distance[distance].pop(0)
-                pages[index].add(trellis_node)
-                index = (index + 1) % len(pages)
+    # @staticmethod
+    # def page_naively(pages, trellis_nodes_by_distance):
+    #     log.debug("        Paging by naively...")
+    #     index = 0
+    #     for distance in sorted(trellis_nodes_by_distance):
+    #         while trellis_nodes_by_distance[distance]:
+    #             trellis_node = trellis_nodes_by_distance[distance].pop(0)
+    #             pages[index].add(trellis_node)
+    #             index = (index + 1) % len(pages)
 
-    def page_entities(self, pages):
-        for page_number, page in enumerate(pages, 1):
-            for node in page:
-                node.pages.add(page_number)
-        grouped_links: Dict[
-            Tuple[Tuple[int, EntityType], ...], List[RelationResult]
-        ] = {}
-        for link in self.links.values():
-            key = tuple(sorted([link.entity_one_key, link.entity_two_key]))
-            grouped_links[key] = list[RelationResult]()
-            grouped_links[key].append(link)
-        for (e1k, e2k), links in grouped_links.items():
-            entity_one_pages = self.nodes[e1k].pages
-            entity_two_pages = self.nodes[e2k].pages
-            intersection = entity_one_pages.intersection(entity_two_pages)
-            for link in links:
-                link.pages = intersection
-        for node in self.nodes.values():
-            node.missing_by_page.update({page_number: 0 for page_number in node.pages})
-            neighbors = node.get_neighbors()
-            for neighbor in neighbors:
-                for page_number in node.pages.difference(neighbor.pages):
-                    node.missing_by_page[page_number] += 1
-            if not any(node.missing_by_page.values()):
-                node.missing_by_page.clear()
+    # def page_entities(self, pages):
+    #     for page_number, page in enumerate(pages, 1):
+    #         for node in page:
+    #             node.pages.add(page_number)
+    #     grouped_links: Dict[
+    #         Tuple[Tuple[int, EntityType], ...], List[RelationResult]
+    #     ] = {}
+    #     for link in self.links.values():
+    #         key = tuple(sorted([link.entity_one_key, link.entity_two_key]))
+    #         grouped_links[key] = list[RelationResult]()
+    #         grouped_links[key].append(link)
+    #     for (e1k, e2k), links in grouped_links.items():
+    #         entity_one_pages = self.nodes[e1k].pages
+    #         entity_two_pages = self.nodes[e2k].pages
+    #         intersection = entity_one_pages.intersection(entity_two_pages)
+    #         for link in links:
+    #             link.pages = intersection
+    #     for node in self.nodes.values():
+    #         node.missing_by_page.update({page_number: 0 for page_number in node.pages})
+    #         neighbors = node.get_neighbors()
+    #         for neighbor in neighbors:
+    #             for page_number in node.pages.difference(neighbor.pages):
+    #                 node.missing_by_page[page_number] += 1
+    #         if not any(node.missing_by_page.values()):
+    #             node.missing_by_page.clear()
 
     @staticmethod
     def group_trellis(trellis):
@@ -358,75 +357,75 @@ class RelationGrapher(ABC):
             f"    Built trellis: {len(self.nodes)} nodes / {len(self.links)} links"
         )
 
-    def partition_trellis(self, distance):
-        page_count = 1
-        # TODO was math.ceil(float(len(self.nodes)) / self.max_nodes)
-        log.debug(f"    Partitioning trellis into {page_count} pages...")
-        log.debug(f"        Maximum: {self.max_nodes} nodes / {self.max_links} links")
-        pages = [set() for _ in range(page_count)]
-        trellis_nodes_by_distance = self.group_trellis(self.nodes)
-        threshold = len(self.nodes) / len(pages) / len(trellis_nodes_by_distance)
-        winning_distance = self.find_trellis_distance(
-            trellis_nodes_by_distance,
-            threshold,
-        )
-        self.page_by_local_neighborhood(pages, trellis_nodes_by_distance)
-        # TODO: Add fast path when node count is very high (e.g. 4000+)
-        if distance > 1:
-            self.page_at_winning_distance(
-                pages, trellis_nodes_by_distance, winning_distance
-            )
-            self.page_by_distance(pages, trellis_nodes_by_distance)
-        else:
-            self.page_naively(pages, trellis_nodes_by_distance)
-        for i, page in enumerate(pages):
-            log.debug(f"        Page {i}: {len(page)}")
-        return pages
+    # def partition_trellis(self, distance):
+    #     page_count = 1
+    #     # TODO was math.ceil(float(len(self.nodes)) / self.max_nodes)
+    #     log.debug(f"    Partitioning trellis into {page_count} pages...")
+    #     log.debug(f"        Maximum: {self.max_nodes} nodes / {self.max_links} links")
+    #     pages = [set() for _ in range(page_count)]
+    #     trellis_nodes_by_distance = self.group_trellis(self.nodes)
+    #     threshold = len(self.nodes) / len(pages) / len(trellis_nodes_by_distance)
+    #     winning_distance = self.find_trellis_distance(
+    #         trellis_nodes_by_distance,
+    #         threshold,
+    #     )
+    #     self.page_by_local_neighborhood(pages, trellis_nodes_by_distance)
+    #     # TODO: Add fast path when node count is very high (e.g. 4000+)
+    #     if distance > 1:
+    #         self.page_at_winning_distance(
+    #             pages, trellis_nodes_by_distance, winning_distance
+    #         )
+    #         self.page_by_distance(pages, trellis_nodes_by_distance)
+    #     else:
+    #         self.page_naively(pages, trellis_nodes_by_distance)
+    #     for i, page in enumerate(pages):
+    #         log.debug(f"        Page {i}: {len(page)}")
+    #     return pages
 
-    @staticmethod
-    def page_at_winning_distance(pages, trellis_nodes_by_distance, winning_distance):
-        log.debug("        Paging at winning distance...")
-        while trellis_nodes_by_distance[winning_distance]:
-            trellis_node = trellis_nodes_by_distance[winning_distance].pop(0)
-            parentage = trellis_node.get_parentage()
-            pages.sort(
-                key=lambda page: (
-                    len(page.difference(parentage)),
-                    len(page),
-                ),
-            )
-            pages[0].update(parentage)
+    # @staticmethod
+    # def page_at_winning_distance(pages, trellis_nodes_by_distance, winning_distance):
+    #     log.debug("        Paging at winning distance...")
+    #     while trellis_nodes_by_distance[winning_distance]:
+    #         trellis_node = trellis_nodes_by_distance[winning_distance].pop(0)
+    #         parentage = trellis_node.get_parentage()
+    #         pages.sort(
+    #             key=lambda page: (
+    #                 len(page.difference(parentage)),
+    #                 len(page),
+    #             ),
+    #         )
+    #         pages[0].update(parentage)
 
     # noinspection PyUnusedLocal
-    def page_by_local_neighborhood(
-        self, pages, trellis_nodes_by_distance, verbose=True
-    ):
-        local_neighborhood = []
-        neighborhood_threshold = len(self.nodes) / len(pages)
-        for distance, trellis_nodes in sorted(trellis_nodes_by_distance.items()):
-            if len(local_neighborhood) + len(trellis_nodes) < neighborhood_threshold:
-                local_neighborhood.extend(trellis_nodes)
-                trellis_nodes[:] = []
-        log.debug(f"        Paging by local neighborhood: {len(local_neighborhood)}")
-        for trellis_node in local_neighborhood:
-            parentage = trellis_node.get_parentage()
-            for page in pages:
-                page.update(parentage)
+    # def page_by_local_neighborhood(
+    #     self, pages, trellis_nodes_by_distance, verbose=True
+    # ):
+    #     local_neighborhood = []
+    #     neighborhood_threshold = len(self.nodes) / len(pages)
+    #     for distance, trellis_nodes in sorted(trellis_nodes_by_distance.items()):
+    #         if len(local_neighborhood) + len(trellis_nodes) < neighborhood_threshold:
+    #             local_neighborhood.extend(trellis_nodes)
+    #             trellis_nodes[:] = []
+    #     log.debug(f"        Paging by local neighborhood: {len(local_neighborhood)}")
+    #     for trellis_node in local_neighborhood:
+    #         parentage = trellis_node.get_parentage()
+    #         for page in pages:
+    #             page.update(parentage)
 
-    @staticmethod
-    def page_by_distance(pages, trellis_nodes_by_distance):
-        log.debug("        Paging by distance...")
-        for distance in sorted(trellis_nodes_by_distance):
-            while trellis_nodes_by_distance[distance]:
-                trellis_node = trellis_nodes_by_distance[distance].pop(0)
-                parentage = trellis_node.get_parentage()
-                pages.sort(
-                    key=lambda page: (
-                        len(page.difference(parentage)),
-                        len(page),
-                    ),
-                )
-                pages[0].update(parentage)
+    # @staticmethod
+    # def page_by_distance(pages, trellis_nodes_by_distance):
+    #     log.debug("        Paging by distance...")
+    #     for distance in sorted(trellis_nodes_by_distance):
+    #         while trellis_nodes_by_distance[distance]:
+    #             trellis_node = trellis_nodes_by_distance[distance].pop(0)
+    #             parentage = trellis_node.get_parentage()
+    #             pages.sort(
+    #                 key=lambda page: (
+    #                     len(page.difference(parentage)),
+    #                     len(page),
+    #                 ),
+    #             )
+    #             pages[0].update(parentage)
 
     @staticmethod
     def find_trellis_distance(trellis_nodes_by_distance, threshold):
@@ -484,21 +483,21 @@ class RelationGrapher(ABC):
                 self.nodes[entity_key] = TrellisNode(entity, distance)
 
     def process_relations(self, relation_links: Dict[str, RelationResult]) -> None:
-        # log.debug(f"    process relations: {relations}")
+        log.debug(f"    process relation_links: {relation_links}")
         for link_key, relation in sorted(relation_links.items()):
             # log.debug(f"        link_key: {link_key}")
             # log.debug(f"        relation: {relation}")
 
             if not relation.entity_one_id or not relation.entity_two_id:
-                # log.debug(f"        skip: {relation}")
+                log.debug(f"        skip: {relation}")
                 continue
             entity_one_key = relation.entity_one_key
             entity_two_key = relation.entity_two_key
             if entity_one_key not in self.nodes:
-                # log.debug(f"        add: {entity_one_key}")
+                log.debug(f"        add entity_one_key: {entity_one_key}")
                 self.entity_keys_to_visit.add(entity_one_key)
             if entity_two_key not in self.nodes:
-                # log.debug(f"        add: {entity_two_key}")
+                log.debug(f"        add entity_two_key: {entity_two_key}")
                 self.entity_keys_to_visit.add(entity_two_key)
             self.links[link_key] = relation
         # log.debug(f"        entity_keys_to_visit: {self.entity_keys_to_visit}")

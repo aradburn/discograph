@@ -23,7 +23,7 @@ class RoleType:
     class Subcategory(enum.Enum):
         NONE = 0
         DRUMS_AND_PERCUSSION = 1
-        KEYBOARD = 2
+        KEYBOARDS = 2
         OTHER_MUSICAL = 3
         STRINGED_INSTRUMENTS = 4
         TECHNICAL_MUSICAL = 5
@@ -52,7 +52,7 @@ class RoleType:
     subcategory_names = {
         Subcategory.NONE: "None",
         Subcategory.DRUMS_AND_PERCUSSION: "Drums & Percussion",
-        Subcategory.KEYBOARD: "Keyboard",
+        Subcategory.KEYBOARDS: "Keyboards",
         Subcategory.OTHER_MUSICAL: "Other Musical",
         Subcategory.STRINGED_INSTRUMENTS: "String Instruments",
         Subcategory.TECHNICAL_MUSICAL: "Technical Musical",

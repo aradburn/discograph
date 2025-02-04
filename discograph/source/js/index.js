@@ -6,6 +6,7 @@ import "loading";
 import "network/";
 import "svg";
 import "relations";
+import "roles";
 import "typeahead";
 import "fsm";
 import "init";

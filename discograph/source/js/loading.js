@@ -25,12 +25,12 @@ function dg_loading_toggle(status) {
     if (status) {
         var input = dg_loading_makeArray();
         var data = input[0], extent = input[1];
-        $("#page-loading")
-            .addClass("glyphicon-animate glyphicon-refresh");
+        $("#page-loading").show();
+//            .addClass("glyphicon-animate glyphicon-refresh");
     } else {
         var data = [], extent = [0, 0];
-        $("#page-loading")
-            .removeClass("glyphicon-animate glyphicon-refresh")
+        $("#page-loading").hide();
+//            .removeClass("glyphicon-animate glyphicon-refresh")
     }
     dg_loading_update(data, extent);
 }

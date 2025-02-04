@@ -1,0 +1,55 @@
+<div class="container-fluid h-100 d-flex flex-column">
+    {% include "modal-help.html" %}
+
+    <div class="row">
+        {% include "nav-top.html" %}
+    </div>
+
+    <div class="d-flex flex-grow-1 flex-shrink-1">
+        <div class="row h-100 flex-grow-1 flex-shrink-1 d-flex flex-column flex-sm-row flex-xl-row">
+            <div id="side-menu"
+                 class="col-12 col-sm-2 col-xl-1
+                        p-2
+                        d-flex flex-row flex-sm-column flex-xl-column
+
+                        justify-content-evenly justify-content-sm-start justify-content-xl-start
+                        align-items-start align-items-sm-start align-items-xl-start
+                        order-2 order-md-1
+                        text-light bg-secondary-subtle
+                        ">
+
+                {% include "nav-side.html" %}
+
+            </div>
+            <div id="svg-panel"
+                 class="col-12 col-sm-10 col-xl-11 px-0 d-flex flex-column flex-grow-1 flex-shrink-1 h-sm-100
+                        order-1 order-md-2">
+                <main id="svg-container-fluid"
+                      class="container-fluid flex-grow-1 flex-shrink-1 px-0">
+
+                    <svg id="svg"></svg>
+
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <div id="offcanvasRoles"
+         class="offcanvas offcanvas-start" tabindex="-1"
+         data-bs-scroll="true" data-bs-backdrop="false"
+         aria-labelledby="offcanvasRolesLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="offcanvasRolesLabel">Roles</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div>
+                Select Roles:
+            </div>
+            <div id="jstree_div" class="w-75 h-75"></div>
+        </div>
+    </div>
+
+    <div id="flash"></div>
+
+</div>

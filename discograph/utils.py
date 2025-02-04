@@ -5,6 +5,7 @@ import logging
 import math
 import re
 import shutil
+import sys
 import textwrap
 import time
 import unicodedata
@@ -23,14 +24,14 @@ from discograph.config import (
     DISCOGS_BASE_URL,
     DISCOGS_PATH,
 )
-from discograph.library.data_access_layer.role_data_access import RoleDataAccess
 
 log = logging.getLogger(__name__)
 
 URLIFY_REGEX = re.compile(r"\s+", re.MULTILINE)
 ARG_ROLES_REGEX = re.compile(r"^roles(\[\d*\])?$")
-STRIP_PATTERN = re.compile(r"(\(\d+\)|[^(\w\s)]+)")
-REMOVE_PUNCTUATION = re.compile(r"[^\w\s]")
+STRIP_PATTERN = re.compile(r"\(\d+\)|not on label|self[ -]released|[()&\".,]")
+# STRIP_PATTERN = re.compile(r"(\(\d+\)|[^(\w\s)]+)")
+# REMOVE_PUNCTUATION = re.compile(r"[^\w\s]")
 WORD_PATTERN = re.compile(r"\s+")
 
 
@@ -69,6 +70,8 @@ class SkipFilter:
 
 
 def parse_request_args(args):
+    from discograph.library.data_access_layer.role_data_access import RoleDataAccess
+
     year = None
     roles = set()
     for key in args:
@@ -85,9 +88,23 @@ def parse_request_args(args):
         elif ARG_ROLES_REGEX.match(key):
             value = args.getlist(key)
             for role in value:
-                if role in RoleDataAccess.role_name_to_role_id_lookup.keys():
+                log.debug(f"Requested role: {role}")
+                if role in RoleDataAccess.role_category_to_role_name_lookup.keys():
+                    log.debug(f"Requested role found: {role}")
+                    for role_entry in RoleDataAccess.role_category_to_role_name_lookup[
+                        role
+                    ]:
+                        log.debug(f"Requested role_entry: {role_entry}")
+                        if (
+                            role_entry
+                            in RoleDataAccess.role_name_to_role_id_lookup.keys()
+                        ):
+                            roles.add(role_entry)
+                elif role in RoleDataAccess.role_name_to_role_id_lookup.keys():
                     roles.add(role)
+
     roles = list(sorted(roles))
+    log.debug(f"Requested roles: {roles}")
     return roles, year
 
 
@@ -124,34 +141,6 @@ def split_list(num_chunks: int, seq) -> list[Any]:
 
 
 def normalize(argument: str, indent: int | str | None = None) -> str:
-    """
-    Normalizes string.
-
-    ..  container:: example
-
-        >>> string = r'''
-        ...     foo
-        ...         bar
-        ... '''
-        >>> print(string)
-        <BLANKLINE>
-            foo
-                bar
-        <BLANKLINE>
-
-        >>> print(utils.normalize(string))
-        foo
-            bar
-
-        >>> print(utils.normalize(string, indent=4))
-            foo
-                bar
-
-        >>> print(utils.normalize(string, indent='* '))
-        * foo
-        *     bar
-
-    """
     string = argument.replace("\t", "    ")
     lines = string.split("\n")
     while lines and (not lines[0] or lines[0].isspace()):
@@ -184,8 +173,6 @@ def normalize(argument: str, indent: int | str | None = None) -> str:
 
 
 def normalize_dict(obj: Any, skip_keys=None) -> str:
-    if skip_keys is None:
-        skip_keys = ["random"]
     preprocessor = SkipFilter(keys=skip_keys)
 
     def list_public_attributes(input_var):
@@ -344,3 +331,27 @@ def get_discogs_dump_dates(start_date: date, end_date: date) -> List[date]:
         date_list.append(month_date)
         curr_date += relativedelta(months=1)
     return date_list
+
+
+def calculate_size(obj):
+    size = sys.getsizeof(obj)
+    if isinstance(obj, dict):
+        size += sum(calculate_size(v) for v in obj.values())
+        size += sum(calculate_size(k) for k in obj.keys())
+    elif isinstance(obj, (list, tuple, set)):
+        size += sum(calculate_size(v) for v in obj)
+    elif isinstance(obj, bytes):
+        size += len(obj)
+    elif isinstance(obj, str):
+        size += len(obj.encode("utf-8"))
+    elif isinstance(obj, type(None)):
+        size += 0
+    elif isinstance(obj, (int, float)):
+        size += sys.getsizeof(obj)
+    else:
+        size += sum(
+            calculate_size(getattr(obj, attr))
+            for attr in dir(obj)
+            if not callable(getattr(obj, attr)) and not attr.startswith("__")
+        )
+    return size

@@ -1,6 +1,5 @@
 import logging
 import multiprocessing
-from random import random
 from typing import List, Any
 
 from sqlalchemy.exc import OperationalError, IntegrityError
@@ -62,10 +61,10 @@ class WorkerRelationPassOne(multiprocessing.Process):
                         )
                 except NotFoundError:
                     log.debug(f"WorkerRelationPassOne release_id not found: {id_}")
-                except DatabaseError as e:
-                    log.error("Database Error in WorkerRelationPassOne")
-                    # log.exception("Database Error in WorkerRelationPassOne", e)
-                    raise e
+                except DatabaseError:
+                    log.error("Error in WorkerRelationPassOne worker")
+                    # log.exception("Error in WorkerRelationPassOne worker", exc_info=True)
+                    raise
 
                 relations = self.to_relations_from_dict(relation_dicts)
 
@@ -158,7 +157,6 @@ class WorkerRelationPassOne(multiprocessing.Process):
                 subject=relation_dict["subject"],
                 role_name=relation_dict["role"],
                 object=relation_dict["object"],
-                random=random(),
             )
             relation_uncommitteds.append(relation_uncommitted)
         return relation_uncommitteds

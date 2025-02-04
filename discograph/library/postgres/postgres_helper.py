@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 
 class PostgresHelper(DatabaseHelper):
-    postgres_test_db: TempDB = None
+    postgres_test_db: TempDB | None = None
     _is_test: bool = False
 
     @staticmethod
@@ -72,8 +72,8 @@ class PostgresHelper(DatabaseHelper):
                     shutil.rmtree(socket_path)
 
                 options = {
-                    "work_mem": "300MB",
-                    "maintenance_work_mem": "300MB",
+                    "work_mem": "100MB",
+                    "maintenance_work_mem": "100MB",
                     "effective_cache_size": "2GB",
                     "max_connections": get_concurrency_count() + 4,
                     "shared_buffers": "3GB",
@@ -237,24 +237,3 @@ class PostgresHelper(DatabaseHelper):
             return insert(schema_class).on_conflict_do_nothing().values(values_list)
         else:
             return insert(schema_class).values(values_list)
-
-    # @classmethod
-    # def build_search_text_query(cls, search_string) -> ColumnElement[bool]:
-    #     return cls.search_content.match(search_string)
-    #     # search_string = search_string.lower()
-    #     # # Transliterate the unicode string into a plain ASCII string
-    #     # search_string = unidecode(search_string, "preserve")
-    #     # search_string = ",".join(search_string.split())
-    #     # # TODO fix search_string injection
-    #     # query = f"""
-    #     #     SELECT entity_type,
-    #     #         entity_id,
-    #     #         name,
-    #     #         ts_rank_cd(search_content, query, 63) AS rank
-    #     #     FROM postgresentity,
-    #     #         to_tsquery({search_string}) query
-    #     #     WHERE query @@ search_content
-    #     #     ORDER BY rank DESC
-    #     #     LIMIT 100
-    #     #     """
-    #     # return query

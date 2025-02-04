@@ -1,64 +1,71 @@
-<nav id="nav-top" class="navbar navbar-default navbar-fixed-top">
+<nav id="nav-top" class="navbar navbar-expand-lg bg-body-tertiary text-body p-0">
     <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-4">
-                <div class="navbar-header">
-                    <button type="button"
-                            class="navbar-toggle collapsed"
-                            data-toggle="collapse"
-                            data-target="#nav-top-details"
-                            aria-expanded="false">
-                        <span class="sr-only">Toggle navigation</span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                    </button>
-                    <a id="brand"
-                       class="navbar-brand"
-                       title="Discograph2" data-toggle="tooltip"
-                       data-placement="bottom">
-                        DISCOGRAPH2
-                        <span id="page-loading" class="glyphicon" style="font-size: 0.9em;"></span>
-                        <span id="network-running" class="glyphicon" style="font-size: 0.9em;"></span>
-                    </a>
+        <div class="px-2 py-0
+                    col-lg-2 col-md-2 col-sm-1 col-1
+                    order-1 order-md-1">
+            <div id="brand" class="d-flex flex-row navbar-brand px-0 py-0" role="button">
+                <span class="text-body px-2 py-0">
+                    <i class="bi bi-snow3" style="font-size: 2rem"></i>
+                </span>
+                <h3 class="text-body flex-grow-0 px-1 py-0 mb-0 collapse navbar-collapse"
+                    title="Discograph2" data-toggle="tooltip"
+                    data-placement="bottom">DISCOGRAPH</h3>
+                <h6 class="text-body mb-0 collapse navbar-collapse">&nbsp;v2</h6>
+            </div>
+        </div>
+
+        <div class="navbar-title
+                    flex-grow-1 d-flex justify-content-center
+                    px-2 py-0
+                    h-100 d-inline-block
+                    col-lg-5 col-md-5 col-sm-10 col-10
+                    order-2 order-md-2">
+            <span id="navbar-title"></span>
+        </div>
+
+        <div class="justify-content-center
+                    px-2 py-2
+                    flex-grow-1
+                    col-lg-3 col-md-3 col-sm-11 col-11
+                    order-4 order-md-3">
+            <form id="search" class="container-fluid" role="search" method="get">
+                <div class="input-group flex-nowrap border border-secondary" style="--bs-border-opacity: .25;">
+                    <span class="bg-light-subtle opacity-50 input-group-text px-2 py-0">
+                        <i class="bi bi-search"></i>
+                    </span>
+
+                    <input id="typeahead" type="text" class="form-control rounded-0 px-2 py-1" placeholder="Search">
+                    <!--                    <span class="input-group-text spinner-border invisible" role="status"></span>-->
+                    <span class="clear bg-light-subtle opacity-50 input-group-text px-2 py-0" role="button">
+                        <i class="bi bi-backspace"></i>
+                    </span>
+
                 </div>
+
+            </form>
+        </div>
+
+        <div class="navbar-text navbar-right
+                    px-2 py-0
+                    fs-5 d-flex justify-content-center
+                    col-lg-1 col-md-1 col-sm-1 col-1
+                    order-3 order-md-4">
+            <div id="request-random" class="d-flex flex-row" data-tooltip="tooltip" data-placement="bottom"
+                 title="Choose a random artist" role="button">
+                <i class="bi bi-shuffle px-1 py-0"></i>
+                <div class="collapse navbar-collapse px-1 py-0">RANDOM</div>
             </div>
-            <div class="col-md-4">
-                <div class="navbar-title">
-                    <span id="navbar-title"></span>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div id="nav-top-details">
-                    <form id="search" class="navbar-form navbar-right" role="search" method="get">
-                        <div class="input-group">
-                            <div class="form-group has-feedback">
-                                <input id="typeahead" type="text" class="form-control" placeholder="Search">
-                                <span class="loading glyphicon glyphicon-refresh form-control-feedback glyphicon-animate invisible"></span>
-                            </div>
-                            <a class="clear input-group-addon">
-                                <i class="glyphicon glyphicon-remove"></i>
-                            </a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            <div class="col-md-1">
-                <ul class="nav navbar-nav navbar-right">
-                    <li id="request-random" data-tooltip="tooltip" data-placement="bottom"
-                        title="Choose a random artist">
-                        <a>RANDOM
-                            <span class="glyphicon glyphicon-random" style="font-size: 0.9em;"></span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-            <div class="col-md-1">
-                <ul class="nav navbar-nav navbar-right">
-                    <li data-tooltip="tooltip" data-placement="bottom" title="What is this?">
-                        <a data-toggle="modal" data-target="#modal-help">ABOUT</a>
-                    </li>
-                </ul>
+        </div>
+
+        <div class="navbar-text navbar-right
+                    px-2 py-0
+                    fs-5 d-flex justify-content-center
+                    col-lg-1 col-md-1 col-sm-1 col-1
+                    order-5 order-md-5">
+            <div id="help" class="d-flex flex-row" data-tooltip="tooltip" data-placement="bottom"
+                 title="Help" data-bs-toggle="modal" data-bs-target="#modal-help" role="button">
+                <i class="bi bi-question-circle px-1 py-0"></i>
+                <div class="collapse navbar-collapse px-1 py-0">HELP</div>
             </div>
         </div>
     </div>

@@ -1,5 +1,4 @@
 import logging
-from random import random
 from typing import Generator, List
 
 from sqlalchemy import Result, select, Select, delete
@@ -67,32 +66,32 @@ class RelationRepository(BaseRepository[RelationTable]):
         # print(f"instance: {instance}")
         return RelationDB.model_validate(instance)
 
-    def get_random(self, role_names: List[str] = None) -> RelationInternal:
-        role_ids = [
-            RoleDataAccess.role_name_to_role_id_lookup[role_name]
-            for role_name in role_names
-        ]
-        while True:
-            n: float = random()
-            where_clause = RelationTable.random > n
-            if role_names:
-                where_clause &= RelationTable.id.in_(role_ids)
-            query = (
-                select(RelationTable)
-                .where(where_clause)
-                .order_by(RelationTable.random, RelationTable.id)
-                .limit(1)
-            )
-            result: Result = self.execute(query)
-            instance = result.scalars().one_or_none()
-            # relation = self._session.scalars(query).one_or_none()
-            if instance:
-                break
-
-        log.debug(f"random relation: {instance}")
-        relation_db = RelationDB.model_validate(instance)
-
-        return self._to_domain(relation_db)
+    # def get_random(self, role_names: List[str] = None) -> RelationInternal:
+    #     role_ids = [
+    #         RoleDataAccess.role_name_to_role_id_lookup[role_name]
+    #         for role_name in role_names
+    #     ]
+    #     while True:
+    #         n: float = random()
+    #         where_clause = RelationTable.random > n
+    #         if role_names:
+    #             where_clause &= RelationTable.id.in_(role_ids)
+    #         query = (
+    #             select(RelationTable)
+    #             .where(where_clause)
+    #             .order_by(RelationTable.random, RelationTable.id)
+    #             .limit(1)
+    #         )
+    #         result: Result = self.execute(query)
+    #         instance = result.scalars().one_or_none()
+    #         # relation = self._session.scalars(query).one_or_none()
+    #         if instance:
+    #             break
+    #
+    #     log.debug(f"random relation: {instance}")
+    #     relation_db = RelationDB.model_validate(instance)
+    #
+    #     return self._to_domain(relation_db)
 
     def get_id_by_key(self, key: dict) -> int:
         # print(f"find_by_key")
@@ -203,8 +202,8 @@ class RelationRepository(BaseRepository[RelationTable]):
         query = (
             select(RelationTable)
             .where(
-                ((RelationTable.predicate == id_) | (RelationTable.object == id_))
-                & (RelationTable.id.in_(role_ids))
+                ((RelationTable.subject == id_) | (RelationTable.object == id_))
+                & (RelationTable.predicate.in_(role_ids))
             )
             .order_by(
                 RelationTable.predicate,

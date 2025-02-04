@@ -71,9 +71,6 @@ function dg_network_tick_link(d, i) {
     var group = d3.select(this);
     var path = group.select('path');
     path.attr('d', dg_network_spline(d));
-    path.classed('distance-0', d.source.distance == 0);
-    path.classed('distance-1', d.source.distance == 1);
-    path.classed('distance-2', d.source.distance == 2);
     var x1 = d.source.x,
         y1 = d.source.y,
         x2 = d.target.x,
@@ -127,5 +124,5 @@ function dg_network_tick(e) {
             var vertices = d3.polygonHull(dg_network_getHullVertices(d.flat()));
             return 'M' + vertices.join('L') + 'Z';
         });
-    dg_network_node_check_tooltip();
+    dg_network_hide_tooltips();
 }

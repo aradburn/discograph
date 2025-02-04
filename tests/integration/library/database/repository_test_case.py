@@ -9,9 +9,11 @@ from discograph.config import (
     Configuration,
     ALL_DATABASE_TABLE_NAMES,
     DATABASE_TABLE_NAMES_WITHOUT_ROLE,
+    TEST_TEXT_SEARCH_PATH,
 )
-from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
+from discograph.library.cache.cache_manager import CacheManager
 from discograph.library.database.database_helper import DatabaseHelper
+from discograph.library.loader.loader_entity import LoaderEntity
 from discograph.library.relation_grapher import RelationGrapher
 from discograph.logging_config import setup_logging, shutdown_logging
 
@@ -39,16 +41,20 @@ class RepositoryTestCase(unittest.TestCase):
     def setUpClass(cls):
         setup_logging(is_testing=True)
         if cls._config is not None:
-            setup_cache(cls._config)
+            CacheManager.setup_cache(cls._config)
             try:
                 cls._db_helper = database.setup_database(cls._config)
             except DatabaseError:
                 log.error("Error in database setup")
+                cls._db_helper.drop_tables(ALL_DATABASE_TABLE_NAMES)
             else:
                 cls._db_helper.drop_tables(DATABASE_TABLE_NAMES_WITHOUT_ROLE)
                 cls._db_helper.create_tables(ALL_DATABASE_TABLE_NAMES)
                 # LoaderRole.load_roles_into_database()
                 # Note: No data loading, empty repositories
+                cls._db_helper.text_search_index = (
+                    LoaderEntity.loader_init_text_search_index(TEST_TEXT_SEARCH_PATH)
+                )
 
     @classmethod
     def tearDownClass(cls):
@@ -56,7 +62,7 @@ class RepositoryTestCase(unittest.TestCase):
         # release resources
         if cls._config is not None:
             database.shutdown_database(cls._config)
-            shutdown_cache()
+            CacheManager.shutdown_cache()
             shutdown_logging()
 
     @classmethod

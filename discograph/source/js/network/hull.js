@@ -1,5 +1,4 @@
 function dg_network_onHullEnter(hullEnter) {
-console.log("hullEnter", hullEnter);
     var hullGroup = hullEnter
         .append("g")
         .attr("class", function(d) { return "hull" });

@@ -10,10 +10,11 @@ from discograph.config import (
     TEST_DATA_DIR,
     ALL_DATABASE_TABLE_NAMES,
     DATABASE_TABLE_NAMES_WITHOUT_ROLE,
+    TEST_TEXT_SEARCH_PATH,
 )
-from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
+from discograph.library.cache.cache_manager import CacheManager
 from discograph.library.database.database_helper import DatabaseHelper
-from discograph.library.relation_grapher import RelationGrapher
+from discograph.library.loader.loader_entity import LoaderEntity
 from discograph.logging_config import setup_logging, shutdown_logging
 
 log = logging.getLogger(__name__)
@@ -22,11 +23,18 @@ log = logging.getLogger(__name__)
 class DatabaseTestCase(unittest.TestCase):
     _config: Configuration = None
     _db_helper: Type[DatabaseHelper] = None
-    relation_grapher: Type[RelationGrapher] = None
 
     # noinspection PyPep8Naming
     def __init__(self, methodName="runTest"):
-        if self.__class__.__name__.startswith("TestDatabase"):
+        ignore_test_prefixes = (
+            "TestDatabase",
+            "TestEntity",
+            "TestRelease",
+            "TestRelation",
+            "TestRole",
+            "TestLoader",
+        )
+        if self.__class__.__name__.startswith(ignore_test_prefixes):
             # don't run these tests in the abstract base implementation
             methodName = "runTestIgnoreInBaseClass"
             # methodName = "runNoTestsInBaseClass"
@@ -41,7 +49,7 @@ class DatabaseTestCase(unittest.TestCase):
         # log.info(f"DatabaseTestCase setUpClass: {cls.__name__}")
         # log.info(f"DatabaseTestCase _config: {cls._config}")
         if cls._config is not None:
-            setup_cache(cls._config)
+            CacheManager.setup_cache(cls._config)
             try:
                 cls._db_helper = database.setup_database(cls._config)
             except DatabaseError:
@@ -55,6 +63,10 @@ class DatabaseTestCase(unittest.TestCase):
                 cls._db_helper.load_tables(
                     TEST_DATA_DIR, "testinsert", is_bulk_inserts=True
                 )
+                cls._db_helper.text_search_index = (
+                    LoaderEntity.loader_init_text_search_index(TEST_TEXT_SEARCH_PATH)
+                )
+                print("Done setup")
 
     @classmethod
     def tearDownClass(cls):
@@ -62,7 +74,7 @@ class DatabaseTestCase(unittest.TestCase):
         # release resources
         if cls._config is not None:
             database.shutdown_database(cls._config)
-            shutdown_cache()
+            CacheManager.shutdown_cache()
             shutdown_logging()
 
     def setUp(self):

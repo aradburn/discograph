@@ -56,7 +56,7 @@ function dg_network_onNodeEnterElementConstruction(nodeEnter) {
         .attr("class", function(d) {
             var classes = [
                 "outer",
-                dg_color_class(d),
+                dg_node_color_class(d),
             ];
             return classes.join(" ");
         })
@@ -66,7 +66,7 @@ function dg_network_onNodeEnterElementConstruction(nodeEnter) {
         .attr("class", function(d) {
             var classes = [
                 "inner",
-                dg_color_class(d),
+                dg_node_color_class(d),
             ];
             return classes.join(" ");
         })
@@ -81,7 +81,7 @@ function dg_network_onNodeEnterElementConstruction(nodeEnter) {
         .attr("class", function(d) {
             var classes = [
                 "inner",
-                dg_color_class(d),
+                dg_node_color_class(d),
             ];
             return classes.join(" ");
         })
@@ -102,6 +102,12 @@ function dg_network_onNodeEnterEventBindings(nodeEnter) {
     var debounceToolTip = $.debounce(LINK_DEBOUNCE_TIME, function(self, d, status) {
         if (status) {
             nodeToolTip.show(d, d3.select(self).node());
+
+            // Hide after 5 seconds
+            setTimeout(function(){
+                dg_network_hide_tooltips();
+            }, 5000);
+
         } else {
             nodeToolTip.hide();
         }
@@ -141,7 +147,7 @@ function dg_network_onNodeUpdate(nodeUpdate) {
         .attr("class", function(d) {
             var classes = [
                 "outer",
-                dg_color_class(d),
+                dg_node_color_class(d),
             ];
             return classes.join(" ");
         })
@@ -149,7 +155,7 @@ function dg_network_onNodeUpdate(nodeUpdate) {
         .attr("class", function(d) {
             var classes = [
                 "inner",
-                dg_color_class(d),
+                dg_node_color_class(d),
             ];
             return classes.join(" ");
         })
@@ -227,16 +233,4 @@ function dg_network_node_tooltip(d) {
         '<span>' + d.name + '</span>',
         ];
     return parts.join('');
-}
-
-function dg_network_node_check_tooltip() {
-    var el = nodeToolTip.rootElement;
-//    var el = nodeToolTip.getNodeEl();
-    if (el) {
-        console.log("tip el: ", el);
-    }
-//    var root = nodeToolTip.rootElement;
-//    if (el) {
-//        console.log("tip el: ", el);
-//    }
 }

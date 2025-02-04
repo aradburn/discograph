@@ -47,7 +47,6 @@ The `entities` table looks like this:
 - `entity_type` (1 == Artist, 2 == Label)
 - `entity_id` (the Discogs database id)
 - `name`
-- `random` (random float for efficiently looking up random entities)
 - `metadata` (ANV, profile, etc.)
 - `entities` (JSON store of entity IDS for aliases, parent/sublabels, members/groups) (this simplifies many queries)
 - `relation_counts` (precomputed counts of # of relations of each time involving this entity, for optimizing graph
@@ -155,7 +154,6 @@ The graph-search algorithm
     - we run out of entities,
     - or we surpass either the max-entities or max-relations thresholds.
 6. Cross-reference all entities with all roles (pre-role-pruning).
-7. Build a *trellis* to perform subgraph paging.
 
 Here's the terminal output for the graph-search, starting with Morris Day, and using the roles "Alias", "Member Of"
 and "Guitar":
@@ -202,31 +200,6 @@ Searching around Morris Day...
         753 & 753
         Cross-referenced: 754 nodes / 1060 links
     Built trellis: 754 nodes / 1060 links
-    Partitioning trellis into 11 pages...
-        Maximum: 75 nodes / 225 links
-        Maximum depth: 3
-        Subgraph threshold: 17.136363636363637
-            At distance 0: 754.0 geometric mean
-            At distance 1: 2.306143078159937 geometric mean
-            At distance 2: 1.0427629961486573 geometric mean
-            At distance 3: 1.0109670668659374 geometric mean
-                Testing 754.0 @ distance 0
-                Testing 2.306143078159937 @ distance 1
-            Winning distance: 1
-        Paging by local neighborhood: 9
-        Paging at winning distance...
-        Paging by distance...
-        Page 0: 104
-        Page 1: 103
-        Page 2: 103
-        Page 3: 103
-        Page 4: 103
-        Page 5: 103
-        Page 6: 103
-        Page 7: 103
-        Page 8: 103
-        Page 9: 104
-        Page 10: 104
 Network query time: 0.6372168064117432
 ```
 

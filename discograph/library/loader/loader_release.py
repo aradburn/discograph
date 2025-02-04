@@ -1,14 +1,17 @@
 import logging
-from random import random
+import pickle
+from pathlib import Path
 from typing import Any
 
 from sortedcontainers import SortedSet
 
 from discograph.database import get_concurrency_count
+from discograph.library.data_access_layer.release_data_access import ReleaseDataAccess
 from discograph.library.database.release_repository import ReleaseRepository
 from discograph.library.database.release_table import ReleaseTable
 from discograph.library.database.transaction import transaction
 from discograph.library.domain.release import Release
+from discograph.library.full_text_search.entity_details_index import EntityDetailsIndex
 from discograph.library.loader.loader_base import LoaderBase
 from discograph.library.loader.worker_release_deleter import WorkerReleaseDeleter
 from discograph.library.loader.worker_release_inserter import WorkerReleaseInserter
@@ -117,6 +120,63 @@ class LoaderRelease(LoaderBase):
         with transaction():
             release_repository = ReleaseRepository()
             release_repository.vacuum(has_tablename, is_full, is_analyze)
+
+    @classmethod
+    @timeit
+    def loader_init_entity_details_index(
+        cls, entity_details_path: Path
+    ) -> EntityDetailsIndex:
+        log.debug(f"loader release init entity details index")
+
+        try:
+            entity_details_index = cls.load_entity_details_index_from_file(
+                entity_details_path
+            )
+        except FileNotFoundError:
+            entity_details_index = cls.loader_init_entity_details_index_from_database()
+            cls.save_entity_details_index_to_file(
+                entity_details_path, entity_details_index
+            )
+        return entity_details_index
+
+    @classmethod
+    @timeit
+    def loader_init_entity_details_index_from_database(cls) -> EntityDetailsIndex:
+        log.debug(f"loader entity init entity details index from database")
+        entity_details_index = EntityDetailsIndex()
+
+        with transaction():
+            release_repository = ReleaseRepository()
+            ReleaseDataAccess.init_entity_details_index(
+                release_repository, entity_details_index
+            )
+        return entity_details_index
+
+    @classmethod
+    @timeit
+    def load_entity_details_index_from_file(cls, filename: Path) -> EntityDetailsIndex:
+        log.debug(f"load entity details index from file: {filename}")
+
+        # open a file, where you stored the pickled data
+        with open(filename, "rb") as file:
+            # read pickle dump information from that file
+            entity_details_index: EntityDetailsIndex = pickle.load(file)
+            for country in sorted(entity_details_index.countries_list):
+                print(f"{country}")
+        return entity_details_index
+
+    @classmethod
+    @timeit
+    def save_entity_details_index_to_file(
+        cls, filename: Path, entity_details_index: EntityDetailsIndex
+    ) -> None:
+        log.debug(f"save entity details index to file: {filename}")
+
+        # open a file, where you ant to store the data
+        with open(filename, "wb") as file:
+            # dump information to that file
+            # noinspection PyTypeChecker
+            pickle.dump(entity_details_index, file)
 
     @classmethod
     def element_to_artist_credits(cls, element):
@@ -282,7 +342,6 @@ class LoaderRelease(LoaderBase):
                 data["master_id"] = None
             if "notes" not in data:
                 data["notes"] = None
-            data["random"] = random()
         return data
 
 

@@ -29,9 +29,7 @@ class TestRepositoryRelationReleaseYear(RepositoryTestCase):
             created_relation_release_year = repository.create(relation_release_year)
             print(f"created_relation_release_year: {created_relation_release_year}")
 
-            actual = utils.normalize_dict(
-                created_relation_release_year.model_dump(exclude={"random"})
-            )
+            actual = utils.normalize_dict(created_relation_release_year.model_dump())
             print(f"actual: {actual}")
 
         # THEN
@@ -202,9 +200,7 @@ class TestRepositoryRelationReleaseYear(RepositoryTestCase):
             # Get internal RelationReleaseYearDB
             relation_release_years = repository.get(2)
             actual = [
-                utils.normalize_dict(
-                    relation_release_year.model_dump(exclude={"random"})
-                )
+                utils.normalize_dict(relation_release_year.model_dump())
                 for relation_release_year in relation_release_years
             ]
 
@@ -218,9 +214,7 @@ class TestRepositoryRelationReleaseYear(RepositoryTestCase):
             )
         ]
         expected = [
-            utils.normalize_dict(
-                expected_relation_release_year.model_dump(exclude={"random"})
-            )
+            utils.normalize_dict(expected_relation_release_year.model_dump())
             for expected_relation_release_year in expected_relation_release_years
         ]
         print(f"expected: {expected}")

@@ -1,7 +1,6 @@
 import gzip
 import logging
 from abc import abstractmethod
-from random import random
 from typing import List, Generator, Self, Any
 
 from sortedcontainers import SortedSet
@@ -58,7 +57,6 @@ class LoaderBase:
                             continue
                     # if element.get("id"):
                     #     data[id_attr] = element.get("id")
-                    # data["random"] = random()
                     # log.debug(f"data: {data}")
 
                     set_of_updated_ids.add(int(data[id_attr]))
@@ -209,7 +207,6 @@ class LoaderBase:
                         continue
                 if element.get("id"):
                     data[id_attr] = element.get("id")
-                data["random"] = random()
                 # log.debug(f"data: {data}")
 
                 new_instance = domain_class(**data)

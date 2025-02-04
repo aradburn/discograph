@@ -10,7 +10,7 @@ class TestDatabaseRelease(DatabaseTestCase):
         with transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"random"}))
+            actual = utils.normalize_dict(release.model_dump())
 
         expected_release = {
             "artists": [{"id": 41, "name": "Autechre"}],
@@ -57,7 +57,7 @@ class TestDatabaseRelease(DatabaseTestCase):
                 },
             ],
             "labels": [
-                {"catalog_number": "WAP54", "id": 23528, "name": "Warp Records"}
+                {"catalog_number": "WAP54", "id": 1000023528, "name": "Warp Records"}
             ],
             "master_id": 1315,
             "notes": None,
@@ -80,7 +80,7 @@ class TestDatabaseRelease(DatabaseTestCase):
         with transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"random"}))
+            actual = utils.normalize_dict(release.model_dump())
 
         expected_release = {
             "artists": [{"id": 939, "name": "Higher Intelligence Agency, The"}],
@@ -103,7 +103,9 @@ class TestDatabaseRelease(DatabaseTestCase):
                     "value": "DISCTRONICS S HIA 2 CD 01",
                 },
             ],
-            "labels": [{"catalog_number": "HIACD2", "id": 233, "name": "Beyond"}],
+            "labels": [
+                {"catalog_number": "HIACD2", "id": 1000000233, "name": "Beyond"}
+            ],
             "master_id": 21103,
             "notes": None,
             "release_date": "1994-01-01",

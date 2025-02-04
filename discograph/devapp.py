@@ -1,5 +1,6 @@
 import atexit
 import logging
+import sys
 
 from flask import Flask
 from flask import g
@@ -8,7 +9,6 @@ from flask import make_response
 from flask import render_template
 from flask import request
 from flask_compress import Compress
-from flask_mobility import Mobility
 from sqlalchemy.orm import scoped_session, sessionmaker
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -16,11 +16,15 @@ from discograph import api
 from discograph import ui
 from discograph.config import (
     PostgresDevelopmentConfiguration,
+    TEXT_SEARCH_PATH,
+    ENTITY_DETAILS_PATH,
 )
 from discograph.database import setup_database, shutdown_database
 from discograph.exceptions import NotFoundError, BaseError
-from discograph.library.cache.cache_manager import setup_cache, shutdown_cache
+from discograph.library.cache.cache_manager import CacheManager
 from discograph.library.database.database_helper import DatabaseHelper
+from discograph.library.loader.loader_entity import LoaderEntity
+from discograph.library.loader.loader_release import LoaderRelease
 from discograph.logging_config import setup_logging, shutdown_logging
 
 log = logging.getLogger(__name__)
@@ -35,7 +39,7 @@ def setup_application():
     app.register_blueprint(api.blueprint, url_prefix="/api")
     app.register_blueprint(ui.blueprint)
     app.wsgi_app = ProxyFix(app.wsgi_app)
-    Mobility(app)
+    # Mobility(app)
     Compress(app)
     DatabaseHelper.flask_db_session = scoped_session(
         sessionmaker(autocommit=False, autoflush=False, bind=DatabaseHelper.engine)
@@ -71,6 +75,8 @@ def inject_rate_limit_headers(response):
 def handle_error(error):
     if app.debug:
         log.exception(error)
+    else:
+        log.warning(f"Error: {error}")
     status_code = getattr(error, "status_code", 400)
     if request.endpoint.startswith("api"):
         response = jsonify(
@@ -122,16 +128,32 @@ def main():
     log.info("Using PostgresDevelopmentConfiguration")
     config = vars(PostgresDevelopmentConfiguration)
     app.config.from_object(config)
-    setup_cache(config)
+    CacheManager.setup_cache(config)
+    cache = CacheManager.get_cache()
+    print(f"cache: {cache}")
+    if cache is None:
+        log.error("Cache not set")
+        sys.exit()
+    else:
+        log.debug("Clearing cache")
+        CacheManager.clear()
+
     setup_database(config)
     setup_application()
+    DatabaseHelper.entity_details_index = (
+        LoaderRelease.loader_init_entity_details_index(ENTITY_DETAILS_PATH)
+    )
+    DatabaseHelper.text_search_index = LoaderEntity.loader_init_text_search_index(
+        TEXT_SEARCH_PATH
+    )
+
     # Note reverse order (last in first out), logging is the last to be shutdown
     atexit.register(shutdown_logging)
-    atexit.register(shutdown_cache)
+    atexit.register(CacheManager.shutdown_cache)
     atexit.register(shutdown_database, config)
 
 
 if __name__ == "__main__":
     # Flask development server, not to be used in production
     main()
-    app.run(debug=True)
+    app.run(debug=False)

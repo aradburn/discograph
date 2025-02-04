@@ -3,10 +3,10 @@ import logging
 from typing import List, Dict, Any
 
 from discograph.exceptions import NotFoundError
-from discograph.library.data_access_layer.entity_data_access import EntityDataAccess
 from discograph.library.data_access_layer.role_data_access import RoleDataAccess
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.relation_repository import RelationRepository
+from discograph.library.domain.entity import Entity
 from discograph.library.domain.relation import Relation, RelationInternal
 from discograph.library.domain.release import Release
 from discograph.library.fields.entity_type import EntityType
@@ -46,10 +46,19 @@ class RelationDataAccess:
                         if role_name in RoleType.aggregate_roles:
                             if role_name not in aggregate_roles:
                                 aggregate_roles[role_name] = []
-                            aggregate_credit_id = credit["id"]
-                            aggregate_roles[role_name].append(aggregate_credit_id)
+                            if "id" in credit:
+                                aggregate_credit_id = credit["id"]
+                                aggregate_roles[role_name].append(aggregate_credit_id)
                         else:
-                            triples.add((credit["id"], role_name, object_id))
+                            if "id" in credit:
+                                triples.add((credit["id"], role_name, object_id))
+                            # TODO find missing id
+                            # else:
+                            # entity_type = EntityType.ARTIST
+                            # entity_id = entry["id"]
+                            # id_ = EntityDataAccess.get_internal_id_by_entity_type_and_entity_id(
+                            #     entity_repository, entity_type, entity_id
+                            # )
 
         if is_compilation:
             iterator = itertools.product(label_ids, release.companies)
@@ -61,17 +70,20 @@ class RelationDataAccess:
             for role_str in role_strs_list:
                 role_name = RoleDataAccess.find_role(role_str)
                 if role_name is not None:
-                    triples.add(
-                        (
-                            subject_id,
-                            role_name,
-                            company["id"] + EntityDataAccess.LABEL_ENTITY_ID_OFFSET,
+                    if "id" in company:
+                        triples.add(
+                            (
+                                subject_id,
+                                role_name,
+                                company["id"],
+                            )
                         )
-                    )
 
         all_track_artist_ids = set()
         for track in release.tracklist:
-            track_artist_ids = set(artist["id"] for artist in track.get("artists", ()))
+            track_artist_ids = set(
+                artist["id"] for artist in track.get("artists", ()) if "id" in artist
+            )
             all_track_artist_ids.update(track_artist_ids)
             if not track.get("extra_artists"):
                 continue
@@ -84,8 +96,16 @@ class RelationDataAccess:
                     for role_str in role_strs_list:
                         role_name = RoleDataAccess.find_role(role_str)
                         if role_name is not None:
-                            subject_id = credit["id"]
-                            triples.add((subject_id, role_name, object_id))
+                            if "id" in credit:
+                                subject_id = credit["id"]
+                                triples.add((subject_id, role_name, object_id))
+                            # TODO find missing id
+                            # else:
+                            # entity_type = EntityType.ARTIST
+                            # entity_id = entry["id"]
+                            # id_ = EntityDataAccess.get_internal_id_by_entity_type_and_entity_id(
+                            #     entity_repository, entity_type, entity_id
+                            # )
         for role_name, aggregate_artists in aggregate_roles.items():
             iterator = itertools.product(all_track_artist_ids, aggregate_artists)
             for track_artist_id, aggregate_artist_id in iterator:
@@ -122,23 +142,25 @@ class RelationDataAccess:
     def get_release_setup(cls, release) -> tuple[set[int], set[int], bool]:
         is_compilation = False
         # log.debug(f"get_release_setup release: {release}")
-        artist_ids: set[int] = set(artist["id"] for artist in release.artists)
-        # log.debug(f"get_release_setup artists: {artist_pks}")
-        label_ids: set[int] = set()
-        for label in release.labels:
-            label_id = label.get("id")
-            if label_id:
-                if label_id != EntityDataAccess.MISSING_LABEL_ENTITY:
-                    label_ids.add(label_id + EntityDataAccess.LABEL_ENTITY_ID_OFFSET)
-                else:
-                    label_ids.add(label_id)
+        artist_ids: set[int] = set(
+            artist["id"] for artist in release.artists if "id" in artist
+        )
+        # log.debug(f"get_release_setup artists: {artist_ids}")
+        label_ids: set[int] = set(
+            label["id"] for label in release.labels if "id" in label
+        )
+        # log.debug(f"get_release_setup labels: {label_ids}")
 
-        # log.debug(f"get_release_setup labels: {label_pks}")
         if len(artist_ids) == 1 and release.artists[0]["name"] == "Various":
             is_compilation = True
             artist_ids.clear()
             for track in release.tracklist:
-                artist_ids.update(artist["id"] for artist in track.get("artists", ()))
+                artist_ids.update(
+                    artist["id"]
+                    for artist in track.get("artists", ())
+                    if "id" in artist
+                )
+            # log.debug(f"get_release_setup various artists: {artist_ids}")
 
         # for format_ in release.formats:
         #    for description in format_.get('descriptions', ()):
@@ -195,7 +217,6 @@ class RelationDataAccess:
     def search_multi(
         cls,
         *,
-        entity_repository: EntityRepository,
         relation_repository: RelationRepository,
         entity_keys: list[tuple[int, EntityType]],
         role_names: list[str],
@@ -211,19 +232,22 @@ class RelationDataAccess:
         ]
 
         for entity_id, entity_type in entity_keys:
-            entity = entity_repository.get_by_entity_id_and_entity_type(
-                entity_id, entity_type
+            _id = Entity.to_entity_internal_id(entity_id, entity_type)
+            # entity = entity_repository.get_by_entity_id_and_entity_type(
+            #     entity_id, entity_type
+            # )
+            log.debug(f"find_by_entity_and_roles: {_id} {role_ids}")
+            entity_relations = relation_repository.find_by_entity_and_roles(
+                _id, role_ids
             )
-            if entity:
-                entity_relations = relation_repository.find_by_entity_and_roles(
-                    entity.id, role_ids
-                )
-                relation_internals.extend(entity_relations)
+            log.debug(f"    found entity_relations: {entity_relations}")
+            relation_internals.extend(entity_relations)
 
         relations = [
             RelationDataAccess.to_relation(relation_internal)
             for relation_internal in relation_internals
         ]
+        log.debug(f"    -> relations: {relations}")
         return relations
 
     # def search_bimulti(
@@ -301,13 +325,6 @@ class RelationDataAccess:
     ) -> list[Relation]:
         pass
 
-    @classmethod
-    def to_relation_internal_id(cls, entity_id: int, entity_type: EntityType) -> int:
-        if entity_type == EntityType.ARTIST:
-            return entity_id
-        else:
-            return entity_id + EntityDataAccess.LABEL_ENTITY_ID_OFFSET
-
     # @classmethod
     # def to_relation_external_id(cls, id: int) -> int:
     #     if entity_type == EntityType.ARTIST:
@@ -318,28 +335,12 @@ class RelationDataAccess:
     @classmethod
     def to_relation(cls, relation_internal: RelationInternal) -> Relation | None:
         try:
-            if relation_internal.subject == EntityDataAccess.MISSING_LABEL_ENTITY:
-                entity_one_id = -1
-                entity_one_type = EntityType.LABEL
-            elif relation_internal.subject >= EntityDataAccess.LABEL_ENTITY_ID_OFFSET:
-                entity_one_id = (
-                    relation_internal.subject - EntityDataAccess.LABEL_ENTITY_ID_OFFSET
-                )
-                entity_one_type = EntityType.LABEL
-            else:
-                entity_one_id = relation_internal.subject
-                entity_one_type = EntityType.ARTIST
-            if relation_internal.object == EntityDataAccess.MISSING_LABEL_ENTITY:
-                entity_two_id = -1
-                entity_two_type = EntityType.LABEL
-            elif relation_internal.object >= EntityDataAccess.LABEL_ENTITY_ID_OFFSET:
-                entity_two_id = (
-                    relation_internal.object - EntityDataAccess.LABEL_ENTITY_ID_OFFSET
-                )
-                entity_two_type = EntityType.LABEL
-            else:
-                entity_two_id = relation_internal.object
-                entity_two_type = EntityType.ARTIST
+            entity_one_id, entity_one_type = Entity.to_entity_external_id(
+                relation_internal.subject
+            )
+            entity_two_id, entity_two_type = Entity.to_entity_external_id(
+                relation_internal.object
+            )
             return Relation(
                 id=relation_internal.id,
                 entity_one_id=entity_one_id,
@@ -347,7 +348,6 @@ class RelationDataAccess:
                 entity_two_id=entity_two_id,
                 entity_two_type=entity_two_type,
                 role=relation_internal.role,
-                random=relation_internal.random,
             )
         except NotFoundError:
             return None
@@ -370,14 +370,11 @@ class RelationDataAccess:
         relation_internal_dict: dict[str, Any],
     ) -> dict[str, Any] | None:
         relation_internal_dict["id"] = 0
-        relation_internal_dict["random"] = 0
         relation_internal = RelationInternal.model_validate(relation_internal_dict)
         relation = RelationDataAccess.to_relation(relation_internal)
         if relation is None:
             return None
-        relation_external_dict = relation.model_dump(
-            exclude={"id", "random", "releases"}
-        )
+        relation_external_dict = relation.model_dump(exclude={"id", "releases"})
         relation_external_dict["release_id"] = relation_internal_dict["release_id"]
         relation_external_dict["year"] = relation_internal_dict["year"]
         return relation_external_dict

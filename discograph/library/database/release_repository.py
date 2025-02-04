@@ -1,5 +1,4 @@
 import logging
-from random import random
 from typing import Generator, Any, List
 
 from sqlalchemy import Result, select, update, Select, delete
@@ -44,9 +43,19 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
         return list(map(self._to_domain, release_dbs))
 
     def all(self) -> Generator[Release, None, None]:
-        for instance in self._all():
-            # async for instance in self._all():
-            yield Release.model_validate(instance)
+        query = select(ReleaseTable)
+        with self._session.execute(
+            query, execution_options={"yield_per": 1000}
+        ) as results:
+            for partition in results.partitions():
+                # partition is an iterable that will be at most 1000 items
+                for row in partition:
+                    yield Release.model_validate(row[0])
+
+    # def all(self) -> Generator[Release, None, None]:
+    #     for instance in self._all():
+    #         # async for instance in self._all():
+    #         yield Release.model_validate(instance)
 
     def get(self, release_id: int) -> Release:
         query = select(ReleaseTable).where(ReleaseTable.release_id == release_id)
@@ -70,16 +79,16 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
     def get_batched_ids(self, num_in_batch: int):
         return utils.batched(self.get_ids(), num_in_batch)
 
-    def get_random_release(self) -> Release:
-        n = random()
-        query = (
-            select(ReleaseTable)
-            .where(ReleaseTable.random > n)
-            .order_by(ReleaseTable.random)
-            .limit(1)
-        )
-        t = self._get_one_by_query(query)
-        return t
+    # def get_random_release(self) -> Release:
+    #     n = random()
+    #     query = (
+    #         select(ReleaseTable)
+    #         .where(ReleaseTable.random > n)
+    #         .order_by(ReleaseTable.random)
+    #         .limit(1)
+    #     )
+    #     t = self._get_one_by_query(query)
+    #     return t
 
     def update(
         self,

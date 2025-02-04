@@ -38,7 +38,7 @@ class TestLoaderRole(RepositoryTestCase):
         roles_from_files = LoaderRole.load_roles_from_files()
 
         # THEN
-        expected = 974
+        expected = 991
         actual = len(roles_from_files)
         self.assertEqual(expected, actual)
 

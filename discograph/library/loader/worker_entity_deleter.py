@@ -38,9 +38,10 @@ class WorkerEntityDeleter(multiprocessing.Process):
                     entity_repository.delete_by_id(id_)
 
                     deleted_count += 1
-                except DatabaseError as e:
-                    log.exception("Error in WorkerEntityDeleter worker", exc_info=True)
-                    raise e
+                except DatabaseError:
+                    log.error("Error in WorkerEntityDeleter worker")
+                    # log.exception("Error in WorkerEntityDeleter worker", exc_info=True)
+                    raise
 
         log.info(
             f"[{proc_name}] processed: {self.processed_count}, deleted: {deleted_count}"

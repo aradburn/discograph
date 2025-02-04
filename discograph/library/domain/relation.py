@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 
 class _RelationBase(InternalDomainObject):
-    random: float
+    pass
 
 
 class RelationUncommitted(_RelationBase):
@@ -58,15 +58,6 @@ class Relation(_RelationBase):
     role: str
     releases: Dict[str, int | None] | None = None
 
-
-class RelationResult(Relation):
-    """Domain Search result Relation representation, public facing."""
-
-    id: int
-    role: str
-    distance: int | None = None
-    pages: tuple | None = None
-
     @property
     def entity_one_key(self) -> tuple[int, EntityType]:
         return self.entity_one_id, self.entity_one_type
@@ -103,6 +94,14 @@ class RelationResult(Relation):
         ]
         return "-".join(str(_) for _ in pieces)
 
+
+class RelationResult(Relation):
+    """Domain Search result Relation representation, public facing."""
+
+    id: int
+    role: str
+    distance: int | None = None
+
     def as_json(self) -> Dict[str, Any]:
         data = {
             "key": self.link_key,
@@ -112,10 +111,4 @@ class RelationResult(Relation):
         }
         if hasattr(self, "distance"):
             data["distance"] = self.distance
-        if hasattr(self, "pages"):
-            if self.pages is not None:
-                pages = tuple(sorted(self.pages))
-            else:
-                pages = None
-            data["pages"] = pages
         return data

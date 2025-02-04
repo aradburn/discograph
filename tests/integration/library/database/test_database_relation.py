@@ -1,7 +1,7 @@
 from discograph import utils
-from discograph.library.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.database.transaction import transaction
+from discograph.library.domain.entity import Entity
 from discograph.library.fields.entity_type import EntityType
 from tests.integration.library.database.database_test_case import DatabaseTestCase
 
@@ -19,12 +19,8 @@ class TestDatabaseRelation(DatabaseTestCase):
         with transaction():
             relation_repository = RelationRepository()
 
-            id_1 = RelationDataAccess.to_relation_internal_id(
-                entity_one_id, entity_one_type
-            )
-            id_2 = RelationDataAccess.to_relation_internal_id(
-                entity_two_id, entity_two_type
-            )
+            id_1 = Entity.to_entity_internal_id(entity_one_id, entity_one_type)
+            id_2 = Entity.to_entity_internal_id(entity_two_id, entity_two_type)
             print(f"id_1: {id_1}")
             print(f"id_2: {id_2}")
             key = dict(
@@ -34,7 +30,7 @@ class TestDatabaseRelation(DatabaseTestCase):
             )
 
             relation = relation_repository.find_by_key(key)
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -131,12 +127,8 @@ class TestDatabaseRelation(DatabaseTestCase):
         with transaction():
             relation_repository = RelationRepository()
 
-            id_1 = RelationDataAccess.to_relation_internal_id(
-                entity_one_id, entity_one_type
-            )
-            id_2 = RelationDataAccess.to_relation_internal_id(
-                entity_two_id, entity_two_type
-            )
+            id_1 = Entity.to_entity_internal_id(entity_one_id, entity_one_type)
+            id_2 = Entity.to_entity_internal_id(entity_two_id, entity_two_type)
             key = dict(
                 subject=id_1,
                 role="Compiled By",
@@ -144,7 +136,7 @@ class TestDatabaseRelation(DatabaseTestCase):
             )
 
             relation = relation_repository.find_by_key(key)
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -173,12 +165,8 @@ class TestDatabaseRelation(DatabaseTestCase):
         with transaction():
             relation_repository = RelationRepository()
 
-            id_1 = RelationDataAccess.to_relation_internal_id(
-                entity_one_id, entity_one_type
-            )
-            id_2 = RelationDataAccess.to_relation_internal_id(
-                entity_two_id, entity_two_type
-            )
+            id_1 = Entity.to_entity_internal_id(entity_one_id, entity_one_type)
+            id_2 = Entity.to_entity_internal_id(entity_two_id, entity_two_type)
             key = dict(
                 subject=id_1,
                 role="Mastered By",
@@ -186,7 +174,7 @@ class TestDatabaseRelation(DatabaseTestCase):
             )
 
             relation = relation_repository.find_by_key(key)
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         expected_relation = {
             "subject": 335173,

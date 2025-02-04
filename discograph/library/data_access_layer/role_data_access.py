@@ -6,6 +6,7 @@ from typing import Dict, List, Set
 
 from rapidfuzz import process
 
+from discograph.library.domain.role import RoleJSTree
 from discograph.library.fields.role_type import RoleType
 
 log = logging.getLogger(__name__)
@@ -18,13 +19,65 @@ class RoleDataAccess:
     role_name_set: Set[str] = set()
     role_id_to_role_category_lookup: Dict[int, RoleType.Category] = {}
     role_id_to_role_name_lookup: Dict[int, str] = {}
-    # role_word_lookup: Set[str] = set()
+    role_jstree: RoleJSTree = RoleJSTree()
+    role_category_to_role_name_lookup: Dict[str, list[str]] = {}
+    # role_categories: Set[str] = set()
 
     # REGEXs
     SPLIT_CHARACTERS = re.compile(r" & |&|＆| and | And |/|; |\+| - |・| Und | Et ")
     A_N_R = re.compile(r"\b[aA] ?(&|and|And|\+) ?[rR]\b")
     BRACKETS = re.compile(r"[({\[［].*[)}\]］]")
     DIGITS_AND_SPECIAL_CHARACTERS = re.compile(r"^\d+[-.)]*$|^[-*+.?/!`—•]+$")
+
+    ALTERNATIVES = {
+        "accordeon": "Accordion",
+        "accordian": "Accordion",
+        "acordeon": "Accordion",
+        "acordeón": "Accordion",
+        "agogo": "Agogô",
+        "arranger": "Arranged By",
+        "arrangements": "Arranged By",
+        "art": "Artwork",
+        "bassguitar": "Bass Guitar",
+        "bateria": "Drums",
+        "batterie": "Drums",
+        "beat": "Beats",
+        "bodhran": "Bodhrán",
+        "bongo": "Bongos",
+        "cajon": "Cajón",
+        "celeste": "Celesta",
+        "cgi": "CGI",
+        "cgi artist": "CGI Artist",
+        "composer": "Composed By",
+        "conducted by": "Conductor",
+        "darbouka": "Darbuka",
+        "dj": "DJ",
+        "dj mix": "DJ Mix",
+        "ft": "Featuring",
+        "lyrics": "Lyrics By",
+        "mixed": "Mixed By",
+        "keys": "Keyboards",
+        "Kurai": "Quray",
+        "mix": "Mixed By",
+        "mixer": "Mixed By",
+        "mixing": "Mixed By",
+        "music": "Music By",
+        "programmer": "Programmed By",
+        "remiz": "Remix",
+        "remixer": "Remixed By",
+        "rythm": "Rhythm",
+        "singer": "Vocals",
+        "sax": "Saxophone",
+        "synths": "Synthesizers",
+        "vocalist": "Vocals",
+        "vocal": "Vocals",
+        "vibes": "Vibraphone",
+        "voices": "Vocals",
+        "vox": "Vocals",
+        "writer": "Written By",
+        "writing": "Written By",
+        "words": "Words By",
+    }
 
     @staticmethod
     def normalise_role_names(input_name: str) -> List[str]:
@@ -437,29 +490,21 @@ class RoleDataAccess:
     def substitute_role_alternatives(role_name: str) -> str:
         # Replacements
         role_name_lower = role_name.lower()
-        if role_name_lower == "art":
-            role_name = "Artwork"
-        elif role_name_lower == "dj":
-            role_name = "DJ"
-        elif role_name_lower == "cgi":
-            role_name = "CGI"
-        elif role_name_lower == "dj mix":
-            role_name = "DJ Mix"
-        elif role_name_lower == "cgi artist":
-            role_name = "CGI Artist"
-        elif role_name_lower == "vibes":
-            role_name = "Vibraphone"
-        elif role_name_lower == "remiz":
-            role_name = "Remix"
-        elif role_name_lower == "mixing":
-            role_name = "Mixed By"
-        elif (
-            role_name_lower == "singer"
-            or role_name_lower == "vox"
-            or role_name_lower == "vocalist"
-        ):
-            role_name = "Vocals"
-        elif role_name_lower == "rythm":
-            role_name = "Rhythm"
-
+        for alt in RoleDataAccess.ALTERNATIVES.items():
+            if role_name_lower == alt[0]:
+                return alt[1]
         return role_name
+
+    @staticmethod
+    def get_all_roles() -> dict:
+        roles = []
+        for role_id, role_name in RoleDataAccess.role_id_to_role_name_lookup.items():
+            role_category = RoleDataAccess.role_id_to_role_category_lookup[role_id]
+            role = {
+                "id": role_id,
+                "role_name": role_name,
+                "role_category": role_category.name,
+            }
+            roles.append(role)
+        data = {"roles": roles}
+        return data

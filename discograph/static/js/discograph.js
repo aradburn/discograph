@@ -3,20 +3,33 @@
         version: "0.2"
     };
 
-    function dg_color_class(d) {
+    function dg_node_color_class(d) {
         if (d.type == 'artist') {
-            return dg_color_artist_class(d);
+            return dg_node_color_artist_class(d);
         } else {
-            return dg_color_label_class(d);
+            return dg_node_color_label_class(d);
         }
     }
 
-    function dg_color_artist_class(d) {
-        return 'q' + ((d.distance * 2) + 1) + '-9';
+    function dg_node_color_artist_class(d) {
+        var index = clamp(d.distance + 1, 0, 8);
+        return 'color-' + index;
     }
 
-    function dg_color_label_class(d) {
-        return 'q' + ((d.distance * 2) + 2) + '-9';
+    function dg_node_color_label_class(d) {
+        var index = clamp(d.distance + 2, 0, 8);
+        return 'color-' + index;
+    }
+
+    function dg_link_color_class(d) {
+        var distance = Math.min(d.source.distance, d.target.distance);
+        if (distance == 0) {
+            distance = 2;
+        } else {
+            distance = 5;
+        }
+        var index = clamp(distance, 0, 8);
+        return 'color-' + index;
     }
     dg.loading = {};
 
@@ -54,13 +67,13 @@
             var input = dg_loading_makeArray();
             var data = input[0],
                 extent = input[1];
-            $("#page-loading")
-                .addClass("glyphicon-animate glyphicon-refresh");
+            $("#page-loading").show();
+            //            .addClass("glyphicon-animate glyphicon-refresh");
         } else {
             var data = [],
                 extent = [0, 0];
-            $("#page-loading")
-                .removeClass("glyphicon-animate glyphicon-refresh")
+            $("#page-loading").hide();
+            //            .removeClass("glyphicon-animate glyphicon-refresh")
         }
         dg_loading_update(data, extent);
     }
@@ -265,8 +278,8 @@
     function dg_network_start() {
         dg.network.isRunningLayout = true;
         dg.network.tick = 0;
-        $('#network-running')
-            .addClass('glyphicon-animate glyphicon-refresh');
+        $('#network-running').show();
+        //                .addClass('glyphicon-animate glyphicon-refresh');
         dg.network.layers.link.selectAll('.link')
             .classed('noninteractive', false);
         dg.network.layers.node.selectAll('.node')
@@ -274,8 +287,8 @@
     }
 
     function dg_network_end(event) {
-        $('#network-running')
-            .removeClass('glyphicon-animate glyphicon-refresh');
+        $('#network-running').hide();
+        //                .removeClass('glyphicon-animate glyphicon-refresh');
         dg.network.layers.link.selectAll('.link')
             .classed('noninteractive', false);
         dg.network.layers.node.selectAll('.node')
@@ -329,15 +342,13 @@
         } else if (d.role == 'Released On') {
             return LINK_DISTANCE_RELEASED_ON;
         } else {
-            //        var dist = d.source.distance == 0 || d.target.distance == 0 || d.source.distance == 3 || d.target.distance == 3 ? 1.0 : (d.source.distance + d.target.distance) / 2.0
             return LINK_DISTANCE;
-            //        return LINK_DISTANCE * dist + (random() * LINK_DISTANCE_RANDOM * dist);
         }
     }
 
     function nodeStrength(d, i) {
         if (d.distance) {
-            var dist = 4 - d.distance;
+            var dist = 4 - clamp(d.distance, 0, 3);
             return dist * NODE_STRENGTH;
         } else if (d.isIntermediate) {
             return NODE_STRENGTH / 10;
@@ -348,23 +359,11 @@
         }
     }
 
-    //function nodeStrength(d, i) {
-    //    if (d.distance) {
-    //        var dist = 4 - d.distance;
-    //        return dist * NODE_STRENGTH;
-    //    } else if (d.isIntermediate) {
-    //        return Math.hypot(d.x - dg.svg_dimensions[0] / 2, d.y - dg.svg_dimensions[1] / 2) <= 300 ? 3 * NODE_STRENGTH : NODE_STRENGTH / 2;
-    //    } else {
-    //        return 0;
-    //    }
-    //}
-
     function gravityStrength(d, i) {
-        var dist = d.distance ? 3 - d.distance : 1.0;
+        var dist = d.distance ? 4 - clamp(d.distance, 0, 3) : 1.0;
         var maxDimension = Math.max(dg.svg_dimensions[0], dg.svg_dimensions[1]);
         var scaling = dist / 10.0;
         var radialDistance = (maxDimension - Math.max(d.x - dg.svg_dimensions[0] / 2, d.y - dg.svg_dimensions[1] / 2)) / maxDimension;
-        //        var radialDistance = (maxDimension - Math.hypot(d.x - dg.svg_dimensions[0] / 2, d.y - dg.svg_dimensions[1] / 2)) / maxDimension;
         var g = radialDistance * scaling;
         return g;
     }
@@ -386,13 +385,13 @@
             return d.key
         }
         var nodeData = dg.network.pageData.nodes.filter(function(d) {
-            return (!d.isIntermediate) && (d.pages.indexOf(dg.network.pageData.currentPage) != -1);
+            return !d.isIntermediate;
         })
-        // console.log("nodeData: ", nodeData);
+        console.log("nodeData: ", nodeData);
         var linkData = dg.network.pageData.links.filter(function(d) {
-            return (!d.isSpline) && (d.pages.indexOf(dg.network.pageData.currentPage) != -1);
+            return !d.isSpline;
         })
-        // console.log("linkData: ", linkData);
+        console.log("linkData: ", linkData);
 
         dg.network.selections.halo = dg.network.layers.halo.selectAll(".node");
         dg.network.selections.halo = dg.network.selections.halo.data(nodeData, keyFunc);
@@ -406,10 +405,9 @@
         dg.network.selections.link = dg.network.layers.link.selectAll(".link");
         dg.network.selections.link = dg.network.selections.link.data(linkData, keyFunc);
 
-        var clusterNodes = dg.network.pageData.nodes
-            .filter(function(d) {
-                return d.cluster !== undefined;
-            });
+        var clusterNodes = dg.network.pageData.nodes.filter(function(d) {
+            return d.cluster !== undefined;
+        });
         var hullGroup = d3.group(clusterNodes, function(d) {
             return d.cluster;
         }).values();
@@ -728,7 +726,6 @@
     }
 
     function dg_network_onHullEnter(hullEnter) {
-        console.log("hullEnter", hullEnter);
         var hullGroup = hullEnter
             .append("g")
             .attr("class", function(d) {
@@ -784,16 +781,21 @@
         transform
     }) {
         dg.network.layers.root.attr("transform", transform);
+        dg_network_hide_tooltips()
+    }
+
+    function dg_network_hide_tooltips() {
+        nodeToolTip.hide();
+        linkToolTip.hide();
     }
     LINK_DEBOUNCE_TIME = 250
     LINK_OUT_TRANSITION_TIME = 500
-
+    LINK_PALETTE = "LinkGreenPalette"
 
     /* Initialize link tooltip */
     var linkToolTip = d3.tip()
         .attr('class', 'd3-link-tooltip')
         .direction('n')
-        //    .rootElement(e => )
         .offset([20, 0])
         .html(dg_network_link_tooltip);
 
@@ -807,8 +809,8 @@
                 var role = parts.slice(2, 2 + parts.length - 4).join('-')
                 var classes = [
                     "link",
-                    //                "link-" + d.key,
                     role,
+                    LINK_PALETTE,
                 ];
                 return classes.join(" ");
             });
@@ -819,7 +821,14 @@
     function dg_network_onLinkEnterElementConstruction(linkEnter) {
         linkEnter
             .append("path")
-            .attr("class", "inner");
+            .attr("class", function(d) {
+                var classes = [
+                    "inner",
+                    "distance-" + Math.min(d.source.distance, d.target.distance),
+                    dg_link_color_class(d),
+                ];
+                return classes.join(" ");
+            });
         linkEnter
             .append("text")
             .attr('class', 'outer')
@@ -950,7 +959,7 @@
             .attr("class", function(d) {
                 var classes = [
                     "outer",
-                    dg_color_class(d),
+                    dg_node_color_class(d),
                 ];
                 return classes.join(" ");
             })
@@ -960,7 +969,7 @@
             .attr("class", function(d) {
                 var classes = [
                     "inner",
-                    dg_color_class(d),
+                    dg_node_color_class(d),
                 ];
                 return classes.join(" ");
             })
@@ -975,7 +984,7 @@
             .attr("class", function(d) {
                 var classes = [
                     "inner",
-                    dg_color_class(d),
+                    dg_node_color_class(d),
                 ];
                 return classes.join(" ");
             })
@@ -1006,6 +1015,12 @@
         var debounceToolTip = $.debounce(LINK_DEBOUNCE_TIME, function(self, d, status) {
             if (status) {
                 nodeToolTip.show(d, d3.select(self).node());
+
+                // Hide after 5 seconds
+                setTimeout(function() {
+                    dg_network_hide_tooltips();
+                }, 5000);
+
             } else {
                 nodeToolTip.hide();
             }
@@ -1045,7 +1060,7 @@
             .attr("class", function(d) {
                 var classes = [
                     "outer",
-                    dg_color_class(d),
+                    dg_node_color_class(d),
                 ];
                 return classes.join(" ");
             })
@@ -1053,7 +1068,7 @@
             .attr("class", function(d) {
                 var classes = [
                     "inner",
-                    dg_color_class(d),
+                    dg_node_color_class(d),
                 ];
                 return classes.join(" ");
             })
@@ -1134,18 +1149,6 @@
         ];
         return parts.join('');
     }
-
-    function dg_network_node_check_tooltip() {
-        var el = nodeToolTip.rootElement;
-        //    var el = nodeToolTip.getNodeEl();
-        if (el) {
-            console.log("tip el: ", el);
-        }
-        //    var root = nodeToolTip.rootElement;
-        //    if (el) {
-        //        console.log("tip el: ", el);
-        //    }
-    }
     dg.network = {
         dimensions: [0, 0],
         forceLayout: null,
@@ -1182,41 +1185,6 @@
             link: null,
         },
     };
-
-    function dg_network_selectPage(page) {
-        if ((page >= 1) && (page <= dg.network.data.pageCount)) {
-            dg.network.pageData.currentPage = page;
-        } else {
-            dg.network.pageData.currentPage = 1;
-        }
-        var currentPage = dg.network.pageData.currentPage;
-        var pageCount = dg.network.data.pageCount;
-        if (currentPage == 1) {
-            var prevPage = pageCount;
-        } else {
-            var prevPage = currentPage - 1;
-        }
-        var prevText = prevPage + ' / ' + pageCount;
-        if (currentPage == pageCount) {
-            var nextPage = 1;
-        } else {
-            var nextPage = currentPage + 1;
-        }
-        var nextText = nextPage + ' / ' + pageCount;
-        $('#paging .previous-text').text(prevText);
-        $('#paging .next-text').text(nextText);
-
-        var filteredNodes = Array.from(dg.network.data.nodeMap.values()).filter(function(d) {
-            return (d.pages && d.pages.indexOf(currentPage) != -1);
-        });
-        var filteredLinks = Array.from(dg.network.data.linkMap.values()).filter(function(d) {
-            return (d.pages && d.pages.indexOf(currentPage) != -1);
-        });
-        dg.network.pageData.nodes.length = 0;
-        dg.network.pageData.links.length = 0;
-        Array.prototype.push.apply(dg.network.pageData.nodes, filteredNodes);
-        Array.prototype.push.apply(dg.network.pageData.links, filteredLinks);
-    }
     LABEL_OFFSET_Y = 9
 
     function dg_network_getNodeText(d) {
@@ -1225,21 +1193,19 @@
             name = name.slice(0, 50) + "...";
         }
         if (dg.debug) {
-            var pages = '[' + d.pages + ']';
-            return pages + ' ' + name;
+            name = name + dg_network_getNodeDebug(d);
         }
         return name;
-        //    return name + dg_network_getNodeDebug(d);
     }
 
     function dg_network_getNodeDebug(d) {
         var links = d.links !== undefined ? d.links.length : 0;
         return " dist: " + d.distance +
-            " rad: " + d.radius +
-            " lnk: " + links +
+            " radi: " + d.radius +
+            " link: " + links +
             " miss: " + d.missing +
-            //           " clu: " + d.cluster +
-            " col: " + dg_color_class(d);
+            " clus: " + d.cluster +
+            " colr: " + dg_node_color_class(d);
     }
 
 
@@ -1254,6 +1220,9 @@
                     //                d.key,
                     d.key.split('-')[0],
                 ];
+                if (d.cluster !== undefined) {
+                    classes.push("cluster")
+                }
                 return classes.join(" ");
             })
         textEnter.append("text")
@@ -1364,9 +1333,6 @@
         var group = d3.select(this);
         var path = group.select('path');
         path.attr('d', dg_network_spline(d));
-        path.classed('distance-0', d.source.distance == 0);
-        path.classed('distance-1', d.source.distance == 1);
-        path.classed('distance-2', d.source.distance == 2);
         var x1 = d.source.x,
             y1 = d.source.y,
             x2 = d.target.x,
@@ -1419,7 +1385,7 @@
                 var vertices = d3.polygonHull(dg_network_getHullVertices(d.flat()));
                 return 'M' + vertices.join('L') + 'Z';
             });
-        dg_network_node_check_tooltip();
+        dg_network_hide_tooltips();
     }
 
     function dg_svg_init() {
@@ -1442,7 +1408,13 @@
             .attr("height", dg.dimensions[1])
             .attr("viewBox", "0 0 " + dg.svg_dimensions[0] + " " + dg.svg_dimensions[1])
             .attr("preserveAspectRatio", "none");
-        //        .attr("transform", "scale(" + 1.0 / dg.dpr + ")");
+    }
+
+    function dg_svg_reset_size() {
+        $("#svg").css({
+            width: '',
+            height: ''
+        });
     }
 
     function dg_svg_setupDefs() {
@@ -1760,11 +1732,19 @@
     };
 
     function dg_relations_init() {
-        dg.relations.layers.root = d3.select('#svg').append('g')
-            .attr('id', 'relationsLayer');
+        var svgElement = d3.select("#svg");
+        var root = svgElement.append("g").attr("id", "relationsLayer");
+        dg.relations.layers.root = root;
+
+        //    dg.relations.zoom = d3.zoom()
+        //        .extent([[0, 0], [dg.svg_dimensions[0], dg.svg_dimensions[1]]])
+        //        .scaleExtent([1, 8])
+        //        .on("zoom", dg_relations_zoomed);
+        //    svgElement.call(dg.relations.zoom)
     }
 
     function dg_relations_chartRadial() {
+        console.log("dg_relations_chartRadial()");
         var textAnchor = function(d, i) {
             var angle = (i + 0.5) / numBars;
             if (angle < 0.5) {
@@ -1773,15 +1753,42 @@
                 return 'end';
             }
         };
+        console.log("dg_relations_chartRadial() a");
+
+        var barHeight = d3.min(dg.dimensions) / 3;
+        console.log("dg_relations_chartRadial() barHeight:", barHeight);
+        var data = dg.relations.byRole;
+        console.log("dg_relations_chartRadial() data: ", data);
+
+        var extent = d3.extent(data, function(d) {
+            return d[1];
+        });
+        console.log("dg_relations_chartRadial() extent: ", extent);
+
+        //    var barScale = d3.scaleSqrt()
+        //        .exponent(0.25)
+        //        .domain(extent)
+        //        .range([barHeight / 4, barHeight]);
+        var barScale = d3.scaleSqrt(extent, [barHeight / 4, barHeight])
+            .exponent(0.25);
+        var numBars = data.size;
+
         var transform = function(d, i) {
-            var hypotenuse = barScale(d.values) + 5;
+            console.log("d: ", d);
+            console.log("i: ", i);
+            var hypotenuse = barScale(d[1]) + 5;
+            //        console.log("hypotenuse: ", hypotenuse);
             var angle = (i + 0.5) / numBars;
+            //        console.log("angle: ", angle);
             var degrees = (angle * 360);
+            //        console.log("degrees: ", degrees);
             if (180 <= degrees) {
                 degrees -= 180;
             }
             degrees -= 90;
+            //        console.log("degrees: ", degrees);
             var radians = angle * 2 * Math.PI;
+            //        console.log("radians: ", radians);
             var x = Math.sin(radians) * hypotenuse;
             var y = -Math.cos(radians) * hypotenuse;
             return [
@@ -1789,22 +1796,9 @@
                 'translate(' + x + ',' + y + ')'
             ].join(' ');
         }
-        dg.relations.layers.root = d3.select('#svg')
-            .append('g')
-            .attr('id', 'relationsLayer');
-        var barHeight = d3.min(dg.dimensions) / 3;
-        var data = dg.relations.byRole;
-        var extent = d3.extent(data, function(d) {
-            return d.values;
-        });
-        var barScale = d3.scaleSqrt()
-            .exponent(0.25)
-            .domain(extent)
-            .range([barHeight / 4, barHeight]);
-        var keys = data.map(function(d, i) {
-            return d.key;
-        });
-        var numBars = keys.size();
+
+        dg_relations_init();
+
         var arc = d3.arc()
             .startAngle(function(d, i) {
                 return (i * 2 * Math.PI) / numBars;
@@ -1813,6 +1807,8 @@
                 return ((i + 1) * 2 * Math.PI) / numBars;
             })
             .innerRadius(0);
+        console.log("dg_relations_chartRadial() arc: ", arc);
+
         dg.arc = arc;
         var radialGroup = dg.relations.layers.root.append('g')
             .attr('class', 'radial centered')
@@ -1822,57 +1818,105 @@
                 (dg.dimensions[1] / 2) +
                 ')'
             );
-        var selectedRoles = $('#filter select').val();
+        // TODO var selectedRoles = $('#filter select').val();
         var segments = radialGroup.selectAll('g')
             .data(data)
-            .enter().append('g')
+            .enter()
+            .append('g')
             .attr('class', 'segment')
-            .classed('selected', function(d) {
-                return selectedRoles.indexOf(d.key) != -1;
-            })
+            //  TODO      .classed('selected', function(d) {
+            //            return selectedRoles.indexOf(d.key) != -1;
+            //        })
             .on('mouseover', function(event) {
                 d3.select(this).raise();
             });
+        console.log("dg_relations_chartRadial() segments: ", segments)
         var arcs = segments.append('path')
             .attr('class', 'arc')
             .attr('d', arc)
-            .each(function(d) {
+            .each(function(d, i) {
                 d.outerRadius = 0;
             })
-            .on('mousedown', function(event, d) {
-                var values = $('#filter-roles').val();
-                values.push(d.key);
-                $('#filter-roles').val(values).trigger('change');
-                dg.fsm.requestNetwork(dg.network.data.json.center.key, true);
-                event.stopPropagation();
-            })
+            //        .on('mousedown', function(event, d) {
+            //            var values = $('#filter-roles').val();
+            //            values.push(d.key);
+            //            $('#filter-roles').val(values).trigger('change');
+            //            dg.fsm.requestNetwork(dg.network.data.json.center.key, true);
+            //            event.stopPropagation();
+            //        });
             .transition()
-            .ease('elastic')
+            .ease(d3.easeElastic)
             .duration(500)
             .delay(function(d, i) {
                 return (numBars - i) * 25;
             })
-            .attrTween('d', function(d, index) {
-                var i = d3.interpolate(d.outerRadius, barScale(+d.values));
+            .attrTween('d', function(d, i) {
+                console.log("attrTween d: ", d);
+                var outer = d3.interpolate(d.outerRadius, barScale(d[1]));
                 return function(t) {
-                    d.outerRadius = i(t);
-                    return arc(d, index);
+                    console.log("attrTween t: ", t);
+                    d.outerRadius = outer(t);
+                    var result = arc(d, i);
+                    console.log("attrTween result: ", result);
+                    return result;
                 };
             });
+        console.log("dg_relations_chartRadial() arcs: ", arcs)
         var outerLabels = segments.append('text')
             .attr('class', 'outer')
             .attr('text-anchor', textAnchor)
             .attr('transform', transform)
             .text(function(d) {
-                return d.key;
+                return d[0];
             });
         var innerLabels = segments.append('text')
             .attr('class', 'inner')
             .attr('text-anchor', textAnchor)
             .attr('transform', transform)
             .text(function(d) {
-                return d.key;
+                return d[0];
             });
+        console.log("dg_relations_chartRadial() end")
+    }
+
+    function dg_relations_zoomed({
+        transform
+    }) {
+        dg.relations.layers.root.attr("transform", transform);
+    }
+
+    function dg_roles_init() {
+        if (dgRoles) {
+            $('#jstree_div').jstree(dgRoles);
+        }
+    }
+
+    function dg_isNumeric(obj) {
+        return !Array.isArray(obj) && (obj - parseFloat(obj) + 1) >= 0;
+    }
+
+    function dg_roles_get_selected() {
+        var selected_roles = $("#jstree_div").jstree().get_selected(true);
+        console.log("Selected roles: ", selected_roles);
+
+        var keysToRemove = [];
+        selected_roles.forEach(role_entry => {
+            console.log("role_entry: ", role_entry);
+            if (!dg_isNumeric(role_entry.id)) {
+                keysToRemove.push(...role_entry.children);
+            }
+        });
+        console.log("keysToRemove: ", keysToRemove);
+
+        var pruned_roles = [];
+        selected_roles.forEach(role_entry => {
+            if (!keysToRemove.includes(role_entry.id)) {
+                pruned_roles.push(role_entry.text);
+            }
+        });
+
+        console.log("Pruned roles: ", pruned_roles);
+        return pruned_roles;
     }
 
     function dg_typeahead_init() {
@@ -1886,19 +1930,19 @@
                     return response.results;
                 },
                 rateLimitBy: 'debounce',
-                rateLimitWait: 300,
+                rateLimitWait: 1000,
             },
         });
         var inputElement = $("#typeahead");
         var loadingElement = $("#search .loading");
         inputElement.typeahead({
-                hint: true,
+                hint: false,
                 highlight: true,
-                minLength: 2,
+                minLength: 4,
             }, {
                 name: "results",
                 display: "name",
-                limit: 20,
+                limit: 1000,
                 source: dg_typeahead_bloodhound,
                 templates: {
                     suggestion: function(data) {
@@ -1946,7 +1990,7 @@
         if (datum) {
             $("#typeahead").typeahead("close");
             $("#typeahead").blur();
-            $('.navbar-toggle').click();
+            //        $('.navbar-toggle').click();
             $(window).trigger({
                 type: 'discograph:request-network',
                 entityKey: datum,
@@ -1966,25 +2010,26 @@
             $(window).on('discograph:select-entity', function(event) {
                 self.selectEntity(event.entityKey, event.fixed);
             });
-            $(window).on('discograph:select-next-page', function(event) {
-                self.selectNextPage();
-            });
-            $(window).on('discograph:select-previous-page', function(event) {
-                self.selectPreviousPage();
-            });
+            //        $(window).on('discograph:select-next-page', function(event) {
+            //            self.selectNextPage();
+            //        });
+            //        $(window).on('discograph:select-previous-page', function(event) {
+            //            self.selectPreviousPage();
+            //        });
             $(window).on('discograph:show-network', function(event) {
                 self.showNetwork();
             });
             $(window).on('discograph:show-radial', function(event) {
                 self.showRadial();
             });
-            $(window).on('select2:selecting', function(event) {
-                self.rolesBackup = $('#filter select').val();
-            });
-            $(window).on('select2:unselecting', function(event) {
-                self.rolesBackup = $('#filter select').val();
-            });
+            //        $(window).on('select2:selecting', function(event) {
+            //            self.rolesBackup = $('#filter select').val();
+            //        });
+            //        $(window).on('select2:unselecting', function(event) {
+            //            self.rolesBackup = $('#filter select').val();
+            //        });
             window.onpopstate = function(event) {
+                console.log("FSM window.onpopstate: ", event);
                 if (!event || !event.state || !event.state.key) {
                     return;
                 }
@@ -2000,9 +2045,12 @@
                     pushHistory: false,
                 });
             };
-            $(window).on('resize', $.debounce(100, function(event) {
+            $(window).on('resize', $.debounce(50, function(event) {
+                console.log("FSM window.onresize: ", event);
+                window.location.reload();
+
+                dg_svg_reset_size();
                 dg_window_init();
-                //            dg_svg_container_setup();
                 dg_svg_set_size();
 
                 var transform = [
@@ -2020,20 +2068,19 @@
                 if (self.state == 'viewing-network') {
                     console.log("start d3 layout");
                     //                dg_network_processJson(dg.network.data.json);
-                    //                dg_network_selectPage(1);
                     //                dg_network_startForceLayout();
                     dg_network_forceLayout_restart(ALPHA / 10.0);
                 }
             }));
             $('#svg').on('mousedown', function(event) {
                 if (self.state == 'viewing-network') {
-                    // ### TODO self.selectEntity(null);
+                    self.selectEntity(null);
                 } else if (self.state == 'viewing-radial') {
                     self.showNetwork();
                 }
             });
             self.on("*", function(event, data) {
-                // console.log("FSM: ", event, data);
+                console.log("FSM: ", event, data);
             });
             this.loadInlineData();
             this.toggleRadial(false);
@@ -2050,14 +2097,13 @@
                 'request-random': function() {
                     this.requestRandom();
                 },
-                'load-inline-data': function() {
+                'load-inline-data': function(data) {
                     console.log("UNINITIALIZED load-inline-data");
                     var params = {
                         'roles': $('#filter select').val()
                     };
-                    //                this.handle("received-network", dgData, false, params);
                     this.deferAndTransition("requesting");
-                    this.handle("received-network", dgData, false, params);
+                    this.handle("received-network", data, false, params);
                     console.log("load-inline-data end");
                 },
             },
@@ -2078,6 +2124,7 @@
                     this.requestRandom();
                 },
                 'show-radial': function() {
+                    console.log("VIEWING-NETWORK show-radial");
                     if (dg.network.pageData.selectedNodeKey) {
                         this.requestRadial(dg.network.pageData.selectedNodeKey);
                     }
@@ -2085,14 +2132,6 @@
                 'select-entity': function(entityKey, fixed) {
                     console.log("VIEWING-NETWORK select-entity", entityKey, fixed);
                     dg.network.pageData.selectedNodeKey = entityKey;
-                    if (entityKey !== null) {
-                        var selectedNode = dg.network.data.nodeMap.get(entityKey);
-                        var currentPage = dg.network.pageData.currentPage;
-                        if (selectedNode.pages.indexOf(currentPage) == -1) {
-                            dg.network.pageData.selectedNodeKey = null;
-                        }
-                    }
-                    entityKey = dg.network.pageData.selectedNodeKey;
                     if (entityKey !== null) {
                         var nodeOn = dg.network.layers.root.selectAll('#' + entityKey);
                         var nodeOff = dg.network.layers.root.selectAll('.node:not(#' + entityKey + ')');
@@ -2121,7 +2160,8 @@
                     } else {
                         var nodeOff = dg.network.layers.root.selectAll('.node');
                         var linkOff = dg.network.selections.link;
-                        $('#entity-details').hide();
+                        //  TODO                  $('#entity-details').disabled();
+                        //                    $('#entity-details').hide();
                     }
                     if (nodeOff) {
                         nodeOff.classed('selected', false);
@@ -2136,11 +2176,13 @@
             },
             'viewing-radial': {
                 '_onEnter': function() {
+                    console.log("VIEWING-RADIAL _onEnter");
                     this.toggleRadial(true);
                     d3.select('#relationsLayer').remove();
                     dg_relations_chartRadial();
                 },
                 '_onExit': function() {
+                    console.log("VIEWING-RADIAL _onExit");
                     d3.select('#relationsLayer').remove();
                     this.toggleRadial(false);
                 },
@@ -2180,21 +2222,14 @@
                     if (pushHistory === true) {
                         this.pushState(entityKey, params);
                     }
-                    dg.network.data.pageCount = data.pages;
-                    dg.network.pageData.currentPage = 1;
-                    if (data.pages > 1) {
-                        $('#paging').fadeIn();
-                    } else {
-                        $('#paging').fadeOut();
-                    }
                     console.log("received-network dg_network_processJson");
                     dg_network_processJson(data);
                     console.log("received-network dg_network_selectPage");
-                    dg_network_selectPage(1);
+                    dg.network.pageData.nodes = Array.from(dg.network.data.nodeMap.values());
+                    dg.network.pageData.links = Array.from(dg.network.data.linkMap.values());
                     dg_network_reset_transform()
                     console.log("received-network dg_network_startForceLayout");
                     dg_network_startForceLayout();
-                    //                this.selectEntity(dg.network.data.json.center.key, false);
                     this.deferAndTransition('viewing-network');
                     this.selectEntity(dg.network.data.json.center.key, false);
 
@@ -2203,6 +2238,7 @@
                     this.requestNetwork(data.center, true);
                 },
                 'received-radial': function(data) {
+                    console.log("REQUESTING received radial data: ", data);
                     dg.relations.data = data;
                     dg.relations.byYear = d3.group(data.results,
                         function(d) {
@@ -2215,18 +2251,30 @@
                     //                    .key(function(d) { return d.year; })
                     //                    .key(function(d) { return d.category; })
                     //                    .entries(data.results);
-                    dg.relations.byRole = d3.group(dg.relations.data.results, function(d) {
-                            return d.role;
-                        })
-                        .groupSort(d3.ascending)
-                        .rollup(function(leaves) {
-                            return leaves.length;
-                        });
+                    //                gByRole = d3.group(data.results, function(d) { return d.role; })
+                    //                console.log("REQUESTING gByRole: ", gByRole);
+
+                    sortedByRole = d3.sort(data.results, function(d) {
+                        return d.role;
+                    });
+                    dg.relations.byRole = d3.rollup(sortedByRole, function(d) {
+                        return d.length;
+                    }, function(d) {
+                        return d.role;
+                    });
+                    console.log("REQUESTING dg.relations.byRole: ", dg.relations.byRole);
+
+                    //                dg.relations.byRole = d3.group(data.results, function(d) { return d.role; })
+                    //                                        .rollup(function(d) {
+                    //                                            console.log("REQUESTING d: ", d);
+                    //                                            return d.length;
+                    //                                        });
                     //                    .nest()
                     //                    .key(function(d) { return d.role; })
                     //                    .sortKeys(d3.ascending)
                     //                    .rollup(function(leaves) { return leaves.length; })
                     //                    .entries(dg.relations.data.results);
+                    console.log("REQUESTING received radial about to transition");
                     this.transition('viewing-radial');
                 },
             },
@@ -2256,8 +2304,9 @@
             var entityId = entityKey.split('-')[1];
             var url = '/api/' + entityType + '/network/' + entityId;
             var params = {
-                'roles': $('#filter select').val()
+                'roles': dg_roles_get_selected()
             };
+            //        var params = {'roles': $('#filter select').val()};
             if (params.roles) {
                 url += '?' + decodeURIComponent($.param(params));
             }
@@ -2279,8 +2328,8 @@
             return '/api/' + entityType + '/relations/' + entityId;
         },
         loadInlineData: function() {
-            if (dgData) {
-                this.handle('load-inline-data');
+            if (dgNetwork) {
+                this.handle('load-inline-data', dgNetwork);
             }
         },
         pushState: function(entityKey, params) {
@@ -2300,8 +2349,20 @@
             // ### TODO setup analytics ga('send', 'pageview', url);
             // ### TODO setup analytics ga('set', 'page', url);
         },
+        requestRoles: function() {
+            console.log("requestRoles");
+            this.transition('requesting');
+            var self = this;
+            d3.json(this.getRoles())
+                .then(function(data) {
+                    self.handle('received-roles', data);
+                })
+                .catch(function(error) {
+                    self.handleError(error);
+                });
+        },
         requestNetwork: function(entityKey, pushHistory) {
-            console.log("requestNetwork");
+            console.log("requestNetwork: ", entityKey);
             this.transition('requesting');
             var self = this;
             d3.json(this.getNetworkURL(entityKey))
@@ -2313,6 +2374,7 @@
                 });
         },
         requestRadial: function(entityKey) {
+            console.log("requestRadial: ", entityKey);
             this.transition('requesting');
             var self = this;
             d3.json(this.getRadialURL(entityKey))
@@ -2335,27 +2397,8 @@
                 });
         },
         selectEntity: function(entityKey, fixed) {
+            console.log("selectEntity: ", entityKey);
             this.handle('select-entity', entityKey, fixed);
-        },
-        selectNextPage: function() {
-            var page = dg.network.pageData.currentPage + 1;
-            if (dg.network.data.pageCount < page) {
-                page = 1;
-            }
-            this.selectPage(page);
-        },
-        selectPreviousPage: function() {
-            var page = dg.network.pageData.currentPage - 1;
-            if (page == 0) {
-                page = dg.network.data.pageCount;
-            }
-            this.selectPage(page);
-        },
-        selectPage: function(page) {
-            console.log("selectPage");
-            dg_network_selectPage(page);
-            dg_network_startForceLayout();
-            this.selectEntity(dg.network.pageData.selectedNodeKey, true);
         },
         showNetwork: function() {
             this.handle('show-network');
@@ -2373,11 +2416,6 @@
         toggleNetwork: function(status) {
             console.log("toggleNetwork: ", status);
             if (status) {
-                if (1 < dg.network.data.json.pages) {
-                    $('#paging').fadeIn();
-                } else {
-                    $('#paging').fadeOut();
-                }
                 console.log("dg.network.layers.root: ", dg.network.layers.root);
                 dg.network.layers.root
                     .transition()
@@ -2392,7 +2430,6 @@
                 ////                    dg.network.forceLayout.restart()
                 //                });
             } else {
-                $('#paging').fadeOut();
                 console.log("toggleNetwork: stop");
                 dg.network.forceLayout.stop()
                 dg.network.layers.root
@@ -2406,21 +2443,23 @@
             }
         },
         toggleLoading: function(status) {
+            console.log("toggleLoading: ", status);
             if (status) {
                 var input = dg_loading_makeArray();
                 var data = input[0],
                     extent = input[1];
-                $('#page-loading')
-                    .addClass('glyphicon-animate glyphicon-refresh');
+                $('#page-loading').show();
+                //                .addClass('glyphicon-animate glyphicon-refresh');
             } else {
                 var data = [],
                     extent = [0, 0];
-                $('#page-loading')
-                    .removeClass('glyphicon-animate glyphicon-refresh')
+                $('#page-loading').hide();
+                //                .removeClass('glyphicon-animate glyphicon-refresh')
             }
             dg_loading_update(data, extent);
         },
         toggleRadial: function(status) {
+            console.log("toggleRadial: ", status);
             var self = this;
             if (status) {
                 $('#entity-relations')
@@ -2429,9 +2468,9 @@
                         self.showNetwork();
                         event.preventDefault();
                     });
-                $('#entity-relations .glyphicon')
-                    .removeClass('glyphicon-eye-open')
-                    .addClass('glyphicon-eye-close');
+                $('#entity-relations .bi')
+                    .removeClass('bi-eye-slash')
+                    .addClass('bi-eye');
             } else {
                 $('#entity-relations')
                     .off('click')
@@ -2439,9 +2478,9 @@
                         self.showRadial();
                         event.preventDefault();
                     });
-                $('#entity-relations .glyphicon')
-                    .addClass('glyphicon-eye-open')
-                    .removeClass('glyphicon-eye-close');
+                $('#entity-relations .bi')
+                    .addClass('bi-eye-slash')
+                    .removeClass('bi-eye');
             }
         },
     });
@@ -2453,6 +2492,7 @@
         dg_svg_init();
         dg_network_init();
         dg_relations_init();
+        dg_roles_init();
         dg_loading_init();
         dg_typeahead_init();
 
@@ -2475,33 +2515,21 @@
             event.preventDefault();
             dg_svg_print(dg.svg_dimensions[0], dg.svg_dimensions[1]);
         });
-        $('#paging .next a').on("click", function(event) {
-            $(this).trigger({
-                type: 'discograph:select-next-page',
-            });
-            $(this).tooltip('hide');
-        });
-        $('#paging .previous a').on("click", function(event) {
-            $(this).trigger({
-                type: 'discograph:select-previous-page',
-            });
-            $(this).tooltip('hide');
-        });
-        $('#filter-roles').select2().on('select2:select', function(event) {
-            $(window).trigger({
-                type: 'discograph:request-network',
-                entityKey: dg.network.data.json.center.key,
-                pushHistory: true,
-            });
-        });
-        $('#filter-roles').select2().on('select2:unselect', function(event) {
-            $(window).trigger({
-                type: 'discograph:request-network',
-                entityKey: dg.network.data.json.center.key,
-                pushHistory: true,
-            });
-        });
-        $('#filter').fadeIn(3000);
+        //    $('#filter-roles').select2().on('select2:select', function(event) {
+        //        $(window).trigger({
+        //            type: 'discograph:request-network',
+        //            entityKey: dg.network.data.json.center.key,
+        //            pushHistory: true,
+        //        });
+        //    });
+        //    $('#filter-roles').select2().on('select2:unselect', function(event) {
+        //        $(window).trigger({
+        //            type: 'discograph:request-network',
+        //            entityKey: dg.network.data.json.center.key,
+        //            pushHistory: true,
+        //        });
+        //    });
+        //    $('#filter').fadeIn(3000);
 
         // Tooltip from Bootstrap
         $('[data-toggle="tooltip"]').tooltip();
@@ -2525,27 +2553,24 @@
         console.log("window devicePixelRatio: ", dg.dpr);
 
         svgContainer = d.getElementById('svg-container-fluid');
-        svgContainer.style.top = $("#nav-top").css("height");
-        svgContainer.style.bottom = $("#nav-bottom").css("height");
         dg.dimensions = [
-            svgContainer.clientWidth * VIEWPORT_SIZE_MULTIPLIER * dg.dpr,
-            svgContainer.clientHeight * VIEWPORT_SIZE_MULTIPLIER * dg.dpr,
+            svgContainer.clientWidth,
+            svgContainer.clientHeight,
         ];
-
-        console.log("window dimensions: ", dg.dimensions);
+        console.log("svg panel dimensions: ", dg.dimensions);
 
         dg.svg_dimensions = [
-            dg.dimensions[0],
-            dg.dimensions[1],
+            dg.dimensions[0] * VIEWPORT_SIZE_MULTIPLIER * dg.dpr,
+            dg.dimensions[1] * VIEWPORT_SIZE_MULTIPLIER * dg.dpr,
         ];
-        console.log("svg dimensions: ", dg.svg_dimensions);
+        console.log("svg coord dimensions: ", dg.svg_dimensions);
 
         // All nodes start at center of the screen
         dg.network.newNodeCoords = [
             dg.svg_dimensions[0] / 2,
             dg.svg_dimensions[1] / 2,
         ];
-        console.log("newNodeCoords: ", dg.network.newNodeCoords);
+        console.log("svg newNodeCoords: ", dg.network.newNodeCoords);
     }
 
     function dg_show_message(type, message) {
@@ -2565,6 +2590,10 @@
             function() {
                 $('#flash').empty();
             }, delay);
+    }
+
+    function clamp(num, lower, upper) {
+        return Math.min(Math.max(num, lower), upper);
     }
     if (typeof define === "function" && define.amd) define(dg);
     else if (typeof module === "object" && module.exports) module.exports = dg;

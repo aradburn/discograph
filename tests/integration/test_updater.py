@@ -1,6 +1,5 @@
 from discograph import utils
 from discograph.exceptions import NotFoundError
-from discograph.library.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.library.database.database_helper import DatabaseHelper
 from discograph.library.database.entity_repository import EntityRepository
 from discograph.library.database.relation_release_year_repository import (
@@ -9,6 +8,7 @@ from discograph.library.database.relation_release_year_repository import (
 from discograph.library.database.relation_repository import RelationRepository
 from discograph.library.database.release_repository import ReleaseRepository
 from discograph.library.database.transaction import transaction
+from discograph.library.domain.entity import Entity
 from discograph.library.fields.entity_type import EntityType
 from tests.integration.updater_test_case import UpdaterTestCase
 
@@ -25,7 +25,7 @@ class TestUpdater(UpdaterTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {
@@ -76,7 +76,7 @@ class TestUpdater(UpdaterTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {
@@ -136,7 +136,7 @@ class TestUpdater(UpdaterTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {
@@ -185,7 +185,7 @@ class TestUpdater(UpdaterTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {
@@ -221,7 +221,7 @@ class TestUpdater(UpdaterTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {
@@ -253,7 +253,7 @@ class TestUpdater(UpdaterTestCase):
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
 
         # THEN
         expected_entity = {
@@ -297,7 +297,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
 
         # THEN
         expected_release = {
@@ -345,7 +345,7 @@ class TestUpdater(UpdaterTestCase):
                 },
             ],
             "labels": [
-                {"catalog_number": "WAP54", "id": 23528, "name": "Warp Records"}
+                {"catalog_number": "WAP54", "id": 1000023528, "name": "Warp Records"}
             ],
             "master_id": 1315,
             "notes": None,
@@ -371,7 +371,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
 
         # THEN
         expected_release = {
@@ -395,7 +395,9 @@ class TestUpdater(UpdaterTestCase):
                     "value": "DISCTRONICS S HIA 2 CD 01",
                 },
             ],
-            "labels": [{"catalog_number": "HIACD2", "id": 233, "name": "Beyond"}],
+            "labels": [
+                {"catalog_number": "HIACD2", "id": 1000000233, "name": "Beyond"}
+            ],
             "master_id": 21103,
             "notes": None,
             "release_date": "1994-01-01",
@@ -462,7 +464,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
 
         # THEN
         expected_release = {
@@ -558,12 +560,8 @@ class TestUpdater(UpdaterTestCase):
         entity_two_type = EntityType.ARTIST
         role = "Producer"
 
-        id_1 = RelationDataAccess.to_relation_internal_id(
-            entity_one_id, entity_one_type
-        )
-        id_2 = RelationDataAccess.to_relation_internal_id(
-            entity_two_id, entity_two_type
-        )
+        id_1 = Entity.to_entity_internal_id(entity_one_id, entity_one_type)
+        id_2 = Entity.to_entity_internal_id(entity_two_id, entity_two_type)
         key = dict(
             subject=id_1,
             role=role,
@@ -579,7 +577,7 @@ class TestUpdater(UpdaterTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -602,12 +600,8 @@ class TestUpdater(UpdaterTestCase):
         entity_two_type = EntityType.LABEL
         role = "Released On"
 
-        id_1 = RelationDataAccess.to_relation_internal_id(
-            entity_one_id, entity_one_type
-        )
-        id_2 = RelationDataAccess.to_relation_internal_id(
-            entity_two_id, entity_two_type
-        )
+        id_1 = Entity.to_entity_internal_id(entity_one_id, entity_one_type)
+        id_2 = Entity.to_entity_internal_id(entity_two_id, entity_two_type)
         key = dict(
             subject=id_1,
             role=role,
@@ -623,7 +617,7 @@ class TestUpdater(UpdaterTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -646,12 +640,8 @@ class TestUpdater(UpdaterTestCase):
         entity_two_type = EntityType.ARTIST
         role = "Producer"
 
-        id_1 = RelationDataAccess.to_relation_internal_id(
-            entity_one_id, entity_one_type
-        )
-        id_2 = RelationDataAccess.to_relation_internal_id(
-            entity_two_id, entity_two_type
-        )
+        id_1 = Entity.to_entity_internal_id(entity_one_id, entity_one_type)
+        id_2 = Entity.to_entity_internal_id(entity_two_id, entity_two_type)
         key = dict(
             subject=id_1,
             role=role,
@@ -667,7 +657,7 @@ class TestUpdater(UpdaterTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -690,12 +680,8 @@ class TestUpdater(UpdaterTestCase):
         entity_two_type = EntityType.ARTIST
         role = "Design"
 
-        id_1 = RelationDataAccess.to_relation_internal_id(
-            entity_one_id, entity_one_type
-        )
-        id_2 = RelationDataAccess.to_relation_internal_id(
-            entity_two_id, entity_two_type
-        )
+        id_1 = Entity.to_entity_internal_id(entity_one_id, entity_one_type)
+        id_2 = Entity.to_entity_internal_id(entity_two_id, entity_two_type)
         key = dict(
             subject=id_1,
             role=role,
@@ -711,7 +697,7 @@ class TestUpdater(UpdaterTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -743,7 +729,7 @@ class TestUpdater(UpdaterTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -848,7 +834,7 @@ class TestUpdater(UpdaterTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {
@@ -885,7 +871,7 @@ class TestUpdater(UpdaterTestCase):
                 relation_release_year_repository,
                 key,
             )
-            actual = utils.normalize_dict(relation.model_dump(exclude={"id", "random"}))
+            actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
         expected_relation = {

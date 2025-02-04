@@ -12,7 +12,7 @@ class TestLoaderEntity(unittest.TestCase):
         iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "artist", "testinsert")
         element = next(iterator)
         entity = LoaderEntity().from_element(element)
-        actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+        actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
         expected_entity = {
             "entities": {"aliases": {}, "groups": {}},
             "entity_id": 3,
@@ -77,7 +77,7 @@ class TestLoaderEntity(unittest.TestCase):
         while element.find("name").text != "Seefeel":
             element = next(iterator)
         entity = LoaderEntity().from_element(element)
-        actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+        actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
         expected_entity = {
             "entities": {
                 "members": {
@@ -114,7 +114,7 @@ class TestLoaderEntity(unittest.TestCase):
         iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "label", "testinsert")
         element = next(iterator)
         entity = LoaderEntity().from_element(element)
-        actual = utils.normalize_dict(entity.model_dump(exclude={"id", "random"}))
+        actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
         expected_entity = {
             "entities": {},
             "entity_id": 1,
