@@ -1,0 +1,41 @@
+from discograph.config import TEST_DATA_DIR
+from discograph.offline.database.entity_repository import EntityRepository
+from discograph.offline.database.transaction import transaction
+from discograph.library.fields.entity_type import EntityType
+from discograph.offline.loader.loader_entity import LoaderEntity
+from discograph.offline.loader.loader_utils import LoaderUtils
+from tests.integration.offline.database.repository_test_case import RepositoryTestCase
+
+
+class TestRepositoryEntity(RepositoryTestCase):
+    def test_create_01(self):
+        # GIVEN
+        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "artist", "testinsert")
+        entity_element = next(iterator)
+        entity = LoaderEntity().from_element(entity_element)
+
+        # WHEN
+        with transaction():
+            repository = EntityRepository()
+            created_entity = repository.create(entity)
+
+        # THEN
+        self.assertEqual(entity, created_entity)
+
+    def test_get_01(self):
+        # GIVEN
+        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "label", "testinsert")
+        entity_element = next(iterator)
+        entity = LoaderEntity().from_element(entity_element)
+
+        # WHEN
+        with transaction():
+            repository = EntityRepository()
+            created_entity = repository.create(entity)
+
+            retrieved_entity = repository.get_by_entity_id_and_entity_type(
+                1, EntityType.LABEL
+            )
+
+        # THEN
+        self.assertEqual(created_entity, retrieved_entity)

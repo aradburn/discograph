@@ -1,5 +1,5 @@
 """
-This module defines the Domain Objects.
+This module defines the common base for all Domain Objects.
 """
 
 import json

@@ -1,0 +1,292 @@
+import logging
+import pickle
+from pathlib import Path
+from typing import Any
+from xml.etree.ElementTree import Element
+
+from sortedcontainers import SortedSet
+
+from discograph.library.fields.entity_id import to_entity_internal_id
+from discograph.library.full_text_search.text_search_utils import (
+    normalise_search_content,
+)
+from discograph.offline.data_access_layer.entity_data_access import EntityDataAccess
+from discograph.offline.database.entity_repository import EntityRepository
+from discograph.offline.database.entity_table import EntityTable
+from discograph.offline.database.transaction import transaction
+from discograph.offline.domain.entity import Entity
+from discograph.library.fields.entity_type import EntityType
+from discograph.library.full_text_search.text_search_index import TextSearchIndex
+from discograph.offline.loader.loader_base import LoaderBase
+from discograph.offline.loader.worker_entity_deleter import WorkerEntityDeleter
+from discograph.offline.loader.worker_entity_inserter import WorkerEntityInserter
+from discograph.offline.loader.worker_entity_pass_three import WorkerEntityPassThree
+from discograph.offline.loader.worker_entity_pass_two import WorkerEntityPassTwo
+from discograph.offline.loader.worker_entity_updater import WorkerEntityUpdater
+from discograph.offline.loader.loader_utils import LoaderUtils
+from discograph.offline.offline_database_manager import OfflineDatabaseManager
+from discograph.utils import timeit
+
+log = logging.getLogger(__name__)
+
+
+class LoaderEntity(LoaderBase):
+    # CLASS METHODS
+
+    @classmethod
+    @timeit
+    def loader_entity_pass_one(
+        cls, data_directory: str, data_date: str, is_bulk_inserts=False
+    ) -> int:
+        log.debug(f"loader entity pass one - artist - date: {data_date}")
+        with transaction():
+            entity_repository = EntityRepository()
+            artists_loaded = cls.loader_pass_one_manager(
+                repository=entity_repository,
+                data_directory=data_directory,
+                date=data_date,
+                xml_tag="artist",
+                id_attr=EntityTable.id.name,
+                skip_without=["entity_name"],
+                is_bulk_inserts=is_bulk_inserts,
+            )
+        log.debug(f"loader entity pass one - label - date: {data_date}")
+        with transaction():
+            entity_repository = EntityRepository()
+            labels_loaded = cls.loader_pass_one_manager(
+                repository=entity_repository,
+                data_directory=data_directory,
+                date=data_date,
+                xml_tag="label",
+                id_attr=EntityTable.id.name,
+                skip_without=["entity_name"],
+                is_bulk_inserts=is_bulk_inserts,
+            )
+        return artists_loaded + labels_loaded
+
+    @classmethod
+    def insert_bulk(cls, bulk_inserts: list[dict[str, Any]], inserted_count: int):
+        worker = WorkerEntityInserter(
+            bulk_inserts=bulk_inserts,
+            inserted_count=inserted_count,
+        )
+        return worker
+
+    @classmethod
+    def update_bulk(cls, bulk_updates: list[dict[str, Any]], processed_count: int):
+        worker = WorkerEntityUpdater(
+            bulk_updates=bulk_updates,
+            processed_count=processed_count,
+        )
+        return worker
+
+    @classmethod
+    def delete_bulk(cls, bulk_deletes: list[int], processed_count: int):
+        worker = WorkerEntityDeleter(
+            bulk_deletes=bulk_deletes,
+            processed_count=processed_count,
+        )
+        return worker
+
+    @classmethod
+    def get_set_of_ids(cls, entity_type):
+        with transaction():
+            entity_repository = EntityRepository()
+            ids = entity_repository.get_ids_by_type(entity_type)
+        set_of_entity_ids = SortedSet(ids)
+        return set_of_entity_ids
+
+    @classmethod
+    @timeit
+    def loader_entity_pass_two(cls) -> None:
+        log.debug("loader entity pass two")
+        cls.loader_start_workers(WorkerEntityPassTwo)
+
+    @classmethod
+    @timeit
+    def loader_entity_pass_three(cls):
+        log.debug("loader entity pass three")
+        cls.loader_start_workers(WorkerEntityPassThree)
+
+    @classmethod
+    def loader_start_workers(cls, worker_class) -> None:
+        number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
+
+        with transaction():
+            entity_repository = EntityRepository()
+            total_count = entity_repository.count()
+            batched_ids = entity_repository.get_batched_ids(number_in_batch)
+
+        current_total = 0
+
+        workers = []
+        for ids in batched_ids:
+            # log.debug(f"batched ids: {ids}")
+            worker = worker_class(ids, current_total, total_count)
+            worker.start()
+            workers.append(worker)
+            current_total += number_in_batch
+
+            if len(workers) > OfflineDatabaseManager.get_concurrency_count():
+                worker = workers.pop(0)
+                cls.loader_wait_for_worker(worker)
+
+        while len(workers) > 0:
+            worker = workers.pop(0)
+            cls.loader_wait_for_worker(worker)
+
+    @classmethod
+    @timeit
+    def loader_entity_vacuum(
+        cls, has_tablename: bool, is_full: bool, is_analyze: bool
+    ) -> None:
+        log.debug(f"loader entity vacuum")
+        with transaction():
+            entity_repository = EntityRepository()
+            entity_repository.vacuum(has_tablename, is_full, is_analyze)
+
+    @classmethod
+    @timeit
+    def loader_create_text_search_index(cls, text_search_path: Path) -> None:
+        log.debug(f"loader entity create text search index")
+        if not text_search_path.exists():
+            text_search_index = cls.loader_init_text_search_index_from_database()
+            cls.save_text_search_index_to_file(text_search_path, text_search_index)
+        else:
+            log.debug("create text search index - skipping...")
+
+    @classmethod
+    @timeit
+    def loader_init_text_search_index_from_database(cls) -> TextSearchIndex:
+        log.debug(f"loader entity init text search index from database")
+        text_search_index = TextSearchIndex()
+
+        with transaction():
+            entity_repository = EntityRepository()
+            EntityDataAccess.init_text_search_index(
+                entity_repository, text_search_index
+            )
+        return text_search_index
+
+    @classmethod
+    @timeit
+    def save_text_search_index_to_file(
+        cls, filename: Path, text_search_index: TextSearchIndex
+    ) -> None:
+        log.debug(f"save text search index to file: {filename}")
+
+        # open a file, where you ant to store the data
+        with open(filename, "wb") as file:
+            # dump information to that file
+            # noinspection PyTypeChecker
+            pickle.dump(text_search_index, file)
+
+    @classmethod
+    def element_to_names(cls, names):
+        result = {}
+        if names is None or not len(names):
+            return result
+        for name in names:
+            name = name.text
+            if not name:
+                continue
+            result[name] = None
+        return result
+
+    @classmethod
+    def element_to_names_and_ids(cls, names_and_ids: Element):
+        # print(f"names_and_ids1: {[(item.tag, item.text) for item in names_and_ids]}")
+        result = {}
+        if names_and_ids is None or not len(names_and_ids):
+            return result
+        current_discogs_id = 0
+        for item in names_and_ids:
+            if item.tag == "id":
+                current_discogs_id = int(item.text)
+            elif item.tag == "name":
+                result[item.text] = current_discogs_id
+                current_discogs_id = 0
+        return result
+
+    @classmethod
+    def element_to_parent_label(cls, parent_label):
+        result = {}
+        if parent_label is None or parent_label.text is None:
+            return result
+        name = parent_label.text.strip()
+        if not name:
+            return result
+        result[name] = None
+        return result
+
+    @classmethod
+    def element_to_sublabels(cls, sublabels):
+        result = {}
+        if sublabels is None or not len(sublabels):
+            return result
+        for sublabel in sublabels:
+            name = sublabel.text
+            if name is None:
+                continue
+            name = name.strip()
+            if not name:
+                continue
+            result[name] = None
+        return result
+
+    @classmethod
+    def from_element(cls, element) -> Entity:
+        data = cls.tags_to_fields(element)
+        return Entity(**data)
+
+    @classmethod
+    def preprocess_data(cls, data, element):
+        if element.tag == "artist" or element.tag == "label":
+            data["entity_metadata"] = {}
+            data["entities"] = {}
+            data["relation_counts"] = {}
+            for key in (
+                "aliases",
+                "groups",
+                "members",
+                "parent_label",
+                "sublabels",
+            ):
+                if key in data:
+                    data["entities"][key] = data.pop(key)
+            for key in (
+                "contact_info",
+                "name_variations",
+                "profile",
+                "real_name",
+                "urls",
+            ):
+                if key in data:
+                    data["entity_metadata"][key] = data.pop(key)
+            if "entity_name" in data and data.get("entity_name"):
+                name = data.get("entity_name")
+                data["search_content"] = normalise_search_content(name)
+            if element.tag == "artist":
+                data["entity_type"] = EntityType.ARTIST
+            elif element.tag == "label":
+                data["entity_type"] = EntityType.LABEL
+            # data["element_id"] = int(element.get("id"))
+            data["entity_id"] = data["id"]
+            data["id"] = to_entity_internal_id(data["entity_id"], data["entity_type"])
+        return data
+
+
+LoaderEntity._tags_to_fields_mapping = {
+    "aliases": ("aliases", LoaderEntity.element_to_names),
+    "contact_info": ("contact_info", LoaderUtils.element_to_string),
+    "groups": ("groups", LoaderEntity.element_to_names),
+    "id": ("id", LoaderUtils.element_to_integer),
+    "members": ("members", LoaderEntity.element_to_names_and_ids),
+    "name": ("entity_name", LoaderUtils.element_to_string),
+    "namevariations": ("name_variations", LoaderUtils.element_to_strings),
+    "parentLabel": ("parent_label", LoaderEntity.element_to_parent_label),
+    "profile": ("profile", LoaderUtils.element_to_string),
+    "realname": ("real_name", LoaderUtils.element_to_string),
+    "sublabels": ("sublabels", LoaderEntity.element_to_sublabels),
+    "urls": ("urls", LoaderUtils.element_to_strings),
+}

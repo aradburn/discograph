@@ -15,17 +15,24 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from discograph import api
 from discograph import ui
 from discograph.config import (
-    PostgresDevelopmentConfiguration,
-    TEXT_SEARCH_PATH,
+    SqliteDevelopmentConfiguration,
     ENTITY_DETAILS_PATH,
+    TEXT_SEARCH_PATH,
 )
-from discograph.database import setup_database, shutdown_database
 from discograph.exceptions import NotFoundError, BaseError
 from discograph.library.cache.cache_manager import CacheManager
-from discograph.library.database.database_helper import DatabaseHelper
-from discograph.library.loader.loader_entity import LoaderEntity
-from discograph.library.loader.loader_release import LoaderRelease
+from discograph.library.full_text_search.text_search_index import TextSearchIndex
 from discograph.logging_config import setup_logging, shutdown_logging
+from discograph.runtime.data_access_layer.runtime_entity_data_access import (
+    RuntimeEntityDataAccess,
+)
+from discograph.runtime.data_access_layer.runtime_role_data_access import (
+    RuntimeRoleDataAccess,
+)
+from discograph.runtime.runtime_database.runtime_database_helper import (
+    RuntimeDatabaseHelper,
+)
+from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
 
 log = logging.getLogger(__name__)
 
@@ -41,8 +48,10 @@ def setup_application():
     app.wsgi_app = ProxyFix(app.wsgi_app)
     # Mobility(app)
     Compress(app)
-    DatabaseHelper.flask_db_session = scoped_session(
-        sessionmaker(autocommit=False, autoflush=False, bind=DatabaseHelper.engine)
+    RuntimeDatabaseHelper.flask_db_session = scoped_session(
+        sessionmaker(
+            autocommit=False, autoflush=False, bind=RuntimeDatabaseHelper.engine
+        )
     )
 
 
@@ -54,7 +63,7 @@ def shutdown_application():
 # noinspection PyUnusedLocal
 @app.teardown_appcontext
 def shutdown_session(exception=None):
-    DatabaseHelper.flask_db_session.remove()
+    RuntimeDatabaseHelper.flask_db_session.remove()
 
 
 @app.after_request
@@ -125,10 +134,11 @@ def main():
     log.info("######  #  ####   ####   ####   ####  #    # #    # #      #    # ")
     log.info("")
     log.info("")
-    log.info("Using PostgresDevelopmentConfiguration")
-    config = vars(PostgresDevelopmentConfiguration)
-    app.config.from_object(config)
-    CacheManager.setup_cache(config)
+    log.info("Using SqliteDevelopmentConfiguration")
+    runtime_config = SqliteDevelopmentConfiguration()
+    # config = vars(PostgresDevelopmentConfiguration)
+    app.config.from_object(runtime_config)
+    CacheManager.setup_cache(runtime_config)
     cache = CacheManager.get_cache()
     print(f"cache: {cache}")
     if cache is None:
@@ -138,19 +148,24 @@ def main():
         log.debug("Clearing cache")
         CacheManager.clear()
 
-    setup_database(config)
+    # Setup Database
+    RuntimeDatabaseManager.setup_database(runtime_config)
+
+    # Setup Application
     setup_application()
-    DatabaseHelper.entity_details_index = (
-        LoaderRelease.loader_init_entity_details_index(ENTITY_DETAILS_PATH)
+
+    RuntimeRoleDataAccess.load_all_roles()
+    RuntimeDatabaseHelper.entity_details_index = (
+        RuntimeEntityDataAccess.load_entity_details_index_from_file(ENTITY_DETAILS_PATH)
     )
-    DatabaseHelper.text_search_index = LoaderEntity.loader_init_text_search_index(
-        TEXT_SEARCH_PATH
+    RuntimeDatabaseHelper.text_search_index = (
+        TextSearchIndex.load_text_search_index_from_file(TEXT_SEARCH_PATH)
     )
 
     # Note reverse order (last in first out), logging is the last to be shutdown
     atexit.register(shutdown_logging)
     atexit.register(CacheManager.shutdown_cache)
-    atexit.register(shutdown_database, config)
+    atexit.register(RuntimeDatabaseManager.shutdown_database)
 
 
 if __name__ == "__main__":

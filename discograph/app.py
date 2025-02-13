@@ -15,13 +15,16 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from discograph import api
 from discograph import ui
-from discograph.config import PostgresProductionConfiguration, TEXT_SEARCH_PATH
-from discograph.database import setup_database, shutdown_database
+from discograph.config import (
+    PostgresProductionConfiguration,
+)
 from discograph.exceptions import NotFoundError, BaseError
 from discograph.library.cache.cache_manager import CacheManager
-from discograph.library.database.database_helper import DatabaseHelper
-from discograph.library.loader.loader_entity import LoaderEntity
 from discograph.logging_config import setup_logging, shutdown_logging
+from discograph.runtime.runtime_database.runtime_database_helper import (
+    RuntimeDatabaseHelper,
+)
+from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
 
 log = logging.getLogger(__name__)
 
@@ -37,8 +40,10 @@ def setup_application() -> None:
     app.wsgi_app = ProxyFix(app.wsgi_app)
     # Mobility(app)
     Compress(app)
-    DatabaseHelper.flask_db_session = scoped_session(
-        sessionmaker(autocommit=False, autoflush=False, bind=DatabaseHelper.engine)
+    RuntimeDatabaseHelper.flask_db_session = scoped_session(
+        sessionmaker(
+            autocommit=False, autoflush=False, bind=RuntimeDatabaseHelper.engine
+        )
     )
 
 
@@ -50,7 +55,7 @@ def shutdown_application():
 # noinspection PyUnusedLocal
 @app.teardown_appcontext
 def shutdown_session(exception=None):
-    DatabaseHelper.flask_db_session.remove()
+    RuntimeDatabaseHelper.flask_db_session.remove()
 
 
 @app.after_request
@@ -139,18 +144,15 @@ def main():
         CacheManager.clear()
 
     # Setup Database
-    setup_database(config)
+    RuntimeDatabaseManager.setup_database(config)
 
     # Setup Application
     setup_application()
-    DatabaseHelper.text_search_index = LoaderEntity.loader_init_text_search_index(
-        TEXT_SEARCH_PATH
-    )
 
     # Note reverse order (last in first out), logging is the last to be shutdown
     atexit.register(shutdown_logging)
     atexit.register(CacheManager.shutdown_cache)
-    atexit.register(shutdown_database, config)
+    atexit.register(RuntimeDatabaseManager.shutdown_database)
 
 
 if __name__ == "__main__":

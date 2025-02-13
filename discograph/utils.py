@@ -70,7 +70,7 @@ class SkipFilter:
 
 
 def parse_request_args(args):
-    from discograph.library.data_access_layer.role_data_access import RoleDataAccess
+    from discograph.library.cache.role_cache import RoleCache
 
     year = None
     roles = set()
@@ -89,18 +89,13 @@ def parse_request_args(args):
             value = args.getlist(key)
             for role in value:
                 log.debug(f"Requested role: {role}")
-                if role in RoleDataAccess.role_category_to_role_name_lookup.keys():
+                if role in RoleCache.role_category_to_role_name_lookup.keys():
                     log.debug(f"Requested role found: {role}")
-                    for role_entry in RoleDataAccess.role_category_to_role_name_lookup[
-                        role
-                    ]:
+                    for role_entry in RoleCache.role_category_to_role_name_lookup[role]:
                         log.debug(f"Requested role_entry: {role_entry}")
-                        if (
-                            role_entry
-                            in RoleDataAccess.role_name_to_role_id_lookup.keys()
-                        ):
+                        if role_entry in RoleCache.role_name_to_role_id_lookup.keys():
                             roles.add(role_entry)
-                elif role in RoleDataAccess.role_name_to_role_id_lookup.keys():
+                elif role in RoleCache.role_name_to_role_id_lookup.keys():
                     roles.add(role)
 
     roles = list(sorted(roles))
@@ -190,7 +185,7 @@ def normalize_dict(obj: Any, skip_keys=None) -> str:
         def as_dict(self):
             return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
-        from discograph.library.database.base_table import Base
+        from discograph.offline.database.base_table import Base
 
         if isinstance(o, Base):
             return list_public_attributes(preprocessor.filter(as_dict(o)))

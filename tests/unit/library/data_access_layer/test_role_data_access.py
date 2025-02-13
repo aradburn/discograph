@@ -4,7 +4,7 @@ import unittest
 from discograph.config import (
     TEST_DATA_ROLES_PATH,
 )
-from discograph.library.data_access_layer.role_data_access import RoleDataAccess
+from discograph.offline.data_access_layer.role_data_access import RoleDataAccess
 
 
 class TestRoleDataAccess(unittest.TestCase):

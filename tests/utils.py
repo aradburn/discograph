@@ -1,10 +1,10 @@
 from discograph.config import TEST_DATA_DIR
-from discograph.library.domain.entity import Entity
-from discograph.library.domain.release import Release
+from discograph.offline.domain.entity import Entity
+from discograph.offline.domain.release import Release
 from discograph.library.fields.entity_type import EntityType
-from discograph.library.loader.loader_entity import LoaderEntity
-from discograph.library.loader.loader_release import LoaderRelease
-from discograph.library.loader.loader_utils import LoaderUtils
+from discograph.offline.loader.loader_entity import LoaderEntity
+from discograph.offline.loader.loader_release import LoaderRelease
+from discograph.offline.loader.loader_utils import LoaderUtils
 
 
 def get_test_entity_by_id(entity_id: int, entity_type: EntityType) -> Entity:

@@ -1,0 +1,58 @@
+import logging
+from typing import Generator
+
+from sqlalchemy import Result, select
+
+from discograph.exceptions import NotFoundError
+from discograph.library.cache.cache_manager import CacheManager
+from discograph.offline.database.base_repository import BaseRepository
+from discograph.offline.database.role_table import RoleTable
+from discograph.offline.domain.role import Role, RoleUncommitted
+
+log = logging.getLogger(__name__)
+
+
+class RoleRepository(BaseRepository[RoleTable]):
+    schema_class = RoleTable
+
+    def all(self) -> Generator[Role, None, None]:
+        for instance in self._all():
+            # async for instance in self._all():
+            yield Role.model_validate(instance)
+
+    def get(self, role_id: int) -> Role:
+        query = select(RoleTable).where(RoleTable.id == role_id)
+
+        result: Result = self.execute(query)
+        # result: Result = await self.execute(query)
+
+        if not (instance := result.scalars().one_or_none()):
+            raise NotFoundError
+
+        return Role.model_validate(instance)
+
+    def get_by_name(self, name: str) -> Role:
+        cache = CacheManager.get_cache()
+
+        role_key_str = f"ROLE-{name}"
+        role = cache.get(role_key_str)
+        if role:
+            return role
+
+        query = select(RoleTable).where(RoleTable.role_name == name)
+
+        result: Result = self.execute(query)
+        # result: Result = await self.execute(query)
+
+        if not (instance := result.scalars().one_or_none()):
+            raise NotFoundError
+
+        role = Role.model_validate(instance)
+        cache.set(role_key_str, role)
+        # log.debug(f"cached role: {role_key_str}")
+        return role
+
+    def create(self, schema: RoleUncommitted) -> Role:
+        instance: RoleTable = self._save(schema.model_dump())
+        # instance: RoleTable = await self._save(schema.model_dump())
+        return Role.model_validate(instance)

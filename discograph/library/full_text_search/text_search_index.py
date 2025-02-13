@@ -1,8 +1,14 @@
 import logging
 import math
+import pickle
 import random
 from collections import Counter
+from pathlib import Path
+from typing import Self
 
+from discograph.library.full_text_search.text_search_utils import (
+    normalise_search_content,
+)
 from discograph.utils import calculate_size
 
 log = logging.getLogger(__name__)
@@ -29,15 +35,12 @@ class TextSearchIndex:
         self.keys: list[int] = []
 
     def index_entry(self, id_: int, text: str) -> None:
-        from discograph.library.data_access_layer.entity_data_access import (
-            EntityDataAccess,
-        )
 
         # Save the original document to return when searched for
         self.documents[id_] = text
         self.keys.append(id_)
 
-        normalised_text = EntityDataAccess.normalise_search_content(text)
+        normalised_text = normalise_search_content(text)
         for token in normalised_text.split():
             if token in TextSearchIndex.STOP_WORDS:
                 continue
@@ -89,16 +92,12 @@ class TextSearchIndex:
     def rank(
         self, analyzed_query: list[str], documents: list[tuple[int, str]]
     ) -> list[tuple[int, str]]:
-        from discograph.library.data_access_layer.entity_data_access import (
-            EntityDataAccess,
-        )
-
         results: list[tuple[tuple[int, str], float]] = []
         if not documents:
             return list[tuple[int, str]]()
         for document in documents:
 
-            normalised_name = EntityDataAccess.normalise_search_content(document[1])
+            normalised_name = normalise_search_content(document[1])
             term_frequencies = Counter(normalised_name.split())
 
             score = 0.0
@@ -137,3 +136,14 @@ class TextSearchIndex:
         count = len(self.keys)
         random_index = random.randint(0, count)
         return self.keys[random_index]
+
+    @classmethod
+    def load_text_search_index_from_file(cls, filename: Path) -> Self:
+        log.debug(f"load text search index from file: {filename}")
+
+        # open a file, where you stored the pickled data
+        with open(filename, "rb") as file:
+            # read pickle dump information from that file
+            text_search_index: TextSearchIndex = pickle.load(file)
+
+        return text_search_index

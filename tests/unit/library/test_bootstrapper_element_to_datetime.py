@@ -1,7 +1,7 @@
 import datetime
 import unittest
 
-from discograph.library.loader.loader_utils import LoaderUtils
+from discograph.offline.loader.loader_utils import LoaderUtils
 
 
 class TestBootstrapperElementToDatetime(unittest.TestCase):

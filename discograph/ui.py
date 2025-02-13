@@ -11,20 +11,24 @@ from flask import url_for
 
 import discograph.utils
 from discograph.exceptions import BadRequestError, NotFoundError
-from discograph.library.data_access_layer.role_data_access import RoleDataAccess
-from discograph.library.database.entity_repository import EntityRepository
-from discograph.library.database.relation_repository import RelationRepository
-from discograph.library.database.transaction import transaction
-from discograph.library.domain.role import RoleJSTreeWrapper
+from discograph.library.cache.role_cache import RoleCache
 from discograph.library.fields.entity_type import EntityType
-from discograph.library.role_entry import RoleEntry
+from discograph.runtime.data_access_layer.role_entry import RoleEntry
+from discograph.runtime.runtime_database.runtime_entity_repository import (
+    RuntimeEntityRepository,
+)
+from discograph.runtime.runtime_database.runtime_relation_repository import (
+    RuntimeRelationRepository,
+)
+from discograph.runtime.runtime_database.runtime_transaction import transaction
+from discograph.runtime.runtime_domain.role import RuntimeRoleJSTreeWrapper
 
 log = logging.getLogger(__name__)
 
 blueprint = Blueprint("ui", __name__, template_folder="templates")
 
 
-default_roles = (
+UI_DEFAULT_ROLES = (
     "Alias",
     "Member Of",
     # 'Sublabel Of',
@@ -38,7 +42,7 @@ def route__index():
     parsed_args = discograph.utils.parse_request_args(request.args)
     original_roles, original_year = parsed_args
     if not original_roles:
-        original_roles = default_roles
+        original_roles = UI_DEFAULT_ROLES
     multiselect_mapping = RoleEntry.get_multiselect_mapping()
     url = url_for(
         request.endpoint,
@@ -61,12 +65,12 @@ def route__index():
 
 @blueprint.route("/<entity_type_str>/<entity_id>")
 def route__entity_type__entity_id(entity_type_str, entity_id):
-    from discograph.library.database.database_helper import DatabaseHelper
+    from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
 
     parsed_args = discograph.utils.parse_request_args(request.args)
     requested_roles, requested_year = parsed_args
     if not requested_roles:
-        requested_roles = default_roles
+        requested_roles = UI_DEFAULT_ROLES
     try:
         entity_type = EntityType.from_str(entity_type_str.upper())
     except NotImplementedError:
@@ -76,9 +80,9 @@ def route__entity_type__entity_id(entity_type_str, entity_id):
     entity_id = int(entity_id)
 
     with transaction():
-        entity_repository = EntityRepository()
-        relation_repository = RelationRepository()
-        network_data = DatabaseHelper.db_helper.get_network(
+        entity_repository = RuntimeEntityRepository()
+        relation_repository = RuntimeRelationRepository()
+        network_data = RuntimeDatabaseManager.runtime_db_helper.get_network(
             entity_repository,
             relation_repository,
             entity_id,
@@ -94,8 +98,8 @@ def route__entity_type__entity_id(entity_type_str, entity_id):
         separators=(",", ": "),
     )
 
-    roles_data = RoleJSTreeWrapper(
-        core=RoleDataAccess.role_jstree,
+    roles_data = RuntimeRoleJSTreeWrapper(
+        core=RoleCache.role_jstree,
         checkbox={"keep_selected_style": False},
         plugins=["checkbox"],
     )

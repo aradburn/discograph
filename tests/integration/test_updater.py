@@ -1,15 +1,15 @@
 from discograph import utils
 from discograph.exceptions import NotFoundError
-from discograph.library.database.database_helper import DatabaseHelper
-from discograph.library.database.entity_repository import EntityRepository
-from discograph.library.database.relation_release_year_repository import (
+from discograph.library.fields.entity_id import to_entity_internal_id
+from discograph.library.fields.entity_type import EntityType
+from discograph.offline.database.database_helper import DatabaseHelper
+from discograph.offline.database.entity_repository import EntityRepository
+from discograph.offline.database.relation_release_year_repository import (
     RelationReleaseYearRepository,
 )
-from discograph.library.database.relation_repository import RelationRepository
-from discograph.library.database.release_repository import ReleaseRepository
-from discograph.library.database.transaction import transaction
-from discograph.library.domain.entity import Entity
-from discograph.library.fields.entity_type import EntityType
+from discograph.offline.database.relation_repository import RelationRepository
+from discograph.offline.database.release_repository import ReleaseRepository
+from discograph.offline.database.transaction import transaction
 from tests.integration.updater_test_case import UpdaterTestCase
 
 
@@ -560,8 +560,8 @@ class TestUpdater(UpdaterTestCase):
         entity_two_type = EntityType.ARTIST
         role = "Producer"
 
-        id_1 = Entity.to_entity_internal_id(entity_one_id, entity_one_type)
-        id_2 = Entity.to_entity_internal_id(entity_two_id, entity_two_type)
+        id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
+        id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
         key = dict(
             subject=id_1,
             role=role,
@@ -600,8 +600,8 @@ class TestUpdater(UpdaterTestCase):
         entity_two_type = EntityType.LABEL
         role = "Released On"
 
-        id_1 = Entity.to_entity_internal_id(entity_one_id, entity_one_type)
-        id_2 = Entity.to_entity_internal_id(entity_two_id, entity_two_type)
+        id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
+        id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
         key = dict(
             subject=id_1,
             role=role,
@@ -640,8 +640,8 @@ class TestUpdater(UpdaterTestCase):
         entity_two_type = EntityType.ARTIST
         role = "Producer"
 
-        id_1 = Entity.to_entity_internal_id(entity_one_id, entity_one_type)
-        id_2 = Entity.to_entity_internal_id(entity_two_id, entity_two_type)
+        id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
+        id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
         key = dict(
             subject=id_1,
             role=role,
@@ -680,8 +680,8 @@ class TestUpdater(UpdaterTestCase):
         entity_two_type = EntityType.ARTIST
         role = "Design"
 
-        id_1 = Entity.to_entity_internal_id(entity_one_id, entity_one_type)
-        id_2 = Entity.to_entity_internal_id(entity_two_id, entity_two_type)
+        id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
+        id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
         key = dict(
             subject=id_1,
             role=role,

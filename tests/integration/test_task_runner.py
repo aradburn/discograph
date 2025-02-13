@@ -16,11 +16,11 @@ from discograph.config import (
     PostgresTestConfiguration,
     DATA_DIR,
 )
-from discograph.library.database.database_helper import DatabaseHelper
-from discograph.library.loader.loader_target import LoaderTarget
-from discograph.library.relation_grapher import RelationGrapher
+from discograph.offline.loader.loader_target import LoaderTarget
+from discograph.offline.offline_database_manager import OfflineDatabaseManager
+from discograph.runtime.data_access_layer.relation_grapher import RelationGrapher
 from discograph.utils import get_discogs_dump_dates, get_discogs_url
-from tests.integration.library.database.repository_test_case import RepositoryTestCase
+from tests.integration.offline.database.repository_test_case import RepositoryTestCase
 
 log = logging.getLogger("tests.integration." + __name__)
 
@@ -90,7 +90,7 @@ class TestLoaderTaskForDate(luigi.WrapperTask):
 
     def requires(self):
         yield TestDiscogsDownloaderTaskForDate(dump_date=self.dump_date)
-        stages = DatabaseHelper.db_helper.get_load_table_stages(
+        stages = OfflineDatabaseManager.db_helper.get_load_table_stages(
             DATA_DIR, self.dump_date.strftime("%Y%m%d"), is_bulk_inserts=False
         )
         for stage in range(0, len(stages)):
@@ -134,7 +134,7 @@ class TestLoaderTaskForDateAndStage(luigi.Task):
         log.debug(
             f"Run TestLoaderTaskForDateAndStage tasks for stage: {self.stage} date: {self.dump_date}"
         )
-        stages = DatabaseHelper.db_helper.get_load_table_stages(
+        stages = OfflineDatabaseManager.db_helper.get_load_table_stages(
             DATA_DIR, self.dump_date.strftime("%Y%m%d"), is_bulk_inserts=False
         )
         log.debug(f"Run stage: {self.stage} of {len(stages)}")

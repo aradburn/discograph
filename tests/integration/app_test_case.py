@@ -2,7 +2,7 @@ import logging
 
 from discograph.app import setup_application, shutdown_application
 from discograph.config import PostgresTestConfiguration
-from tests.integration.library.database.database_test_case import DatabaseTestCase
+from tests.integration.offline.database.database_test_case import DatabaseTestCase
 
 log = logging.getLogger(__name__)
 

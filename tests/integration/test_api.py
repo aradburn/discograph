@@ -163,5 +163,5 @@ class TestAPI(AppTestCase):
         actual = json.loads(response.data.decode("utf-8"))
         self.assertIsNotNone(actual)
         self.assertIsNotNone(actual["roles"])
-        expected = 4117
+        expected = 4119
         self.assertEqual(expected, len(actual["roles"]))

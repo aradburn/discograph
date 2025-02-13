@@ -5,17 +5,21 @@ import sys
 
 import luigi
 
-from discograph.config import PostgresDevelopmentConfiguration
+from discograph.config import (
+    PostgresDevelopmentConfiguration,
+    SqliteDevelopmentConfiguration,
+)
 from discograph.library.cache.cache_manager import CacheManager
-from discograph.library.loader.loader_tasks import LoaderSetupTask
+from discograph.offline.loader.loader_tasks import LoaderSetupTask
 from discograph.logging_config import setup_logging, shutdown_logging
+from discograph.offline.offline_database_manager import OfflineDatabaseManager
+from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
+from discograph.transfer.transfer_task import TransferTask
 
 log = logging.getLogger(__name__)
 
 
 def loader_main():
-    from discograph.database import setup_database, shutdown_database
-
     setup_logging()
     log.info("")
     log.info("")
@@ -30,10 +34,11 @@ def loader_main():
     log.info("Using PostgresDevelopmentConfiguration")
     # log.info(f"DATABASE_HOST: {os.getenv('DISCOGRAPH_DATABASE_HOST')}")
     # log.info(f"DATABASE_NAME: {os.getenv('DISCOGRAPH_DATABASE_NAME')}")
-    config = PostgresDevelopmentConfiguration()
+    offline_config = PostgresDevelopmentConfiguration()
+    runtime_config = SqliteDevelopmentConfiguration()
 
     # Setup Cache
-    CacheManager.setup_cache(config)
+    CacheManager.setup_cache(offline_config)
     cache = CacheManager.get_cache()
     print(f"cache: {cache}")
     if cache is None:
@@ -43,19 +48,30 @@ def loader_main():
         log.debug("Clearing cache")
         CacheManager.clear()
 
-    setup_database(config)
+    offline_database_manager = OfflineDatabaseManager()
+    offline_database_manager.setup_database(offline_config)
+
+    runtime_database_manager = RuntimeDatabaseManager()
+    runtime_database_manager.setup_database(runtime_config)
 
     # Note reverse order (last in first out), logging is the last to be shutdown
     atexit.register(shutdown_logging)
     atexit.register(CacheManager.shutdown_cache)
-    atexit.register(shutdown_database, config)
+    atexit.register(OfflineDatabaseManager.shutdown_database)
+    atexit.register(RuntimeDatabaseManager.shutdown_database)
 
     # Run the loader process between these dates
     start_date = datetime.date(2024, 11, 1)
     # start_date = datetime.date(2023, 10, 1)
     end_date = datetime.date(2024, 11, 1)
     # end_date = datetime.datetime.now()
-    tasks = [LoaderSetupTask(start_date=start_date, end_date=end_date)]
+    tasks = [
+        LoaderSetupTask(start_date=start_date, end_date=end_date),
+        TransferTask(
+            offline_database_manager=offline_database_manager,
+            runtime_database_manager=runtime_database_manager,
+        ),
+    ]
     luigi_run_result = luigi.build(
         tasks,
         detailed_summary=True,
