@@ -34,8 +34,8 @@ log = logging.getLogger(__name__)
 
 
 class RuntimeDatabaseHelper(ABC):
-    engine: Engine | None = None
-    session_factory: sessionmaker | None = None
+    runtime_engine: Engine | None = None
+    runtime_session_factory: sessionmaker | None = None
     flask_db_session: scoped_session | None = None
 
     idx_entity_one_id: Index | None = None
@@ -70,8 +70,9 @@ class RuntimeDatabaseHelper(ABC):
     def initialize(cls) -> None:
         """ensure the parent proc's database connections are not touched
         in the new connection pool"""
-        cls.engine.dispose(close=False)
-        # cls.session_factory = sessionmaker(bind=cls.engine)
+        from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+        RuntimeDatabaseManager.runtime_db_helper.runtime_engine.dispose(close=False)
 
     @staticmethod
     @abstractmethod
@@ -81,6 +82,7 @@ class RuntimeDatabaseHelper(ABC):
     @classmethod
     @abstractmethod
     def create_tables(cls, tables: List[str] = None) -> None:
+        from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
         from discograph.runtime.runtime_database import ALL_RUNTIME_DATABASE_TABLES
 
         for table in ALL_RUNTIME_DATABASE_TABLES:
@@ -93,33 +95,42 @@ class RuntimeDatabaseHelper(ABC):
         for table in table_definitions:
             log.debug(f"creating table: {table.name}")
         RuntimeBase.metadata.create_all(
-            cls.engine, checkfirst=True, tables=table_definitions
+            RuntimeDatabaseManager.runtime_db_helper.runtime_engine,
+            checkfirst=True,
+            tables=table_definitions,
         )
 
     @classmethod
     @abstractmethod
     def drop_tables(cls, tables: List[str] = None) -> None:
+        from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
+
         if tables is not None:
             table_definitions: List[Table] = [
                 RuntimeBase.metadata.tables[table_name] for table_name in tables
             ]
             for table in table_definitions:
                 log.debug(f"deleting table: {table.name}")
-                table.drop(cls.engine, checkfirst=True)
+                table.drop(
+                    RuntimeDatabaseManager.runtime_db_helper.runtime_engine,
+                    checkfirst=True,
+                )
         else:
-            RuntimeBase.metadata.drop_all(cls.engine, checkfirst=True)
+            RuntimeBase.metadata.drop_all(
+                RuntimeDatabaseManager.runtime_db_helper.runtime_engine, checkfirst=True
+            )
 
     @classmethod
     def load_tables(cls) -> None:
         log.info("Load tables")
         RuntimeRoleDataAccess.load_all_roles()
-        cls.entity_details_index = (
+        RuntimeDatabaseHelper.entity_details_index = (
             RuntimeEntityDataAccess.load_entity_details_index_from_file(
                 ENTITY_DETAILS_PATH
             )
         )
-        cls.text_search_index = TextSearchIndex.load_text_search_index_from_file(
-            TEXT_SEARCH_PATH
+        RuntimeDatabaseHelper.text_search_index = (
+            TextSearchIndex.load_text_search_index_from_file(TEXT_SEARCH_PATH)
         )
         log.info("Load tables done.")
 
@@ -350,8 +361,8 @@ class RuntimeDatabaseHelper(ABC):
 
     @classmethod
     def search_text_index(cls, search_text):
-        return cls.text_search_index.search(search_text)
+        return RuntimeDatabaseHelper.text_search_index.search(search_text)
 
     @classmethod
     def search_get_random_id(cls):
-        return cls.text_search_index.get_random_id()
+        return RuntimeDatabaseHelper.text_search_index.get_random_id()

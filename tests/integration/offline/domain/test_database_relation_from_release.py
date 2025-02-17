@@ -9,10 +9,12 @@ from discograph.offline.database.transaction import transaction
 from discograph.library.fields.entity_type import EntityType
 from discograph.offline.loader.loader_release import LoaderRelease
 from discograph.offline.loader.loader_utils import LoaderUtils
-from tests.integration.offline.database.database_test_case import DatabaseTestCase
+from tests.integration.offline.database.offline_database_test_case import (
+    OfflineDatabaseTestCase,
+)
 
 
-class TestDatabaseRelationFromRelease(DatabaseTestCase):
+class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
     def test_relation_from_release_01(self):
         # GIVEN
         iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "release", "testinsert")

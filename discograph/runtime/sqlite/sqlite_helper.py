@@ -51,7 +51,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
     @staticmethod
     def check_connection(config: Configuration, engine: Engine) -> None:
         try:
-            log.info("Check Sqlite database connection...")
+            log.info("Check Sqlite runtime database connection...")
 
             with engine.connect() as connection:
                 version = connection.execute(
@@ -79,18 +79,18 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             #     connection.execute(text("pragma temp_store=MEMORY;"))
             #     connection.execute(text("pragma foreign_keys=ON;"))
             #     connection.commit()
-            log.info("Database connected OK.")
+            log.info("Runtime Database connected OK.")
         except DatabaseError:
-            log.exception("Connection Error", exc_info=True)
+            log.exception("Runtime Database Connection Error", exc_info=True)
 
     @classmethod
     def create_tables(cls, tables: List[str] = None) -> None:
-        log.info("Create Sqlite tables")
+        log.info("Create runtime Sqlite tables")
         super().create_tables(tables=tables)
 
     @classmethod
     def drop_tables(cls, tables: List[str] = None) -> None:
-        log.info("Drop Sqlite tables")
+        log.info("Drop runtime Sqlite tables")
         super().drop_tables(tables=tables)
 
     @staticmethod

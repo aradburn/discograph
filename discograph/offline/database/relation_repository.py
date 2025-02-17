@@ -235,7 +235,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         relation_dict = relation.model_dump(exclude={"role_name"})
         role_id = RoleCache.role_name_to_role_id_lookup[relation.role_name]
         relation_dict.update(predicate=role_id)
-        query = OfflineDatabaseManager.db_helper.generate_insert_query(
+        query = OfflineDatabaseManager.offline_database_helper.generate_insert_query(
             self.schema_class, relation_dict, on_conflict_do_nothing
         )
         result: Result = self._session.execute(query)
@@ -262,8 +262,10 @@ class RelationRepository(BaseRepository[RelationTable]):
             relation_dict.update(predicate=role_id)
             # print(f"relation_dict: {relation_dict}")
             relation_dicts.append(relation_dict)
-        query = OfflineDatabaseManager.db_helper.generate_insert_bulk_query(
-            self.schema_class, relation_dicts, on_conflict_do_nothing
+        query = (
+            OfflineDatabaseManager.offline_database_helper.generate_insert_bulk_query(
+                self.schema_class, relation_dicts, on_conflict_do_nothing
+            )
         )
         self._session.execute(query)
 

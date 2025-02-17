@@ -4,10 +4,12 @@ from discograph import utils
 from discograph.offline.database.metadata_repository import MetadataRepository
 from discograph.offline.database.transaction import transaction
 from discograph.offline.domain.metadata import Metadata, MetadataUncommitted
-from tests.integration.offline.database.repository_test_case import RepositoryTestCase
+from tests.integration.offline.database.offline_repository_test_case import (
+    OfflineRepositoryTestCase,
+)
 
 
-class TestRepositoryMetadata(RepositoryTestCase):
+class TestRepositoryMetadata(OfflineRepositoryTestCase):
     def test_create_01(self):
         # GIVEN
         timestamp = datetime.datetime(year=2024, month=6, day=1)

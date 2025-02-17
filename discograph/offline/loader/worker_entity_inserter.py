@@ -4,7 +4,7 @@ from typing import Any
 
 from sqlalchemy.exc import DatabaseError
 
-from discograph.offline.database.database_helper import DatabaseHelper
+from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
 from discograph.offline.database.entity_repository import EntityRepository
 from discograph.offline.database.transaction import transaction
 from discograph.offline.offline_database_manager import OfflineDatabaseManager
@@ -26,7 +26,7 @@ class WorkerEntityInserter(multiprocessing.Process):
         proc_name = self.name
 
         if OfflineDatabaseManager.get_concurrency_count() > 1:
-            DatabaseHelper.initialize()
+            OfflineDatabaseHelper.initialize()
 
         with transaction():
             entity_repository = EntityRepository()

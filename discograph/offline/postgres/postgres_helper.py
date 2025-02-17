@@ -11,22 +11,25 @@ from sqlalchemy.exc import DatabaseError
 from sqlalchemy.sql.dml import ReturningInsert
 
 from discograph.config import Configuration
-from discograph.offline.database.database_helper import DatabaseHelper, ConcreteTable
+from discograph.offline.database.offline_database_helper import (
+    OfflineDatabaseHelper,
+    ConcreteTable,
+)
 from discograph.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
 
 
-class PostgresHelper(DatabaseHelper):
+class PostgresHelper(OfflineDatabaseHelper):
     postgres_test_db: TempDB | None = None
     _is_test: bool = False
 
     @staticmethod
     def setup_database(config: Configuration) -> Engine:
         if config["PRODUCTION"]:
-            log.info("**************************************")
-            log.info("* Using Production Postgres Database *")
-            log.info("**************************************")
+            log.info("**********************************************")
+            log.info("* Using Production Postgres Offline Database *")
+            log.info("**********************************************")
             log.info("")
 
             # Create a database engine and pool that will manage connections and execute queries
@@ -49,7 +52,7 @@ class PostgresHelper(DatabaseHelper):
 
         else:
             if config["TESTING"]:
-                log.info("Using Postgres Test Database")
+                log.info("Using Postgres Test Offline Database")
 
                 dirname = config["POSTGRES_DATA"]
                 pg_data_dir = os.path.join(dirname, "data")
@@ -110,7 +113,7 @@ class PostgresHelper(DatabaseHelper):
                 )
                 engine = create_engine(
                     url_object,
-                    pool_size=OfflineDatabaseManager.get_concurrency_count(),
+                    pool_size=OfflineDatabaseManager.get_concurrency_count() + 4,
                     pool_timeout=30,
                     pool_recycle=30,
                     # connect_args={
@@ -129,7 +132,7 @@ class PostgresHelper(DatabaseHelper):
 
                 PostgresHelper._is_test = True
             else:
-                log.info("Using Postgres Development Database")
+                log.info("Using Postgres Development Offline Database")
 
                 # Create a database engine and pool that will manage connections and execute queries
                 url_object = URL.create(
@@ -142,7 +145,7 @@ class PostgresHelper(DatabaseHelper):
                 )
                 engine = create_engine(
                     url_object,
-                    pool_size=OfflineDatabaseManager.get_concurrency_count(),
+                    pool_size=OfflineDatabaseManager.get_concurrency_count() + 4,
                     pool_timeout=300,
                     pool_recycle=300,
                     connect_args={
@@ -162,10 +165,10 @@ class PostgresHelper(DatabaseHelper):
 
     @staticmethod
     def shutdown_database() -> None:
-        log.info("Shutting down Postgres database")
+        log.info("Shutting down Postgres offline database")
 
         if PostgresHelper._is_test and PostgresHelper.postgres_test_db is not None:
-            log.info("Cleaning up Postgres Test Database")
+            log.info("Cleaning up Postgres Test Offline Database")
             PostgresHelper.postgres_test_db.cleanup()
 
             log.info(f"Delete data dir: {PostgresHelper.postgres_test_db.pg_data_dir}")
@@ -180,7 +183,7 @@ class PostgresHelper(DatabaseHelper):
     @staticmethod
     def check_connection(config: Configuration, engine: Engine) -> None:
         try:
-            log.info("Check Postgres database connection...")
+            log.info("Check Postgres offline database connection...")
 
             with engine.connect() as connection:
                 version = connection.execute(text("SELECT version();"))
@@ -188,18 +191,18 @@ class PostgresHelper(DatabaseHelper):
 
             log.info(f"Database Version: {version.scalars().one_or_none()}")
 
-            log.info("Database connected OK.")
+            log.info("Offline Database connected OK.")
         except DatabaseError:
-            log.exception("Connection Error", exc_info=True)
+            log.exception("Offline Database Connection Error", exc_info=True)
 
     @classmethod
     def create_tables(cls, tables: List[str] = None) -> None:
-        log.info("Create Postgres tables")
+        log.info("Create Offline Postgres tables")
         super().create_tables(tables=tables)
 
     @classmethod
     def drop_tables(cls, tables: List[str] = None) -> None:
-        log.info("Drop Postgres tables")
+        log.info("Drop Offline Postgres tables")
         super().drop_tables(tables=tables)
 
     @staticmethod

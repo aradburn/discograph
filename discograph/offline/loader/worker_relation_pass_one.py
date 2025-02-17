@@ -7,7 +7,7 @@ from sqlalchemy.exc import OperationalError, IntegrityError
 from discograph.exceptions import NotFoundError, DatabaseError
 from discograph.library.cache.role_cache import RoleCache
 from discograph.offline.data_access_layer.relation_data_access import RelationDataAccess
-from discograph.offline.database.database_helper import DatabaseHelper
+from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
 from discograph.offline.database.relation_release_year_repository import (
     RelationReleaseYearRepository,
 )
@@ -41,7 +41,7 @@ class WorkerRelationPassOne(multiprocessing.Process):
         end_count = count + len(self.release_ids)
 
         if OfflineDatabaseManager.get_concurrency_count() > 1:
-            DatabaseHelper.initialize()
+            OfflineDatabaseHelper.initialize()
 
         with transaction():
             release_repository = ReleaseRepository()

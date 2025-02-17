@@ -6,7 +6,6 @@ from discograph.logging_config import LOGGING_TRACE
 from discograph.offline.database.entity_repository import EntityRepository
 from discograph.offline.database.relation_repository import RelationRepository
 from discograph.offline.database.role_repository import RoleRepository
-from discograph.offline.offline_database_manager import OfflineDatabaseManager
 from discograph.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
@@ -20,7 +19,6 @@ from discograph.runtime.runtime_database.runtime_transaction import transaction
 from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
 from discograph.runtime.runtime_domain.entity import RuntimeEntity
 from discograph.runtime.runtime_domain.relation import (
-    RuntimeRelation,
     RuntimeRelationDB,
 )
 from discograph.runtime.runtime_domain.role import RuntimeRole
@@ -172,13 +170,13 @@ class TransferManager:
                 runtime_role_repository.create(runtime_role)
 
     @staticmethod
-    def transfer_all(runtime_database_manager: RuntimeDatabaseManager) -> None:
+    def transfer_all() -> None:
         log.debug(f"Running transfer_all()")
 
-        runtime_database_manager.runtime_db_helper.drop_tables(
+        RuntimeDatabaseManager.runtime_db_helper.drop_tables(
             ALL_RUNTIME_DATABASE_TABLE_NAMES
         )
-        runtime_database_manager.runtime_db_helper.create_tables(
+        RuntimeDatabaseManager.runtime_db_helper.create_tables(
             ALL_RUNTIME_DATABASE_TABLE_NAMES
         )
 

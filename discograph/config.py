@@ -3,6 +3,7 @@ import enum
 import logging
 import os
 import tempfile
+import uuid
 from copy import deepcopy
 from pathlib import Path
 
@@ -143,20 +144,46 @@ class PostgresDevelopmentConfiguration(Configuration):
         super().__init__(vars(PostgresDevelopmentConfiguration))
 
 
-class PostgresTestConfiguration(Configuration):
+class PostgresOfflineTestConfiguration(Configuration):
     PRODUCTION = False
     DEBUG = True
     TESTING = True
     DATABASE = DatabaseType.POSTGRES
-    POSTGRES_DATABASE_NAME = "test_discograph"
+    POSTGRES_DATABASE_NAME = "test_offline_discograph"
     POSTGRES_ROOT = "/usr/lib/postgresql/17"
-    POSTGRES_DATA = os.path.join(tempfile.gettempdir(), "pg_temp", "test")
+    POSTGRES_DATA = os.path.join(
+        tempfile.gettempdir(),
+        "discograph",
+        "pg_offline_temp",
+        "test_" + str(uuid.uuid4()).replace("-", "")[:4],
+    )
     APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.PROCESS
     CACHE_TYPE = CacheType.MEMORY
 
     def __init__(self):
-        super().__init__(vars(PostgresTestConfiguration))
+        super().__init__(vars(PostgresOfflineTestConfiguration))
+
+
+class PostgresRuntimeTestConfiguration(Configuration):
+    PRODUCTION = False
+    DEBUG = True
+    TESTING = True
+    DATABASE = DatabaseType.POSTGRES
+    POSTGRES_DATABASE_NAME = "test_runtime_discograph"
+    POSTGRES_ROOT = "/usr/lib/postgresql/17"
+    POSTGRES_DATA = os.path.join(
+        tempfile.gettempdir(),
+        "discograph",
+        "pg_runtime_temp",
+        "test_" + str(uuid.uuid4()).replace("-", "")[:4],
+    )
+    APPLICATION_ROOT = "http://localhost"
+    THREADING_MODEL = ThreadingModel.PROCESS
+    CACHE_TYPE = CacheType.MEMORY
+
+    def __init__(self):
+        super().__init__(vars(PostgresRuntimeTestConfiguration))
 
 
 class SqliteDevelopmentConfiguration(Configuration):
@@ -173,17 +200,39 @@ class SqliteDevelopmentConfiguration(Configuration):
         super().__init__(vars(SqliteDevelopmentConfiguration))
 
 
-class SqliteTestConfiguration(Configuration):
+class SqliteOfflineTestConfiguration(Configuration):
     PRODUCTION = False
     DEBUG = True
     TESTING = True
     DATABASE = DatabaseType.SQLITE
     SQLITE_DATABASE_NAME = os.path.join(
-        tempfile.gettempdir(), "discograph", "test_discograph.db"
+        tempfile.gettempdir(),
+        "discograph",
+        "pg_offline_temp",
+        "test_" + str(uuid.uuid4()).replace("-", "")[:4] + ".db",
     )
     APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.THREAD
     CACHE_TYPE = CacheType.MEMORY
 
     def __init__(self):
-        super().__init__(vars(SqliteTestConfiguration))
+        super().__init__(vars(SqliteOfflineTestConfiguration))
+
+
+class SqliteRuntimeTestConfiguration(Configuration):
+    PRODUCTION = False
+    DEBUG = True
+    TESTING = True
+    DATABASE = DatabaseType.SQLITE
+    SQLITE_DATABASE_NAME = os.path.join(
+        tempfile.gettempdir(),
+        "discograph",
+        "pg_runtime_temp",
+        "test_" + str(uuid.uuid4()).replace("-", "")[:4] + ".db",
+    )
+    APPLICATION_ROOT = "http://localhost"
+    THREADING_MODEL = ThreadingModel.THREAD
+    CACHE_TYPE = CacheType.MEMORY
+
+    def __init__(self):
+        super().__init__(vars(SqliteRuntimeTestConfiguration))

@@ -4,12 +4,10 @@ from functools import partial
 from typing import Type, List, Any
 
 from sqlalchemy import Engine, Index, Table
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.dml import ReturningInsert, Insert
 
 from discograph.config import Configuration, ENTITY_DETAILS_PATH, TEXT_SEARCH_PATH
-from discograph.library.full_text_search.entity_details_index import EntityDetailsIndex
-from discograph.library.full_text_search.text_search_index import TextSearchIndex
 from discograph.offline.data_access_layer.role_data_access import RoleDataAccess
 from discograph.offline.database.base_table import Base, ConcreteTable
 from discograph.offline.database.relation_release_year_repository import (
@@ -21,16 +19,16 @@ from discograph.offline.domain.relation import Relation
 log = logging.getLogger(__name__)
 
 
-class DatabaseHelper(ABC):
-    engine: Engine | None = None
-    session_factory: sessionmaker | None = None
-    flask_db_session: scoped_session | None = None
+class OfflineDatabaseHelper(ABC):
+    offline_engine: Engine | None = None
+    offline_session_factory: sessionmaker | None = None
+    # flask_db_session: scoped_session | None = None
 
     idx_entity_one_id: Index | None = None
     idx_entity_two_id: Index | None = None
 
-    text_search_index: TextSearchIndex | None = None
-    entity_details_index: EntityDetailsIndex | None = None
+    # text_search_index: TextSearchIndex | None = None
+    # entity_details_index: EntityDetailsIndex | None = None
 
     entity_count_cached = 0
 
@@ -58,8 +56,11 @@ class DatabaseHelper(ABC):
     def initialize(cls) -> None:
         """ensure the parent proc's database connections are not touched
         in the new connection pool"""
-        cls.engine.dispose(close=False)
-        # cls.session_factory = sessionmaker(bind=cls.engine)
+        from discograph.offline.offline_database_manager import OfflineDatabaseManager
+
+        OfflineDatabaseManager.offline_database_helper.offline_engine.dispose(
+            close=False
+        )
 
     @staticmethod
     @abstractmethod
@@ -69,10 +70,10 @@ class DatabaseHelper(ABC):
     @classmethod
     @abstractmethod
     def create_tables(cls, tables: List[str] = None) -> None:
-        from discograph.offline.database import ALL_OFFLINE_DATABASE_TABLES
+        from discograph.offline.offline_database_manager import OfflineDatabaseManager
 
-        for table in ALL_OFFLINE_DATABASE_TABLES:
-            log.debug(f"table definition for: {table.__tablename__}")
+        # for table in ALL_OFFLINE_DATABASE_TABLES:
+        #     log.debug(f"table definition for: {table.__tablename__}")
         for table in Base.metadata.tables:
             log.debug(f"table in metadata: {table}")
         table_definitions: List[Table] = [
@@ -80,20 +81,36 @@ class DatabaseHelper(ABC):
         ]
         for table in table_definitions:
             log.debug(f"creating table: {table.name}")
-        Base.metadata.create_all(cls.engine, checkfirst=True, tables=table_definitions)
+        print(
+            f"OfflineDatabaseManager.offline_database_helper.offline_engine: "
+            + f"{OfflineDatabaseManager.offline_database_helper.offline_engine}"
+        )
+        Base.metadata.create_all(
+            OfflineDatabaseManager.offline_database_helper.offline_engine,
+            checkfirst=True,
+            tables=table_definitions,
+        )
 
     @classmethod
     @abstractmethod
     def drop_tables(cls, tables: List[str] = None) -> None:
+        from discograph.offline.offline_database_manager import OfflineDatabaseManager
+
         if tables is not None:
             table_definitions: List[Table] = [
                 Base.metadata.tables[table_name] for table_name in tables
             ]
             for table in table_definitions:
                 log.debug(f"deleting table: {table.name}")
-                table.drop(cls.engine, checkfirst=True)
+                table.drop(
+                    OfflineDatabaseManager.offline_database_helper.offline_engine,
+                    checkfirst=True,
+                )
         else:
-            Base.metadata.drop_all(cls.engine, checkfirst=True)
+            Base.metadata.drop_all(
+                OfflineDatabaseManager.offline_database_helper.offline_engine,
+                checkfirst=True,
+            )
 
     @classmethod
     def load_tables(cls, data_directory: str, date: str, is_bulk_inserts: bool) -> None:

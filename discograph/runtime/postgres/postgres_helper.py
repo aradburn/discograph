@@ -5,7 +5,7 @@ import shutil
 from typing import Type, List
 
 from pg_temp import TempDB
-from sqlalchemy import Engine, URL, create_engine, text, NullPool, SingletonThreadPool
+from sqlalchemy import Engine, URL, create_engine, text, SingletonThreadPool
 from sqlalchemy.dialects.postgresql import insert, Insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.sql.dml import ReturningInsert
@@ -32,14 +32,22 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
             log.info("**********************************************")
             log.info("")
 
+            host = config["POSTGRES_DATABASE_HOST"]
+            port = config["POSTGRES_DATABASE_PORT"]
+            name = config["POSTGRES_DATABASE_NAME"]
+
+            log.info(f"DATABASE_HOST: {host}")
+            log.info(f"DATABASE_PORT: {port}")
+            log.info(f"DATABASE_NAME: {name}")
+
             # Create a database engine and pool that will manage connections and execute queries
             url_object = URL.create(
                 "postgresql+psycopg2",
                 username=config["POSTGRES_DATABASE_USERNAME"],
                 password=config["POSTGRES_DATABASE_PASSWORD"],
-                host=config["POSTGRES_DATABASE_HOST"],
-                port=config["POSTGRES_DATABASE_PORT"],
-                database=config["POSTGRES_DATABASE_NAME"],
+                host=host,
+                port=port,
+                database=name,
             )
             engine = create_engine(
                 url_object, pool_size=40, pool_timeout=300, pool_recycle=300
@@ -52,7 +60,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
 
         else:
             if config["TESTING"]:
-                log.info("Using Postgres Test Runtime Database")
+                log.info("Using Test Postgres Runtime Database")
 
                 dirname = config["POSTGRES_DATA"]
                 pg_data_dir = os.path.join(dirname, "data")
@@ -132,7 +140,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
 
                 RuntimePostgresHelper._is_test = True
             else:
-                log.info("Using Postgres Development Database")
+                log.info("Using Development Postgres Runtime Database")
 
                 # Create a database engine and pool that will manage connections and execute queries
                 url_object = URL.create(
@@ -158,7 +166,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
 
     @staticmethod
     def shutdown_database() -> None:
-        log.info("Shutting down Runtime Postgres database")
+        log.info("Shutting down Postgres runtime database")
 
         if (
             RuntimePostgresHelper._is_test
@@ -181,7 +189,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
     @staticmethod
     def check_connection(config: Configuration, engine: Engine) -> None:
         try:
-            log.info("Check Postgres database connection...")
+            log.info("Check Postgres runtime database connection...")
 
             with engine.connect() as connection:
                 version = connection.execute(text("SELECT version();"))
@@ -189,18 +197,18 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
 
             log.info(f"Database Version: {version.scalars().one_or_none()}")
 
-            log.info("Database connected OK.")
+            log.info("Runtime Database connected OK.")
         except DatabaseError:
-            log.exception("Connection Error", exc_info=True)
+            log.exception("Runtime Database Connection Error", exc_info=True)
 
     @classmethod
     def create_tables(cls, tables: List[str] = None) -> None:
-        log.info("Create Postgres tables")
+        log.info("Create runtime Postgres tables")
         super().create_tables(tables=tables)
 
     @classmethod
     def drop_tables(cls, tables: List[str] = None) -> None:
-        log.info("Drop Postgres tables")
+        log.info("Drop runtime Postgres tables")
         super().drop_tables(tables=tables)
 
     @staticmethod

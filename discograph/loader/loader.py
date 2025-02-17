@@ -48,11 +48,8 @@ def loader_main():
         log.debug("Clearing cache")
         CacheManager.clear()
 
-    offline_database_manager = OfflineDatabaseManager()
-    offline_database_manager.setup_database(offline_config)
-
-    runtime_database_manager = RuntimeDatabaseManager()
-    runtime_database_manager.setup_database(runtime_config)
+    OfflineDatabaseManager.setup_database(offline_config)
+    RuntimeDatabaseManager.setup_database(runtime_config)
 
     # Note reverse order (last in first out), logging is the last to be shutdown
     atexit.register(shutdown_logging)
@@ -67,10 +64,7 @@ def loader_main():
     # end_date = datetime.datetime.now()
     tasks = [
         LoaderSetupTask(start_date=start_date, end_date=end_date),
-        TransferTask(
-            offline_database_manager=offline_database_manager,
-            runtime_database_manager=runtime_database_manager,
-        ),
+        TransferTask(),
     ]
     luigi_run_result = luigi.build(
         tasks,

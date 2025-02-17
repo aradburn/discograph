@@ -3,7 +3,7 @@ import multiprocessing
 
 from sqlalchemy.exc import DatabaseError
 
-from discograph.offline.database.database_helper import DatabaseHelper
+from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
 from discograph.offline.database.entity_repository import EntityRepository
 from discograph.offline.database.entity_table import EntityTable
 from discograph.offline.database.relation_repository import RelationRepository
@@ -28,7 +28,7 @@ class WorkerEntityPassThree(multiprocessing.Process):
         end_count = count + len(self.ids)
 
         if OfflineDatabaseManager.get_concurrency_count() > 1:
-            DatabaseHelper.initialize()
+            OfflineDatabaseHelper.initialize()
 
         for id_ in self.ids:
             with transaction():

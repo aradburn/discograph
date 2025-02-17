@@ -1,17 +1,17 @@
 import logging
 
-from discograph.config import SqliteTestConfiguration
-from discograph.runtime.data_access_layer.relation_grapher import RelationGrapher
-from tests.integration.offline.database.repository_test_case import RepositoryTestCase
+from discograph.config import SqliteOfflineTestConfiguration
+from tests.integration.offline.database.offline_repository_test_case import (
+    OfflineRepositoryTestCase,
+)
 
 log = logging.getLogger(__name__)
 
 
-class SqliteRepositoryTestCase(RepositoryTestCase):
+class SqliteRepositoryTestCase(OfflineRepositoryTestCase):
     @classmethod
     def setUpClass(cls):
-        RepositoryTestCase._config = SqliteTestConfiguration()
-        RepositoryTestCase.relation_grapher = RelationGrapher
+        OfflineRepositoryTestCase._offline_config = SqliteOfflineTestConfiguration()
         super().setUpClass()
 
     @classmethod

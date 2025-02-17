@@ -9,7 +9,6 @@ from sqlalchemy.orm import sessionmaker, close_all_sessions
 from discograph.config import (
     DatabaseType,
     ThreadingModel,
-    ALL_RUNTIME_DATABASE_TABLE_NAMES,
 )
 from discograph.logging_config import LOGGING_TRACE
 from discograph.runtime.runtime_database.runtime_database_helper import (
@@ -34,7 +33,7 @@ class RuntimeDatabaseManager:
 
     @classmethod
     def setup_database(cls, config) -> None:
-        cls._threading_model = config["THREADING_MODEL"]
+        RuntimeDatabaseManager._threading_model = config["THREADING_MODEL"]
 
         # Based on configuration, use a different database.
         if config["DATABASE"] == DatabaseType.POSTGRES:
@@ -42,18 +41,18 @@ class RuntimeDatabaseManager:
                 RuntimePostgresHelper,
             )
 
-            cls.runtime_db_helper = RuntimePostgresHelper()
+            RuntimeDatabaseManager.runtime_db_helper = RuntimePostgresHelper()
 
         elif config["DATABASE"] == DatabaseType.SQLITE:
             from discograph.runtime.sqlite.sqlite_helper import RuntimeSqliteHelper
 
-            cls.runtime_db_helper = RuntimeSqliteHelper()
+            RuntimeDatabaseManager.runtime_db_helper = RuntimeSqliteHelper()
 
         else:
             raise ValueError("Configuration Error: Unknown database type")
 
-        engine = cls.runtime_db_helper.setup_database(config)
-        RuntimeDatabaseHelper.engine = engine
+        engine = RuntimeDatabaseManager.runtime_db_helper.setup_database(config)
+        RuntimeDatabaseHelper.runtime_engine = engine
 
         def engine_on_connect(dbapi_con, connection_record):
             if LOGGING_TRACE:
@@ -79,23 +78,20 @@ class RuntimeDatabaseManager:
             listen(engine, "checkout", engine_on_checkout)
 
         # a sessionmaker(), also in the same scope as the engine
-        RuntimeDatabaseHelper.session_factory = sessionmaker(bind=engine)
+        RuntimeDatabaseHelper.runtime_session_factory = sessionmaker(bind=engine)
 
         # Set logging level for SqlAlchemy
         # logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
         logging.getLogger("sqlalchemy.engine").setLevel(logging.WARN)
 
         # Check database connection
-        cls.runtime_db_helper.check_connection(config, engine)
-
-        # Load data from tables
-        cls.runtime_db_helper.load_tables()
+        RuntimeDatabaseManager.runtime_db_helper.check_connection(config, engine)
 
     @classmethod
     def shutdown_database(cls):
         log.info("Shutting down database connections")
 
         close_all_sessions()
-        cls.runtime_db_helper.engine.dispose()
+        RuntimeDatabaseManager.runtime_db_helper.runtime_engine.dispose()
 
-        cls.runtime_db_helper.shutdown_database()
+        RuntimeDatabaseManager.runtime_db_helper.shutdown_database()

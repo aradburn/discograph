@@ -2,7 +2,7 @@ from discograph import utils
 from discograph.exceptions import NotFoundError
 from discograph.library.fields.entity_id import to_entity_internal_id
 from discograph.library.fields.entity_type import EntityType
-from discograph.offline.database.database_helper import DatabaseHelper
+from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
 from discograph.offline.database.entity_repository import EntityRepository
 from discograph.offline.database.relation_release_year_repository import (
     RelationReleaseYearRepository,
@@ -572,7 +572,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -612,7 +612,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -652,7 +652,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -692,7 +692,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -724,7 +724,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -829,7 +829,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -866,7 +866,7 @@ class TestUpdater(UpdaterTestCase):
         with transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,

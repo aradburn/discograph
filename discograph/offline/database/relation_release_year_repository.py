@@ -74,7 +74,7 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
         from discograph.offline.offline_database_manager import OfflineDatabaseManager
 
         relation_release_year_dict = relation_release_year.model_dump()
-        query = OfflineDatabaseManager.db_helper.generate_insert_query(
+        query = OfflineDatabaseManager.offline_database_helper.generate_insert_query(
             self.schema_class, relation_release_year_dict, on_conflict_do_nothing
         )
         result: Result = self._session.execute(query)
@@ -100,7 +100,9 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
         for relation_release_year in relation_release_years:
             relation_release_year_dict = relation_release_year.model_dump()
             relation_release_year_dicts.append(relation_release_year_dict)
-        query = OfflineDatabaseManager.db_helper.generate_insert_bulk_query(
-            self.schema_class, relation_release_year_dicts, on_conflict_do_nothing
+        query = (
+            OfflineDatabaseManager.offline_database_helper.generate_insert_bulk_query(
+                self.schema_class, relation_release_year_dicts, on_conflict_do_nothing
+            )
         )
         self._session.execute(query)

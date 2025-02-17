@@ -291,6 +291,6 @@ class RuntimeEntityDataAccess:
         with open(filename, "rb") as file:
             # read pickle dump information from that file
             entity_details_index: EntityDetailsIndex = pickle.load(file)
-            for country in sorted(entity_details_index.countries_list):
-                print(f"{country}")
+            # for country in sorted(entity_details_index.countries_list):
+            #     print(f"{country}")
         return entity_details_index

@@ -10,7 +10,7 @@ from discograph.runtime.runtime_domain.role import (
     RuntimeRoleJSTreeState,
     RuntimeRoleJSTreeEntry,
 )
-from discograph.ui import UI_DEFAULT_ROLES
+from discograph.app.ui import UI_DEFAULT_ROLES
 
 log = logging.getLogger(__name__)
 

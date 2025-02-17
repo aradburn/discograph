@@ -3,7 +3,7 @@ import multiprocessing
 
 from discograph.exceptions import NotFoundError, DatabaseError
 from discograph.offline.data_access_layer.entity_data_access import EntityDataAccess
-from discograph.offline.database.database_helper import DatabaseHelper
+from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
 from discograph.offline.database.entity_repository import EntityRepository
 from discograph.offline.database.entity_table import EntityTable
 from discograph.offline.database.transaction import transaction
@@ -29,7 +29,7 @@ class WorkerEntityPassTwo(multiprocessing.Process):
         end_count = count + len(self.ids)
 
         if OfflineDatabaseManager.get_concurrency_count() > 1:
-            DatabaseHelper.initialize()
+            OfflineDatabaseHelper.initialize()
 
         for id_ in self.ids:
             max_attempts = 10

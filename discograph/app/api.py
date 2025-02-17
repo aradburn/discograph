@@ -106,8 +106,7 @@ def route__api__random():
                 )
             )
             log.debug(f"    Found random entity: {entity_type}-{entity_id}")
-        except Exception as e:
-            # log.error(f"API /random error: {e}")
+        except Exception:
             log.exception("Error in API for /random", exc_info=True)
             raise DatabaseError(message="API error")
 

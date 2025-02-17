@@ -3,7 +3,7 @@ import multiprocessing
 
 from sqlalchemy.exc import DatabaseError
 
-from discograph.offline.database.database_helper import DatabaseHelper
+from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
 from discograph.offline.database.release_repository import ReleaseRepository
 from discograph.offline.database.transaction import transaction
 from discograph.offline.offline_database_manager import OfflineDatabaseManager
@@ -22,7 +22,7 @@ class WorkerReleaseDeleter(multiprocessing.Process):
         deleted_count = 0
 
         if OfflineDatabaseManager.get_concurrency_count() > 1:
-            DatabaseHelper.initialize()
+            OfflineDatabaseHelper.initialize()
 
         for id_ in self.bulk_deletes:
             with transaction():

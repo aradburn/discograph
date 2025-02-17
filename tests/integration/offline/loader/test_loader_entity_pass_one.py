@@ -1,8 +1,10 @@
 from discograph.offline.database.entity_repository import EntityRepository
-from tests.integration.offline.database.database_test_case import DatabaseTestCase
+from tests.integration.offline.database.offline_database_test_case import (
+    OfflineDatabaseTestCase,
+)
 
 
-class TestLoaderEntityPassOne(DatabaseTestCase):
+class TestLoaderEntityPassOne(OfflineDatabaseTestCase):
     def test_loader_entity_pass_one(self):
         # GIVEN
 

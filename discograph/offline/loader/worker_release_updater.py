@@ -6,7 +6,7 @@ from typing import Any
 from deepdiff import DeepDiff
 
 from discograph.exceptions import DatabaseError, NotFoundError
-from discograph.offline.database.database_helper import DatabaseHelper
+from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
 from discograph.offline.database.release_repository import ReleaseRepository
 from discograph.offline.database.release_table import ReleaseTable
 from discograph.offline.database.transaction import transaction
@@ -29,7 +29,7 @@ class WorkerReleaseUpdater(multiprocessing.Process):
         inserted_count = 0
 
         if OfflineDatabaseManager.get_concurrency_count() > 1:
-            DatabaseHelper.initialize()
+            OfflineDatabaseHelper.initialize()
 
         for data in self.bulk_updates:
             with transaction():

@@ -161,12 +161,17 @@ class LoaderRole(LoaderBase):
                     )
 
                     for normalised_role_name in normalised_role_name_list:
-                        category_id = RoleType.Category[row["category"]]
+                        category_str: str = row["category"]
+                        category_id = RoleType.Category[category_str]
+                        category_enum = RoleType.Category(category_id)
                         category_name = RoleType.category_names[category_id]
                         if row["subcategory"]:
-                            subcategory_id = RoleType.Subcategory[row["subcategory"]]
+                            subcategory_str: str = row["subcategory"]
+                            subcategory_id = RoleType.Subcategory[subcategory_str]
+                            subcategory_enum = RoleType.Subcategory(subcategory_id)
                         else:
                             subcategory_id = RoleType.Subcategory.NONE
+                            subcategory_enum = RoleType.Subcategory.NONE
                         subcategory_name = RoleType.subcategory_names[subcategory_id]
                         if LOGGING_TRACE:
                             log.debug(f"role_name: {role_name}")
@@ -178,8 +183,8 @@ class LoaderRole(LoaderBase):
                         # Add new role
                         new_role = RoleUncommitted(
                             role_name=normalised_role_name,
-                            role_category=category_id,
-                            role_subcategory=subcategory_id,
+                            role_category=category_enum,
+                            role_subcategory=subcategory_enum,
                             role_category_name=category_name,
                             role_subcategory_name=subcategory_name,
                         )

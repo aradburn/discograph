@@ -4,10 +4,12 @@ from discograph.offline.data_access_layer.entity_data_access import EntityDataAc
 from discograph.offline.database.entity_repository import EntityRepository
 from discograph.offline.database.transaction import transaction
 from tests import utils
-from tests.integration.offline.database.database_test_case import DatabaseTestCase
+from tests.integration.offline.database.offline_database_test_case import (
+    OfflineDatabaseTestCase,
+)
 
 
-class TestEntityDataAccess(DatabaseTestCase):
+class TestEntityDataAccess(OfflineDatabaseTestCase):
 
     def test_init_text_search_index(self):
         index = TextSearchIndex()

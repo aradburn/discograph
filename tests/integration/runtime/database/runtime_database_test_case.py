@@ -1,24 +1,21 @@
 import logging
-import unittest
 
 from sqlalchemy.exc import DatabaseError
 
 from discograph.config import (
     Configuration,
-    ALL_RUNTIME_DATABASE_TABLE_NAMES,
-    RUNTIME_DATABASE_TABLE_NAMES_WITHOUT_ROLE,
-    TEXT_SEARCH_PATH,
 )
-from discograph.library.cache.cache_manager import CacheManager
-from discograph.library.full_text_search.text_search_index import TextSearchIndex
-from discograph.logging_config import setup_logging, shutdown_logging
 from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
+from discograph.transfer.transfer_manager import TransferManager
+from tests.integration.offline.database.offline_database_test_case import (
+    OfflineDatabaseTestCase,
+)
 
 log = logging.getLogger(__name__)
 
 
-class RuntimeDatabaseTestCase(unittest.TestCase):
-    _config: Configuration = None
+class RuntimeDatabaseTestCase(OfflineDatabaseTestCase):
+    _runtime_config: Configuration = None
 
     # noinspection PyPep8Naming
     def __init__(self, methodName="runTest"):
@@ -39,40 +36,28 @@ class RuntimeDatabaseTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        setup_logging(is_testing=True)
-        # log.info(f"DatabaseTestCase setUpClass: {cls.__name__}")
-        # log.info(f"DatabaseTestCase _config: {cls._config}")
-        if cls._config is not None:
-            CacheManager.setup_cache(cls._config)
+        print("RuntimeDatabaseTestCase setUpClass")
+        super().setUpClass()
+
+        log.debug("RuntimeDatabaseTestCase setUpClass")
+
+        if RuntimeDatabaseTestCase._runtime_config is not None:
             try:
-                RuntimeDatabaseManager.setup_database(cls._config)
+                RuntimeDatabaseManager.setup_database(cls._runtime_config)
             except DatabaseError:
-                log.error("Error in database setup")
+                log.error("Error in runtime database setup")
             else:
-                # db_logger = logging.getLogger("peewee")
-                # db_logger.setLevel(logging.DEBUG)
-                RuntimeDatabaseManager.runtime_db_helper.drop_tables(
-                    RUNTIME_DATABASE_TABLE_NAMES_WITHOUT_ROLE
-                )
-                RuntimeDatabaseManager.runtime_db_helper.create_tables(
-                    ALL_RUNTIME_DATABASE_TABLE_NAMES
-                )
-                # LoaderRole.load_roles_into_database()
+                TransferManager.transfer_all()
                 RuntimeDatabaseManager.runtime_db_helper.load_tables()
-                RuntimeDatabaseManager.runtime_db_helper.text_search_index = (
-                    TextSearchIndex.load_text_search_index_from_file(TEXT_SEARCH_PATH)
-                )
-                print("Done setup")
 
     @classmethod
     def tearDownClass(cls):
-        log.info(f"DatabaseTestCase tearDownClass: {cls.__name__}")
+        log.info(f"RuntimeDatabaseTestCase tearDownClass: {cls.__name__}")
         # release resources
-        if cls._config is not None:
+        if RuntimeDatabaseTestCase._runtime_config is not None:
             RuntimeDatabaseManager.shutdown_database()
-            CacheManager.shutdown_cache()
-            shutdown_logging()
+        super().tearDownClass()
 
-    def setUp(self):
-        log.info("-------------------------------------------------------------------")
-        log.info(f"Test {self.id()}")
+    # def setUp(self):
+    #     log.info("-------------------------------------------------------------------")
+    #     log.info(f"Test {self.id()}")

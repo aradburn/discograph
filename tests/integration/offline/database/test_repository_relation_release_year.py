@@ -8,10 +8,12 @@ from discograph.offline.domain.relation_release_year import (
     RelationReleaseYearUncommitted,
     RelationReleaseYear,
 )
-from tests.integration.offline.database.repository_test_case import RepositoryTestCase
+from tests.integration.offline.database.offline_repository_test_case import (
+    OfflineRepositoryTestCase,
+)
 
 
-class TestRepositoryRelationReleaseYear(RepositoryTestCase):
+class TestRepositoryRelationReleaseYear(OfflineRepositoryTestCase):
     def test_01_create(self):
         # GIVEN
         RoleDataAccess.load_all_roles()

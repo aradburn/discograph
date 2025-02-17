@@ -3,10 +3,12 @@ from discograph.offline.database.release_repository import ReleaseRepository
 from discograph.offline.database.transaction import transaction
 from discograph.offline.loader.loader_release import LoaderRelease
 from discograph.offline.loader.loader_utils import LoaderUtils
-from tests.integration.offline.database.repository_test_case import RepositoryTestCase
+from tests.integration.offline.database.offline_repository_test_case import (
+    OfflineRepositoryTestCase,
+)
 
 
-class TestRepositoryRelease(RepositoryTestCase):
+class TestRepositoryRelease(OfflineRepositoryTestCase):
     def test_create_01(self):
         # GIVEN
         iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "release", "testinsert")

@@ -2,10 +2,12 @@ from discograph import utils
 from discograph.offline.database.entity_repository import EntityRepository
 from discograph.offline.database.transaction import transaction
 from discograph.library.fields.entity_type import EntityType
-from tests.integration.offline.database.database_test_case import DatabaseTestCase
+from tests.integration.offline.database.offline_database_test_case import (
+    OfflineDatabaseTestCase,
+)
 
 
-class TestDatabaseEntity(DatabaseTestCase):
+class TestDatabaseEntity(OfflineDatabaseTestCase):
     def test_from_db_01(self):
         # GIVEN
         entity_id = 3

@@ -3,10 +3,12 @@ from discograph.library.fields.entity_id import to_entity_internal_id
 from discograph.library.fields.entity_type import EntityType
 from discograph.offline.database.relation_repository import RelationRepository
 from discograph.offline.database.transaction import transaction
-from tests.integration.offline.database.database_test_case import DatabaseTestCase
+from tests.integration.offline.database.offline_database_test_case import (
+    OfflineDatabaseTestCase,
+)
 
 
-class TestDatabaseRelation(DatabaseTestCase):
+class TestDatabaseRelation(OfflineDatabaseTestCase):
 
     def test_from_db_01(self):
         # GIVEN

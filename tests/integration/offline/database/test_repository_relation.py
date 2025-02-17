@@ -11,14 +11,18 @@ from discograph.offline.domain.relation import (
     RelationInternal,
 )
 from discograph.offline.loader.loader_entity import LoaderEntity
+from discograph.offline.loader.loader_role import LoaderRole
 from discograph.offline.loader.loader_utils import LoaderUtils
 from discograph.offline.loader.worker_relation_pass_one import WorkerRelationPassOne
-from tests.integration.offline.database.repository_test_case import RepositoryTestCase
+from tests.integration.offline.database.offline_repository_test_case import (
+    OfflineRepositoryTestCase,
+)
 
 
-class TestRepositoryRelation(RepositoryTestCase):
+class TestRepositoryRelation(OfflineRepositoryTestCase):
     def test_01_create(self):
         # GIVEN
+        LoaderRole.load_roles_into_database()
         RoleDataAccess.load_all_roles()
         iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "artist", "testinsert")
         entity_element_1 = next(iterator)

@@ -1,10 +1,12 @@
 from discograph import utils
 from discograph.offline.database.role_repository import RoleRepository
 from discograph.offline.database.transaction import transaction
-from tests.integration.offline.database.database_test_case import DatabaseTestCase
+from tests.integration.offline.database.offline_database_test_case import (
+    OfflineDatabaseTestCase,
+)
 
 
-class TestDatabaseRole(DatabaseTestCase):
+class TestDatabaseRole(OfflineDatabaseTestCase):
     def test_from_db_01(self):
         name = "Acoustic Bass"
         with transaction():

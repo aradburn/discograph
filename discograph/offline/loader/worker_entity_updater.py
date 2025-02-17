@@ -10,7 +10,7 @@ from discograph.library.full_text_search.text_search_utils import (
     normalise_search_content,
 )
 from discograph.logging_config import LOGGING_TRACE
-from discograph.offline.database.database_helper import DatabaseHelper
+from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
 from discograph.offline.database.entity_repository import EntityRepository
 from discograph.offline.database.entity_table import EntityTable
 from discograph.offline.database.transaction import transaction
@@ -32,7 +32,7 @@ class WorkerEntityUpdater(multiprocessing.Process):
         inserted_count = 0
 
         if OfflineDatabaseManager.get_concurrency_count() > 1:
-            DatabaseHelper.initialize()
+            OfflineDatabaseHelper.initialize()
 
         for data in self.bulk_updates:
             with transaction():

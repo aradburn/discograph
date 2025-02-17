@@ -1,16 +1,18 @@
 from discograph import utils
 from discograph.library.fields.entity_id import to_entity_internal_id
 from discograph.library.fields.entity_type import EntityType
-from discograph.offline.database.database_helper import DatabaseHelper
+from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
 from discograph.offline.database.relation_release_year_repository import (
     RelationReleaseYearRepository,
 )
 from discograph.offline.database.relation_repository import RelationRepository
 from discograph.offline.database.transaction import transaction
-from tests.integration.offline.database.database_test_case import DatabaseTestCase
+from tests.integration.offline.database.offline_database_test_case import (
+    OfflineDatabaseTestCase,
+)
 
 
-class TestLoaderRelationPassOne(DatabaseTestCase):
+class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
     def test_loader_relation_pass_one(self):
         # GIVEN
 
@@ -41,7 +43,7 @@ class TestLoaderRelationPassOne(DatabaseTestCase):
         with transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -154,7 +156,7 @@ class TestLoaderRelationPassOne(DatabaseTestCase):
         with transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -197,7 +199,7 @@ class TestLoaderRelationPassOne(DatabaseTestCase):
         with transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -309,7 +311,7 @@ class TestLoaderRelationPassOne(DatabaseTestCase):
         with transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -350,7 +352,7 @@ class TestLoaderRelationPassOne(DatabaseTestCase):
         with transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -389,7 +391,7 @@ class TestLoaderRelationPassOne(DatabaseTestCase):
         with transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -426,7 +428,7 @@ class TestLoaderRelationPassOne(DatabaseTestCase):
         with transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,

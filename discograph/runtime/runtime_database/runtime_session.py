@@ -11,14 +11,13 @@ from discograph.exceptions import DatabaseError
 def get_runtime_session() -> Session:
     """Creates a new session to execute SQL queries."""
     from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
-    from discograph.runtime.runtime_database.runtime_database_helper import (
-        RuntimeDatabaseHelper,
-    )
 
     if RuntimeDatabaseManager.get_concurrency_count() > 1:
-        session = scoped_session(RuntimeDatabaseHelper.session_factory)
+        session = scoped_session(
+            RuntimeDatabaseManager.runtime_db_helper.runtime_session_factory
+        )
     else:
-        session = RuntimeDatabaseHelper.session_factory
+        session = RuntimeDatabaseManager.runtime_db_helper.runtime_session_factory
     return session()
 
 

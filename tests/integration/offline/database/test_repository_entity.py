@@ -4,10 +4,12 @@ from discograph.offline.database.transaction import transaction
 from discograph.library.fields.entity_type import EntityType
 from discograph.offline.loader.loader_entity import LoaderEntity
 from discograph.offline.loader.loader_utils import LoaderUtils
-from tests.integration.offline.database.repository_test_case import RepositoryTestCase
+from tests.integration.offline.database.offline_repository_test_case import (
+    OfflineRepositoryTestCase,
+)
 
 
-class TestRepositoryEntity(RepositoryTestCase):
+class TestRepositoryEntity(OfflineRepositoryTestCase):
     def test_create_01(self):
         # GIVEN
         iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "artist", "testinsert")

@@ -4,7 +4,7 @@ from typing import Any
 
 from sqlalchemy.exc import DatabaseError
 
-from discograph.offline.database.database_helper import DatabaseHelper
+from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
 from discograph.offline.database.release_repository import ReleaseRepository
 from discograph.offline.database.transaction import transaction
 from discograph.offline.offline_database_manager import OfflineDatabaseManager
@@ -26,7 +26,7 @@ class WorkerReleaseInserter(multiprocessing.Process):
         proc_name = self.name
 
         if OfflineDatabaseManager.get_concurrency_count() > 1:
-            DatabaseHelper.initialize()
+            OfflineDatabaseHelper.initialize()
 
         with transaction():
             release_repository = ReleaseRepository()

@@ -1,10 +1,12 @@
 from discograph import utils
 from discograph.offline.database.release_repository import ReleaseRepository
 from discograph.offline.database.transaction import transaction
-from tests.integration.offline.database.database_test_case import DatabaseTestCase
+from tests.integration.offline.database.offline_database_test_case import (
+    OfflineDatabaseTestCase,
+)
 
 
-class TestDatabaseRelease(DatabaseTestCase):
+class TestDatabaseRelease(OfflineDatabaseTestCase):
     def test_from_db_01(self):
         release_id = 157
         with transaction():

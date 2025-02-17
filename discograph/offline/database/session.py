@@ -11,17 +11,17 @@ from discograph.exceptions import DatabaseError
 def get_session() -> Session:
     """Creates a new session to execute SQL queries."""
     from discograph.offline.offline_database_manager import OfflineDatabaseManager
-    from discograph.offline.database.database_helper import DatabaseHelper
 
     if OfflineDatabaseManager.get_concurrency_count() > 1:
-        session = scoped_session(DatabaseHelper.session_factory)
+        session = scoped_session(
+            OfflineDatabaseManager.offline_database_helper.offline_session_factory
+        )
     else:
-        session = DatabaseHelper.session_factory
+        session = OfflineDatabaseManager.offline_database_helper.offline_session_factory
     return session()
 
 
 CTX_SESSION: ContextVar[Session] = ContextVar("session")
-# CTX_SESSION: ContextVar[Session] = ContextVar("session", default=get_session())
 
 
 class WrappedSession:

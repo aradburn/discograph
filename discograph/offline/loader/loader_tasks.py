@@ -119,7 +119,7 @@ class LoaderTaskForDate(luigi.WrapperTask):
 
     def requires(self):
         yield DiscogsDownloaderTaskForDate(dump_date=self.dump_date)
-        stages = OfflineDatabaseManager.db_helper.get_load_table_stages(
+        stages = OfflineDatabaseManager.offline_database_helper.get_load_table_stages(
             DATA_DIR, self.dump_date.strftime("%Y%m%d"), is_bulk_inserts=False
         )
         for stage in range(0, len(stages)):
@@ -164,7 +164,7 @@ class LoaderTaskForDateAndStage(luigi.Task):
         log.debug(
             f"Run LoaderTaskForDateAndStage tasks for stage: {self.stage} date: {self.dump_date}"
         )
-        stages = OfflineDatabaseManager.db_helper.get_load_table_stages(
+        stages = OfflineDatabaseManager.offline_database_helper.get_load_table_stages(
             DATA_DIR, self.dump_date.strftime("%Y%m%d"), is_bulk_inserts=False
         )
         log.debug(f"Run stage: {self.stage}")

@@ -1,55 +1,101 @@
 import unittest
 
 from discograph.config import (
-    SqliteTestConfiguration,
+    SqliteOfflineTestConfiguration,
     DatabaseType,
-    PostgresTestConfiguration,
+    PostgresOfflineTestConfiguration,
     PostgresProductionConfiguration,
+    PostgresRuntimeTestConfiguration,
+    SqliteRuntimeTestConfiguration,
 )
 
 
 class TestConfiguration(unittest.TestCase):
-    def test_SqliteTestConfiguration(self):
-        config = SqliteTestConfiguration()
+    def test_SqliteOfflineTestConfiguration(self):
+        config = SqliteOfflineTestConfiguration()
         self.assertIsNotNone(config)
 
-    def test_SqliteTestConfiguration_get_testing(self):
-        config = SqliteTestConfiguration()
+    def test_SqliteOfflineTestConfiguration_get_testing(self):
+        config = SqliteOfflineTestConfiguration()
         self.assertTrue(config["TESTING"])
 
-    def test_SqliteTestConfiguration_get_database(self):
-        config = SqliteTestConfiguration()
+    def test_SqliteOfflineTestConfiguration_get_database(self):
+        config = SqliteOfflineTestConfiguration()
         self.assertEqual(DatabaseType.SQLITE, config["DATABASE"])
 
-    def test_SqliteTestConfiguration_set(self):
-        config = SqliteTestConfiguration()
+    def test_SqliteOfflineTestConfiguration_set(self):
+        config = SqliteOfflineTestConfiguration()
         with self.assertRaises(TypeError) as ctx:
             # noinspection PyUnresolvedReferences
             config["TESTING"] = False
         self.assertEqual(
-            "'SqliteTestConfiguration' object does not support item assignment",
+            "'SqliteOfflineTestConfiguration' object does not support item assignment",
             str(ctx.exception),
         )
 
-    def test_PostgresTestConfiguration(self):
-        config = PostgresTestConfiguration()
+    def test_SqliteRuntimeTestConfiguration(self):
+        config = SqliteRuntimeTestConfiguration()
         self.assertIsNotNone(config)
 
-    def test_PostgresTestConfiguration_get_testing(self):
-        config = PostgresTestConfiguration()
+    def test_SqliteRuntimeTestConfiguration_get_testing(self):
+        config = SqliteRuntimeTestConfiguration()
         self.assertTrue(config["TESTING"])
 
-    def test_PostgresTestConfiguration_get_database(self):
-        config = PostgresTestConfiguration()
-        self.assertEqual(DatabaseType.POSTGRES, config["DATABASE"])
+    def test_SqliteRuntimeTestConfiguration_get_database(self):
+        config = SqliteRuntimeTestConfiguration()
+        self.assertEqual(DatabaseType.SQLITE, config["DATABASE"])
 
-    def test_PostgresTestConfiguration_set(self):
-        config = PostgresTestConfiguration()
+    def test_SqliteRuntimeTestConfiguration_set(self):
+        config = SqliteRuntimeTestConfiguration()
         with self.assertRaises(TypeError) as ctx:
             # noinspection PyUnresolvedReferences
             config["TESTING"] = False
         self.assertEqual(
-            "'PostgresTestConfiguration' object does not support item assignment",
+            "'SqliteRuntimeTestConfiguration' object does not support item assignment",
+            str(ctx.exception),
+        )
+
+    def test_PostgresOfflineTestConfiguration(self):
+        config = PostgresOfflineTestConfiguration()
+        self.assertIsNotNone(config)
+
+    def test_PostgresOfflineTestConfiguration_get_testing(self):
+        config = PostgresOfflineTestConfiguration()
+        self.assertTrue(config["TESTING"])
+
+    def test_PostgresOfflineTestConfiguration_get_database(self):
+        config = PostgresOfflineTestConfiguration()
+        self.assertEqual(DatabaseType.POSTGRES, config["DATABASE"])
+
+    def test_PostgresOfflineTestConfiguration_set(self):
+        config = PostgresOfflineTestConfiguration()
+        with self.assertRaises(TypeError) as ctx:
+            # noinspection PyUnresolvedReferences
+            config["TESTING"] = False
+        self.assertEqual(
+            "'PostgresOfflineTestConfiguration' object does not support item assignment",
+            str(ctx.exception),
+        )
+
+    def test_PostgresRuntimeTestConfiguration(self):
+        config = PostgresRuntimeTestConfiguration()
+        self.assertIsNotNone(config)
+
+    def test_PostgresRuntimeTestConfiguration_get_testing(self):
+        config = PostgresRuntimeTestConfiguration()
+        self.assertTrue(config["TESTING"])
+
+    def test_PostgresRuntimeTestConfiguration_get_database(self):
+        config = PostgresRuntimeTestConfiguration()
+        self.assertEqual(DatabaseType.POSTGRES, config["DATABASE"])
+
+    def test_PostgresRuntimeTestConfiguration_set(self):
+        config = PostgresRuntimeTestConfiguration()
+        with self.assertRaises(TypeError) as ctx:
+            # noinspection PyUnresolvedReferences
+            config["TESTING"] = False
+        self.assertEqual(
+            "'PostgresRuntimeTestConfiguration' object does not support item assignment",
             str(ctx.exception),
         )
 

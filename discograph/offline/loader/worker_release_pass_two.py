@@ -3,7 +3,7 @@ import multiprocessing
 
 from discograph.exceptions import DatabaseError
 from discograph.offline.data_access_layer.entity_data_access import EntityDataAccess
-from discograph.offline.database.database_helper import DatabaseHelper
+from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
 from discograph.offline.database.entity_repository import EntityRepository
 from discograph.offline.database.release_repository import ReleaseRepository
 from discograph.offline.database.release_table import ReleaseTable
@@ -29,7 +29,7 @@ class WorkerReleasePassTwo(multiprocessing.Process):
         end_count = count + len(self.release_ids)
 
         if OfflineDatabaseManager.get_concurrency_count() > 1:
-            DatabaseHelper.initialize()
+            OfflineDatabaseHelper.initialize()
 
         for id_ in self.release_ids:
             with transaction():

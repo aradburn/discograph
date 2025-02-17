@@ -1,10 +1,12 @@
 from discograph.library.cache.role_cache import RoleCache
 from discograph.offline.data_access_layer.role_data_access import RoleDataAccess
 from discograph.offline.loader.loader_role import LoaderRole
-from tests.integration.offline.database.repository_test_case import RepositoryTestCase
+from tests.integration.offline.database.offline_repository_test_case import (
+    OfflineRepositoryTestCase,
+)
 
 
-class TestLoaderRole(RepositoryTestCase):
+class TestLoaderRole(OfflineRepositoryTestCase):
 
     def setUp(self):
         super().setUp()

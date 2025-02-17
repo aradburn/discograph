@@ -5,10 +5,12 @@ from discograph.config import (
     TEST_DATA_ROLES_NORMALISED_PATH,
 )
 from discograph.offline.data_access_layer.role_data_access import RoleDataAccess
-from tests.integration.offline.database.database_test_case import DatabaseTestCase
+from tests.integration.offline.database.offline_database_test_case import (
+    OfflineDatabaseTestCase,
+)
 
 
-class TestRoleDataAccess(DatabaseTestCase):
+class TestRoleDataAccess(OfflineDatabaseTestCase):
 
     def test_generate_test_data_file(self):
         with open(TEST_DATA_ROLES_NORMALISED_PATH, encoding="utf-8") as csvfile:

@@ -3,10 +3,12 @@ from discograph.offline.data_access_layer.relation_data_access import RelationDa
 from discograph.offline.database.entity_repository import EntityRepository
 from discograph.offline.database.transaction import transaction
 from tests import utils
-from tests.integration.offline.database.database_test_case import DatabaseTestCase
+from tests.integration.offline.database.offline_database_test_case import (
+    OfflineDatabaseTestCase,
+)
 
 
-class TestRelationDataAccess(DatabaseTestCase):
+class TestRelationDataAccess(OfflineDatabaseTestCase):
 
     def test_from_release(self):
         # GIVEN

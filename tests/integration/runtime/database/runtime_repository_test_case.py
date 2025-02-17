@@ -8,10 +8,8 @@ from discograph.config import (
     Configuration,
     ALL_RUNTIME_DATABASE_TABLE_NAMES,
     RUNTIME_DATABASE_TABLE_NAMES_WITHOUT_ROLE,
-    TEXT_SEARCH_PATH,
 )
 from discograph.library.cache.cache_manager import CacheManager
-from discograph.library.full_text_search.text_search_index import TextSearchIndex
 from discograph.logging_config import setup_logging, shutdown_logging
 from discograph.runtime.data_access_layer.relation_grapher import RelationGrapher
 from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
@@ -25,7 +23,7 @@ class RuntimeRepositoryTestCase(unittest.TestCase):
 
     # noinspection PyPep8Naming
     def __init__(self, methodName="runTest"):
-        ignore_test_prefixes = ("TestRepository", "TestLoader")
+        ignore_test_prefixes = "TestRepository"
         if self.__class__.__name__.startswith(ignore_test_prefixes):
             # don't run these tests in the abstract base implementation
             methodName = "runTestIgnoreInBaseClass"
@@ -54,11 +52,7 @@ class RuntimeRepositoryTestCase(unittest.TestCase):
                 RuntimeDatabaseManager.runtime_db_helper.create_tables(
                     ALL_RUNTIME_DATABASE_TABLE_NAMES
                 )
-                # LoaderRole.load_roles_into_database()
                 # Note: No data loading, empty repositories
-                RuntimeDatabaseManager.runtime_db_helper.text_search_index = (
-                    TextSearchIndex.load_text_search_index_from_file(TEXT_SEARCH_PATH)
-                )
 
     @classmethod
     def tearDownClass(cls):
@@ -72,7 +66,7 @@ class RuntimeRepositoryTestCase(unittest.TestCase):
     @classmethod
     def resetDB(cls):
         if RuntimeDatabaseManager.runtime_db_helper is not None:
-            log.info(f"Reset database tables: {cls.__name__}")
+            log.info(f"Reset runtime database tables: {cls.__name__}")
             RuntimeDatabaseManager.runtime_db_helper.drop_tables(
                 ALL_RUNTIME_DATABASE_TABLE_NAMES
             )

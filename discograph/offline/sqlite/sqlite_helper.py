@@ -8,16 +8,19 @@ from sqlalchemy.exc import DatabaseError
 from sqlalchemy.sql.dml import ReturningInsert
 
 from discograph.config import Configuration
-from discograph.offline.database.database_helper import DatabaseHelper, ConcreteTable
+from discograph.offline.database.offline_database_helper import (
+    OfflineDatabaseHelper,
+    ConcreteTable,
+)
 
 log = logging.getLogger(__name__)
 
 
-class SqliteHelper(DatabaseHelper):
+class SqliteHelper(OfflineDatabaseHelper):
 
     @staticmethod
     def setup_database(config: Configuration) -> Engine:
-        log.info("Using Sqlite Database")
+        log.info("Using Sqlite Offline Database")
         # if config["TESTING"]:
         #     engine = create_engine(
         #         "sqlite://",
@@ -43,12 +46,12 @@ class SqliteHelper(DatabaseHelper):
 
     @staticmethod
     def shutdown_database() -> None:
-        log.info("Shutting down Sqlite database")
+        log.info("Shutting down Sqlite offline database")
 
     @staticmethod
     def check_connection(config: Configuration, engine: Engine) -> None:
         try:
-            log.info("Check Sqlite database connection...")
+            log.info("Check Sqlite offline database connection...")
 
             with engine.connect() as connection:
                 version = connection.execute(
@@ -76,18 +79,18 @@ class SqliteHelper(DatabaseHelper):
                 connection.execute(text("pragma temp_store=MEMORY;"))
                 connection.execute(text("pragma foreign_keys=ON;"))
                 connection.commit()
-                log.info("Database connected OK.")
+                log.info("Offline Database connected OK.")
         except DatabaseError:
-            log.exception("Connection Error", exc_info=True)
+            log.exception("Offline Database Connection Error", exc_info=True)
 
     @classmethod
     def create_tables(cls, tables: List[str] = None) -> None:
-        log.info("Create Sqlite tables")
+        log.info("Create Offline Sqlite tables")
         super().create_tables(tables=tables)
 
     @classmethod
     def drop_tables(cls, tables: List[str] = None) -> None:
-        log.info("Drop Sqlite tables")
+        log.info("Drop Offline Sqlite tables")
         super().drop_tables(tables=tables)
 
     @staticmethod

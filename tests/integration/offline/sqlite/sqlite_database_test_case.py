@@ -1,15 +1,17 @@
 import logging
 
-from discograph.config import SqliteTestConfiguration
-from tests.integration.offline.database.database_test_case import DatabaseTestCase
+from discograph.config import SqliteOfflineTestConfiguration
+from tests.integration.offline.database.offline_database_test_case import (
+    OfflineDatabaseTestCase,
+)
 
 log = logging.getLogger(__name__)
 
 
-class SqliteDatabaseTestCase(DatabaseTestCase):
+class SqliteDatabaseTestCase(OfflineDatabaseTestCase):
     @classmethod
     def setUpClass(cls):
-        DatabaseTestCase._config = SqliteTestConfiguration()
+        OfflineDatabaseTestCase._offline_config = SqliteOfflineTestConfiguration()
         super().setUpClass()
 
     @classmethod
