@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, scoped_session
 from discograph.exceptions import DatabaseError
 
 
-def get_session() -> Session:
+def get_offline_session() -> Session:
     """Creates a new session to execute SQL queries."""
     from discograph.offline.offline_database_manager import OfflineDatabaseManager
 
@@ -21,10 +21,10 @@ def get_session() -> Session:
     return session()
 
 
-CTX_SESSION: ContextVar[Session] = ContextVar("session")
+CTX_OFFLINE_SESSION: ContextVar[Session] = ContextVar("offline_session")
 
 
-class WrappedSession:
+class OfflineSession:
     """The basic class to perform database operations within the session."""
 
     # All sqlalchemy errors that can be raised
@@ -45,7 +45,7 @@ class WrappedSession:
     def _session(self) -> Session:
         if not self._ctx_session:
             try:
-                self._ctx_session: Session = CTX_SESSION.get()
+                self._ctx_session: Session = CTX_OFFLINE_SESSION.get()
             except LookupError:
                 raise DatabaseError(message="Not in a transaction")
         return self._ctx_session

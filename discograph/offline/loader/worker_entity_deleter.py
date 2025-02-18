@@ -6,7 +6,7 @@ from sqlalchemy.exc import DatabaseError
 from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
 from discograph.offline.database.entity_repository import EntityRepository
 from discograph.offline.database.relation_repository import RelationRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class WorkerEntityDeleter(multiprocessing.Process):
             OfflineDatabaseHelper.initialize()
 
         for id_ in self.bulk_deletes:
-            with transaction():
+            with offline_transaction():
                 entity_repository = EntityRepository()
                 relation_repository = RelationRepository()
                 try:

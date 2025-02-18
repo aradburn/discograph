@@ -14,17 +14,17 @@ def get_runtime_session() -> Session:
 
     if RuntimeDatabaseManager.get_concurrency_count() > 1:
         session = scoped_session(
-            RuntimeDatabaseManager.runtime_db_helper.runtime_session_factory
+            RuntimeDatabaseManager.runtime_database_helper.runtime_session_factory
         )
     else:
-        session = RuntimeDatabaseManager.runtime_db_helper.runtime_session_factory
+        session = RuntimeDatabaseManager.runtime_database_helper.runtime_session_factory
     return session()
 
 
 CTX_RUNTIME_SESSION: ContextVar[Session] = ContextVar("runtime_session")
 
 
-class RuntimeWrappedSession:
+class RuntimeSession:
     """The basic class to perform database operations within the session."""
 
     # All sqlalchemy errors that can be raised

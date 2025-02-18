@@ -2,7 +2,7 @@ from discograph import utils
 from discograph.library.fields.entity_id import to_entity_internal_id
 from discograph.library.fields.entity_type import EntityType
 from discograph.offline.database.relation_repository import RelationRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from tests.integration.offline.database.offline_database_test_case import (
     OfflineDatabaseTestCase,
 )
@@ -18,7 +18,7 @@ class TestDatabaseRelation(OfflineDatabaseTestCase):
         entity_two_type = EntityType.ARTIST
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
 
             id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
@@ -126,7 +126,7 @@ class TestDatabaseRelation(OfflineDatabaseTestCase):
         entity_two_type = EntityType.ARTIST
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
 
             id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
@@ -164,7 +164,7 @@ class TestDatabaseRelation(OfflineDatabaseTestCase):
         entity_two_type = EntityType.ARTIST
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
 
             id_1 = to_entity_internal_id(entity_one_id, entity_one_type)

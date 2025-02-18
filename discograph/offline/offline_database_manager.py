@@ -38,14 +38,16 @@ class OfflineDatabaseManager:
 
         # Based on configuration, use a different database.
         if config["DATABASE"] == DatabaseType.POSTGRES:
-            from discograph.offline.postgres.postgres_helper import PostgresHelper
+            from discograph.offline.postgres.postgres_helper import (
+                OfflinePostgresHelper,
+            )
 
-            OfflineDatabaseManager.offline_database_helper = PostgresHelper()
+            OfflineDatabaseManager.offline_database_helper = OfflinePostgresHelper()
 
         elif config["DATABASE"] == DatabaseType.SQLITE:
-            from discograph.offline.sqlite.sqlite_helper import SqliteHelper
+            from discograph.offline.sqlite.sqlite_helper import OfflineSqliteHelper
 
-            OfflineDatabaseManager.offline_database_helper = SqliteHelper()
+            OfflineDatabaseManager.offline_database_helper = OfflineSqliteHelper()
 
         else:
             raise ValueError("Configuration Error: Unknown database type")

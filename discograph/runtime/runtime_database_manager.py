@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 class RuntimeDatabaseManager:
-    runtime_db_helper: RuntimeDatabaseHelper | None = None
+    runtime_database_helper: RuntimeDatabaseHelper | None = None
     _threading_model: ThreadingModel | None = None
 
     @staticmethod
@@ -41,17 +41,17 @@ class RuntimeDatabaseManager:
                 RuntimePostgresHelper,
             )
 
-            RuntimeDatabaseManager.runtime_db_helper = RuntimePostgresHelper()
+            RuntimeDatabaseManager.runtime_database_helper = RuntimePostgresHelper()
 
         elif config["DATABASE"] == DatabaseType.SQLITE:
             from discograph.runtime.sqlite.sqlite_helper import RuntimeSqliteHelper
 
-            RuntimeDatabaseManager.runtime_db_helper = RuntimeSqliteHelper()
+            RuntimeDatabaseManager.runtime_database_helper = RuntimeSqliteHelper()
 
         else:
             raise ValueError("Configuration Error: Unknown database type")
 
-        engine = RuntimeDatabaseManager.runtime_db_helper.setup_database(config)
+        engine = RuntimeDatabaseManager.runtime_database_helper.setup_database(config)
         RuntimeDatabaseHelper.runtime_engine = engine
 
         def engine_on_connect(dbapi_con, connection_record):
@@ -85,13 +85,13 @@ class RuntimeDatabaseManager:
         logging.getLogger("sqlalchemy.engine").setLevel(logging.WARN)
 
         # Check database connection
-        RuntimeDatabaseManager.runtime_db_helper.check_connection(config, engine)
+        RuntimeDatabaseManager.runtime_database_helper.check_connection(config, engine)
 
     @classmethod
     def shutdown_database(cls):
         log.info("Shutting down database connections")
 
         close_all_sessions()
-        RuntimeDatabaseManager.runtime_db_helper.runtime_engine.dispose()
+        RuntimeDatabaseManager.runtime_database_helper.runtime_engine.dispose()
 
-        RuntimeDatabaseManager.runtime_db_helper.shutdown_database()
+        RuntimeDatabaseManager.runtime_database_helper.shutdown_database()

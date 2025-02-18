@@ -1,7 +1,7 @@
 from discograph import utils
 from discograph.exceptions import NotFoundError
 from discograph.offline.database.release_repository import ReleaseRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from tests.integration.offline.database.offline_database_test_case import (
     OfflineDatabaseTestCase,
 )
@@ -23,7 +23,7 @@ class TestLoaderReleasePassTwo(OfflineDatabaseTestCase):
         release_id = 157
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
             actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
@@ -97,7 +97,7 @@ class TestLoaderReleasePassTwo(OfflineDatabaseTestCase):
         release_id = 635
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
             actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
@@ -190,7 +190,7 @@ class TestLoaderReleasePassTwo(OfflineDatabaseTestCase):
         release_id = 99999999
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             release_repository = ReleaseRepository()
             try:
                 release = release_repository.get(release_id)
@@ -205,7 +205,7 @@ class TestLoaderReleasePassTwo(OfflineDatabaseTestCase):
         release_id = 61930
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
             actual = utils.normalize_dict(release.model_dump(exclude={"id"}))

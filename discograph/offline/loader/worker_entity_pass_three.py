@@ -7,7 +7,7 @@ from discograph.offline.database.offline_database_helper import OfflineDatabaseH
 from discograph.offline.database.entity_repository import EntityRepository
 from discograph.offline.database.entity_table import EntityTable
 from discograph.offline.database.relation_repository import RelationRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.offline.loader.loader_base import LoaderBase
 from discograph.offline.offline_database_manager import OfflineDatabaseManager
 
@@ -31,7 +31,7 @@ class WorkerEntityPassThree(multiprocessing.Process):
             OfflineDatabaseHelper.initialize()
 
         for id_ in self.ids:
-            with transaction():
+            with offline_transaction():
                 entity_repository = EntityRepository()
                 relation_repository = RelationRepository()
                 try:

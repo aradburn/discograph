@@ -6,7 +6,7 @@ from discograph.offline.database.relation_release_year_repository import (
     RelationReleaseYearRepository,
 )
 from discograph.offline.database.relation_repository import RelationRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from tests.integration.offline.database.offline_database_test_case import (
     OfflineDatabaseTestCase,
 )
@@ -40,7 +40,7 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         )
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
             relation = OfflineDatabaseHelper.get_relation_by_key(
@@ -153,7 +153,7 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         )
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
             relation = OfflineDatabaseHelper.get_relation_by_key(
@@ -196,7 +196,7 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         )
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
             relation = OfflineDatabaseHelper.get_relation_by_key(
@@ -308,7 +308,7 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         )
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
             relation = OfflineDatabaseHelper.get_relation_by_key(
@@ -349,7 +349,7 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         )
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
             relation = OfflineDatabaseHelper.get_relation_by_key(
@@ -388,7 +388,7 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         )
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
             relation = OfflineDatabaseHelper.get_relation_by_key(
@@ -425,7 +425,7 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         )
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
             relation = OfflineDatabaseHelper.get_relation_by_key(

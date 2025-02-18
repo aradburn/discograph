@@ -5,7 +5,7 @@ from discograph.config import TEST_DATA_DIR
 from discograph.offline.data_access_layer.entity_data_access import EntityDataAccess
 from discograph.offline.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.offline.database.entity_repository import EntityRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.library.fields.entity_type import EntityType
 from discograph.offline.loader.loader_release import LoaderRelease
 from discograph.offline.loader.loader_utils import LoaderUtils
@@ -22,7 +22,7 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
         release_document = LoaderRelease().from_element(release_element)
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess().resolve_release_references(
                 entity_repository, release_document
@@ -188,7 +188,7 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
         )
         release_element = ElementTree.fromstring(source)
         release_document = LoaderRelease().from_element(release_element)
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess().resolve_release_references(
                 entity_repository, release_document
@@ -372,7 +372,7 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
         )
         release_element = ElementTree.fromstring(source)
         release_document = LoaderRelease().from_element(release_element)
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess().resolve_release_references(
                 entity_repository, release_document
@@ -731,7 +731,7 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
         )
         release_element = ElementTree.fromstring(source)
         release_document = LoaderRelease().from_element(release_element)
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess().resolve_release_references(
                 entity_repository, release_document
@@ -1442,7 +1442,7 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
         release_element = ElementTree.fromstring(source)
         release_document = LoaderRelease().from_element(release_element)
         print(f"release_document: {release_document}")
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess().resolve_release_references(
                 entity_repository, release_document

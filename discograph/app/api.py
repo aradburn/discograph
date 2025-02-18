@@ -18,7 +18,7 @@ from discograph.runtime.runtime_database.runtime_entity_repository import (
 from discograph.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
-from discograph.runtime.runtime_database.runtime_transaction import transaction
+from discograph.runtime.runtime_database.runtime_transaction import runtime_transaction
 from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
 
 log = logging.getLogger(__name__)
@@ -37,11 +37,11 @@ def route__api__entity_type__relations__entity_id(entity_type_str, entity_id):
     if not entity_id.isnumeric():
         raise BadRequestError(message="Bad Entity Id")
     entity_id = int(entity_id)
-    with transaction():
+    with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
         relation_repository = RuntimeRelationRepository()
         # relation_release_year_repository = RuntimeRelationReleaseYearRepository()
-        data = RuntimeDatabaseManager.runtime_db_helper.get_relations_by_entity_id_and_entity_type(
+        data = RuntimeDatabaseManager.runtime_database_helper.get_relations_by_entity_id_and_entity_type(
             entity_repository,
             relation_repository,
             # relation_release_year_repository,
@@ -70,10 +70,10 @@ def route__api__entity_type__network__entity_id(entity_type_str, entity_id):
     original_roles, original_year = parsed_args
     # noinspection PyUnresolvedReferences
     # on_mobile = request.MOBILE
-    with transaction():
+    with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
         relation_repository = RuntimeRelationRepository()
-        data = RuntimeDatabaseManager.runtime_db_helper.get_network(
+        data = RuntimeDatabaseManager.runtime_database_helper.get_network(
             entity_repository,
             relation_repository,
             entity_id,
@@ -97,11 +97,11 @@ def route__api__search(search_string):
 @blueprint.route("/random")
 @decorators.limit(max_requests=60, period=60)
 def route__api__random():
-    with transaction():
+    with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
         try:
             entity_id, entity_type = (
-                RuntimeDatabaseManager.runtime_db_helper.get_random_entity(
+                RuntimeDatabaseManager.runtime_database_helper.get_random_entity(
                     entity_repository
                 )
             )

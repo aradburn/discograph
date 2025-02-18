@@ -1,6 +1,6 @@
 from discograph.config import TEST_DATA_DIR
 from discograph.offline.database.entity_repository import EntityRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.library.fields.entity_type import EntityType
 from discograph.offline.loader.loader_entity import LoaderEntity
 from discograph.offline.loader.loader_utils import LoaderUtils
@@ -17,7 +17,7 @@ class TestRepositoryEntity(OfflineRepositoryTestCase):
         entity = LoaderEntity().from_element(entity_element)
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             repository = EntityRepository()
             created_entity = repository.create(entity)
 
@@ -31,7 +31,7 @@ class TestRepositoryEntity(OfflineRepositoryTestCase):
         entity = LoaderEntity().from_element(entity_element)
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             repository = EntityRepository()
             created_entity = repository.create(entity)
 

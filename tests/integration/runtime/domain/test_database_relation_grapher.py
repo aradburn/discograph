@@ -9,7 +9,7 @@ from discograph.runtime.runtime_database.runtime_entity_repository import (
 from discograph.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
-from discograph.runtime.runtime_database.runtime_transaction import transaction
+from discograph.runtime.runtime_database.runtime_transaction import runtime_transaction
 from tests.integration.runtime.database.runtime_database_test_case import (
     RuntimeDatabaseTestCase,
 )
@@ -33,7 +33,7 @@ class TestDatabaseRelationGrapher(RuntimeDatabaseTestCase):
         entity_name = "Seefeel"
 
         # WHEN
-        with transaction():
+        with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
             relation_repository = RuntimeRelationRepository()
             artist = entity_repository.get_by_type_and_name(entity_type, entity_name)
@@ -163,7 +163,7 @@ class TestDatabaseRelationGrapher(RuntimeDatabaseTestCase):
         entity_name = "Justin Fletcher"
 
         # WHEN
-        with transaction():
+        with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
             relation_repository = RuntimeRelationRepository()
             artist = entity_repository.get_by_type_and_name(entity_type, entity_name)
@@ -293,7 +293,7 @@ class TestDatabaseRelationGrapher(RuntimeDatabaseTestCase):
         entity_name = "Justin Fletcher"
 
         # WHEN
-        with transaction():
+        with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
             relation_repository = RuntimeRelationRepository()
             artist = entity_repository.get_by_type_and_name(entity_type, entity_name)
@@ -426,7 +426,7 @@ class TestDatabaseRelationGrapher(RuntimeDatabaseTestCase):
         entity_type = EntityType.ARTIST
 
         # WHEN
-        with transaction():
+        with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
             relation_repository = RuntimeRelationRepository()
             artist = entity_repository.get_by_entity_id_and_entity_type(
@@ -642,7 +642,7 @@ class TestDatabaseRelationGrapher(RuntimeDatabaseTestCase):
         entity_name = "Lab Studio, Berlin"
 
         # WHEN
-        with transaction():
+        with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
             relation_repository = RuntimeRelationRepository()
             label = entity_repository.get_by_type_and_name(entity_type, entity_name)

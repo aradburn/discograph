@@ -12,7 +12,7 @@ from discograph.config import (
 )
 from discograph.library.cache.cache_manager import CacheManager
 from discograph.library.full_text_search.text_search_index import TextSearchIndex
-from discograph.logging_config import setup_logging, shutdown_logging
+from discograph.logging_config import setup_logging
 from discograph.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ class OfflineDatabaseTestCase(unittest.TestCase):
         if OfflineDatabaseTestCase._offline_config is not None:
             OfflineDatabaseManager.shutdown_database()
         CacheManager.shutdown_cache()
-        shutdown_logging()
+        # shutdown_logging()
 
     def setUp(self):
         log.info("-------------------------------------------------------------------")

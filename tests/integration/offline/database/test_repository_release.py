@@ -1,6 +1,6 @@
 from discograph.config import TEST_DATA_DIR
 from discograph.offline.database.release_repository import ReleaseRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.offline.loader.loader_release import LoaderRelease
 from discograph.offline.loader.loader_utils import LoaderUtils
 from tests.integration.offline.database.offline_repository_test_case import (
@@ -16,7 +16,7 @@ class TestRepositoryRelease(OfflineRepositoryTestCase):
         release = LoaderRelease().from_element(release_element)
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             repository = ReleaseRepository()
             created_release = repository.create(release)
 
@@ -36,7 +36,7 @@ class TestRepositoryRelease(OfflineRepositoryTestCase):
         release = LoaderRelease().from_element(release_element)
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             repository = ReleaseRepository()
             created_release = repository.create(release)
 

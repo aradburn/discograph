@@ -2,7 +2,7 @@ import logging
 
 from discograph.offline.database.relation_repository import RelationRepository
 from discograph.offline.database.release_repository import ReleaseRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.offline.loader.loader_base import LoaderBase
 from discograph.offline.loader.worker_relation_pass_one import WorkerRelationPassOne
 from discograph.offline.offline_database_manager import OfflineDatabaseManager
@@ -19,7 +19,7 @@ class LoaderRelation(LoaderBase):
     def loader_relation_pass_one(cls, date: str):
         log.debug(f"loader relation pass one - date: {date}")
 
-        with transaction():
+        with offline_transaction():
             release_repository = ReleaseRepository()
             total_count = release_repository.count()
             if total_count > LoaderBase.BULK_INSERT_BATCH_SIZE * 10:
@@ -68,6 +68,6 @@ class LoaderRelation(LoaderBase):
         cls, has_tablename: bool, is_full: bool, is_analyze: bool
     ) -> None:
         log.debug(f"loader relation vacuum")
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
             relation_repository.vacuum(has_tablename, is_full, is_analyze)

@@ -4,7 +4,7 @@ import luigi
 
 from discograph.exceptions import NotFoundError
 from discograph.offline.database.metadata_repository import MetadataRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.offline.domain.metadata import MetadataUncommitted
 
 log = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class LoaderTarget(luigi.Target):
         Checks if the target exists
         """
         key = self.get_key()
-        with transaction():
+        with offline_transaction():
             repository = MetadataRepository()
             try:
                 log.debug(f"Checking task key: {key}")
@@ -52,7 +52,7 @@ class LoaderTarget(luigi.Target):
         )
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             repository = MetadataRepository()
             repository.create(metadata)
             log.debug(f"Created task done key: {key}")

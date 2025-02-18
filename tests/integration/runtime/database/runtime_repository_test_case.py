@@ -42,14 +42,14 @@ class RuntimeRepositoryTestCase(unittest.TestCase):
                 RuntimeDatabaseManager.setup_database(cls._config)
             except DatabaseError:
                 log.error("Error in database setup")
-                RuntimeDatabaseManager.runtime_db_helper.drop_tables(
+                RuntimeDatabaseManager.runtime_database_helper.drop_tables(
                     ALL_RUNTIME_DATABASE_TABLE_NAMES
                 )
             else:
-                RuntimeDatabaseManager.runtime_db_helper.drop_tables(
+                RuntimeDatabaseManager.runtime_database_helper.drop_tables(
                     RUNTIME_DATABASE_TABLE_NAMES_WITHOUT_ROLE
                 )
-                RuntimeDatabaseManager.runtime_db_helper.create_tables(
+                RuntimeDatabaseManager.runtime_database_helper.create_tables(
                     ALL_RUNTIME_DATABASE_TABLE_NAMES
                 )
                 # Note: No data loading, empty repositories
@@ -65,12 +65,12 @@ class RuntimeRepositoryTestCase(unittest.TestCase):
 
     @classmethod
     def resetDB(cls):
-        if RuntimeDatabaseManager.runtime_db_helper is not None:
+        if RuntimeDatabaseManager.runtime_database_helper is not None:
             log.info(f"Reset runtime database tables: {cls.__name__}")
-            RuntimeDatabaseManager.runtime_db_helper.drop_tables(
+            RuntimeDatabaseManager.runtime_database_helper.drop_tables(
                 ALL_RUNTIME_DATABASE_TABLE_NAMES
             )
-            RuntimeDatabaseManager.runtime_db_helper.create_tables(
+            RuntimeDatabaseManager.runtime_database_helper.create_tables(
                 ALL_RUNTIME_DATABASE_TABLE_NAMES
             )
 

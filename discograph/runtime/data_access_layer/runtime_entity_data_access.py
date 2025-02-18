@@ -170,7 +170,7 @@ class RuntimeEntityDataAccess:
             #     log.debug(f"    {datum}")
             return data
 
-        documents = RuntimeDatabaseManager.runtime_db_helper.search_text_index(
+        documents = RuntimeDatabaseManager.runtime_database_helper.search_text_index(
             normalised_search_string
         )
         # log.debug(f"search results: {documents}")

@@ -9,7 +9,7 @@ from rapidfuzz import process
 from discograph.library.cache.role_cache import RoleCache
 from discograph.logging_config import LOGGING_TRACE
 from discograph.offline.database.role_repository import RoleRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 
 log = logging.getLogger(__name__)
 
@@ -497,7 +497,7 @@ class RoleDataAccess:
         RoleCache.role_name_to_role_id_lookup.clear()
         RoleCache.role_name_set.clear()
 
-        with transaction():
+        with offline_transaction():
             role_repository = RoleRepository()
             roles = list(role_repository.all())
             for role in roles:

@@ -1,11 +1,12 @@
 import logging
 
-from discograph.app.app import shutdown_application, create_app
+from discograph.app.app import create_app
 from discograph.config import (
-    SqliteOfflineTestConfiguration,
     ALL_RUNTIME_DATABASE_TABLE_NAMES,
     PostgresOfflineTestConfiguration,
+    SqliteRuntimeTestConfiguration,
 )
+from discograph.offline.offline_database_manager import OfflineDatabaseManager
 from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
 from discograph.transfer.transfer_manager import TransferManager
 from tests.integration.offline.database.offline_database_test_case import (
@@ -23,9 +24,8 @@ class AppTestCase(OfflineDatabaseTestCase):
         OfflineDatabaseTestCase._offline_config = PostgresOfflineTestConfiguration()
         super().setUpClass()
 
-        _config = SqliteOfflineTestConfiguration()
-        # _config = PostgresTestConfiguration()
-        _app = create_app(_config)
+        _runtime_config = SqliteRuntimeTestConfiguration()
+        _app = create_app(_runtime_config)
         _app.config.update(
             {
                 "TESTING": True,
@@ -33,26 +33,20 @@ class AppTestCase(OfflineDatabaseTestCase):
         )
 
         # For testing, drop and recreate all tables
-        RuntimeDatabaseManager.runtime_db_helper.drop_tables(
+        RuntimeDatabaseManager.runtime_database_helper.drop_tables(
             ALL_RUNTIME_DATABASE_TABLE_NAMES
         )
-        RuntimeDatabaseManager.runtime_db_helper.create_tables(
+        RuntimeDatabaseManager.runtime_database_helper.create_tables(
             ALL_RUNTIME_DATABASE_TABLE_NAMES
         )
 
         TransferManager.transfer_all()
-        RuntimeDatabaseManager.runtime_db_helper.load_tables()
+        RuntimeDatabaseManager.runtime_database_helper.load_tables()
 
         cls.client = _app.test_client()
 
     @classmethod
     def tearDownClass(cls):
-        shutdown_application()
-        super().tearDownClass()
-
-
-# @classmethod
-# def setUpClass(cls):
-#     DatabaseTestCase._config = PostgresTestConfiguration()
-#     super().setUpClass()
-#     create_app(DatabaseTestCase._config)
+        if OfflineDatabaseTestCase._offline_config is not None:
+            OfflineDatabaseManager.shutdown_database()
+        # shutdown_application()

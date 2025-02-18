@@ -6,7 +6,7 @@ from discograph.offline.data_access_layer.entity_data_access import EntityDataAc
 from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
 from discograph.offline.database.entity_repository import EntityRepository
 from discograph.offline.database.entity_table import EntityTable
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.offline.domain.entity import Entity
 from discograph.offline.loader.loader_base import LoaderBase
 from discograph.logging_config import LOGGING_TRACE
@@ -36,7 +36,7 @@ class WorkerEntityPassTwo(multiprocessing.Process):
             error = True
             while error and max_attempts != 0:
                 error = False
-                with transaction():
+                with offline_transaction():
                     entity_repository = EntityRepository()
                     try:
                         entity = entity_repository.get_by_id(id_)

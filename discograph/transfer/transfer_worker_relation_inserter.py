@@ -10,7 +10,7 @@ from discograph.runtime.runtime_database.runtime_database_helper import (
 from discograph.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
-from discograph.runtime.runtime_database.runtime_transaction import transaction
+from discograph.runtime.runtime_database.runtime_transaction import runtime_transaction
 from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
 
 log = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ class TransferWorkerRelationInserter(multiprocessing.Process):
         if RuntimeDatabaseManager.get_concurrency_count() > 1:
             RuntimeDatabaseHelper.initialize()
 
-        with transaction():
+        with runtime_transaction():
             runtime_relation_repository = RuntimeRelationRepository()
             try:
                 runtime_relation_repository.save_all(self.bulk_inserts)

@@ -2,7 +2,7 @@ import datetime
 
 from discograph import utils
 from discograph.offline.database.metadata_repository import MetadataRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.offline.domain.metadata import Metadata, MetadataUncommitted
 from tests.integration.offline.database.offline_repository_test_case import (
     OfflineRepositoryTestCase,
@@ -20,7 +20,7 @@ class TestRepositoryMetadata(OfflineRepositoryTestCase):
         )
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             repository = MetadataRepository()
             created_metadata = repository.create(metadata)
             actual = utils.normalize_dict(
@@ -51,7 +51,7 @@ class TestRepositoryMetadata(OfflineRepositoryTestCase):
         )
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             repository = MetadataRepository()
             created_metadata = repository.create(metadata)
 

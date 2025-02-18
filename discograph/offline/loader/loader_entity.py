@@ -13,7 +13,7 @@ from discograph.library.full_text_search.text_search_utils import (
 from discograph.offline.data_access_layer.entity_data_access import EntityDataAccess
 from discograph.offline.database.entity_repository import EntityRepository
 from discograph.offline.database.entity_table import EntityTable
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.offline.domain.entity import Entity
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.full_text_search.text_search_index import TextSearchIndex
@@ -39,7 +39,7 @@ class LoaderEntity(LoaderBase):
         cls, data_directory: str, data_date: str, is_bulk_inserts=False
     ) -> int:
         log.debug(f"loader entity pass one - artist - date: {data_date}")
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             artists_loaded = cls.loader_pass_one_manager(
                 repository=entity_repository,
@@ -51,7 +51,7 @@ class LoaderEntity(LoaderBase):
                 is_bulk_inserts=is_bulk_inserts,
             )
         log.debug(f"loader entity pass one - label - date: {data_date}")
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             labels_loaded = cls.loader_pass_one_manager(
                 repository=entity_repository,
@@ -90,7 +90,7 @@ class LoaderEntity(LoaderBase):
 
     @classmethod
     def get_set_of_ids(cls, entity_type):
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             ids = entity_repository.get_ids_by_type(entity_type)
         set_of_entity_ids = SortedSet(ids)
@@ -112,7 +112,7 @@ class LoaderEntity(LoaderBase):
     def loader_start_workers(cls, worker_class) -> None:
         number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
 
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             total_count = entity_repository.count()
             batched_ids = entity_repository.get_batched_ids(number_in_batch)
@@ -141,7 +141,7 @@ class LoaderEntity(LoaderBase):
         cls, has_tablename: bool, is_full: bool, is_analyze: bool
     ) -> None:
         log.debug(f"loader entity vacuum")
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             entity_repository.vacuum(has_tablename, is_full, is_analyze)
 
@@ -161,7 +161,7 @@ class LoaderEntity(LoaderBase):
         log.debug(f"loader entity init text search index from database")
         text_search_index = TextSearchIndex()
 
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess.init_text_search_index(
                 entity_repository, text_search_index

@@ -9,7 +9,7 @@ from discograph.exceptions import DatabaseError, NotFoundError
 from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
 from discograph.offline.database.release_repository import ReleaseRepository
 from discograph.offline.database.release_table import ReleaseTable
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.offline.domain.release import Release
 from discograph.logging_config import LOGGING_TRACE
 from discograph.offline.offline_database_manager import OfflineDatabaseManager
@@ -32,7 +32,7 @@ class WorkerReleaseUpdater(multiprocessing.Process):
             OfflineDatabaseHelper.initialize()
 
         for data in self.bulk_updates:
-            with transaction():
+            with offline_transaction():
                 release_repository = ReleaseRepository()
                 updated_release = Release(**data)
                 try:

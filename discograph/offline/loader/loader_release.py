@@ -8,7 +8,7 @@ from sortedcontainers import SortedSet
 from discograph.offline.data_access_layer.release_data_access import ReleaseDataAccess
 from discograph.offline.database.release_repository import ReleaseRepository
 from discograph.offline.database.release_table import ReleaseTable
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.offline.domain.release import Release
 from discograph.library.full_text_search.entity_details_index import EntityDetailsIndex
 from discograph.offline.loader.loader_base import LoaderBase
@@ -38,7 +38,7 @@ class LoaderRelease(LoaderBase):
         cls, data_directory: str, date: str, is_bulk_inserts=False
     ) -> int:
         log.debug(f"loader release pass one - date: {date}")
-        with transaction():
+        with offline_transaction():
             release_repository = ReleaseRepository()
             releases_loaded = cls.loader_pass_one_manager(
                 repository=release_repository,
@@ -77,7 +77,7 @@ class LoaderRelease(LoaderBase):
 
     @classmethod
     def get_set_of_ids(cls, entity_type):
-        with transaction():
+        with offline_transaction():
             release_repository = ReleaseRepository()
             ids = release_repository.get_ids()
         set_of_ids = SortedSet(ids)
@@ -89,7 +89,7 @@ class LoaderRelease(LoaderBase):
         log.debug("loader release pass two")
         number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
 
-        with transaction():
+        with offline_transaction():
             release_repository = ReleaseRepository()
             total_count = release_repository.count()
             batched_release_ids = release_repository.get_batched_ids(number_in_batch)
@@ -117,7 +117,7 @@ class LoaderRelease(LoaderBase):
         cls, has_tablename: bool, is_full: bool, is_analyze: bool
     ) -> None:
         log.debug(f"loader release vacuum")
-        with transaction():
+        with offline_transaction():
             release_repository = ReleaseRepository()
             release_repository.vacuum(has_tablename, is_full, is_analyze)
 
@@ -140,7 +140,7 @@ class LoaderRelease(LoaderBase):
         log.debug(f"loader entity init entity details index from database")
         entity_details_index = EntityDetailsIndex()
 
-        with transaction():
+        with offline_transaction():
             release_repository = ReleaseRepository()
             ReleaseDataAccess.init_entity_details_index(
                 release_repository, entity_details_index

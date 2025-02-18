@@ -6,17 +6,20 @@ from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.orm import Session
 
 from discograph.exceptions import DatabaseError
-from discograph.offline.database.session import get_session, CTX_SESSION
+from discograph.offline.database.offline_session import (
+    get_offline_session,
+    CTX_OFFLINE_SESSION,
+)
 
 log = logging.getLogger(__name__)
 
 
 @contextmanager
-def transaction() -> Generator[Session, None, None]:
+def offline_transaction() -> Generator[Session, None, None]:
     """Use this context manager to perform database transactions. in any coroutine in the source code."""
 
-    session: Session = get_session()
-    CTX_SESSION.set(session)
+    session: Session = get_offline_session()
+    CTX_OFFLINE_SESSION.set(session)
 
     try:
         yield session

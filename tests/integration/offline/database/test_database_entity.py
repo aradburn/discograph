@@ -1,6 +1,6 @@
 from discograph import utils
 from discograph.offline.database.entity_repository import EntityRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.library.fields.entity_type import EntityType
 from tests.integration.offline.database.offline_database_test_case import (
     OfflineDatabaseTestCase,
@@ -14,7 +14,7 @@ class TestDatabaseEntity(OfflineDatabaseTestCase):
         entity_type = EntityType.ARTIST
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
@@ -92,7 +92,7 @@ class TestDatabaseEntity(OfflineDatabaseTestCase):
         entity_type = EntityType.ARTIST
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
@@ -151,7 +151,7 @@ class TestDatabaseEntity(OfflineDatabaseTestCase):
         entity_type = EntityType.LABEL
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type

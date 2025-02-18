@@ -4,7 +4,7 @@ from discograph.library.cache.role_cache import RoleCache
 from discograph.library.fields.role_type import RoleType
 from discograph.logging_config import LOGGING_TRACE
 
-from discograph.runtime.runtime_database.runtime_transaction import transaction
+from discograph.runtime.runtime_database.runtime_transaction import runtime_transaction
 from discograph.runtime.runtime_domain.role import (
     RuntimeRole,
     RuntimeRoleJSTreeState,
@@ -131,7 +131,7 @@ class RuntimeRoleDataAccess:
         RoleCache.role_name_to_role_id_lookup.clear()
         RoleCache.role_name_set.clear()
 
-        with transaction():
+        with runtime_transaction():
             role_repository = RuntimeRoleRepository()
             roles = list(role_repository.all())
             for role in roles:

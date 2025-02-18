@@ -10,8 +10,8 @@ from discograph.config import (
     SqliteDevelopmentConfiguration,
 )
 from discograph.library.cache.cache_manager import CacheManager
+from discograph.logging_config import setup_logging
 from discograph.offline.loader.loader_tasks import LoaderSetupTask
-from discograph.logging_config import setup_logging, shutdown_logging
 from discograph.offline.offline_database_manager import OfflineDatabaseManager
 from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
 from discograph.transfer.transfer_task import TransferTask
@@ -52,7 +52,7 @@ def loader_main():
     RuntimeDatabaseManager.setup_database(runtime_config)
 
     # Note reverse order (last in first out), logging is the last to be shutdown
-    atexit.register(shutdown_logging)
+    # atexit.register(shutdown_logging)
     atexit.register(CacheManager.shutdown_cache)
     atexit.register(OfflineDatabaseManager.shutdown_database)
     atexit.register(RuntimeDatabaseManager.shutdown_database)

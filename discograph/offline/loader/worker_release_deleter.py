@@ -5,7 +5,7 @@ from sqlalchemy.exc import DatabaseError
 
 from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
 from discograph.offline.database.release_repository import ReleaseRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class WorkerReleaseDeleter(multiprocessing.Process):
             OfflineDatabaseHelper.initialize()
 
         for id_ in self.bulk_deletes:
-            with transaction():
+            with offline_transaction():
                 release_repository = ReleaseRepository()
                 try:
                     release_repository.delete_by_id(id_)

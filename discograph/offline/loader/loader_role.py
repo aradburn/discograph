@@ -11,7 +11,7 @@ from discograph.library.fields.role_type import RoleType
 from discograph.logging_config import LOGGING_TRACE
 from discograph.offline.data_access_layer.role_data_access import RoleDataAccess
 from discograph.offline.database.role_repository import RoleRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.offline.domain.instruments import HornbostelSachs
 from discograph.offline.domain.role import (
     RoleUncommitted,
@@ -200,7 +200,7 @@ class LoaderRole(LoaderBase):
 
         CacheManager.clear()
 
-        with transaction():
+        with offline_transaction():
             added_count = 0
             role_repository = RoleRepository()
 

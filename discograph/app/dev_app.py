@@ -8,6 +8,6 @@ if __name__ == "__main__":
     app = create_app(runtime_config)
 
     # Load data from tables
-    RuntimeDatabaseManager.runtime_db_helper.load_tables()
+    RuntimeDatabaseManager.runtime_database_helper.load_tables()
 
     app.run(debug=False)

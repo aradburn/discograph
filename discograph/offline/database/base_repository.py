@@ -8,12 +8,12 @@ __all__ = ("BaseRepository",)
 
 from discograph.exceptions import UnprocessableError, DatabaseError, NotFoundError
 from discograph.offline.database.base_table import ConcreteTable
-from discograph.offline.database.session import WrappedSession
+from discograph.offline.database.offline_session import OfflineSession
 
 log = logging.getLogger(__name__)
 
 
-class BaseRepository(WrappedSession, Generic[ConcreteTable]):
+class BaseRepository(OfflineSession, Generic[ConcreteTable]):
     """This class implements the base interface for working with database
     and makes it easier to work with type annotations.
 

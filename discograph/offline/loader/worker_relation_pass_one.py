@@ -13,7 +13,7 @@ from discograph.offline.database.relation_release_year_repository import (
 )
 from discograph.offline.database.relation_repository import RelationRepository
 from discograph.offline.database.release_repository import ReleaseRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.offline.domain.relation import RelationUncommitted
 from discograph.offline.domain.relation_release_year import (
     RelationReleaseYearUncommitted,
@@ -43,7 +43,7 @@ class WorkerRelationPassOne(multiprocessing.Process):
         if OfflineDatabaseManager.get_concurrency_count() > 1:
             OfflineDatabaseHelper.initialize()
 
-        with transaction():
+        with offline_transaction():
             release_repository = ReleaseRepository()
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
@@ -101,7 +101,7 @@ class WorkerRelationPassOne(multiprocessing.Process):
                     log.debug(f"[{proc_name}] processed {count} of {self.total_count}")
 
         if len(relation_release_years) > 0:
-            with transaction():
+            with offline_transaction():
                 relation_release_year_repository = RelationReleaseYearRepository()
                 self.create_relation_release_year_bulk(
                     relation_release_year_repository, relation_release_years

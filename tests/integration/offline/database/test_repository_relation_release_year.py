@@ -3,7 +3,7 @@ from discograph.offline.data_access_layer.role_data_access import RoleDataAccess
 from discograph.offline.database.relation_release_year_repository import (
     RelationReleaseYearRepository,
 )
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.offline.domain.relation_release_year import (
     RelationReleaseYearUncommitted,
     RelationReleaseYear,
@@ -25,7 +25,7 @@ class TestRepositoryRelationReleaseYear(OfflineRepositoryTestCase):
         )
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             repository = RelationReleaseYearRepository()
 
             created_relation_release_year = repository.create(relation_release_year)
@@ -197,7 +197,7 @@ class TestRepositoryRelationReleaseYear(OfflineRepositoryTestCase):
         # GIVEN
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             repository = RelationReleaseYearRepository()
             # Get internal RelationReleaseYearDB
             relation_release_years = repository.get(2)

@@ -48,7 +48,7 @@ class RuntimeDatabaseTestCase(OfflineDatabaseTestCase):
                 log.error("Error in runtime database setup")
             else:
                 TransferManager.transfer_all()
-                RuntimeDatabaseManager.runtime_db_helper.load_tables()
+                RuntimeDatabaseManager.runtime_database_helper.load_tables()
 
     @classmethod
     def tearDownClass(cls):

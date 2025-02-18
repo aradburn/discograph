@@ -5,7 +5,7 @@ from discograph.library.fields.entity_type import EntityType
 from discograph.offline.data_access_layer.role_data_access import RoleDataAccess
 from discograph.offline.database.entity_repository import EntityRepository
 from discograph.offline.database.relation_repository import RelationRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.offline.domain.relation import (
     Relation,
     RelationInternal,
@@ -31,7 +31,7 @@ class TestRepositoryRelation(OfflineRepositoryTestCase):
         entity_2 = LoaderEntity().from_element(entity_element_2)
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             repository = EntityRepository()
             created_entity_1 = repository.create(entity_1)
             print(f"created_entity_1: {created_entity_1}")
@@ -56,7 +56,7 @@ class TestRepositoryRelation(OfflineRepositoryTestCase):
         relation_dicts = [relation_dict]
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
             relations = WorkerRelationPassOne.to_relations_from_dict(relation_dicts)
 
@@ -232,7 +232,7 @@ class TestRepositoryRelation(OfflineRepositoryTestCase):
         # GIVEN
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             repository = RelationRepository()
             # Get internal RelationDB
             relation_db = repository.get(1)

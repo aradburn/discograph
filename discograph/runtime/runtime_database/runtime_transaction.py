@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 
 @contextmanager
-def transaction() -> Generator[Session, None, None]:
+def runtime_transaction() -> Generator[Session, None, None]:
     """Use this context manager to perform database transactions. in any coroutine in the source code."""
 
     session: Session = get_runtime_session()

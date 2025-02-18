@@ -16,7 +16,7 @@ from discograph.offline.database.offline_database_helper import (
 log = logging.getLogger(__name__)
 
 
-class SqliteHelper(OfflineDatabaseHelper):
+class OfflineSqliteHelper(OfflineDatabaseHelper):
 
     @staticmethod
     def setup_database(config: Configuration) -> Engine:

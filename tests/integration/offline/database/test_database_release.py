@@ -1,6 +1,6 @@
 from discograph import utils
 from discograph.offline.database.release_repository import ReleaseRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from tests.integration.offline.database.offline_database_test_case import (
     OfflineDatabaseTestCase,
 )
@@ -9,7 +9,7 @@ from tests.integration.offline.database.offline_database_test_case import (
 class TestDatabaseRelease(OfflineDatabaseTestCase):
     def test_from_db_01(self):
         release_id = 157
-        with transaction():
+        with offline_transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
             actual = utils.normalize_dict(release.model_dump())
@@ -79,7 +79,7 @@ class TestDatabaseRelease(OfflineDatabaseTestCase):
 
     def test_from_db_02(self):
         release_id = 635
-        with transaction():
+        with offline_transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
             actual = utils.normalize_dict(release.model_dump())

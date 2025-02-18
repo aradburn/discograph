@@ -20,7 +20,7 @@ from discograph.runtime.runtime_database.runtime_entity_repository import (
 from discograph.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
-from discograph.runtime.runtime_database.runtime_transaction import transaction
+from discograph.runtime.runtime_database.runtime_transaction import runtime_transaction
 from discograph.runtime.runtime_domain.role import RuntimeRoleJSTreeWrapper
 
 log = logging.getLogger(__name__)
@@ -79,10 +79,10 @@ def route__entity_type__entity_id(entity_type_str, entity_id):
         raise BadRequestError(message="Bad Entity Id")
     entity_id = int(entity_id)
 
-    with transaction():
+    with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
         relation_repository = RuntimeRelationRepository()
-        network_data = RuntimeDatabaseManager.runtime_db_helper.get_network(
+        network_data = RuntimeDatabaseManager.runtime_database_helper.get_network(
             entity_repository,
             relation_repository,
             entity_id,

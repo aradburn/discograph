@@ -8,12 +8,12 @@ __all__ = ("RuntimeBaseRepository",)
 
 from discograph.exceptions import UnprocessableError, DatabaseError, NotFoundError
 from discograph.runtime.runtime_database.runtime_base_table import RuntimeConcreteTable
-from discograph.runtime.runtime_database.runtime_session import RuntimeWrappedSession
+from discograph.runtime.runtime_database.runtime_session import RuntimeSession
 
 log = logging.getLogger(__name__)
 
 
-class RuntimeBaseRepository(RuntimeWrappedSession, Generic[RuntimeConcreteTable]):
+class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
     """This class implements the base interface for working with database
     and makes it easier to work with type annotations.
 

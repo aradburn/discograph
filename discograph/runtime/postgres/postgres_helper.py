@@ -22,6 +22,7 @@ log = logging.getLogger(__name__)
 
 class RuntimePostgresHelper(RuntimeDatabaseHelper):
     postgres_test_db: TempDB | None = None
+    pg_runtime_dirname: str | None = None
     _is_test: bool = False
 
     @staticmethod
@@ -62,9 +63,9 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
             if config["TESTING"]:
                 log.info("Using Test Postgres Runtime Database")
 
-                dirname = config["POSTGRES_DATA"]
-                pg_data_dir = os.path.join(dirname, "data")
-                pg_socket_dir = os.path.join(dirname, "socket")
+                pg_runtime_dirname = config["POSTGRES_DATA"]
+                pg_data_dir = os.path.join(pg_runtime_dirname, "data")
+                pg_socket_dir = os.path.join(pg_runtime_dirname, "socket")
 
                 data_path = pathlib.Path(pg_data_dir)
                 socket_path = pathlib.Path(pg_socket_dir)
@@ -105,9 +106,10 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
                     postgres=config["POSTGRES_ROOT"] + "/bin/postgres",
                     psql=config["POSTGRES_ROOT"] + "/bin/psql",
                     createuser=config["POSTGRES_ROOT"] + "/bin/createuser",
-                    dirname=dirname,
+                    dirname=pg_runtime_dirname,
                     options=options,
                 )
+                RuntimePostgresHelper.pg_runtime_dirname = pg_runtime_dirname
 
                 # Create a temporary test database engine and pool that will manage connections and execute queries
                 url_object = URL.create(
@@ -183,6 +185,9 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
                 f"Delete socket dir: {RuntimePostgresHelper.postgres_test_db.pg_socket_dir}"
             )
             shutil.rmtree(RuntimePostgresHelper.postgres_test_db.pg_socket_dir)
+            if RuntimePostgresHelper.pg_runtime_dirname is not None:
+                log.info(f"Delete temp dir: {RuntimePostgresHelper.pg_runtime_dirname}")
+                shutil.rmtree(RuntimePostgresHelper.pg_runtime_dirname)
             RuntimePostgresHelper.postgres_test_db = None
             RuntimePostgresHelper._is_test = False
 

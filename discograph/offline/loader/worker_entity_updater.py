@@ -13,7 +13,7 @@ from discograph.logging_config import LOGGING_TRACE
 from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
 from discograph.offline.database.entity_repository import EntityRepository
 from discograph.offline.database.entity_table import EntityTable
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.offline.domain.entity import Entity
 from discograph.offline.offline_database_manager import OfflineDatabaseManager
 
@@ -35,7 +35,7 @@ class WorkerEntityUpdater(multiprocessing.Process):
             OfflineDatabaseHelper.initialize()
 
         for data in self.bulk_updates:
-            with transaction():
+            with offline_transaction():
                 entity_repository = EntityRepository()
                 updated_entity = Entity(**data)
                 try:

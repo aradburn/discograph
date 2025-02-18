@@ -1,7 +1,7 @@
 from discograph.offline.data_access_layer.entity_data_access import EntityDataAccess
 from discograph.offline.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.offline.database.entity_repository import EntityRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from tests import utils
 from tests.integration.offline.database.offline_database_test_case import (
     OfflineDatabaseTestCase,
@@ -14,7 +14,7 @@ class TestRelationDataAccess(OfflineDatabaseTestCase):
         # GIVEN
         release_id = 1700
         release = utils.get_test_release_by_id(release_id)
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess().resolve_release_references(entity_repository, release)
 
@@ -268,7 +268,7 @@ class TestRelationDataAccess(OfflineDatabaseTestCase):
         # GIVEN
         release_id = 1700
         release = utils.get_test_release_by_id(release_id)
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess().resolve_release_references(entity_repository, release)
 

@@ -20,8 +20,9 @@ from discograph.offline.offline_database_manager import OfflineDatabaseManager
 log = logging.getLogger(__name__)
 
 
-class PostgresHelper(OfflineDatabaseHelper):
+class OfflinePostgresHelper(OfflineDatabaseHelper):
     postgres_test_db: TempDB | None = None
+    pg_offline_dirname: str | None = None
     _is_test: bool = False
 
     @staticmethod
@@ -54,9 +55,9 @@ class PostgresHelper(OfflineDatabaseHelper):
             if config["TESTING"]:
                 log.info("Using Postgres Test Offline Database")
 
-                dirname = config["POSTGRES_DATA"]
-                pg_data_dir = os.path.join(dirname, "data")
-                pg_socket_dir = os.path.join(dirname, "socket")
+                pg_offline_dirname = config["POSTGRES_DATA"]
+                pg_data_dir = os.path.join(pg_offline_dirname, "data")
+                pg_socket_dir = os.path.join(pg_offline_dirname, "socket")
 
                 data_path = pathlib.Path(pg_data_dir)
                 socket_path = pathlib.Path(pg_socket_dir)
@@ -90,24 +91,25 @@ class PostgresHelper(OfflineDatabaseHelper):
                     # "lock_timeout": "10000",
                     # "idle_in_transaction_session_timeout": "30000",
                 }
-                PostgresHelper.postgres_test_db = TempDB(
+                OfflinePostgresHelper.postgres_test_db = TempDB(
                     verbosity=0,
                     databases=[config["POSTGRES_DATABASE_NAME"]],
                     initdb=config["POSTGRES_ROOT"] + "/bin/initdb",
                     postgres=config["POSTGRES_ROOT"] + "/bin/postgres",
                     psql=config["POSTGRES_ROOT"] + "/bin/psql",
                     createuser=config["POSTGRES_ROOT"] + "/bin/createuser",
-                    dirname=dirname,
+                    dirname=pg_offline_dirname,
                     options=options,
                 )
+                OfflinePostgresHelper.pg_offline_dirname = pg_offline_dirname
 
                 # Create a temporary test database engine and pool that will manage connections and execute queries
                 url_object = URL.create(
                     "postgresql",
                     # "postgresql+psycopg2",
-                    username=PostgresHelper.postgres_test_db.current_user,
+                    username=OfflinePostgresHelper.postgres_test_db.current_user,
                     # password=config["POSTGRES_DATABASE_PASSWORD"],
-                    host=PostgresHelper.postgres_test_db.pg_socket_dir,
+                    host=OfflinePostgresHelper.postgres_test_db.pg_socket_dir,
                     # port=config["POSTGRES_DATABASE_PORT"],
                     database=config["POSTGRES_DATABASE_NAME"],
                 )
@@ -130,7 +132,7 @@ class PostgresHelper(OfflineDatabaseHelper):
                     # poolclass=NullPool,
                 )
 
-                PostgresHelper._is_test = True
+                OfflinePostgresHelper._is_test = True
             else:
                 log.info("Using Postgres Development Offline Database")
 
@@ -167,18 +169,27 @@ class PostgresHelper(OfflineDatabaseHelper):
     def shutdown_database() -> None:
         log.info("Shutting down Postgres offline database")
 
-        if PostgresHelper._is_test and PostgresHelper.postgres_test_db is not None:
+        if (
+            OfflinePostgresHelper._is_test
+            and OfflinePostgresHelper.postgres_test_db is not None
+        ):
             log.info("Cleaning up Postgres Test Offline Database")
-            PostgresHelper.postgres_test_db.cleanup()
 
-            log.info(f"Delete data dir: {PostgresHelper.postgres_test_db.pg_data_dir}")
-            shutil.rmtree(PostgresHelper.postgres_test_db.pg_data_dir)
+            OfflinePostgresHelper.postgres_test_db.cleanup()
+
             log.info(
-                f"Delete socket dir: {PostgresHelper.postgres_test_db.pg_socket_dir}"
+                f"Delete data dir: {OfflinePostgresHelper.postgres_test_db.pg_data_dir}"
             )
-            shutil.rmtree(PostgresHelper.postgres_test_db.pg_socket_dir)
-            PostgresHelper.postgres_test_db = None
-            PostgresHelper._is_test = False
+            shutil.rmtree(OfflinePostgresHelper.postgres_test_db.pg_data_dir)
+            log.info(
+                f"Delete socket dir: {OfflinePostgresHelper.postgres_test_db.pg_socket_dir}"
+            )
+            shutil.rmtree(OfflinePostgresHelper.postgres_test_db.pg_socket_dir)
+            if OfflinePostgresHelper.pg_offline_dirname is not None:
+                log.info(f"Delete temp dir: {OfflinePostgresHelper.pg_offline_dirname}")
+                shutil.rmtree(OfflinePostgresHelper.pg_offline_dirname)
+            OfflinePostgresHelper.postgres_test_db = None
+            OfflinePostgresHelper._is_test = False
 
     @staticmethod
     def check_connection(config: Configuration, engine: Engine) -> None:

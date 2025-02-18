@@ -15,7 +15,7 @@ from discograph.runtime.runtime_database.runtime_relation_repository import (
 from discograph.runtime.runtime_database.runtime_role_repository import (
     RuntimeRoleRepository,
 )
-from discograph.runtime.runtime_database.runtime_transaction import transaction
+from discograph.runtime.runtime_database.runtime_transaction import runtime_transaction
 from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
 from discograph.runtime.runtime_domain.entity import RuntimeEntity
 from discograph.runtime.runtime_domain.relation import (
@@ -70,7 +70,7 @@ class TransferManager:
                         worker = workers.pop(0)
                         TransferManager.transfer_wait_for_worker(worker)
                 else:
-                    with transaction():
+                    with runtime_transaction():
                         try:
                             runtime_entity_repository.save_all(bulk_records)
                             runtime_entity_repository.commit()
@@ -93,7 +93,7 @@ class TransferManager:
                 workers.append(worker)
                 bulk_records.clear()
             else:
-                with transaction():
+                with runtime_transaction():
                     try:
                         runtime_entity_repository.save_all(bulk_records)
                         runtime_entity_repository.commit()
@@ -134,7 +134,7 @@ class TransferManager:
             bulk_records.append(runtime_relation.model_dump())
             processed_count += 1
             if len(bulk_records) >= TransferManager.BULK_INSERT_BATCH_SIZE:
-                with transaction():
+                with runtime_transaction():
                     try:
                         runtime_relation_repository.save_all(bulk_records)
                         runtime_relation_repository.commit()
@@ -145,7 +145,7 @@ class TransferManager:
                         raise
 
         if len(bulk_records) > 0:
-            with transaction():
+            with runtime_transaction():
                 try:
                     runtime_relation_repository.save_all(bulk_records)
                     runtime_relation_repository.commit()
@@ -164,7 +164,7 @@ class TransferManager:
         roles = RoleRepository().all()
         runtime_role_repository = RuntimeRoleRepository()
 
-        with transaction():
+        with runtime_transaction():
             for role in roles:
                 runtime_role = RuntimeRole(**role.model_dump())
                 runtime_role_repository.create(runtime_role)
@@ -173,10 +173,10 @@ class TransferManager:
     def transfer_all() -> None:
         log.debug(f"Running transfer_all()")
 
-        RuntimeDatabaseManager.runtime_db_helper.drop_tables(
+        RuntimeDatabaseManager.runtime_database_helper.drop_tables(
             ALL_RUNTIME_DATABASE_TABLE_NAMES
         )
-        RuntimeDatabaseManager.runtime_db_helper.create_tables(
+        RuntimeDatabaseManager.runtime_database_helper.create_tables(
             ALL_RUNTIME_DATABASE_TABLE_NAMES
         )
 

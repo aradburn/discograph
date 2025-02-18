@@ -6,8 +6,7 @@ from discograph.config import (
     PostgresDevelopmentConfiguration,
 )
 from discograph.library.cache.cache_manager import CacheManager
-
-from discograph.logging_config import setup_logging, shutdown_logging
+from discograph.logging_config import setup_logging
 
 
 class TestCache(unittest.TestCase):
@@ -15,9 +14,9 @@ class TestCache(unittest.TestCase):
     def setUpClass(cls):
         setup_logging(is_testing=True)
 
-    @classmethod
-    def tearDownClass(cls):
-        shutdown_logging()
+    # @classmethod
+    # def tearDownClass(cls):
+    #     shutdown_logging()
 
     def test_01(self):
         CacheManager.setup_cache(vars(SqliteOfflineTestConfiguration))

@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from functools import partial
 from typing import Type, List, Any
 
-from sqlalchemy import Engine, Index, Table
+from sqlalchemy import Engine, Table
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.dml import ReturningInsert, Insert
 
@@ -22,13 +22,9 @@ log = logging.getLogger(__name__)
 class OfflineDatabaseHelper(ABC):
     offline_engine: Engine | None = None
     offline_session_factory: sessionmaker | None = None
-    # flask_db_session: scoped_session | None = None
 
-    idx_entity_one_id: Index | None = None
-    idx_entity_two_id: Index | None = None
-
-    # text_search_index: TextSearchIndex | None = None
-    # entity_details_index: EntityDetailsIndex | None = None
+    # idx_entity_one_id: Index | None = None
+    # idx_entity_two_id: Index | None = None
 
     entity_count_cached = 0
 
@@ -290,11 +286,3 @@ class OfflineDatabaseHelper(ABC):
                 relation_release_year.year
             )
         return relation
-
-    # @classmethod
-    # def search_text_index(cls, search_text):
-    #     return cls.text_search_index.search(search_text)
-    #
-    # @classmethod
-    # def search_get_random_id(cls):
-    #     return cls.text_search_index.get_random_id()

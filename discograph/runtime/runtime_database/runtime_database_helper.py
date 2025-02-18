@@ -72,7 +72,9 @@ class RuntimeDatabaseHelper(ABC):
         in the new connection pool"""
         from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
 
-        RuntimeDatabaseManager.runtime_db_helper.runtime_engine.dispose(close=False)
+        RuntimeDatabaseManager.runtime_database_helper.runtime_engine.dispose(
+            close=False
+        )
 
     @staticmethod
     @abstractmethod
@@ -95,7 +97,7 @@ class RuntimeDatabaseHelper(ABC):
         for table in table_definitions:
             log.debug(f"creating table: {table.name}")
         RuntimeBase.metadata.create_all(
-            RuntimeDatabaseManager.runtime_db_helper.runtime_engine,
+            RuntimeDatabaseManager.runtime_database_helper.runtime_engine,
             checkfirst=True,
             tables=table_definitions,
         )
@@ -112,12 +114,13 @@ class RuntimeDatabaseHelper(ABC):
             for table in table_definitions:
                 log.debug(f"deleting table: {table.name}")
                 table.drop(
-                    RuntimeDatabaseManager.runtime_db_helper.runtime_engine,
+                    RuntimeDatabaseManager.runtime_database_helper.runtime_engine,
                     checkfirst=True,
                 )
         else:
             RuntimeBase.metadata.drop_all(
-                RuntimeDatabaseManager.runtime_db_helper.runtime_engine, checkfirst=True
+                RuntimeDatabaseManager.runtime_database_helper.runtime_engine,
+                checkfirst=True,
             )
 
     @classmethod
@@ -199,9 +202,12 @@ class RuntimeDatabaseHelper(ABC):
         if data is not None:
             return data
 
-        entity = entity_repository.get_by_entity_id_and_entity_type(
-            entity_id, entity_type
-        )
+        try:
+            entity = entity_repository.get_by_entity_id_and_entity_type(
+                entity_id, entity_type
+            )
+        except NotFoundError:
+            return None
         if entity is None:
             return None
         if not on_mobile:

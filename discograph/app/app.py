@@ -18,9 +18,6 @@ from discograph.config import (
 from discograph.exceptions import NotFoundError, BaseError
 from discograph.library.cache.cache_manager import CacheManager
 from discograph.logging_config import setup_logging, shutdown_logging
-from discograph.runtime.runtime_database.runtime_database_helper import (
-    RuntimeDatabaseHelper,
-)
 from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
 
 log = logging.getLogger(__name__)
@@ -39,16 +36,18 @@ def create_app(config: Configuration):
     # app.wsgi_app = ProxyFix(app.wsgi_app)
     # Mobility(app)
     Compress(app)
-    RuntimeDatabaseHelper.flask_db_session = scoped_session(
+    RuntimeDatabaseManager.runtime_database_helper.flask_db_session = scoped_session(
         sessionmaker(
-            autocommit=False, autoflush=False, bind=RuntimeDatabaseHelper.runtime_engine
+            autocommit=False,
+            autoflush=False,
+            bind=RuntimeDatabaseManager.runtime_database_helper.runtime_engine,
         )
     )
 
     # noinspection PyUnusedLocal
     @app.teardown_appcontext
     def shutdown_session(exception=None):
-        RuntimeDatabaseHelper.flask_db_session.remove()
+        RuntimeDatabaseManager.runtime_database_helper.flask_db_session.remove()
 
     @app.after_request
     def inject_rate_limit_headers(response):
@@ -66,7 +65,7 @@ def create_app(config: Configuration):
     @app.errorhandler(Exception)
     def handle_error(error):
         if app.debug:
-            log.exception(error)
+            log.exception(f"Debug - handle_error() error: {error}")
         else:
             log.warning(f"Error: {error}")
         status_code = getattr(error, "status_code", 400)
@@ -106,7 +105,12 @@ def create_app(config: Configuration):
 
 
 def shutdown_application():
-    pass
+    # Logging may have been shutdown automatically before this point, so we need to reinitialise it again
+    setup_logging()
+    log.info("######## APPLICATION SHUTDOWN ########")
+    RuntimeDatabaseManager.shutdown_database()
+    CacheManager.shutdown_cache()
+    shutdown_logging()
 
 
 def init_app(config: Configuration):
@@ -148,7 +152,5 @@ def init_app(config: Configuration):
     #     TextSearchIndex.load_text_search_index_from_file(TEXT_SEARCH_PATH)
     # )
 
-    # Note reverse order (last in first out), logging is the last to be shutdown
-    atexit.register(shutdown_logging)
-    atexit.register(CacheManager.shutdown_cache)
-    atexit.register(RuntimeDatabaseManager.shutdown_database)
+    # Shutdown on app exit
+    atexit.register(shutdown_application)

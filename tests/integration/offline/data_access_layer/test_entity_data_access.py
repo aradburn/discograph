@@ -2,7 +2,7 @@ from discograph.library.fields.entity_type import EntityType
 from discograph.library.full_text_search.text_search_index import TextSearchIndex
 from discograph.offline.data_access_layer.entity_data_access import EntityDataAccess
 from discograph.offline.database.entity_repository import EntityRepository
-from discograph.offline.database.transaction import transaction
+from discograph.offline.database.offline_transaction import offline_transaction
 from tests import utils
 from tests.integration.offline.database.offline_database_test_case import (
     OfflineDatabaseTestCase,
@@ -14,7 +14,7 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
     def test_init_text_search_index(self):
         index = TextSearchIndex()
 
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess.init_text_search_index(entity_repository, index)
 
@@ -25,7 +25,7 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
     def test_get_id_by_entity_type_and_entity_name(self):
         entity_type = EntityType.ARTIST
         entity_name = "Joker, The (3)"
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             result = EntityDataAccess.get_id_by_entity_type_and_entity_name(
                 entity_repository, entity_type, entity_name
@@ -42,7 +42,7 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
         entity = utils.get_test_entity_by_id(entity_id, entity_type)
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess.resolve_entity_references(entity_repository, entity)
             result = entity.entities
@@ -65,7 +65,7 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
         entity = utils.get_test_entity_by_id(entity_id, entity_type)
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess.resolve_entity_references(entity_repository, entity)
             result = entity.entities
@@ -89,7 +89,7 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
         entity = utils.get_test_entity_by_id(entity_id, entity_type)
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess.resolve_entity_references(entity_repository, entity)
             result = entity.entities
@@ -111,7 +111,7 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
         entity = utils.get_test_entity_by_id(entity_id, entity_type)
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess.resolve_entity_references(entity_repository, entity)
             result = entity.entities
@@ -130,7 +130,7 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
         release = utils.get_test_release_by_id(release_id)
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess.resolve_release_references(entity_repository, release)
             result = release.labels
@@ -148,7 +148,7 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
         release = utils.get_test_release_by_id(release_id)
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess.resolve_release_references(entity_repository, release)
             result = release.companies
@@ -194,7 +194,7 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
         release = utils.get_test_release_by_id(release_id)
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess.resolve_release_references(entity_repository, release)
             result = release.artists
@@ -209,7 +209,7 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
         release = utils.get_test_release_by_id(release_id)
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess.resolve_release_references(entity_repository, release)
             result = release.extra_artists

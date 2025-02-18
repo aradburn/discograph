@@ -8,7 +8,7 @@ from discograph.runtime.data_access_layer.runtime_entity_data_access import (
 from discograph.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
-from discograph.runtime.runtime_database.runtime_transaction import transaction
+from discograph.runtime.runtime_database.runtime_transaction import runtime_transaction
 from tests.integration.runtime.database.runtime_database_test_case import (
     RuntimeDatabaseTestCase,
 )
@@ -20,7 +20,7 @@ class TestDatabaseEntityStructuralRolesToRelations(RuntimeDatabaseTestCase):
     def test_01(self):
         entity_id = 430141
         entity_type = EntityType.ARTIST
-        with transaction():
+        with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type

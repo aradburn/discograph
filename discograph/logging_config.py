@@ -144,6 +144,8 @@ def setup_logging(is_testing=False):
 
 
 def shutdown_logging():
-    log = logging.getLogger(__name__)
-    log.info("Shutting down logging.")
-    logging.shutdown()
+    loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
+    if len(loggers) > 0:
+        log = logging.getLogger(__name__)
+        log.info("Shutting down logging.")
+        logging.shutdown()
