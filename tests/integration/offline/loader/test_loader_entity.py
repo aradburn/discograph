@@ -14,7 +14,7 @@ class TestLoaderEntity(unittest.TestCase):
         entity = LoaderEntity().from_element(element)
         actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
         expected_entity = {
-            "entities": {"aliases": {}, "groups": {}},
+            "entities": {},
             "entity_id": 3,
             "entity_type": "EntityType.ARTIST",
             "entity_metadata": {

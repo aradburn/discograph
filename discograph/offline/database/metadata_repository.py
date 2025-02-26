@@ -14,11 +14,6 @@ log = logging.getLogger(__name__)
 class MetadataRepository(BaseRepository[MetadataTable]):
     schema_class = MetadataTable
 
-    @staticmethod
-    def _to_domain(metadata_db: Metadata) -> Metadata:
-        # print(f"_to_domain")
-        return metadata_db
-
     def _get_one_by_query(self, query: Select[tuple[MetadataTable]]) -> Metadata:
         # print(f"_get_one_by_query")
         result: Result = self.execute(query)
@@ -27,11 +22,8 @@ class MetadataRepository(BaseRepository[MetadataTable]):
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError
 
-        # print(f"instance: {instance}")
-
         metadata_db = Metadata.model_validate(instance)
-        # print(f"relation_db: {relation_d)}")
-        return self._to_domain(metadata_db)
+        return metadata_db.to_domain()
 
     def get(self, metadata_id: int) -> Metadata:
         query = select(MetadataTable).where(MetadataTable.metadata_id == metadata_id)
@@ -49,7 +41,7 @@ class MetadataRepository(BaseRepository[MetadataTable]):
     def update(
         self,
         payload: dict[str, Any],
-    ) -> MetadataTable:
+    ) -> Metadata:
         """Updates an existed instance of the model in the related table.
         If some data is not exist in the payload then the null value will
         be passed to the schema class."""
@@ -60,7 +52,8 @@ class MetadataRepository(BaseRepository[MetadataTable]):
         self._session.flush()
         # await self._session.flush()
 
-        if not (schema := result.scalar_one_or_none()):
+        if not (instance := result.scalar_one_or_none()):
             raise DatabaseError
 
-        return schema
+        metadata_db = Metadata.model_validate(instance)
+        return metadata_db.to_domain()

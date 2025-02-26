@@ -137,13 +137,12 @@ class LoaderRelease(LoaderBase):
     @classmethod
     @timeit
     def loader_init_entity_details_index_from_database(cls) -> EntityDetailsIndex:
-        log.debug(f"loader entity init entity details index from database")
-        entity_details_index = EntityDetailsIndex()
+        log.debug(f"loader release init entity details")
 
         with offline_transaction():
             release_repository = ReleaseRepository()
-            ReleaseDataAccess.init_entity_details_index(
-                release_repository, entity_details_index
+            entity_details_index = ReleaseDataAccess.create_entity_details_index(
+                release_repository
             )
         return entity_details_index
 

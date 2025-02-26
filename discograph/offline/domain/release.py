@@ -3,7 +3,7 @@ __all__ = [
 ]
 
 from datetime import date
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Self
 
 from discograph.library.domain.base import InternalDomainObject
 
@@ -24,3 +24,11 @@ class Release(InternalDomainObject):
     styles: List[str] | None = None
     title: str
     tracklist: List[Dict[str, Any]] | None = None
+
+    def to_domain(self) -> Self:
+        # Domain and Database entities are the same
+        return self
+
+    def to_db(self) -> Self:
+        # Domain and Database entities are the same
+        return self

@@ -18,12 +18,12 @@ log = logging.getLogger(__name__)
 
 
 class RuntimeRepositoryTestCase(unittest.TestCase):
-    _config: Configuration = None
+    _runtime_config: Configuration = None
     relation_grapher: Type[RelationGrapher] = None
 
     # noinspection PyPep8Naming
     def __init__(self, methodName="runTest"):
-        ignore_test_prefixes = "TestRepository"
+        ignore_test_prefixes = "TestRuntimeRepository"
         if self.__class__.__name__.startswith(ignore_test_prefixes):
             # don't run these tests in the abstract base implementation
             methodName = "runTestIgnoreInBaseClass"
@@ -36,10 +36,10 @@ class RuntimeRepositoryTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         setup_logging(is_testing=True)
-        if cls._config is not None:
-            CacheManager.setup_cache(cls._config)
+        if cls._runtime_config is not None:
+            CacheManager.setup_cache(cls._runtime_config)
             try:
-                RuntimeDatabaseManager.setup_database(cls._config)
+                RuntimeDatabaseManager.setup_database(cls._runtime_config)
             except DatabaseError:
                 log.error("Error in database setup")
                 RuntimeDatabaseManager.runtime_database_helper.drop_tables(
@@ -58,7 +58,7 @@ class RuntimeRepositoryTestCase(unittest.TestCase):
     def tearDownClass(cls):
         log.info(f"RepositoryTestCase tearDownClass: {cls.__name__}")
         # release resources
-        if cls._config is not None:
+        if cls._runtime_config is not None:
             RuntimeDatabaseManager.shutdown_database()
             CacheManager.shutdown_cache()
             shutdown_logging()

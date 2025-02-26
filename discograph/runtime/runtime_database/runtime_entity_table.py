@@ -15,11 +15,17 @@ class RuntimeEntityTable(RuntimeBase):
     id: Mapped[int] = mapped_column(primary_key=True)
     entity_id: Mapped[int] = mapped_column(Integer)
     entity_type: Mapped[EntityType] = mapped_column(IntEnum(EntityType), nullable=False)
-    entity_name: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    entity_name: Mapped[str] = mapped_column(String, nullable=False)
     relation_counts: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
     entity_metadata: Mapped[dict | list] = mapped_column(type_=JSON, nullable=False)
-    entities: Mapped[dict | list] = mapped_column(type_=JSON, nullable=False)
+    aliases: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
+    groups: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
+    members: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
+    # entities: Mapped[dict | list] = mapped_column(type_=JSON, nullable=False)
     # search_content: Mapped[str] = mapped_column(String, nullable=False)
+    countries: Mapped[str] = mapped_column(String, nullable=True)
+    genres: Mapped[str] = mapped_column(String, nullable=True)
+    styles: Mapped[str] = mapped_column(String, nullable=True)
 
     __table_args__ = (
         Index(
@@ -28,12 +34,12 @@ class RuntimeEntityTable(RuntimeBase):
             entity_type,
             unique=True,
         ),
-        Index(
-            "idx_runtime_entity_name_and_entity_type",
-            entity_name,
-            entity_type,
-            unique=False,
-        ),
+        # Index(
+        #     "idx_runtime_entity_name_and_entity_type",
+        #     entity_name,
+        #     entity_type,
+        #     unique=False,
+        # ),
         {},
     )
 

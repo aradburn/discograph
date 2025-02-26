@@ -186,6 +186,20 @@ class PostgresRuntimeTestConfiguration(Configuration):
         super().__init__(vars(PostgresRuntimeTestConfiguration))
 
 
+class SqliteProductionConfiguration(Configuration):
+    PRODUCTION = True
+    DEBUG = False
+    TESTING = False
+    DATABASE = DatabaseType.SQLITE
+    SQLITE_DATABASE_NAME = os.path.join(DATABASE_DIR, "discograph.db")
+    APPLICATION_ROOT = "http://localhost"
+    THREADING_MODEL = ThreadingModel.THREAD
+    CACHE_TYPE = CacheType.FILESYSTEM
+
+    def __init__(self):
+        super().__init__(vars(SqliteProductionConfiguration))
+
+
 class SqliteDevelopmentConfiguration(Configuration):
     PRODUCTION = False
     DEBUG = True
@@ -193,7 +207,7 @@ class SqliteDevelopmentConfiguration(Configuration):
     DATABASE = DatabaseType.SQLITE
     SQLITE_DATABASE_NAME = os.path.join(DATABASE_DIR, "discograph.db")
     APPLICATION_ROOT = "http://localhost"
-    THREADING_MODEL = ThreadingModel.THREAD
+    THREADING_MODEL = ThreadingModel.PROCESS
     CACHE_TYPE = CacheType.FILESYSTEM
 
     def __init__(self):
@@ -212,7 +226,7 @@ class SqliteOfflineTestConfiguration(Configuration):
         "test_" + str(uuid.uuid4()).replace("-", "")[:4] + ".db",
     )
     APPLICATION_ROOT = "http://localhost"
-    THREADING_MODEL = ThreadingModel.THREAD
+    THREADING_MODEL = ThreadingModel.PROCESS
     CACHE_TYPE = CacheType.MEMORY
 
     def __init__(self):
@@ -231,7 +245,7 @@ class SqliteRuntimeTestConfiguration(Configuration):
         "test_" + str(uuid.uuid4()).replace("-", "")[:4] + ".db",
     )
     APPLICATION_ROOT = "http://localhost"
-    THREADING_MODEL = ThreadingModel.THREAD
+    THREADING_MODEL = ThreadingModel.PROCESS
     CACHE_TYPE = CacheType.MEMORY
 
     def __init__(self):

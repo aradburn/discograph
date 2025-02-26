@@ -22,13 +22,13 @@ class RuntimeRelationTable(RuntimeBase):
     object: Mapped[int] = mapped_column(Integer)
 
     __table_args__ = (
-        Index(
-            "idx_runtime_relation",
-            subject,
-            predicate,
-            object,
-            unique=True,
-        ),
+        # Index(
+        #     "idx_runtime_relation",
+        #     subject,
+        #     predicate,
+        #     object,
+        #     unique=True,
+        # ),
         Index(
             "idx_runtime_relation_subject",
             subject,

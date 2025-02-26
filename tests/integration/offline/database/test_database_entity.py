@@ -23,7 +23,7 @@ class TestDatabaseEntity(OfflineDatabaseTestCase):
 
         # THEN
         expected_entity = {
-            "entities": {"aliases": {}, "groups": {}},
+            "entities": {},
             "entity_id": 3,
             "entity_type": "EntityType.ARTIST",
             "entity_metadata": {

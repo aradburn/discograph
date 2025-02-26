@@ -9,6 +9,9 @@ function dg_isNumeric(obj) {
 }
 
 function dg_roles_get_selected() {
+    if (! $("#jstree_div").jstree()) {
+        console.log("Roles jstree not setup");
+    }
     var selected_roles = $("#jstree_div").jstree().get_selected(true);
     console.log("Selected roles: ", selected_roles);
 

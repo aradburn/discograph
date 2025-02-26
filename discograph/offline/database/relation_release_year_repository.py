@@ -20,23 +20,6 @@ log = logging.getLogger(__name__)
 class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
     schema_class = RelationReleaseYearTable
 
-    @staticmethod
-    def _to_domain(
-        relation_release_year_db: RelationReleaseYearDB,
-    ) -> RelationReleaseYear:
-        relation_release_year_db_dict: dict = relation_release_year_db.model_dump()
-        return RelationReleaseYear.model_validate(relation_release_year_db_dict)
-
-    # def _get_one_by_query(self, query: Select[tuple[RelationTable]]) -> Relation:
-    #     result: Result = self.execute(query)
-    #     # result: Result = await self.execute(query)
-    #
-    #     if not (instance := result.scalars().one_or_none()):
-    #         raise NotFoundError
-    #
-    #     relation_db = RelationDB.model_validate(instance)
-    #     return self._to_domain(relation_db)
-
     def _get_all_by_query(
         self, query: Select[tuple[RelationReleaseYearTable]]
     ) -> List[RelationReleaseYear]:
@@ -44,10 +27,14 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
         # result: Result = await self.execute(query)
 
         instances = result.scalars().all()
-        relation_dbs = [
+        relation_release_year_dbs = [
             RelationReleaseYearDB.model_validate(instance) for instance in instances
         ]
-        return list(map(self._to_domain, relation_dbs))
+        relation_release_years = [
+            relation_release_year_db.to_domain()
+            for relation_release_year_db in relation_release_year_dbs
+        ]
+        return relation_release_years
 
     def all(self) -> Generator[RelationReleaseYear, None, None]:
         for instance in self._all():
@@ -87,7 +74,7 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
 
         relation_release_year_db = RelationReleaseYearDB.model_validate(instance)
         # print(f"relation_db: {utils.normalize_dict(relation_db)}")
-        return self._to_domain(relation_release_year_db)
+        return relation_release_year_db.to_domain()
 
     def create_bulk(
         self,

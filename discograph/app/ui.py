@@ -21,7 +21,6 @@ from discograph.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
 from discograph.runtime.runtime_database.runtime_transaction import runtime_transaction
-from discograph.runtime.runtime_domain.role import RuntimeRoleJSTreeWrapper
 
 log = logging.getLogger(__name__)
 
@@ -38,7 +37,17 @@ UI_DEFAULT_ROLES = (
 
 @blueprint.route("/")
 def route__index():
-    initial_json = "var dgNetwork = null; var dgRoles = null;"
+    network_js = "var dgNetwork = null;\n"
+    log.debug(f"network_js: {network_js}")
+
+    roles_json = RoleCache.get_roles_json()
+    roles_js = f"var dgRoles = {roles_json};\n"
+    # log.debug(f"roles_js: {roles_js}")
+
+    # Combines network and roles json
+    initial_js = network_js + roles_js
+    # log.debug(f"initial_js: {initial_js}")
+
     parsed_args = discograph.utils.parse_request_args(request.args)
     original_roles, original_year = parsed_args
     if not original_roles:
@@ -51,7 +60,7 @@ def route__index():
     rendered_template = render_template(
         "index.html",
         application_url=app.config["APPLICATION_ROOT"],
-        initial_json=initial_json,
+        initial_json=initial_js,
         multiselect_mapping=multiselect_mapping,
         og_title="Discograph2",
         og_url=url,
@@ -91,23 +100,23 @@ def route__entity_type__entity_id(entity_type_str, entity_id):
         )
     if network_data is None:
         raise NotFoundError(message="No Network Data")
+
     network_json = json.dumps(
         network_data,
         sort_keys=True,
         indent=4,
         separators=(",", ": "),
     )
+    network_js = f"var dgNetwork = {network_json};\n"
+    log.debug(f"network_js: {network_js}")
 
-    roles_data = RuntimeRoleJSTreeWrapper(
-        core=RoleCache.role_jstree,
-        checkbox={"keep_selected_style": False},
-        plugins=["checkbox"],
-    )
-    roles_json = roles_data.model_dump_json()
-    initial_json = (
-        f"var dgNetwork = {network_json};\n" + f"var dgRoles = {roles_json};\n"
-    )
-    # log.debug(f"initial_json: {initial_json}")
+    roles_json = RoleCache.get_roles_json()
+    roles_js = f"var dgRoles = {roles_json};\n"
+    # log.debug(f"roles_js: {roles_js}")
+
+    # Combines network and roles json
+    initial_js = network_js + roles_js
+    # log.debug(f"initial_js: {initial_js}")
 
     entity_name = network_data["center"]["name"]
     key = f"{entity_type.name.lower()}-{entity_id}"
@@ -123,7 +132,7 @@ def route__entity_type__entity_id(entity_type_str, entity_id):
     rendered_template = render_template(
         "index.html",
         application_url=app.config["APPLICATION_ROOT"],
-        initial_json=initial_json,
+        initial_json=initial_js,
         key=key,
         multiselect_mapping=multiselect_mapping,
         og_title=f'Discograph2: The "{entity_name}" network',

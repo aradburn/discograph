@@ -237,7 +237,7 @@ class TestRepositoryRelation(OfflineRepositoryTestCase):
             # Get internal RelationDB
             relation_db = repository.get(1)
             # Convert to domain Relation
-            relation_internal = repository._to_domain(relation_db)
+            relation_internal = relation_db.to_domain()
             relation = relation_internal.to_relation()
             print(f"relation: {relation}")
             actual = utils.normalize_dict(relation.model_dump())

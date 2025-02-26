@@ -3,6 +3,7 @@ from typing import Dict, Any, Self
 
 from discograph import utils
 from discograph.exceptions import NotFoundError
+from discograph.library.cache.role_cache import RoleCache
 from discograph.library.domain.base import InternalDomainObject
 
 __all__ = [
@@ -39,6 +40,13 @@ class RelationDB(_RelationBase):
     subject: int
     predicate: int
     object: int
+
+    def to_domain(self) -> "RelationInternal":
+        relation_db_dict: dict = self.model_dump()
+        role_id: int = relation_db_dict.get("predicate")
+        role_name = RoleCache.role_id_to_role_name_lookup[role_id]
+        relation_db_dict.update(role=role_name)
+        return RelationInternal.model_validate(relation_db_dict)
 
 
 class Relation(_RelationBase):

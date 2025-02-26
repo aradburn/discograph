@@ -27,11 +27,13 @@ class RelationReleaseYearDB(_RelationReleaseYearBase):
     """Saved RelationReleaseYear representation, database internal representation."""
 
     relation_release_year_id: int
-    pass
+
+    def to_domain(self) -> "RelationReleaseYear":
+        relation_release_year_db_dict: dict = self.model_dump()
+        return RelationReleaseYear.model_validate(relation_release_year_db_dict)
 
 
 class RelationReleaseYear(_RelationReleaseYearBase):
     """Domain RelationReleaseYear representation, public facing."""
 
     relation_release_year_id: int
-    pass

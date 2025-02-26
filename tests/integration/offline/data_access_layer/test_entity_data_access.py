@@ -96,7 +96,6 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
 
         # THEN
         expected = {
-            "aliases": {},
             "members": {
                 "Alex Banks": 10141,
                 "Jay Hurren": 474638,

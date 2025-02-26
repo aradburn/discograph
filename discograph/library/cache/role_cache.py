@@ -1,7 +1,13 @@
+import logging
 from typing import Dict, Set
 
 from discograph.library.fields.role_type import RoleType
-from discograph.runtime.runtime_domain.role import RuntimeRoleJSTree
+from discograph.runtime.runtime_domain.role import (
+    RuntimeRoleJSTree,
+    RuntimeRoleJSTreeWrapper,
+)
+
+log = logging.getLogger(__name__)
 
 
 class RoleCache:
@@ -28,3 +34,13 @@ class RoleCache:
             roles.append(role)
         data = {"roles": roles}
         return data
+
+    @staticmethod
+    def get_roles_json() -> str:
+        roles_data = RuntimeRoleJSTreeWrapper(
+            core=RoleCache.role_jstree,
+            checkbox={"keep_selected_style": False},
+            plugins=["checkbox"],
+        )
+        roles_json = roles_data.model_dump_json()
+        return roles_json

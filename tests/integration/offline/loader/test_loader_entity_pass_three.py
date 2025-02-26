@@ -34,7 +34,7 @@ class TestLoaderEntityPassThree(OfflineDatabaseTestCase):
 
         # THEN
         expected_entity = {
-            "entities": {"groups": {}},
+            "entities": {},
             "entity_id": 20702,
             "entity_type": EntityType.ARTIST,
             "entity_metadata": {

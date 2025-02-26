@@ -2,6 +2,7 @@ import logging
 import multiprocessing
 from typing import Any
 
+from retrying import retry
 from sqlalchemy.exc import DatabaseError
 
 from discograph.runtime.runtime_database.runtime_database_helper import (
@@ -32,13 +33,28 @@ class TransferWorkerRelationInserter(multiprocessing.Process):
         if RuntimeDatabaseManager.get_concurrency_count() > 1:
             RuntimeDatabaseHelper.initialize()
 
+        self.save_all(self.bulk_inserts)
+
+        log.info(f"[{proc_name}] inserted_count: {self.inserted_count}")
+
+    @staticmethod
+    def retry_if_db_error(exception):
+        """Return True if we should retry (in this case when it's an DatabaseError), False otherwise"""
+        return isinstance(exception, DatabaseError)
+
+    @staticmethod
+    @retry(
+        stop_max_attempt_number=3,
+        wait_fixed=60000,
+        retry_on_exception=retry_if_db_error,
+    )
+    def save_all(bulk_inserts: list[dict[str, Any]]) -> None:
         with runtime_transaction():
             runtime_relation_repository = RuntimeRelationRepository()
             try:
-                runtime_relation_repository.save_all(self.bulk_inserts)
+                runtime_relation_repository.save_all(bulk_inserts)
                 runtime_relation_repository.commit()
             except DatabaseError:
                 log.error("Error in TransferWorkerRelationInserter worker")
                 # log.exception("Error in TransferWorkerRelationInserter worker", exc_info=True)
                 raise
-        log.info(f"[{proc_name}] inserted_count: {self.inserted_count}")

@@ -2,7 +2,7 @@ import logging
 import pathlib
 from typing import Type, List
 
-from sqlalchemy import Engine, create_engine, text, StaticPool
+from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.dialects.sqlite import insert, Insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.sql.dml import ReturningInsert
@@ -37,10 +37,10 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
 
         engine = create_engine(
             f"sqlite:///{target_path}",
-            connect_args={
-                "check_same_thread": False,
-            },
-            poolclass=StaticPool,
+            # connect_args={
+            #     "check_same_thread": False,
+            # },
+            # poolclass=StaticPool,
         )
         return engine
 
@@ -72,12 +72,20 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
                 connection.execute(text("pragma integrity_check;"))
 
                 # Setup Sqlite
-                connection.execute(text("pragma journal_mode=MEMORY;"))
-                # connection.execute(text("pragma journal_mode=wal;"))
-                connection.execute(text("pragma synchronous=OFF;"))
+                # connection.execute(text("pragma journal_mode=MEMORY;"))
+                # connection.execute(text("pragma synchronous=OFF;"))
+                # connection.execute(text("pragma cache_size=-10000;"))
+                # connection.execute(text("pragma temp_store=MEMORY;"))
+                # connection.execute(text("pragma foreign_keys=ON;"))
+
+                # Setup Sqlite
+                connection.execute(text("pragma journal_mode=WAL;"))
+                connection.execute(text("pragma journal_size_limit = 6144000;"))
+                connection.execute(text("pragma synchronous=NORMAL;"))
                 connection.execute(text("pragma cache_size=-10000;"))
                 connection.execute(text("pragma temp_store=MEMORY;"))
                 connection.execute(text("pragma foreign_keys=ON;"))
+
                 connection.commit()
                 log.info("Offline Database connected OK.")
         except DatabaseError:

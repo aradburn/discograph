@@ -5,6 +5,7 @@ __all__ = [
 
 import logging
 from datetime import datetime
+from typing import Self
 
 from discograph.library.domain.base import InternalDomainObject
 
@@ -26,3 +27,11 @@ class MetadataUncommitted(_MetadataBase):
 class Metadata(_MetadataBase):
     metadata_id: int
     version_id: int = 1
+
+    def to_domain(self) -> Self:
+        # Domain and Database entities are the same
+        return self
+
+    def to_db(self) -> Self:
+        # Domain and Database entities are the same
+        return self

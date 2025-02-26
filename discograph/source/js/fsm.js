@@ -95,6 +95,7 @@ var DiscographFsm = machina.Fsm.extend({
                 this.requestNetwork(entityKey);
             },
             'request-random': function() {
+                console.log("UNINITIALIZED request-random");
                 this.requestRandom();
             },
             'load-inline-data': function(data) {
@@ -119,6 +120,7 @@ var DiscographFsm = machina.Fsm.extend({
                 this.requestNetwork(entityKey);
             },
             'request-random': function() {
+                console.log("VIEWING-NETWORK request-random");
                 this.requestRandom();
             },
             'show-radial': function() {
@@ -183,12 +185,15 @@ var DiscographFsm = machina.Fsm.extend({
                 this.toggleRadial(false);
             },
             'request-network': function(entityKey) {
+                console.log("VIEWING-RADIAL request-network");
                 this.requestNetwork(entityKey);
             },
             'request-random': function() {
+                console.log("VIEWING-RADIAL request-random");
                 this.requestRandom();
             },
             'show-network': function() {
+                console.log("VIEWING-RADIAL show-network");
                 this.transition('viewing-network');
             },
         },
@@ -204,6 +209,7 @@ var DiscographFsm = machina.Fsm.extend({
                 this.toggleFilter(true);
             },
             'errored': function(error) {
+                console.log("REQUESTING errored");
                 this.handleError(error);
             },
             'received-network': function(data, pushHistory, params) {
@@ -229,10 +235,11 @@ var DiscographFsm = machina.Fsm.extend({
 
             },
             'received-random': function(data) {
+                console.log("REQUESTING received-random data: ", data);
                 this.requestNetwork(data.center, true);
             },
             'received-radial': function(data) {
-                console.log("REQUESTING received radial data: ", data);
+                console.log("REQUESTING received-radial data: ", data);
                 dg.relations.data = data;
                 dg.relations.byYear = d3.group(data.results,
                                                function(d) { return d.year; },
@@ -339,10 +346,12 @@ var DiscographFsm = machina.Fsm.extend({
             });
     },
     requestNetwork: function(entityKey, pushHistory) {
-        console.log("requestNetwork: ", entityKey);
+        console.log("requestNetwork key: ", entityKey);
         this.transition('requesting');
         var self = this;
-        d3.json(this.getNetworkURL(entityKey))
+        var url = this.getNetworkURL(entityKey);
+        console.log("requestNetwork url: ", url);
+        d3.json(url)
             .then(function(data) {
                 self.handle('received-network', data, pushHistory);
             })
@@ -354,7 +363,9 @@ var DiscographFsm = machina.Fsm.extend({
         console.log("requestRadial: ", entityKey);
         this.transition('requesting');
         var self = this;
-        d3.json(this.getRadialURL(entityKey))
+        var url = this.getRadialURL(entityKey);
+        console.log("requestRadial url: ", url);
+        d3.json(url)
             .then(function(data) {
                 self.handle('received-radial', data);
             })
@@ -365,7 +376,9 @@ var DiscographFsm = machina.Fsm.extend({
     requestRandom: function() {
         this.transition('requesting');
         var self = this;
-        d3.json(this.getRandomURL())
+        var url = this.getRandomURL();
+        console.log("requestRandom url: ", url);
+        d3.json(url)
             .then(function(data) {
                 self.handle('received-random', data);
             })

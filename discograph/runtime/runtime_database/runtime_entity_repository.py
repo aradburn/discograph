@@ -10,7 +10,7 @@ from discograph.runtime.runtime_database import RuntimeEntityTable
 from discograph.runtime.runtime_database.runtime_base_repository import (
     RuntimeBaseRepository,
 )
-from discograph.runtime.runtime_domain.entity import RuntimeEntity
+from discograph.runtime.runtime_domain.entity import RuntimeEntity, RuntimeEntityDB
 
 log = logging.getLogger(__name__)
 
@@ -18,36 +18,29 @@ log = logging.getLogger(__name__)
 class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
     schema_class = RuntimeEntityTable
 
-    @staticmethod
-    def _to_domain(entity_db: RuntimeEntity) -> RuntimeEntity:
-        # print(f"_to_domain")
-        return entity_db
-
     def _get_one_by_query(
         self, query: Select[tuple[RuntimeEntityTable]]
     ) -> RuntimeEntity:
-        # print(f"_get_one_by_query")
         result: Result = self.execute(query)
         # result: Result = await self.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError
 
-        # print(f"instance: {instance}")
-
-        entity_db = RuntimeEntity.model_validate(instance)
-        # print(f"relation_db: {relation_d)}")
-        return self._to_domain(entity_db)
+        entity_db = RuntimeEntityDB.model_validate(instance)
+        return entity_db.to_domain()
 
     def _get_all_by_query(
         self, query: Select[tuple[RuntimeEntityTable]]
     ) -> List[RuntimeEntity]:
-        # print(f"_get_all_by_query")
         result: Result = self.execute(query)
 
         instances = result.scalars().all()
-        entity_dbs = [RuntimeEntity.model_validate(instance) for instance in instances]
-        return list(map(self._to_domain, entity_dbs))
+        entity_dbs = [
+            RuntimeEntityDB.model_validate(instance) for instance in instances
+        ]
+        entities = [entity_db.to_domain() for entity_db in entity_dbs]
+        return entities
 
     def count_by_type(self, entity_type: EntityType) -> int:
         query = (
@@ -77,7 +70,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
             for partition in results.partitions():
                 # partition is an iterable that will be at most 1000 items
                 for row in partition:
-                    yield RuntimeEntity.model_validate(row[0])
+                    yield RuntimeEntityDB.model_validate(row[0]).to_domain()
 
     def all_ids_and_names(self) -> Generator[tuple[int, str], None, None]:
         query = select(RuntimeEntityTable.id, RuntimeEntityTable.entity_name)
@@ -152,9 +145,6 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
     def get_batched_ids(self, num_in_batch: int):
         return utils.batched(self.get_ids(), num_in_batch)
 
-    # def get_batched_ids_by_type(self, entity_type: EntityType, num_in_batch: int):
-    #     return utils.batched(self.get_ids_by_type(entity_type), num_in_batch)
-
     # def find_by_search_content(self, search_string: str) -> List[RuntimeEntity]:
     #     query = select(RuntimeEntityTable).where(
     #         RuntimeEntityTable.search_content.match(search_string)
@@ -163,9 +153,11 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
     #     return self._get_all_by_query(query)
 
     def create(self, entity: RuntimeEntity) -> RuntimeEntity:
-        instance: RuntimeEntityTable = self._save(entity.model_dump())
+        entity_uncommitted = entity.to_db()
+        instance: RuntimeEntityTable = self._save(entity_uncommitted.model_dump())
         # instance: EntityTable = await self._save(schema.model_dump())
-        return RuntimeEntity.model_validate(instance)
+        entity_db = RuntimeEntityDB.model_validate(instance)
+        return entity_db.to_domain()
 
     def get_by_type_and_name(
         self, entity_type: EntityType, entity_name: str
@@ -179,45 +171,6 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
             .limit(1)
         )
         return self._get_one_by_query(query)
-
-    # def get_random_by_id(self, id_: int) -> Entity:
-    #     query = (
-    #         select(EntityTable)
-    #         .where(
-    #             (EntityTable.id == id_)
-    #             & (EntityTable.entity_type == EntityType.ARTIST)
-    #             & (cast(EntityTable.entities, String) != "{}")
-    #             & (cast(EntityTable.relation_counts, String) != "{}")
-    #             & (
-    #                 (EntityTable.relation_counts["Member Of"].cast(String) != "{}")
-    #                 | (EntityTable.relation_counts["Alias"].cast(String) != "{}")
-    #                 | (EntityTable.entities["members"].cast(String) != "{}")
-    #             )
-    #         )
-    #         .order_by(EntityTable.random)
-    #         .limit(1)
-    #     )
-    #     return self._get_one_by_query(query)
-
-    # def get_random(self) -> Entity:
-    #     n = random()
-    #     query = (
-    #         select(EntityTable)
-    #         .where(
-    #             (EntityTable.random >= n)
-    #             & (EntityTable.entity_type == EntityType.ARTIST)
-    #             # # & (cast(EntityTable.entities, String) != "{}")
-    #             # # & (cast(EntityTable.relation_counts, String) != "{}")
-    #             # & (
-    #             #     (EntityTable.relation_counts["Member Of"].cast(String) != "{}")
-    #             #     | (EntityTable.relation_counts["Alias"].cast(String) != "{}")
-    #             #     | (EntityTable.entities["members"].cast(String) != "{}")
-    #             # )
-    #         )
-    #         .order_by(EntityTable.random)
-    #         .limit(1)
-    #     )
-    #     return self._get_one_by_query(query)
 
     def update(
         self,
@@ -250,15 +203,6 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         # self._session.flush()
         # await self._session.flush()
 
-    # def search_multi(self, entity_ids: list[int]) -> List[Entity]:
-    #     where_clause = cast(
-    #         "ColumnElement[bool]", EntityTable.entity_id.in_(entity_ids)
-    #     )
-    #
-    #     # log.debug(f"            search_multi where_clause: {where_clause}")
-    #     query = select(EntityTable).where(where_clause)
-    #     return self._get_all_by_query(query)
-
     def search_multi(self, entity_keys) -> List[RuntimeEntity]:
         artist_ids: List[int] = []
         label_ids: List[int] = []
@@ -290,6 +234,5 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
             where_clause = (RuntimeEntityTable.entity_type == EntityType.LABEL) & (
                 cast("ColumnElement[bool]", RuntimeEntityTable.entity_id.in_(label_ids))
             )
-        # log.debug(f"            search_multi where_clause: {where_clause}")
         query = select(RuntimeEntityTable).where(where_clause)
         return self._get_all_by_query(query)

@@ -2,7 +2,7 @@ import logging
 import pathlib
 from typing import Type, List
 
-from sqlalchemy import Engine, create_engine, text, StaticPool
+from sqlalchemy import Engine, create_engine, text, NullPool
 from sqlalchemy.dialects.sqlite import insert, Insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.sql.dml import ReturningInsert
@@ -39,8 +39,10 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             f"sqlite:///{target_path}",
             connect_args={
                 "check_same_thread": False,
+                "timeout": 60,
             },
-            poolclass=StaticPool,
+            # poolclass=StaticPool,
+            poolclass=NullPool,
         )
         return engine
 
@@ -79,6 +81,17 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             #     connection.execute(text("pragma temp_store=MEMORY;"))
             #     connection.execute(text("pragma foreign_keys=ON;"))
             #     connection.commit()
+
+            # Setup Sqlite
+            with engine.connect() as connection:
+                connection.execute(text("pragma journal_mode=WAL;"))
+                connection.execute(text("pragma synchronous=normal;"))
+                connection.execute(text("pragma journal_size_limit = 6144000;"))
+                connection.execute(text("pragma cache_size=-10000;"))
+                connection.execute(text("pragma temp_store=MEMORY;"))
+                # connection.execute(text("pragma foreign_keys=ON;"))
+                connection.commit()
+
             log.info("Runtime Database connected OK.")
         except DatabaseError:
             log.exception("Runtime Database Connection Error", exc_info=True)

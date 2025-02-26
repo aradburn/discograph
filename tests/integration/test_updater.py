@@ -29,7 +29,7 @@ class TestUpdater(UpdaterTestCase):
 
         # THEN
         expected_entity = {
-            "entities": {"groups": {}},
+            "entities": {},
             "entity_id": 20702,
             "entity_type": "EntityType.ARTIST",
             "entity_metadata": {
@@ -140,7 +140,7 @@ class TestUpdater(UpdaterTestCase):
 
         # THEN
         expected_entity = {
-            "entities": {"aliases": {}, "groups": {"Test Group": None}},
+            "entities": {"groups": {"Test Group": None}},
             "entity_id": 9999999,
             "entity_metadata": {
                 "name_variations": ["Test Test", "DJ TEST"],

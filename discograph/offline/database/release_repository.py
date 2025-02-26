@@ -1,5 +1,5 @@
 import logging
-from typing import Generator, Any, List
+from typing import Generator, Any, List, Sequence
 
 from sqlalchemy import Result, select, update, Select, delete
 
@@ -15,32 +15,23 @@ log = logging.getLogger(__name__)
 class ReleaseRepository(BaseRepository[ReleaseTable]):
     schema_class = ReleaseTable
 
-    @staticmethod
-    def _to_domain(release_db: Release) -> Release:
-        # print(f"_to_domain")
-        return release_db
-
     def _get_one_by_query(self, query: Select[tuple[ReleaseTable]]) -> Release:
-        # print(f"_get_one_by_query")
         result: Result = self.execute(query)
         # result: Result = await self.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError
 
-        # print(f"instance: {instance}")
-
         release_db = Release.model_validate(instance)
-        # print(f"relation_db: {utils.normalize_dict(relation_db)}")
-        return self._to_domain(release_db)
+        return release_db.to_domain()
 
     def _get_all_by_query(self, query: Select[tuple[ReleaseTable]]) -> List[Release]:
-        # print(f"_get_all_by_query")
         result: Result = self.execute(query)
 
         instances = result.scalars().all()
         release_dbs = [Release.model_validate(instance) for instance in instances]
-        return list(map(self._to_domain, release_dbs))
+        releases = [release_db.to_domain() for release_db in release_dbs]
+        return releases
 
     def all(self) -> Generator[Release, None, None]:
         query = select(ReleaseTable)
@@ -73,22 +64,11 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
         # instance: ReleaseTable = await self._save(schema.model_dump())
         return Release.model_validate(instance)
 
-    def get_ids(self):
+    def get_ids(self) -> Sequence[int]:
         return self._session.scalars(select(ReleaseTable.release_id)).all()
 
-    def get_batched_ids(self, num_in_batch: int):
+    def get_batched_ids(self, num_in_batch: int) -> List[List[int]]:
         return utils.batched(self.get_ids(), num_in_batch)
-
-    # def get_random_release(self) -> Release:
-    #     n = random()
-    #     query = (
-    #         select(ReleaseTable)
-    #         .where(ReleaseTable.random > n)
-    #         .order_by(ReleaseTable.random)
-    #         .limit(1)
-    #     )
-    #     t = self._get_one_by_query(query)
-    #     return t
 
     def update(
         self,

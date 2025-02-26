@@ -1,5 +1,5 @@
 import logging
-from typing import Generator, Any, cast, List
+from typing import Generator, Any, cast, List, Sequence
 
 from sqlalchemy import Result, select, update, Select, delete, func
 
@@ -16,32 +16,23 @@ log = logging.getLogger(__name__)
 class EntityRepository(BaseRepository[EntityTable]):
     schema_class = EntityTable
 
-    @staticmethod
-    def _to_domain(entity_db: Entity) -> Entity:
-        # print(f"_to_domain")
-        return entity_db
-
     def _get_one_by_query(self, query: Select[tuple[EntityTable]]) -> Entity:
-        # print(f"_get_one_by_query")
         result: Result = self.execute(query)
         # result: Result = await self.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError
 
-        # print(f"instance: {instance}")
-
         entity_db = Entity.model_validate(instance)
-        # print(f"relation_db: {relation_d)}")
-        return self._to_domain(entity_db)
+        return entity_db.to_domain()
 
     def _get_all_by_query(self, query: Select[tuple[EntityTable]]) -> List[Entity]:
-        # print(f"_get_all_by_query")
         result: Result = self.execute(query)
 
         instances = result.scalars().all()
         entity_dbs = [Entity.model_validate(instance) for instance in instances]
-        return list(map(self._to_domain, entity_dbs))
+        entities = [entity_db.to_domain() for entity_db in entity_dbs]
+        return entities
 
     def count_by_type(self, entity_type: EntityType) -> int:
         query = (
@@ -96,22 +87,22 @@ class EntityRepository(BaseRepository[EntityTable]):
         )
         return self._get_one_by_query(query)
 
-    def get_ids(self):
+    def get_ids(self) -> Sequence[int]:
         return self._session.scalars(select(EntityTable.id)).all()
 
-    def get_ids_by_type(self, entity_type: EntityType):
+    def get_ids_by_type(self, entity_type: EntityType) -> Sequence[int]:
         return self._session.scalars(
             select(EntityTable.id).where(EntityTable.entity_type == entity_type)
         ).all()
 
-    def get_entity_ids_by_type(self, entity_type: EntityType):
+    def get_entity_ids_by_type(self, entity_type: EntityType) -> Sequence[int]:
         return self._session.scalars(
             select(EntityTable.entity_id).where(EntityTable.entity_type == entity_type)
         ).all()
 
     def get_entity_id_by_entity_type_and_entity_name(
         self, entity_type: EntityType, entity_name: str
-    ):
+    ) -> int | None:
         return self._session.execute(
             select(EntityTable.entity_id).where(
                 (EntityTable.entity_name == entity_name)
@@ -121,7 +112,7 @@ class EntityRepository(BaseRepository[EntityTable]):
 
     def get_id_by_entity_type_and_entity_name(
         self, entity_type: EntityType, entity_name: str
-    ):
+    ) -> int | None:
         return self._session.execute(
             select(EntityTable.id).where(
                 (EntityTable.entity_name == entity_name)
@@ -131,7 +122,7 @@ class EntityRepository(BaseRepository[EntityTable]):
 
     def get_id_by_entity_type_and_entity_id(
         self, entity_type: EntityType, entity_id: int
-    ):
+    ) -> int | None:
         return self._session.execute(
             select(EntityTable.id).where(
                 (EntityTable.entity_id == entity_id)
@@ -139,17 +130,13 @@ class EntityRepository(BaseRepository[EntityTable]):
             )
         ).scalar_one_or_none()
 
-    def get_batched_ids(self, num_in_batch: int):
+    def get_batched_ids(self, num_in_batch: int) -> List[List[int]]:
         return utils.batched(self.get_ids(), num_in_batch)
-
-    # def get_batched_ids_by_type(self, entity_type: EntityType, num_in_batch: int):
-    #     return utils.batched(self.get_ids_by_type(entity_type), num_in_batch)
 
     def find_by_search_content(self, search_string: str) -> List[Entity]:
         query = select(EntityTable).where(
             EntityTable.search_content.match(search_string)
         )
-        # log.debug(f"search: {query}")
         return self._get_all_by_query(query)
 
     def create(self, entity: Entity) -> Entity:
@@ -168,50 +155,11 @@ class EntityRepository(BaseRepository[EntityTable]):
         )
         return self._get_one_by_query(query)
 
-    # def get_random_by_id(self, id_: int) -> Entity:
-    #     query = (
-    #         select(EntityTable)
-    #         .where(
-    #             (EntityTable.id == id_)
-    #             & (EntityTable.entity_type == EntityType.ARTIST)
-    #             & (cast(EntityTable.entities, String) != "{}")
-    #             & (cast(EntityTable.relation_counts, String) != "{}")
-    #             & (
-    #                 (EntityTable.relation_counts["Member Of"].cast(String) != "{}")
-    #                 | (EntityTable.relation_counts["Alias"].cast(String) != "{}")
-    #                 | (EntityTable.entities["members"].cast(String) != "{}")
-    #             )
-    #         )
-    #         .order_by(EntityTable.random)
-    #         .limit(1)
-    #     )
-    #     return self._get_one_by_query(query)
-
-    # def get_random(self) -> Entity:
-    #     n = random()
-    #     query = (
-    #         select(EntityTable)
-    #         .where(
-    #             (EntityTable.random >= n)
-    #             & (EntityTable.entity_type == EntityType.ARTIST)
-    #             # # & (cast(EntityTable.entities, String) != "{}")
-    #             # # & (cast(EntityTable.relation_counts, String) != "{}")
-    #             # & (
-    #             #     (EntityTable.relation_counts["Member Of"].cast(String) != "{}")
-    #             #     | (EntityTable.relation_counts["Alias"].cast(String) != "{}")
-    #             #     | (EntityTable.entities["members"].cast(String) != "{}")
-    #             # )
-    #         )
-    #         .order_by(EntityTable.random)
-    #         .limit(1)
-    #     )
-    #     return self._get_one_by_query(query)
-
     def update(
         self,
         id_: int,
         payload: dict[str, Any],
-    ) -> EntityTable:
+    ) -> Entity:
         """Updates an existed instance of the model in the related table.
         If some data is not exist in the payload then the null value will
         be passed to the schema class."""
@@ -227,25 +175,17 @@ class EntityRepository(BaseRepository[EntityTable]):
         self._session.flush()
         # await self._session.flush()
 
-        if not (schema := result.scalar_one_or_none()):
+        if not (instance := result.scalar_one_or_none()):
             raise DatabaseError
 
-        return schema
+        entity_db = Entity.model_validate(instance)
+        return entity_db.to_domain()
 
     def delete_by_id(self, id_: int) -> None:
         self.execute(delete(self.schema_class).where(EntityTable.id == id_))
         # await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))
         # self._session.flush()
         # await self._session.flush()
-
-    # def search_multi(self, entity_ids: list[int]) -> List[Entity]:
-    #     where_clause = cast(
-    #         "ColumnElement[bool]", EntityTable.entity_id.in_(entity_ids)
-    #     )
-    #
-    #     # log.debug(f"            search_multi where_clause: {where_clause}")
-    #     query = select(EntityTable).where(where_clause)
-    #     return self._get_all_by_query(query)
 
     def search_multi(self, entity_keys) -> List[Entity]:
         artist_ids: List[int] = []
@@ -271,6 +211,5 @@ class EntityRepository(BaseRepository[EntityTable]):
             where_clause = (EntityTable.entity_type == EntityType.LABEL) & (
                 cast("ColumnElement[bool]", EntityTable.entity_id.in_(label_ids))
             )
-        # log.debug(f"            search_multi where_clause: {where_clause}")
         query = select(EntityTable).where(where_clause)
         return self._get_all_by_query(query)

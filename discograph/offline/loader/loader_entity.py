@@ -253,7 +253,9 @@ class LoaderEntity(LoaderBase):
                 "sublabels",
             ):
                 if key in data:
-                    data["entities"][key] = data.pop(key)
+                    key_entry = data.pop(key)
+                    if key_entry is not None and len(key_entry) > 0:
+                        data["entities"][key] = key_entry
             for key in (
                 "contact_info",
                 "name_variations",

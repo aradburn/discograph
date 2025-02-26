@@ -6,16 +6,13 @@ from sqlalchemy import Engine, Index, Table
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.sql.dml import ReturningInsert, Insert
 
-from discograph.config import Configuration, ENTITY_DETAILS_PATH, TEXT_SEARCH_PATH
+from discograph.config import Configuration, TEXT_SEARCH_PATH
 from discograph.exceptions import NotFoundError
 from discograph.library.cache.cache_manager import CacheManager
 from discograph.library.fields.entity_id import to_entity_external_id
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.full_text_search.entity_details_index import EntityDetailsIndex
 from discograph.library.full_text_search.text_search_index import TextSearchIndex
-from discograph.runtime.data_access_layer.runtime_entity_data_access import (
-    RuntimeEntityDataAccess,
-)
 from discograph.runtime.data_access_layer.runtime_role_data_access import (
     RuntimeRoleDataAccess,
 )
@@ -127,11 +124,7 @@ class RuntimeDatabaseHelper(ABC):
     def load_tables(cls) -> None:
         log.info("Load tables")
         RuntimeRoleDataAccess.load_all_roles()
-        RuntimeDatabaseHelper.entity_details_index = (
-            RuntimeEntityDataAccess.load_entity_details_index_from_file(
-                ENTITY_DETAILS_PATH
-            )
-        )
+
         RuntimeDatabaseHelper.text_search_index = (
             TextSearchIndex.load_text_search_index_from_file(TEXT_SEARCH_PATH)
         )

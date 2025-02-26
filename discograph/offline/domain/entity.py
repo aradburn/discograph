@@ -3,6 +3,7 @@ __all__ = [
 ]
 
 import logging
+from typing import Self
 
 from discograph.library.domain.base import InternalDomainObject
 from discograph.library.fields.entity_type import EntityType
@@ -47,6 +48,14 @@ class _EntityBase(InternalDomainObject):
         elif entity_type == EntityType.LABEL:
             return f"label-{entity_id}"
         raise ValueError(entity_id, entity_type)
+
+    def to_domain(self) -> Self:
+        # Domain and Database entities are the same
+        return self
+
+    def to_db(self) -> Self:
+        # Domain and Database entities are the same
+        return self
 
 
 class Entity(_EntityBase):
