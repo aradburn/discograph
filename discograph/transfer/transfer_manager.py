@@ -36,7 +36,7 @@ log = logging.getLogger(__name__)
 
 
 class TransferManager:
-    BULK_INSERT_BATCH_SIZE = 10000
+    BULK_INSERT_BATCH_SIZE = 100000
 
     @staticmethod
     def transfer_entity() -> None:

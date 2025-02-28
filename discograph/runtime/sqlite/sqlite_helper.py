@@ -39,7 +39,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             f"sqlite:///{target_path}",
             connect_args={
                 "check_same_thread": False,
-                "timeout": 60,
+                "timeout": 600,
             },
             # poolclass=StaticPool,
             poolclass=NullPool,

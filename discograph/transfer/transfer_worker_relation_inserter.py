@@ -18,16 +18,30 @@ log = logging.getLogger(__name__)
 
 
 class TransferWorkerRelationInserter(multiprocessing.Process):
-    def __init__(
-        self,
-        bulk_inserts: list[dict[str, Any]],
-        inserted_count: int,
-    ):
+    """
+    A multiprocessing.Process subclass that handles the insertion of bulk data into the database.
+
+    Attributes:
+        bulk_inserts (list[dict[str, Any]]): A list of dictionaries containing the data to be inserted.
+        inserted_count (int): The count of inserted records.
+    """
+
+    def __init__(self, bulk_inserts: list[dict[str, Any]], inserted_count: int):
+        """
+        Initializes the TransferWorkerRelationInserter with the given bulk inserts and inserted count.
+
+        Args:
+            bulk_inserts (list[dict[str, Any]]): The data to be inserted.
+            inserted_count (int): The count of inserted records.
+        """
         super().__init__()
         self.bulk_inserts = bulk_inserts
         self.inserted_count = inserted_count
 
     def run(self):
+        """
+        The main process method that initializes the database if needed and saves all bulk inserts.
+        """
         proc_name = self.name
 
         if RuntimeDatabaseManager.get_concurrency_count() > 1:
@@ -39,7 +53,15 @@ class TransferWorkerRelationInserter(multiprocessing.Process):
 
     @staticmethod
     def retry_if_db_error(exception):
-        """Return True if we should retry (in this case when it's an DatabaseError), False otherwise"""
+        """
+        Determines if the operation should be retried based on the exception type.
+
+        Args:
+            exception (Exception): The exception that was raised.
+
+        Returns:
+            bool: True if the exception is a DatabaseError, False otherwise.
+        """
         return isinstance(exception, DatabaseError)
 
     @staticmethod
@@ -49,6 +71,15 @@ class TransferWorkerRelationInserter(multiprocessing.Process):
         retry_on_exception=retry_if_db_error,
     )
     def save_all(bulk_inserts: list[dict[str, Any]]) -> None:
+        """
+        Saves all bulk inserts to the database with retry logic in case of DatabaseError.
+
+        Args:
+            bulk_inserts (list[dict[str, Any]]): The data to be inserted.
+
+        Raises:
+            DatabaseError: If there is an error during the database operation.
+        """
         with runtime_transaction():
             runtime_relation_repository = RuntimeRelationRepository()
             try:

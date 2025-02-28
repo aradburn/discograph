@@ -41,7 +41,15 @@ class TransferWorkerEntityInserter(multiprocessing.Process):
 
     @staticmethod
     def retry_if_db_error(exception):
-        """Return True if we should retry (in this case when it's an DatabaseError), False otherwise"""
+        """
+        Determines if the operation should be retried based on the exception type.
+
+        Args:
+            exception (Exception): The exception that was raised.
+
+        Returns:
+            bool: True if the exception is a DatabaseError, False otherwise.
+        """
         return isinstance(exception, DatabaseError)
 
     @staticmethod
