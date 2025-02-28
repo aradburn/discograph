@@ -11,6 +11,21 @@ log = logging.getLogger(__name__)
 
 
 class RoleCache:
+    """
+    A cache for roles, providing lookups and data structures for role-related information.
+
+    This class manages various mappings and data structures to efficiently access
+    and retrieve role information, such as role IDs, names, categories, and a
+    JSON tree representation for the UI.
+
+    Attributes:
+        role_name_to_role_id_lookup (Dict[str, int]): A dictionary mapping role names to role IDs.
+        role_name_set (Set[str]): A set containing all role names.
+        role_id_to_role_category_lookup (Dict[int, RoleType.Category]): A dictionary mapping role IDs to role categories.
+        role_id_to_role_name_lookup (Dict[int, str]): A dictionary mapping role IDs to role names.
+        role_jstree (RuntimeRoleJSTree): A tree structure representing roles for the UI.
+        role_category_to_role_name_lookup (Dict[str, list[str]]): A dictionary mapping role categories to lists of role names.
+    """
 
     # CLASS VARIABLES
     role_name_to_role_id_lookup: Dict[str, int] = {}
@@ -23,6 +38,13 @@ class RoleCache:
 
     @staticmethod
     def get_all_roles() -> dict:
+        """
+        Retrieves all roles with their IDs, names, and categories.
+
+        Returns:
+            dict: A dictionary containing a list of roles, where each role is a dictionary
+                  with 'id', 'role_name', and 'role_category' keys.
+        """
         roles = []
         for role_id, role_name in RoleCache.role_id_to_role_name_lookup.items():
             role_category = RoleCache.role_id_to_role_category_lookup[role_id]
@@ -37,6 +59,12 @@ class RoleCache:
 
     @staticmethod
     def get_roles_json() -> str:
+        """
+        Retrieves a JSON representation of the roles in a tree structure.
+
+        Returns:
+            str: A JSON string representing the roles in a tree structure, suitable for UI rendering.
+        """
         roles_data = RuntimeRoleJSTreeWrapper(
             core=RoleCache.role_jstree,
             checkbox={"keep_selected_style": False},
