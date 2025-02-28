@@ -12,6 +12,16 @@ from discograph.runtime.runtime_database.runtime_base_table import RuntimeBase
 
 
 class RuntimeRelationTable(RuntimeBase):
+    """
+    Represents the runtime relation table in the database.
+
+    Attributes:
+        id (int): The unique identifier for the runtime relation.
+        subject (int): The ID of the subject entity.
+        predicate (int): The ID of the predicate entity, referencing RuntimeRoleTable.
+        object (int): The ID of the object entity.
+    """
+
     __tablename__ = "runtime_relation"
 
     # COLUMNS
@@ -22,13 +32,6 @@ class RuntimeRelationTable(RuntimeBase):
     object: Mapped[int] = mapped_column(Integer)
 
     __table_args__ = (
-        # Index(
-        #     "idx_runtime_relation",
-        #     subject,
-        #     predicate,
-        #     object,
-        #     unique=True,
-        # ),
         Index(
             "idx_runtime_relation_subject",
             subject,
@@ -43,7 +46,12 @@ class RuntimeRelationTable(RuntimeBase):
     )
 
     def __init__(self, **entries):
-        """Override to avoid TypeError when passed spurious column names"""
+        """
+        Initializes a RuntimeRelationTable instance.
+
+        Args:
+            entries (dict): The entries to initialize the instance with.
+        """
         column_names = set(
             [column.name for column in inspect(RuntimeRelationTable).columns]
         )
@@ -53,4 +61,10 @@ class RuntimeRelationTable(RuntimeBase):
         super().__init__(**superentries)
 
     def __repr__(self):
+        """
+        Returns a string representation of the RuntimeRelationTable instance.
+
+        Returns:
+            str: The string representation of the instance.
+        """
         return utils.normalize_dict(utils.row2dict(self), skip_keys={})

@@ -7,6 +7,18 @@ from discograph.runtime.runtime_database.runtime_base_table import RuntimeBase
 
 
 class RuntimeRoleTable(RuntimeBase):
+    """
+    Represents the runtime role table in the database.
+
+    Attributes:
+        id (int): The unique identifier for the runtime role.
+        role_name (str): The name of the role.
+        role_category (RoleType.Category): The category of the role.
+        role_subcategory (RoleType.Subcategory): The subcategory of the role.
+        role_category_name (str): The name of the role category.
+        role_subcategory_name (str): The name of the role subcategory.
+    """
+
     __tablename__ = "runtime_role"
 
     # COLUMNS
@@ -23,7 +35,12 @@ class RuntimeRoleTable(RuntimeBase):
     role_subcategory_name: Mapped[str] = mapped_column(String)
 
     def __init__(self, **entries):
-        """Override to avoid TypeError when passed spurious column names"""
+        """
+        Initializes a RuntimeRoleTable instance.
+
+        Args:
+            entries (dict): The entries to initialize the instance with.
+        """
         column_names = set(
             [column.name for column in inspect(RuntimeRoleTable).columns]
         )
@@ -33,4 +50,10 @@ class RuntimeRoleTable(RuntimeBase):
         super().__init__(**superentries)
 
     def __repr__(self):
+        """
+        Returns a string representation of the RuntimeRoleTable instance.
+
+        Returns:
+            str: The string representation of the instance.
+        """
         return utils.normalize_dict(utils.row2dict(self), skip_keys={})

@@ -8,6 +8,24 @@ from discograph.runtime.runtime_database.runtime_base_table import RuntimeBase
 
 
 class RuntimeEntityTable(RuntimeBase):
+    """
+    Represents the runtime entity table in the database.
+
+    Attributes:
+        id (int): The unique identifier for the runtime entity.
+        entity_id (int): The ID of the entity.
+        entity_type (EntityType): The type of the entity.
+        entity_name (str): The name of the entity.
+        relation_counts (dict | list): The relation counts of the entity.
+        entity_metadata (dict | list): The metadata of the entity.
+        aliases (dict | list): The aliases of the entity.
+        groups (dict | list): The groups associated with the entity.
+        members (dict | list): The members associated with the entity.
+        countries (str): The countries associated with the entity.
+        genres (str): The genres associated with the entity.
+        styles (str): The styles associated with the entity.
+    """
+
     __tablename__ = "runtime_entity"
 
     # COLUMNS
@@ -21,8 +39,6 @@ class RuntimeEntityTable(RuntimeBase):
     aliases: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
     groups: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
     members: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
-    # entities: Mapped[dict | list] = mapped_column(type_=JSON, nullable=False)
-    # search_content: Mapped[str] = mapped_column(String, nullable=False)
     countries: Mapped[str] = mapped_column(String, nullable=True)
     genres: Mapped[str] = mapped_column(String, nullable=True)
     styles: Mapped[str] = mapped_column(String, nullable=True)
@@ -34,22 +50,16 @@ class RuntimeEntityTable(RuntimeBase):
             entity_type,
             unique=True,
         ),
-        # Index(
-        #     "idx_runtime_entity_name_and_entity_type",
-        #     entity_name,
-        #     entity_type,
-        #     unique=False,
-        # ),
         {},
     )
 
-    # __table_args__ = (
-    #     PrimaryKeyConstraint(entity_id, entity_type),
-    #     {},
-    # )
-
     def __init__(self, **entries):
-        """Override to avoid TypeError when passed spurious column names"""
+        """
+        Initializes a RuntimeEntityTable instance.
+
+        Args:
+            entries (dict): The entries to initialize the instance with.
+        """
         column_names = set(
             [column.name for column in inspect(RuntimeEntityTable).columns]
         )
@@ -59,4 +69,10 @@ class RuntimeEntityTable(RuntimeBase):
         super().__init__(**superentries)
 
     def __repr__(self):
+        """
+        Returns a string representation of the RuntimeEntityTable instance.
+
+        Returns:
+            str: The string representation of the instance.
+        """
         return utils.normalize_dict(utils.row2dict(self), skip_keys={})
