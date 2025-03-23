@@ -320,7 +320,7 @@ export const DiscographFsm = machina.Fsm.extend({
                 
                 // Update application state
                 dg.network.data.json = JSON.parse(JSON.stringify(data));
-                document.title = 'Discograph2: ' + data.center.name;
+                document.title = 'Discograph: ' + data.center.name;
                 document.body.id = entityKey;
                 
                 // Update browser history if needed

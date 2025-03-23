@@ -57,8 +57,8 @@ blueprint = Blueprint(
     "ui",
     __name__,
     static_url_path="/public/",
-    static_folder="../public",
-    template_folder="templates",
+    static_folder="../../frontend/public",
+    template_folder="../../frontend/templates",
 )
 """
 The Flask blueprint for the UI routes.
@@ -122,11 +122,11 @@ def route__index():
         application_url=app.config["APPLICATION_ROOT"],
         initial_json=initial_js,
         multiselect_mapping=multiselect_mapping,
-        og_title="Discograph2",
+        og_title="Discograph",
         og_url=url,
         original_roles=original_roles,
         original_year=original_year,
-        title="Discograph2",
+        title="Discograph",
     )
     """Render the index template with the prepared data."""
     response = make_response(rendered_template)
@@ -221,7 +221,7 @@ def route__entity_type__entity_id(entity_type_str, entity_id):
         roles=requested_roles,
     )
     """Generate the URL for the current entity."""
-    title = f"Discograph2: {entity_name}"
+    title = f"Discograph: {entity_name}"
     """Set the page title."""
     multiselect_mapping = RoleEntry.get_multiselect_mapping()
     """Get the multiselect mapping for roles."""
@@ -231,7 +231,7 @@ def route__entity_type__entity_id(entity_type_str, entity_id):
         initial_json=initial_js,
         key=key,
         multiselect_mapping=multiselect_mapping,
-        og_title=f'Discograph2: The "{entity_name}" network',
+        og_title=f'Discograph: The "{entity_name}" network',
         og_url=url,
         original_roles=requested_roles,
         original_year=requested_year,
@@ -243,42 +243,42 @@ def route__entity_type__entity_id(entity_type_str, entity_id):
     return response
 
 
-@blueprint.route("/favicon.ico")
-def favicon():
-    """
-    Serves the favicon.ico file.
-
-    Returns:
-        flask.Response: The favicon.ico file.
-    """
-    return send_from_directory(
-        os.path.join(app.root_path, "static"),
-        path="favicon.ico",
-        mimetype="image/vnd.microsoft.icon",
-    )
-
-
-@blueprint.route("/favicon-32x32.png")
-def favicon32():
-    """
-    Serves the favicon-32x32.png file.
-
-    Returns:
-        flask.Response: The favicon-32x32.png file.
-    """
-    return send_from_directory(
-        os.path.join(app.root_path, "static"), path="favicon-32x32.png"
-    )
-
-
-@blueprint.route("/apple-touch-icon.png")
-def favicon_apple():
-    """
-    Serves the apple-touch-icon.png file.
-
-    Returns:
-        flask.Response: The apple-touch-icon.png file.
-    """
-    return send_from_directory(
-        os.path.join(app.root_path, "static"), path="apple-touch-icon.png"
-    )
+# @blueprint.route("/favicon.ico")
+# def favicon():
+#     """
+#     Serves the favicon.ico file.
+#
+#     Returns:
+#         flask.Response: The favicon.ico file.
+#     """
+#     return send_from_directory(
+#         os.path.join(app.root_path, "static"),
+#         path="favicon.ico",
+#         mimetype="image/vnd.microsoft.icon",
+#     )
+#
+#
+# @blueprint.route("/favicon-32x32.png")
+# def favicon32():
+#     """
+#     Serves the favicon-32x32.png file.
+#
+#     Returns:
+#         flask.Response: The favicon-32x32.png file.
+#     """
+#     return send_from_directory(
+#         os.path.join(app.root_path, "static"), path="favicon-32x32.png"
+#     )
+#
+#
+# @blueprint.route("/apple-touch-icon.png")
+# def favicon_apple():
+#     """
+#     Serves the apple-touch-icon.png file.
+#
+#     Returns:
+#         flask.Response: The apple-touch-icon.png file.
+#     """
+#     return send_from_directory(
+#         os.path.join(app.root_path, "static"), path="apple-touch-icon.png"
+#     )

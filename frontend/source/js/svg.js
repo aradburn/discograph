@@ -132,7 +132,7 @@ export const printSvg = async (width, height) => {
     function saveBlob(dataBlob, filesize) {
         const entityKey = dg.network.pageData.selectedNodeKey;
         const node = dg.network.data.nodeMap.get(entityKey);
-        saveAs(dataBlob, `Discograph2 - ${node.name}.png`);
+        saveAs(dataBlob, `Discograph - ${node.name}.png`);
 
         clearMessages(10);
         showMessage("success", "Saving image complete");

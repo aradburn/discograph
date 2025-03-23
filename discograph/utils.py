@@ -20,6 +20,7 @@ from dateutil.relativedelta import relativedelta
 from toolz import count
 from unidecode import unidecode
 
+from discograph.app.ui import UI_DEFAULT_ROLES
 from discograph.config import (
     DISCOGS_BASE_URL,
     DISCOGS_PATH,
@@ -70,7 +71,7 @@ class SkipFilter:
         raise ValueError
 
 
-def parse_request_args(args):
+def parse_request_args(args) -> tuple[list[str], int | tuple[int, int]] | None:
     from discograph.library.cache.role_cache import RoleCache
 
     year = None
@@ -99,6 +100,8 @@ def parse_request_args(args):
                 elif role in RoleCache.role_name_to_role_id_lookup.keys():
                     roles.add(role)
 
+    if len(roles) == 0:
+        roles = UI_DEFAULT_ROLES
     roles = list(sorted(roles))
     log.debug(f"Requested roles: {roles}")
     return roles, year

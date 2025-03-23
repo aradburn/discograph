@@ -29,14 +29,14 @@ def create_assets_blueprint(config: Configuration) -> Blueprint:
     assets_blueprint = Blueprint(
         "assets",
         __name__,
-        static_folder="../source_compiled/bundled",
+        static_folder="../frontend/source_compiled/bundled",
         static_url_path="/assets/bundled",
     )
 
     # Load manifest file in the production environment.
     manifest = {}
     if is_production:
-        manifest_path = project_path / "../source_compiled/manifest.json"
+        manifest_path = project_path / "../frontend/source_compiled/manifest.json"
         try:
             with open(manifest_path, "r") as content:
                 manifest = json.load(content)

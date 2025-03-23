@@ -1,20 +1,20 @@
 {
-  "name": "discograph2",
+  "name": "discograph",
   "description": "Social Graphing for the Discogs Database",
   "private": true,
   "version": "2.1.0",
   "type": "module",
-  "author": {
-    "name": "Josiah Wolf Oberholtzer",
-    "url": "http://josiahwolfoberholtzer.com"
-  },
-  "contributors": [
+  "author": [
+    {
+      "name": "Josiah Wolf Oberholtzer",
+      "url": "http://josiahwolfoberholtzer.com"
+    },
     {
       "name": "Andy Radburn",
       "url": "http://andyradburn.co.uk"
     }
   ],
-  "homepage": "http://discograph2.org",
+  "homepage": "http://discograph.org",
   "license": "MIT",
   "readme": "../README.md",
   "repository": {

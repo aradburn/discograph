@@ -1,5 +1,5 @@
-About Discograph2
-=================
+About Discograph
+================
 
 - Interactive graphing of the relationships between bands, labels and musicians
 - Single-page application, using asynchronous calls to a JSON API
