@@ -5,3 +5,4 @@ package-lock.json
 /data_text_search/text_search.data
 /data_text_search/entity_details.data
 /database/discograph.db
+/source_compiled/

@@ -4,6 +4,7 @@
  * Date: 22.10.2013
  * Based on jquery documentation http://learn.jquery.com/events/event-extensions/
  */
+// @ts-nocheck
 
 (function($){
 

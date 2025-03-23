@@ -1,110 +1,132 @@
-LINK_DEBOUNCE_TIME = 250
-LINK_OUT_TRANSITION_TIME = 500
-LINK_PALETTE = "LinkGreenPalette"
+import { getLinkColorClass } from '../color';
+import * as d3 from 'd3';
+import { tip as d3tip } from "d3-v6-tip";
+import { debounce } from '../init';
 
-/* Initialize link tooltip */
-var linkToolTip = d3.tip()
+/**
+ * Constants for link behavior and styling
+ */
+const LINK_DEBOUNCE_TIME = 250;           // Debounce time for link interactions in milliseconds
+const LINK_OUT_TRANSITION_TIME = 500;      // Duration of link exit transition in milliseconds
+const LINK_PALETTE = "LinkGreenPalette";   // Default color palette for links
+
+/**
+ * Generates HTML content for link tooltips
+ * @param {Object} d - Link data object containing source, target, and role information
+ * @returns {string} HTML string for tooltip content
+ */
+const setLinkTooltip = (d) => {
+    return [
+        `<div>${d.source.name}</div>`,
+        `<div>${d.role}</div>`,
+        `<div>${d.target.name}</div>`
+    ].join('');
+}
+
+/**
+ * Creates abbreviated text annotation for links
+ * Takes the first letter of each word in the role
+ * @param {Object} d - Link data object
+ * @returns {string} Abbreviated role text
+ */
+const linkAnnotation = (d) => {
+    return d.role.split(' ').map(word => word[0]).join('');
+}
+
+/**
+ * Initialize D3 tooltip for links
+ * Configures a tooltip that appears above the link with network relationship information
+ */
+// @ts-ignore
+export const linkToolTip = d3tip()
     .attr('class', 'd3-link-tooltip')
     .direction('n')
     .offset([20, 0])
-    .html(dg_network_link_tooltip);
+    .html(setLinkTooltip);
 
-function dg_network_onLinkEnter(linkEnter) {
-    var linkEnter = linkEnter.append("g")
-        .attr("id", function(d) {
-            return "link-" + d.key;
-        })
-        .attr("class", function(d) {
-            var parts = d.key.split('-');
-            var role = parts.slice(2, 2 + parts.length - 4).join('-')
-            var classes = [
-                "link",
-                role,
-                LINK_PALETTE,
-            ];
-            return classes.join(" ");
+/**
+ * Handles the enter selection for new links in the network
+ * Creates the basic structure for each link including its visual elements
+ * @param {d3.Selection<d3.EnterElement, any, SVGGElement, unknown>} linkEnter - D3 selection of entering link elements
+ */
+export const onLinkEnter = (linkEnter) => {
+    const newLinkEnter = linkEnter.append("g")
+        .attr("id", d => `link-${d.key}`)
+        .attr("class", d => {
+            const parts = d.key.split('-');
+            const role = parts.slice(2, 2 + parts.length - 4).join('-');
+            return ["link", role, LINK_PALETTE].join(" ");
         });
-    dg_network_onLinkEnterElementConstruction(linkEnter);
-    dg_network_onLinkEnterEventBindings(linkEnter);
+    onLinkEnterElementConstruction(newLinkEnter);
+    onLinkEnterEventBindings(newLinkEnter);
 }
 
-function dg_network_onLinkEnterElementConstruction(linkEnter) {
+/**
+ * Constructs the visual elements for each link
+ * Creates paths and text elements for link visualization
+ * @param {d3.Selection<SVGGElement, any, SVGGElement, unknown>} linkEnter - D3 selection of entering link elements
+ */
+const onLinkEnterElementConstruction = (linkEnter) => {
     linkEnter
         .append("path")
-        .attr("class", function(d) {
-           var classes = [
-               "inner",
-               "distance-" + Math.min(d.source.distance, d.target.distance),
-               dg_link_color_class(d),
-           ];
-           return classes.join(" ");
-       });
+        .attr("class", d => {
+            return [
+                "inner",
+                `distance-${Math.min(d.source.distance, d.target.distance)}`,
+                getLinkColorClass(d)
+            ].join(" ");
+        });
     linkEnter
         .append("text")
         .attr('class', 'outer')
-        .text(dg_network_linkAnnotation);
+        .text(linkAnnotation);
     linkEnter
         .append("text")
         .attr('class', 'inner')
-        .text(dg_network_linkAnnotation);
+        .text(linkAnnotation);
 }
 
-function dg_network_onLinkEnterEventBindings(linkEnter) {
-    var debounceToolTip = $.debounce(LINK_DEBOUNCE_TIME, function(self, d, status) {
+/**
+ * Binds mouse events to link elements
+ * Handles mouseover/mouseout events and tooltip display
+ * @param {d3.Selection} linkEnter - D3 selection of entering link elements
+ */
+const onLinkEnterEventBindings = (linkEnter) => {
+    const handleTooltip = debounce((element, d, status) => {
         if (status) {
-        //console.log("link: ", self, d);
-            linkToolTip.show(d, d3.select(self).select('text').node());
+            linkToolTip.show(d, element.querySelector('text'));
         } else {
             linkToolTip.hide(d);
         }
-    });
+    }, LINK_DEBOUNCE_TIME);
+
     linkEnter.on("mouseover", function(event, d) {
         d3.select(this)
             .classed("selected", true);
-        debounceToolTip(this, d, true);
+        handleTooltip(this, d, true);
     });
+
     linkEnter.on("mouseout", function(event, d) {
         d3.select(this)
             .classed("selected", false)
             .transition()
             .duration(LINK_OUT_TRANSITION_TIME);
-        debounceToolTip(this, d, false);
+        handleTooltip(this, d, false);
     });
 }
 
-function dg_network_link_tooltip(d) {
-    var parts = [
-        '<div>' + d.source.name + '</div>',
-        '<div>' + d.role + '</div>',
-        '<div>' + d.target.name + '</div>',
-        ];
-//    var parts = [
-//        '<span class="link-label-top">' + d.source.name + '</span><br/>',
-//        '<span class="link-label-middle">' + d.role + '</span><br/>',
-//        '<span class="link-label-bottom">' + d.target.name + '</span>',
-//        ];
-    return parts.join('');
-}
-
-//function dg_network_tooltip(d) {
-//    var topBackgroundColor = (d.source.type == 'artist') ? dg_color_heatmap(d.source) : dg_color_greyscale(d.source);
-//    var bottomBackgroundColor = (d.target.type == 'artist') ? dg_color_heatmap(d.target) : dg_color_greyscale(d.target);
-//
-//    var parts = [
-//        '<span class="link-label-top" style="border-color:' + topBackgroundColor + '">' + d.source.name + '</span><br/>',
-//        '<span class="link-label-middle">' + d.role + '</span><br/>',
-//        '<span class="link-label-bottom" style="border-color:' + bottomBackgroundColor + '">' + d.target.name + '</span>',
-//        ];
-//    return parts.join('');
-//}
-
-function dg_network_linkAnnotation(d) {
-    return d.role.split(' ').map(function(x) { return x[0]; }).join('');
-}
-
-function dg_network_onLinkExit(linkExit) {
+/**
+ * Handles the removal of links from the visualization
+ * @param {d3.Selection<SVGGElement>} linkExit - D3 selection of exiting link elements
+ */
+export const onLinkExit = (linkExit) => {
     linkExit.remove();
 }
 
-function dg_network_onLinkUpdate(linkSelection) {
+/**
+ * Handles updates to existing links in the visualization
+ * Currently empty but available for future implementation
+ * @param {d3.Selection<SVGGElement>} linkSelection - D3 selection of updating link elements
+ */
+export const onLinkUpdate = (linkSelection) => {
 }

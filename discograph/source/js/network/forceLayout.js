@@ -1,33 +1,61 @@
+/**
+ * forceLayout.js
+ * This file implements a force-directed graph layout system using D3.js for the Discograph application.
+ * It handles node positioning, link creation, and graph simulation with various forces applied.
+ */
 
-NODE_STRENGTH = -800
-DISTANCE_MAX = 2000
+// Type declarations for our custom data types
+/** @typedef {d3.SimulationNodeDatum & { key: string, radius: number }} NodeType */
 
-COLLIDE_ITERATIONS = 2
-COLLIDE_BUFFER = 12
+// Import necessary modules using ES6 syntax
+import * as d3 from 'd3';
+import { onHullEnter, onHullExit } from './hull';
+import { onHaloEnter, onHaloExit } from './halo';
+import { onNodeEnter, onNodeExit, onNodeUpdate } from './node';
+import { onTextEnter, onTextExit, onTextUpdate } from './text';
+import { onLinkEnter, onLinkExit, onLinkUpdate } from './link';
+import { onTick , getOuterRadius } from './tick';
+import { onNetworkEnd, onNetworkStart } from './events';
+import { clamp } from '../init';
+import { dg } from '../dg';
+/**
+ * Configuration Constants
+ */
+// Force configuration for nodes
+const NODE_STRENGTH = -800           // Repulsion strength between nodes
+const DISTANCE_MAX = 2000           // Maximum distance for force calculations
+const COLLIDE_ITERATIONS = 2        // Number of collision detection iterations
+const COLLIDE_BUFFER = 12          // Extra space around nodes for collision detection
+const CENTER_STRENGTH = 0.025      // Strength of centering force
+const RADIAL_STRENGTH = 0.08      // Strength of radial force
 
-CENTER_STRENGTH = 0.025
-RADIAL_STRENGTH = 0.08
+// Simulation parameters
+const THETA = 0.9                  // Barnes-Hut approximation criterion
+export const ALPHA = 1.0                  // Initial simulation temperature
+const ALPHA_DECAY = 0.03          // Rate at which simulation cools down
+const VELOCITY_DECAY = 0.24       // Friction coefficient for node movement
 
-THETA = 0.9; // defaults to 0.9
-ALPHA = 1.0
-ALPHA_DECAY = 0.03
-VELOCITY_DECAY = 0.24; // like friction, defaults to 0.4. less velocity decay may converge on a better solution, but risks numerical instabilities and oscillation.
+// Link configuration
+const LINK_STRENGTH = 1.8         // Strength of links between nodes
+const LINK_DISTANCE_ALIAS = 20    // Distance for alias relationships
+const LINK_DISTANCE_RELEASED_ON = 200  // Distance for "Released On" relationships
+const LINK_DISTANCE = 60          // Default link distance
+const LINK_DISTANCE_RANDOM = 20   // Random variation in link distance
+const LINK_ITERATIONS = 3         // Number of iterations for link force calculation
 
-LINK_STRENGTH = 1.8
-LINK_DISTANCE_ALIAS = 20
-LINK_DISTANCE_RELEASED_ON = 200
-LINK_DISTANCE = 60
-LINK_DISTANCE_RANDOM = 20
-LINK_ITERATIONS = 3
-
-MAX_NODES_BEFORE_PRUNING = 600
-MAX_LINKS_BEFORE_PRUNING = 1800
+// Graph size limits
+const MAX_NODES_BEFORE_PRUNING = 600   // Maximum nodes before pruning is triggered
+const MAX_LINKS_BEFORE_PRUNING = 1800  // Maximum links before pruning is triggered
 
 // To give repeatable and predictable random behaviour, any number in [0, 1)
 const random_seed = 0.42;
 const random = d3.randomNormal.source(d3.randomLcg(random_seed))(0, 1);
 
-
+/**
+ * Determines the distance between linked nodes based on their relationship type
+ * @param {Object} d - The link object
+ * @returns {number} The desired distance between nodes
+ */
 function linkDistance(d, i) {
     if (d.isSpline) {
         if (d.role == 'Released On') {
@@ -43,6 +71,11 @@ function linkDistance(d, i) {
     }
 }
 
+/**
+ * Calculates the repulsion strength for each node
+ * @param {Object} d - The node object
+ * @returns {number} The repulsion strength
+ */
 function nodeStrength(d, i) {
     if (d.distance) {
         var dist = 4 - clamp(d.distance, 0, 3);
@@ -56,6 +89,11 @@ function nodeStrength(d, i) {
     }
 }
 
+/**
+ * Calculates the gravity strength for each node based on its position and distance
+ * @param {Object} d - The node object
+ * @returns {number} The gravity strength
+ */
 function gravityStrength(d, i) {
     var dist = d.distance ? 4 - clamp(d.distance, 0, 3) : 1.0;
     var maxDimension = Math.max(dg.svg_dimensions[0], dg.svg_dimensions[1]);
@@ -65,18 +103,26 @@ function gravityStrength(d, i) {
     return g;
 }
 
-function dg_network_setupForceLayout() {
-    console.log("dg_network_setupForceLayout");
-    return d3.forceSimulation(dg.network.pageData.nodes)
-        .force("collide", d3.forceCollide().radius(d => d.radius + COLLIDE_BUFFER).iterations(COLLIDE_ITERATIONS))
+/**
+ * Sets up the initial force simulation with basic forces
+ */
+export const setupForceLayout = () => {
+    console.log("setupForceLayout");
+    
+    dg.network.forceLayout = d3.forceSimulation(/** @type {NodeType[]} */ (dg.network.pageData.nodes))
+        .force("collide", d3.forceCollide().radius((d) => (/** @type {NodeType} */ (d)).radius + COLLIDE_BUFFER).iterations(COLLIDE_ITERATIONS))
         .force("charge", d3.forceManyBody().strength(nodeStrength).distanceMax(DISTANCE_MAX).theta(THETA))
-        .force("bbox", dg_network_bbox_force)
-        .on("tick", dg_network_tick)
-        .on("end", dg_network_end)
+        .force("bbox", bboxForce)
+        .on("tick", function() { onTick(this); })
+        .on("end", function() { onNetworkEnd(this); })
         .stop();
 }
 
-function dg_network_startForceLayout() {
+/**
+ * Initializes and starts the force layout simulation
+ * Updates node and link selections and applies forces
+ */
+export const startForceLayout = () => {
     console.log("Start D3 layout");
     var keyFunc = function(d) { return d.key }
     var nodeData = dg.network.pageData.nodes.filter(function(d) {
@@ -88,44 +134,45 @@ function dg_network_startForceLayout() {
     })
     console.log("linkData: ", linkData);
 
-    dg.network.selections.halo = dg.network.layers.halo.selectAll(".node");
-    dg.network.selections.halo = dg.network.selections.halo.data(nodeData, keyFunc);
+    dg.network.selections.halo = dg.network.layers.halo?.selectAll(".node") ?? null;
+    dg.network.selections.halo = dg.network.selections.halo?.data(nodeData, keyFunc) ?? null;
 
-    dg.network.selections.node = dg.network.layers.node.selectAll(".node");
-    dg.network.selections.node = dg.network.selections.node.data(nodeData, keyFunc);
+    dg.network.selections.node = dg.network.layers.node?.selectAll(".node") ?? null;
+    dg.network.selections.node = dg.network.selections.node?.data(nodeData, keyFunc) ?? null;
 
-    dg.network.selections.text = dg.network.layers.text.selectAll(".node");
-    dg.network.selections.text = dg.network.selections.text.data(nodeData, keyFunc);
+    dg.network.selections.text = dg.network.layers.text?.selectAll(".node") ?? null;
+    dg.network.selections.text = dg.network.selections.text?.data(nodeData, keyFunc) ?? null;
 
-    dg.network.selections.link = dg.network.layers.link.selectAll(".link");
-    dg.network.selections.link = dg.network.selections.link.data(linkData, keyFunc);
+    dg.network.selections.link = dg.network.layers.link?.selectAll(".link") ?? null;
+    dg.network.selections.link = dg.network.selections.link?.data(linkData, keyFunc) ?? null;
 
     var clusterNodes = dg.network.pageData.nodes.filter(function(d) {
         return d.cluster !== undefined;
     });
     var hullGroup = d3.group(clusterNodes, function(d) { return d.cluster; }).values();
     var hullData = d3.filter(hullGroup, function(d) { return 1 < Array.from(d.values()).length; });
-    dg.network.selections.hull = dg.network.layers.halo.selectAll(".hull");
-    dg.network.selections.hull = dg.network.selections.hull.data(hullData);
+    dg.network.selections.hull = dg.network.layers.halo?.selectAll(".hull") ?? null;
+    dg.network.selections.hull = dg.network.selections.hull?.data(hullData) ?? null;
 
-    dg_network_onHaloEnter(dg.network.selections.halo.enter());
-    dg_network_onHaloExit(dg.network.selections.halo.exit());
-    dg_network_onHullEnter(dg.network.selections.hull.enter());
-    dg_network_onHullExit(dg.network.selections.hull.exit());
-    dg_network_onNodeEnter(dg.network.selections.node.enter());
-    dg_network_onNodeExit(dg.network.selections.node.exit());
-    dg_network_onNodeUpdate(dg.network.selections.node);
-    dg_network_onTextEnter(dg.network.selections.text.enter());
-    dg_network_onTextExit(dg.network.selections.text.exit());
-    dg_network_onTextUpdate(dg.network.selections.text);
-    dg_network_onLinkEnter(dg.network.selections.link.enter());
-    dg_network_onLinkExit(dg.network.selections.link.exit());
-    dg_network_onLinkUpdate(dg.network.selections.link);
+    if (dg.network.selections.halo) onHaloEnter(dg.network.selections.halo.enter());
+    if (dg.network.selections.halo) onHaloExit(dg.network.selections.halo.exit());
+    if (dg.network.selections.hull) onHullEnter(dg.network.selections.hull.enter());
+    if (dg.network.selections.hull) onHullExit(dg.network.selections.hull.exit());
+    if (dg.network.selections.node) onNodeEnter(dg.network.selections.node.enter());
+    if (dg.network.selections.node) onNodeExit(dg.network.selections.node.exit());
+    if (dg.network.selections.node) onNodeUpdate(dg.network.selections.node);
+    if (dg.network.selections.text) onTextEnter(dg.network.selections.text.enter());
+    if (dg.network.selections.text) onTextExit(dg.network.selections.text.exit());
+    if (dg.network.selections.text) onTextUpdate(dg.network.selections.text);
+    if (dg.network.selections.link) onLinkEnter(dg.network.selections.link.enter());
+    if (dg.network.selections.link) onLinkExit(dg.network.selections.link.exit());
+    if (dg.network.selections.link) onLinkUpdate(dg.network.selections.link);
     dg.network.pageData.nodes.forEach(function(n) { n.fixed = false; });
 
     // Restart simulation
     console.log("Updating forceLayout");
-    // console.log("dg.network.pageData.nodes: ", dg.network.pageData.nodes);
+    if (!dg.network.forceLayout) return;
+    
     dg.network.forceLayout.nodes(dg.network.pageData.nodes);
 
     if (nodeData.length > 16 && nodeData.length < 500) {
@@ -135,29 +182,51 @@ function dg_network_startForceLayout() {
         dg.network.forceLayout.force("x", null);
         dg.network.forceLayout.force("y", null);
     }
-    dg.network.forceLayout.force("link", d3.forceLink().id(d => d.key).links(dg.network.pageData.links).distance(linkDistance).iterations(LINK_ITERATIONS));
+    dg.network.forceLayout.force("link", d3.forceLink().id((d) => (/** @type {NodeType} */ (d)).key).links(dg.network.pageData.links).distance(linkDistance).iterations(LINK_ITERATIONS));
 
-    dg_network_forceLayout_restart();
+    restartForceLayout();
 }
 
-function dg_network_forceLayout_restart(alpha) {
+/**
+ * Restarts the force layout simulation with optional alpha value
+ * @param {number} [alpha] - Optional initial alpha value for the simulation
+ */
+export const restartForceLayout = (alpha) => {
     if (!alpha) {
         alpha = ALPHA;
     }
 
-    dg_network_start();
+    if (!dg.network.forceLayout) return;
+
+    onNetworkStart();
     dg.network.forceLayout
         .force("center", d3.forceCenter(dg.svg_dimensions[0] / 2, dg.svg_dimensions[1] / 2))
         .alpha(alpha).alphaDecay(ALPHA_DECAY).velocityDecay(VELOCITY_DECAY).restart();
 }
 
-function dg_network_processJson(json) {
+/**
+ * Immediately stops the force layout simulation
+ * Sets the alpha value to 0 to halt all force calculations
+ */
+export const stopForceLayout = () => {
+    console.log("stopForceLayout: ");
+    if (!dg.network.forceLayout) return;
+    dg.network.forceLayout.alpha(0);
+    dg.network.forceLayout.stop();
+}
+
+/**
+ * Processes incoming JSON data to create nodes and links
+ * Handles intermediate nodes creation and graph structure setup
+ * @param {Object} json - Input JSON data containing nodes and links
+ */
+export const processJson = (json) => {
     var newNodeMap = new Map();
     var newLinkMap = new Map();
 
     // Setup node size
     json.nodes.forEach(function(node) {
-        node.radius = dg_network_getOuterRadius(node);
+        node.radius = getOuterRadius(node);
         newNodeMap.set(node.key, node);
     });
 
@@ -273,21 +342,26 @@ function dg_network_processJson(json) {
     console.log("initial link size: ", dg.network.data.linkMap.size);
 
     // Prune dist==3
-    dg_network_prune(3, 1)
-    dg_network_prune(3, 2)
-    dg_network_prune(3, 3)
-    dg_network_prune(3, 100)
-    dg_network_prune(3, 1000000)
-    dg_network_prune(2, 1)
-    dg_network_prune(2, 2)
-    dg_network_prune(2, 3)
-    dg_network_prune(2, 100)
-    dg_network_prune(2, 100000)
+    prune(3, 1)
+    prune(3, 2)
+    prune(3, 3)
+    prune(3, 100)
+    prune(3, 1000000)
+    prune(2, 1)
+    prune(2, 2)
+    prune(2, 3)
+    prune(2, 100)
+    prune(2, 100000)
 
     console.log("final nodes: ", dg.network.data.nodeMap);
 }
 
-function dg_network_prune(maxDist, minLinks) {
+/**
+ * Prunes the graph to reduce complexity when it exceeds size limits
+ * @param {number} maxDist - Maximum distance threshold for pruning
+ * @param {number} minLinks - Minimum number of links a node must have to avoid pruning
+ */
+const prune = (maxDist, minLinks) => {
     if (dg.network.data.nodeMap.size > MAX_NODES_BEFORE_PRUNING ||
         dg.network.data.linkMap.size > MAX_LINKS_BEFORE_PRUNING) {
         var nodeKeysToPrune = [];
@@ -368,7 +442,11 @@ function dg_network_prune(maxDist, minLinks) {
 
 }
 
-function dg_network_bbox_force() {
+/**
+ * Applies bounding box constraints to keep nodes within the SVG viewport
+ * Ensures nodes don't move outside the visible area
+ */
+const bboxForce = () => {
     dg.network.data.nodeMap.forEach(node => {
         var padding = 2 * node.radius;
         var minX = padding;

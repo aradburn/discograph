@@ -3,7 +3,7 @@
  * https://github.com/corejavascript/typeahead.js
  * Copyright 2013-2024 Twitter, Inc. and other contributors; Licensed MIT
  */
-
+// @ts-nocheck
 
 (function(root, factory) {
     if (typeof define === "function" && define.amd) {

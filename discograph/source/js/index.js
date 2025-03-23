@@ -1,17 +1,16 @@
-!function(){
-    var dg = {version: "0.2"};
+/**
+ * @fileoverview Main entry point for the Discograph application.
+ * This module initializes the application and sets up module exports.
+ * @module discograph
+ * @version 0.2
+ */
+// Import our custom CSS
+import '../css/discograph.scss'
 
-import "color";
-import "loading";
-import "network/";
-import "svg";
-import "relations";
-import "roles";
-import "typeahead";
-import "fsm";
-import "init";
+// Import all of Bootstrap's JS
+import * as bootstrap from 'bootstrap'
 
-    if (typeof define === "function" && define.amd) define(dg);
-    else if (typeof module === "object" && module.exports) module.exports = dg;
-    this.dg = dg;
-}();
+import { initApp } from './init'
+
+// Initialize the application when the DOM is loaded
+document.addEventListener('DOMContentLoaded', initApp);

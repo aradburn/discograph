@@ -5,6 +5,7 @@
  * Url: http://machina-js.org/
  * License(s): MIT, GPL
  */
+// @ts-nocheck
 
 ( function( root, factory ) {
 	/* istanbul ignore if  */

@@ -1,194 +1,204 @@
-dg.loading = {};
+import * as d3 from 'd3';
 
-function dg_loading_init() {
-    var layer = d3.select('#svg')
-        .append('g')
-        .attr('id', 'loadingLayer')
-        .attr('class', 'centered')
-        .attr('transform', 'translate(' +
-            dg.svg_dimensions[0] / 2 +
-            ',' +
-            dg.svg_dimensions[1] / 2 +
-            ')'
-            );
-    dg.loading.arc = d3.arc()
-        .startAngle(function(d) { return d.startAngle; })
-        .endAngle(function(d) { return d.endAngle; })
-        .innerRadius(function(d) { return d.innerRadius; })
-        .outerRadius(function(d) { return d.outerRadius; });
-    dg.loading.barHeight = 200;
-    dg.loading.layer = layer; 
-    dg.loading.selection = layer.selectAll('path');
-}
-
-function dg_loading_toggle(status) {
-    if (status) {
-        var input = dg_loading_makeArray();
-        var data = input[0], extent = input[1];
-        $("#page-loading").show();
-//            .addClass("glyphicon-animate glyphicon-refresh");
-    } else {
-        var data = [], extent = [0, 0];
-        $("#page-loading").hide();
-//            .removeClass("glyphicon-animate glyphicon-refresh")
+/**
+ * Class representing a loading visualization using D3.js
+ */
+export class Loading {
+    constructor() {
+        this.arc = null;
+        this.barHeight = 200;
+        this.layer = null;
+        this.selection = null;
     }
-    dg_loading_update(data, extent);
-}
 
-function dg_loading_makeArray() {
-    var count = 10;
-    var values = [];
-    var data = [];
-    for (var i = 0; i < count; i++) {
-        var pair = [Math.random(), Math.random()];
-        pair.sort();
-        values.push(pair[0]);
-        values.push(pair[1]);
-        data.push({
-            active: true,
-            startAngle: 2 * Math.PI * Math.random(),
-            endAngle: 2 * Math.PI * Math.random(),
-            rotationRate: Math.random() * 10,
-            targetInnerRadius: pair[0],
-            targetOuterRadius: pair[1],
-        });
+    /**
+     * Initializes the loading animation by creating an SVG layer and setting up base configurations
+     * @param {Array} svgDimensions - Array containing [width, height] of the SVG
+     */
+    init(svgDimensions) {
+        const layer = d3.select('#svg')
+            .append('g')
+            .attr('id', 'loadingLayer')
+            .attr('class', 'centered')
+            .attr('transform', `translate(${svgDimensions[0] / 2},${svgDimensions[1] / 2})`);
+
+        this.arc = d3.arc()
+            .startAngle(d => d.startAngle)
+            .endAngle(d => d.endAngle)
+            .innerRadius(d => d.innerRadius)
+            .outerRadius(d => d.outerRadius);
+
+        this.barHeight = 200;
+        this.layer = layer;
+        this.selection = layer.selectAll('path');
     }
-    return [data, d3.extent(values)];
-}
 
-function dg_loading_update(data, extent) {
-    var barScale = d3.scaleLinear()
-        .domain(extent)
-        .range([
-            dg.loading.barHeight / 4, 
-            dg.loading.barHeight
-        ]);
+    /**
+     * Generates random data for the loading animation arcs
+     * @returns {[Array, Array]} [data, extent] - Array containing arc data objects and their value extents
+     */
+    makeArray() {
+        const count = 10;
+        const values = [];
+        const data = [];
 
-    var dataSelection = dg.loading.layer.selectAll('path')
-        .data(data);
-
-    var selectionEnter = dataSelection.enter()
-        .call(dg_loading_transition_enter);
-    dataSelection.exit()
-        .call(dg_loading_transition_exit);
-
-    dataSelection = dg.loading.layer.selectAll('path')
-        .data(data);
-    dg_loading_transition_update(dataSelection, barScale);
-    if (selectionEnter.size() > 0) {
-        dg_loading_rotate(dataSelection);
+        for (let i = 0; i < count; i++) {
+            const pair = [Math.random(), Math.random()].sort();
+            values.push(pair[0], pair[1]);
+            
+            data.push({
+                active: true,
+                startAngle: 2 * Math.PI * Math.random(),
+                endAngle: 2 * Math.PI * Math.random(),
+                rotationRate: Math.random() * 10,
+                targetInnerRadius: pair[0],
+                targetOuterRadius: pair[1],
+            });
+        }
+        return [data, d3.extent(values)];
     }
-}
 
-//function dg_loading_update(data, extent) {
-//    var barScale = d3.scaleLinear()
-//        .domain(extent)
-//        .range([
-//            dg.loading.barHeight / 4,
-//            dg.loading.barHeight
-//        ]);
-//    dg.loading.selection = dg.loading.layer.selectAll('path');
-//    dg.loading.selection = dg.loading.selection.data(data);
-////        data,
-////        function(d) { return d; });
-//    var scale = d3.scaleOrdinal(d3.schemeCategory10);
-//    var selectionEnter = dg.loading.selection
-//        .enter()
-//        .append('path')
-//        .attr('class', 'arc')
-//        .attr('d', dg.loading.arc)
-//        .attr('fill', function(d, i) {
-//            return scale(i);
-//        })
-//        .each(function(d, i) {
-//            d.innerRadius = 0;
-//            d.outerRadius = 0;
-//            d.hasTimer = false;
-//        })
-//        .merge(dg.loading.selection);
-//    var selectionExit = dg.loading.selection
-//        .exit();
-//    dg_loading_transition_update(selectionEnter, barScale);
-//    dg_loading_transition_exit(selectionExit);
-//    if (selectionEnter.size() > 0) {
-//        dg_loading_rotate(selectionEnter);
-//    }
-//}
+    /**
+     * Toggles the visibility of the loading animation
+     * @param {boolean} status - Whether to show (true) or hide (false) the loading animation
+     */
+    toggle(status) {
+        const [data, extent] = status ? this.makeArray() : [[], [0, 0]];
+        const pageLoadingElement = document.getElementById('page-loading');
+        if (pageLoadingElement) {
+            pageLoadingElement.style.display = status ? 'block' : 'none';
+        }
+        this.update(data, extent);
+    }
 
-function dg_loading_transition_enter(selection) {
-    var scale = d3.scaleOrdinal(d3.schemeCategory10);
-    selection
-        .append('path')
-        .attr('class', 'arc')
-        .attr('d', dg.loading.arc)
-        .attr('fill', function(d, i) {
-            return scale(i);
-        })
-        .each(function(d, i) {
-            d.innerRadius = 0;
-            d.outerRadius = 0;
-            d.hasTimer = false;
-        });
-}
+    /**
+     * Updates the loading animation with new data
+     * @param {Array} data - Array of arc data objects
+     * @param {Array} extent - Min/max values for scaling
+     */
+    update(data, extent) {
+        if (!this.layer) {
+            console.error("Layer is not initialized.");
+            return;
+        }
 
-function dg_loading_transition_update(selection, barScale) {
-    selection
-        .transition()
-        .duration(1000)
-        .delay(function(d, i) { return (selection.size() - i) * 100; })
-        .attrTween('d', function(d, i) {
-            var inner = d3.interpolate(d.innerRadius, barScale(d.targetInnerRadius));
-            var outer = d3.interpolate(d.outerRadius, barScale(d.targetOuterRadius));
-            return function(t) {
-                d.innerRadius = inner(t);
-                d.outerRadius = outer(t);
-                return dg.loading.arc(d, i);
-            };
-        });
-}
+        const barScale = d3.scaleLinear()
+            .domain(extent)
+            .range([this.barHeight / 4, this.barHeight]);
 
-function dg_loading_transition_exit(selection) {
-    return selection
-        .transition()
-        .duration(1000)
-        .delay(function(d, i) { return (selection.size() - i) * 100; })
-        .attrTween('d', function(d, i) {
-            var inner = d3.interpolate(d.innerRadius, 0);
-            var outer = d3.interpolate(d.outerRadius, 0);
-            return function(t) {
-                d.innerRadius = inner(t);
-                d.outerRadius = outer(t);
-                return dg.loading.arc(d, i);
-            };
-        })
-        .on('end', function(d) {
-            d.active = false;
-            this.remove();
-        });
-}
+        const dataSelection = this.layer.selectAll('path')
+            .data(data);
 
-function dg_loading_rotate(selection) {
-    selection
-        .each(function(d) {
-            if (d.hasTimer) {
-                return;
-            }
+        const selectionEnter = dataSelection.enter();
+        this.transitionEnter(selectionEnter);
+        this.transitionExit(dataSelection.exit());
+
+        const updatedSelection = this.layer.selectAll('path')
+            .data(data);
+            
+        this.transitionUpdate(updatedSelection, barScale);
+        
+        if (selectionEnter.size() > 0) {
+            this.rotate(updatedSelection);
+        }
+    }
+
+    /**
+     * Handles the entry transition for new arcs
+     * @param {d3.Selection} selection - D3 selection of entering elements
+     */
+    transitionEnter(selection) {
+        const scale = d3.scaleOrdinal(d3.schemeCategory10);
+        
+        selection
+            .append('path')
+            .attr('class', 'arc')
+            .attr('d', this.arc)
+            .attr('fill', (_, i) => scale(i.toString()))
+            .each(d => {
+                d.innerRadius = 0;
+                d.outerRadius = 0;
+                d.hasTimer = false;
+            });
+    }
+
+    /**
+     * Animates transitions for updating arcs
+     * @param {d3.Selection} selection - D3 selection to update
+     * @param {d3.ScaleLinear} barScale - Scale function for arc sizes
+     */
+    transitionUpdate(selection, barScale) {
+        selection
+            .transition()
+            .duration(1000)
+            .delay((_, i) => (selection.size() - i) * 100)
+            // @ts-ignore
+            .attrTween('d', (d) => {
+                const inner = d3.interpolate(d.innerRadius, barScale(d.targetInnerRadius));
+                const outer = d3.interpolate(d.outerRadius, barScale(d.targetOuterRadius));
+                return (t) => {
+                    d.innerRadius = inner(t);
+                    d.outerRadius = outer(t);   
+                    // @ts-ignore
+                    return this.arc(d);
+                };
+            });
+    }
+
+    /**
+     * Handles the exit transition for removing arcs
+     * @param {d3.Selection} selection - D3 selection of elements to remove
+     */
+    transitionExit(selection) {
+        return selection
+            .transition()
+            .duration(1000)
+            .delay((_, i) => (selection.size() - i) * 100)
+            // @ts-ignore
+            .attrTween('d', (d) => {
+                const inner = d3.interpolate(d.innerRadius, 0);
+                const outer = d3.interpolate(d.outerRadius, 0);
+                return (t) => {
+                    d.innerRadius = inner(t);
+                    d.outerRadius = outer(t);
+                    // @ts-ignore
+                    return this.arc(d);
+                };
+            })
+            .on('end', function(d) {
+                d.active = false;
+                this.remove();
+            });
+    }
+
+    /**
+     * Manages continuous rotation animation of arcs
+     * @param {d3.Selection} selection - D3 selection of elements to rotate
+     */
+    rotate(selection) {
+        selection.each((d) => {
+            if (d.hasTimer) return;
+            
             d.hasTimer = true;
-            d.timer = d3.interval(function(elapsed) {
+            d.timer = d3.interval((elapsed) => {
                 if (!d.active) {
                     console.log("stop timer");
                     d.timer.stop();
                     d.hasTimer = false;
                     d.timer = null;
                 }
-//                console.log("element: ", element);
-                selection.attr('transform', function() {
-                    var angle = elapsed * d.rotationRate;
+                
+                selection.attr('transform', () => {
+                    let angle = elapsed * d.rotationRate;
                     if (0 < d.outerRadius) {
                         angle = angle / d.outerRadius;
                     }
-                    return 'rotate(' + angle + ')';
+                    return `rotate(${angle})`;
                 });
             }, 20);
         });
+    }
 }
+
+// Export a singleton instance
+export const loading = new Loading();

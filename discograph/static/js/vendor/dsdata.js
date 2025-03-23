@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 function dsdata() {
     return {
         "subform/view:available_credit_roles": ["A\u0026R", "Abridged By",

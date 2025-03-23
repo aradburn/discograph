@@ -1,34 +1,69 @@
-function dg_svg_init() {
+/**
+ * @fileoverview SVG manipulation utilities for Discograph
+ * This module provides functionality for SVG initialization, sizing, definition setup,
+ * and SVG export capabilities. It handles SVG element manipulation, styling, and
+ * conversion to other image formats.
+ */
+
+import * as d3 from 'd3';
+import { saveAs } from 'file-saver';
+import { nodeToolTip } from './network/node';
+import { linkToolTip } from './network/link';
+import { dg } from './dg';
+import { showMessage, clearMessages } from './init';
+
+/**
+ * Initializes the SVG element with basic setup
+ * - Sets up window dimensions
+ * - Creates SVG definitions (markers, gradients)
+ * - Initializes tooltips for nodes and links
+ */
+export const initSvg = () => {
     // Setup window dimensions on SVG element
-    dg_svg_set_size();
+    setSvgSize();
 
     // Setup SVG common definitions
-    dg_svg_setupDefs();
+    setupSvgDefs();
 
     // Initialise tooltip
     d3.select('#svg')
         .call(nodeToolTip)
         .call(linkToolTip);
-}
+};
 
-function dg_svg_set_size() {
+/**
+ * Sets the size and viewport attributes of the main SVG element
+ * Uses global dg.dimensions and dg.svg_dimensions for sizing
+ */
+export const setSvgSize = () => {
     // Setup window dimensions on SVG element
     d3.select("#svg")
         .attr("width", dg.dimensions[0])
         .attr("height", dg.dimensions[1])
-        .attr("viewBox", "0 0 " + dg.svg_dimensions[0] + " " + dg.svg_dimensions[1])
+        .attr("viewBox", `0 0 ${dg.svg_dimensions[0]} ${dg.svg_dimensions[1]}`)
         .attr("preserveAspectRatio", "none");
-}
+};
 
-function dg_svg_reset_size() {
-    $("#svg").css({
-      width: '',
-      height: ''
-    });
-}
+/**
+ * Resets the SVG element size by removing explicit width/height CSS properties
+ */
+export const resetSvgSize = () => {
+    const svg = document.querySelector("#svg");
+    if (svg) {
+        // @ts-ignore
+        svg.style.cssText = '';
+    }
+};
 
-function dg_svg_setupDefs() {
-    var defs = d3.select("#svg").append("defs");
+/**
+ * Sets up SVG definitions including:
+ * - Arrowhead marker for directed connections
+ * - Aggregate marker for relationship indicators
+ * - Radial gradient for visual effects
+ */
+export const setupSvgDefs = () => {
+    const defs = d3.select("#svg").append("defs");
+    
     // ARROWHEAD
     defs.append("marker")
         .attr("id", "arrowhead")
@@ -43,6 +78,7 @@ function dg_svg_setupDefs() {
         .attr("d", "M 0,0 m -5,-5 L 5,0 L -5,5 L -2.5,0 L -5,-5 Z")
         .attr("stroke-linecap", "round")
         .attr("stroke-linejoin", "round");
+    
     // AGGREGATE
     defs.append("marker")
         .attr("id", "aggregate")
@@ -60,278 +96,199 @@ function dg_svg_setupDefs() {
         .attr("stroke-linecap", "round")
         .attr("stroke-linejoin", "round")
         .attr("stroke-width", 1.5);
+    
     // RADIAL GRADIENT
-    var gradient = defs.append('radialGradient')
+    const gradient = defs.append('radialGradient')
         .attr('id', 'radial-gradient');
-    gradient.append('stop')
-        .attr('offset', '0%')
-        .attr('stop-color', '#333')
-        .attr('stop-opacity', '1.0');
-    gradient.append('stop')
-        .attr('offset', '50%')
-        .attr('stop-color', '#333')
-        .attr('stop-opacity', '0.333');
-    gradient.append('stop')
-        .attr('offset', '75%')
-        .attr('stop-color', '#333')
-        .attr('stop-opacity', '0.111');
-    gradient.append('stop')
-        .attr('offset', '100%')
-        .attr('stop-color', '#333')
-        .attr('stop-opacity', '0.0');
-}
+    
+    const gradientStops = [
+        { offset: '0%', color: '#333', opacity: '1.0' },
+        { offset: '50%', color: '#333', opacity: '0.333' },
+        { offset: '75%', color: '#333', opacity: '0.111' },
+        { offset: '100%', color: '#333', opacity: '0.0' }
+    ];
 
-function dg_svg_print(width, height) {
-    dg_show_message("info", "Saving image to disk, please wait...");
-    var svgNode = d3.select("#svg").node();
+    gradientStops.forEach(({ offset, color, opacity }) => {
+        gradient.append('stop')
+            .attr('offset', offset)
+            .attr('stop-color', color)
+            .attr('stop-opacity', opacity);
+    });
+};
 
-    var svgString = dg_svg_getSVGString(svgNode);
-	dg_svg_string2Image(svgString, 2 * width, 2 * height, 'png', saveBlob); // passes Blob and filesize String to the callback
+/**
+ * Exports the SVG as a PNG image file
+ * @param {number} width - The desired width of the output image
+ * @param {number} height - The desired height of the output image
+ */
+export const printSvg = async (width, height) => {
+    showMessage("info", "Saving image to disk, please wait...");
+    const svgNode = d3.select("#svg").node();
 
-	function saveBlob( dataBlob, filesize ){
-	    // Call FileSaver.js function
-	    var entityKey = dg.network.pageData.selectedNodeKey;
-	    var node = dg.network.data.nodeMap.get(entityKey);
-		saveAs(dataBlob, "Discograph2 - " + node.name + ".png");
+    // @ts-ignore
+    const svgString = getSvgString(svgNode);
+    await svgString2Image(svgString, 2 * width, 2 * height, 'png', saveBlob);
 
-		dg_clear_messages(10);
-		dg_show_message("success", "Saving image complete");
-		dg_clear_messages(10000);
-	}
-}
+    function saveBlob(dataBlob, filesize) {
+        const entityKey = dg.network.pageData.selectedNodeKey;
+        const node = dg.network.data.nodeMap.get(entityKey);
+        saveAs(dataBlob, `Discograph2 - ${node.name}.png`);
 
-function dg_svg_getSVGString(svgNode) {
-	svgNode.setAttribute('xlink', 'http://www.w3.org/1999/xlink');
-	var cssStyleText = getCSSStyles(svgNode);
-	appendCSS(cssStyleText, svgNode);
+        clearMessages(10);
+        showMessage("success", "Saving image complete");
+        clearMessages(10000);
+    }
+};
 
-	var serializer = new XMLSerializer();
-	var svgString = serializer.serializeToString(svgNode);
-	svgString = svgString.replace(/(\w+)?:?xlink=/g, 'xmlns:xlink='); // Fix root xlink without namespace
-	svgString = svgString.replace(/NS\d+:href/g, 'xlink:href'); // Safari NS namespace fix
+/**
+ * Converts an SVG node to a string representation
+ * @param {SVGElement} svgNode - The SVG DOM node to convert
+ * @returns {string} The serialized SVG string with proper namespace handling
+ */
+const getSvgString = (svgNode) => {
+    svgNode.setAttribute('xlink', 'http://www.w3.org/1999/xlink');
+    const cssStyleText = getCSSStyles(svgNode);
+    appendCSS(cssStyleText, svgNode);
 
-	return svgString;
+    const serializer = new XMLSerializer();
+    let svgString = serializer.serializeToString(svgNode);
+    svgString = svgString.replace(/(\w+)?:?xlink=/g, 'xmlns:xlink='); // Fix root xlink without namespace
+    svgString = svgString.replace(/NS\d+:href/g, 'xlink:href'); // Safari NS namespace fix
 
-	function getCSSStyles(parentElement) {
-		var selectorTextArr = [];
+    return svgString;
+};
 
-		// Add Parent element Id and Classes to the list
-		selectorTextArr.push('#' + parentElement.id);
-		for (var c = 0; c < parentElement.classList.length; c++)
-				if ( !contains('.' + parentElement.classList[c], selectorTextArr) )
-					selectorTextArr.push('.' + parentElement.classList[c]);
-		// Add Children element Ids and Classes to the list
-		var nodes = parentElement.getElementsByTagName("*");
-		for (var i = 0; i < nodes.length; i++) {
-			var id = nodes[i].id;
-			if ( !contains('#' + id, selectorTextArr) )
-				selectorTextArr.push('#' + id);
+/**
+ * Gets CSS styles for SVG elements
+ * @param {SVGElement} parentElement - The parent SVG element
+ * @returns {string} Concatenated CSS rules
+ */
+const getCSSStyles = (parentElement) => {
+    const selectorTextArr = new Set();
+    const addSelector = (selector) => selectorTextArr.add(selector);
 
-			var classes = nodes[i].classList;
+    // Add Parent element Id and Classes
+    addSelector(`#${parentElement.id}`);
+    Array.from(parentElement.classList).forEach(className => addSelector(`.${className}`));
 
-            // .nodeClass
-			for (var c = 0; c < classes.length; c++) {
-			    var selector = '.' + classes[c];
-				if (!contains(selector, selectorTextArr)) {
-					selectorTextArr.push(selector);
-			    }
-			    // nodeName.nodeClass
-			    if (nodes[i].nodeName) {
-				    var selector = nodes[i].nodeName + '.' + classes[c];
-					if (!contains(selector, selectorTextArr)) {
-				        selectorTextArr.push(selector);
-			        }
-                }
+    // Process all child nodes
+    const nodes = parentElement.getElementsByTagName("*");
+    Array.from(nodes).forEach(node => {
+        if (node.id) addSelector(`#${node.id}`);
+        
+        Array.from(node.classList).forEach(className => {
+            // Basic class
+            addSelector(`.${className}`);
+            
+            // Node type with class
+            if (node.nodeName) {
+                addSelector(`${node.nodeName}.${className}`);
             }
-
-            // #parent .nodeClass
-			for (var c = 0; c < classes.length; c++) {
-			    var parentId = nodes[i].parentNode.id;
-			    var selector = '#' + parentId + ' .' + classes[c];
-				if (parentId && !contains(selector, selectorTextArr) ) {
-					selectorTextArr.push(selector);
-				}
-				// #parent nodeName.nodeClass
-			    if (nodes[i].nodeName) {
-				    var selector = '#' + parentId + " " + nodes[i].nodeName + '.' + classes[c];
-					if (!contains(selector, selectorTextArr)) {
-				        selectorTextArr.push(selector);
-			        }
-                }
-			}
-
-			// #parent's parent .nodeClass
-			for (var c = 0; c < classes.length; c++) {
-			    var parentNode = nodes[i].parentNode
-			    if (parentNode) {
-			        var parentId = parentNode.parentNode.id;
-			        var selector = '#' + parentId + ' .' + classes[c];
-    				if (parentId && !contains(selector, selectorTextArr) ) {
-	    				selectorTextArr.push(selector);
-			    	}
-			    	if (nodes[i].nodeName) {
-				        var selector = '#' + parentId + " " + nodes[i].nodeName + '.' + classes[c];
-					    if (!contains(selector, selectorTextArr)) {
-				            selectorTextArr.push(selector);
-			            }
+            
+            // Parent relationships
+            const parentNode = /** @type {HTMLElement} */ (node.parentNode);
+            if (parentNode) {
+                if (parentNode.id) {
+                    addSelector(`#${parentNode.id} .${className}`);
+                    if (node.nodeName) {
+                        addSelector(`#${parentNode.id} ${node.nodeName}.${className}`);
                     }
-			    }
-			}
-
-			for (var c = 0; c < classes.length; c++) {
-    			var parentNode = nodes[i].parentNode
-			    var parentId = parentNode.id;
-			    if (parentNode) {
-			        var parentClasses = parentNode.classList;
-			        var parentParentId = parentNode.parentNode.id;
-
-			        for (var pc = 0; pc < parentClasses.length; pc++) {
-			            // No nodeClass
-			            var selector = '.' + parentClasses[pc];
-        				if (!contains(selector, selectorTextArr)) {
-		        			selectorTextArr.push(selector);
-			            }
-         			    // No nodeClass + nodeName
-		        	    if (nodes[i].nodeName) {
-				            var selector = '.' + parentClasses[pc] + ' ' + nodes[i].nodeName;
-					        if (!contains(selector, selectorTextArr)) {
-				                selectorTextArr.push(selector);
-			                }
-			            }
-
-			            // Parent class + nodeClass
-			            var selector = '.' + parentClasses[pc] + ' .' + classes[c];
-        				if (!contains(selector, selectorTextArr)) {
-		        			selectorTextArr.push(selector);
-			            }
-         			    // Parent class + nodeName.nodeClass
-		        	    if (nodes[i].nodeName) {
-				            var selector = '.' + parentClasses[pc] + ' ' + nodes[i].nodeName + '.' + classes[c];
-					        if (!contains(selector, selectorTextArr)) {
-				                selectorTextArr.push(selector);
-			                }
-			            }
-
-                        // ParentParentID + Parent class
-			            selector = '#' + parentParentId + ' .' + parentClasses[pc];
-    				    if (parentParentId && !contains(selector, selectorTextArr) ) {
-	    				    selectorTextArr.push(selector);
-			    	    }
-			    	    // ParentParentID + Parent class + nodeName
-			            if (parentParentId && nodes[i].nodeName) {
-				            var selector = '#' + parentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName;
-					        if (!contains(selector, selectorTextArr)) {
-				                selectorTextArr.push(selector);
-			                }
+                }
+                
+                Array.from(parentNode.classList).forEach(parentClass => {
+                    addSelector(`.${parentClass}`);
+                    addSelector(`.${parentClass} .${className}`);
+                    if (node.nodeName) {
+                        addSelector(`.${parentClass} ${node.nodeName}.${className}`);
+                    }
+                });
+                
+                // Grandparent relationships
+                const grandParentNode = /** @type {HTMLElement} */ (parentNode.parentNode);
+                if (grandParentNode && grandParentNode.id) {
+                    addSelector(`#${grandParentNode.id} .${className}`);
+                    Array.from(parentNode.classList).forEach(parentClass => {
+                        addSelector(`#${grandParentNode.id} .${parentClass}`);
+                        addSelector(`#${grandParentNode.id} .${parentClass} .${className}`);
+                        if (node.nodeName) {
+                            addSelector(`#${grandParentNode.id} .${parentClass} ${node.nodeName}.${className}`);
                         }
-
-                        // ParentParentID + Parent class + nodeClass
-			            selector = '#' + parentParentId + ' .' + parentClasses[pc] + ' .' + classes[c];
-    				    if (parentParentId && !contains(selector, selectorTextArr) ) {
-	    				    selectorTextArr.push(selector);
-			    	    }
-			    	    // ParentParentID + Parent class + nodeName.nodeClass
-			            if (parentParentId && nodes[i].nodeName) {
-				            var selector = '#' + parentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName + '.' + classes[c];
-					        if (!contains(selector, selectorTextArr)) {
-				                selectorTextArr.push(selector);
-			                }
-                        }
-
-                        // ParentParentParentID + Parent class
-			            if (parentNode.parentNode) {
-                            var parentParentParentId = parentNode.parentNode.parentNode.id;
-                            selector = '#' + parentParentParentId + ' .' + parentClasses[pc];
-                            if (parentParentParentId && !contains(selector, selectorTextArr) ) {
-                                selectorTextArr.push(selector);
-                            }
-                            if (parentParentParentId && nodes[i].nodeName) {
-                                var selector = '#' + parentParentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName;
-                                if (!contains(selector, selectorTextArr)) {
-                                    selectorTextArr.push(selector);
-                                }
-                            }
-                        }
-
-                        // ParentParentParentID + Parent class + nodeClass
-			            if (parentNode.parentNode) {
-                            var parentParentParentId = parentNode.parentNode.parentNode.id;
-                            selector = '#' + parentParentParentId + ' .' + parentClasses[pc] + ' .' + classes[c];
-                            if (parentParentParentId && !contains(selector, selectorTextArr) ) {
-                                selectorTextArr.push(selector);
-                            }
-                            if (parentParentParentId && nodes[i].nodeName) {
-                                var selector = '#' + parentParentParentId + ' .' + parentClasses[pc] + ' ' + nodes[i].nodeName + '.' + classes[c];
-                                if (!contains(selector, selectorTextArr)) {
-                                    selectorTextArr.push(selector);
-                                }
-                            }
-                        }
-			        }
+                    });
                 }
             }
+        });
+    });
+
+    // Extract CSS Rules
+    let extractedCSSText = "";
+    for (const sheet of document.styleSheets) {
+        try {
+            const cssRules = sheet.cssRules;
+            if (!cssRules) continue;
+
+            for (const rule of cssRules) {
+                if (rule instanceof CSSStyleRule && selectorTextArr.has(rule.selectorText)) {
+                    extractedCSSText += rule.cssText + "\n";
+                }
+            }
+        } catch (e) {
+            if (e.name !== 'SecurityError') throw e; // for Firefox
+            continue;
+        }
+    }
+
+    return extractedCSSText;
+};
+
+/**
+ * Appends CSS styles to an SVG element
+ * @param {string} cssText - The CSS text to append
+ * @param {SVGElement} element - The target SVG element
+ */
+const appendCSS = (cssText, element) => {
+    const styleElement = document.createElement("style");
+    styleElement.setAttribute("type", "text/css");
+    styleElement.textContent = cssText;
+    const refNode = element.firstChild || null;
+    element.insertBefore(styleElement, refNode);
+};
+
+/**
+ * Converts an SVG string to an image blob
+ * @param {string} svgString - The SVG content as a string
+ * @param {number} width - The desired width of the output image
+ * @param {number} height - The desired height of the output image
+ * @param {string} format - The desired output format (default: 'png')
+ * @param {Function} callback - Callback function that receives the blob and filesize
+ * @returns {Promise} A promise that resolves when the image is converted
+ */
+const svgString2Image = (svgString, width, height, format = 'png', callback) => {
+    return new Promise((resolve) => {
+        // Convert SVG string to data URL
+        const imgsrc = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+
+		if (canvas !== null && context !== null) {
+			canvas.width = width;
+			canvas.height = height;
+
+			const image = new Image();
+			image.onload = () => {
+				context.clearRect(0, 0, width, height);
+				context.drawImage(image, 0, 0, width, height);
+
+				canvas.toBlob(blob => {
+					// @ts-ignore
+					const filesize = Math.round(blob.size / 1024) + ' KB';
+					callback?.(blob, filesize);
+					// @ts-ignore
+					resolve();
+				});
+			};
+
+			image.src = imgsrc;
 		}
-
-		// Extract CSS Rules
-		var extractedCSSText = "";
-		for (var i = 0; i < document.styleSheets.length; i++) {
-			var s = document.styleSheets[i];
-
-			try {
-			    if (!s.cssRules)
-			        continue;
-			} catch(e) {
-		    		if (e.name !== 'SecurityError') throw e; // for Firefox
-		    		continue;
-		    }
-
-			var cssRules = s.cssRules;
-
-			for (var r = 0; r < cssRules.length; r++) {
-				if (contains(cssRules[r].selectorText, selectorTextArr)) {
-					extractedCSSText += cssRules[r].cssText + "\n";
-			    }
-			}
-		}
-
-		return extractedCSSText;
-
-		function contains(str, arr) {
-			return arr.indexOf(str) === -1 ? false : true;
-		}
-	}
-
-	function appendCSS(cssText, element) {
-		var styleElement = document.createElement("style");
-		styleElement.setAttribute("type","text/css");
-		styleElement.innerHTML = cssText;
-		var refNode = element.hasChildNodes() ? element.children[0] : null;
-		element.insertBefore(styleElement, refNode);
-	}
-}
-
-function dg_svg_string2Image(svgString, width, height, format, callback) {
-	var format = format ? format : 'png';
-
-    // Convert SVG string to data URL
-	var imgsrc = 'data:image/svg+xml;base64,'+ btoa(unescape(encodeURIComponent(svgString)));
-
-	var canvas = document.createElement("canvas");
-	var context = canvas.getContext("2d");
-
-	canvas.width = width;
-	canvas.height = height;
-
-	var image = new Image();
-	image.onload = function() {
-		context.clearRect (0, 0, width, height);
-		context.drawImage(image, 0, 0, width, height);
-
-		canvas.toBlob(function(blob) {
-			var filesize = Math.round(blob.length/1024) + ' KB';
-			if (callback) callback(blob, filesize);
-		});
-	};
-
-	image.src = imgsrc;
-}
+    });
+};
