@@ -1,3 +1,4 @@
+from typing import Any
 from sqlalchemy import String, JSON, Index, Integer, inspect
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -9,39 +10,66 @@ from discograph.runtime.runtime_database.runtime_base_table import RuntimeBase
 
 class RuntimeEntityTable(RuntimeBase):
     """
-    Represents the runtime entity table in the database.
+    Represents the 'runtime_entity' table in the database.
+
+    This table stores information about entities within the Discograph system,
+    such as artists and labels, optimized for runtime operations. It includes
+    various attributes for describing and categorizing entities, along with
+    relationships to other entities.
 
     Attributes:
-        id (int): The unique identifier for the runtime entity.
-        entity_id (int): The ID of the entity.
-        entity_type (EntityType): The type of the entity.
-        entity_name (str): The name of the entity.
-        relation_counts (dict | list): The relation counts of the entity.
-        entity_metadata (dict | list): The metadata of the entity.
-        aliases (dict | list): The aliases of the entity.
-        groups (dict | list): The groups associated with the entity.
-        members (dict | list): The members associated with the entity.
-        countries (str): The countries associated with the entity.
-        genres (str): The genres associated with the entity.
-        styles (str): The styles associated with the entity.
+        __tablename__ (str): The name of the table in the database.
+        id (Mapped[int]): The primary key, a unique identifier for the runtime entity.
+        entity_id (Mapped[int]): The external ID of the entity (e.g., from Discogs).
+        entity_type (Mapped[EntityType]): The type of the entity (e.g., ARTIST, LABEL).
+        entity_name (Mapped[str]): The name of the entity.
+        relation_counts (Mapped[dict | list]): A dictionary or list representing
+            the counts of various relationships the entity has. Stored as JSON.
+        entity_metadata (Mapped[dict | list]): Metadata associated with the entity.
+             Stored as JSON.
+        aliases (Mapped[dict | list]): Alternative names or aliases for the entity.
+             Stored as JSON.
+        groups (Mapped[dict | list]): Groups the entity is part of. Stored as JSON.
+        members (Mapped[dict | list]): Members associated with the entity (e.g.,
+            members of a band). Stored as JSON.
+        countries (Mapped[str]): Countries associated with the entity.
+        genres (Mapped[str]): Genres associated with the entity.
+        styles (Mapped[str]): Styles associated with the entity.
+        __table_args__ (tuple): Additional table arguments, including indexes.
     """
 
     __tablename__ = "runtime_entity"
+    """The name of the table in the database."""
 
     # COLUMNS
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    """The primary key, a unique identifier for the runtime entity."""
     entity_id: Mapped[int] = mapped_column(Integer)
+    """The external ID of the entity (e.g., from Discogs)."""
     entity_type: Mapped[EntityType] = mapped_column(IntEnum(EntityType), nullable=False)
+    """The type of the entity (e.g., ARTIST, LABEL)."""
     entity_name: Mapped[str] = mapped_column(String, nullable=False)
-    relation_counts: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
-    entity_metadata: Mapped[dict | list] = mapped_column(type_=JSON, nullable=False)
-    aliases: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
-    groups: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
-    members: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
+    """The name of the entity."""
+    relation_counts: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=True)
+    """
+    A dictionary representing the counts of various relationships the entity has.
+    Stored as JSON.
+    """
+    entity_metadata: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=False)
+    """Metadata associated with the entity. Stored as JSON."""
+    aliases: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=True)
+    """Alternative names or aliases for the entity. Stored as JSON."""
+    groups: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=True)
+    """Groups the entity is part of. Stored as JSON."""
+    members: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=True)
+    """Members associated with the entity (e.g., members of a band). Stored as JSON."""
     countries: Mapped[str] = mapped_column(String, nullable=True)
+    """Countries associated with the entity."""
     genres: Mapped[str] = mapped_column(String, nullable=True)
+    """Genres associated with the entity."""
     styles: Mapped[str] = mapped_column(String, nullable=True)
+    """Styles associated with the entity."""
 
     __table_args__ = (
         Index(
@@ -52,13 +80,23 @@ class RuntimeEntityTable(RuntimeBase):
         ),
         {},
     )
+    """
+    Additional table arguments, including:
+        - idx_runtime_entity_id_and_entity_type: A unique index on the entity_id and
+          entity_type columns.
+    """
 
     def __init__(self, **entries):
         """
         Initializes a RuntimeEntityTable instance.
 
+        This constructor allows for the initialization of a `RuntimeEntityTable`
+        object with keyword arguments that match the table's columns. It
+        ensures that only valid column names are used during initialization.
+
         Args:
-            entries (dict): The entries to initialize the instance with.
+            entries (dict): Keyword arguments corresponding to the table's
+                columns and their values.
         """
         column_names = set(
             [column.name for column in inspect(RuntimeEntityTable).columns]
@@ -72,7 +110,10 @@ class RuntimeEntityTable(RuntimeBase):
         """
         Returns a string representation of the RuntimeEntityTable instance.
 
+        The string is a normalized dictionary representation of the object's
+        data, skipping no keys.
+
         Returns:
-            str: The string representation of the instance.
+            str: A normalized dictionary string representation of the object.
         """
         return utils.normalize_dict(utils.row2dict(self), skip_keys={})

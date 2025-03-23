@@ -1,3 +1,29 @@
+"""
+This module provides data access functionality for entities within the Discograph offline system.
+
+It defines the `EntityDataAccess` class, which offers methods for resolving
+entity and release references, caching entity IDs, and managing the text search
+index. It is designed to be used during the offline data loading process.
+
+Key functionalities include:
+    - Resolving entity references: replacing entity names with internal IDs
+      within entity and release data structures.
+    - Resolving release references: updating label and company information to
+      use internal IDs.
+    - Caching entity IDs for fast lookup based on entity type and name.
+    - Initializing the text search index with entity names and IDs.
+    - Handling cases where entities are not found in the database.
+    - Logging of debug and error messages during the data access operations.
+
+The `EntityDataAccess` class interacts with `EntityRepository` for database
+operations and `CacheManager` for caching. It also uses `TextSearchIndex` for
+text search functionality and `LoaderBase` for bulk reporting.
+
+The `Entity` and `Release` classes from `discograph.offline.domain` are used
+to represent entities and releases, respectively. `EntityType` is used to
+represent the different types of entities.
+"""
+
 import logging
 
 from discograph.exceptions import NotFoundError
@@ -13,16 +39,59 @@ from discograph.offline.loader.loader_base import LoaderBase
 
 # TODO tidy up
 log = logging.getLogger(__name__)
+"""
+The logger for the EntityDataAccess module.
+"""
 
 
 class EntityDataAccess:
+    """
+    Provides data access functionality for entities within the Discograph offline system.
+
+    This class offers methods for resolving entity and release references, caching
+    entity IDs, and managing the text search index.
+
+    Attributes:
+        CACHE_ENTRY_IS_NULL (str): A string used to represent a null entry in the cache.
+        CACHE_KEY_SEPARATOR (str): A string used to separate parts of a cache key.
+    """
+
     CACHE_ENTRY_IS_NULL = "___"
+    """
+    A string used to represent a null entry in the cache.
+
+    This is used to indicate that an entity was looked up and not found, so
+    future lookups can be avoided.
+    """
     CACHE_KEY_SEPARATOR = "_"
+    """
+    A string used to separate parts of a cache key.
+
+    This is used to create unique cache keys for different entity types and names.
+    """
 
     @staticmethod
     def resolve_entity_references(
         entity_repository: EntityRepository, entity: Entity
     ) -> bool:
+        """
+        Resolves entity references within an entity's data structure.
+
+        This method replaces entity names with their corresponding internal IDs
+        in the `entities` attribute of an `Entity` object. It handles aliases,
+        groups, and members for artists, and parent labels and sublabels for
+        labels.
+
+        Args:
+            entity_repository (EntityRepository): The repository for entity database operations.
+            entity (Entity): The entity object to resolve references in.
+
+        Returns:
+            bool: True if any references were resolved, False otherwise.
+
+        Raises:
+            ValueError: If the entity type is not ARTIST or LABEL.
+        """
         if not entity.entities:
             return False
 
@@ -57,8 +126,21 @@ class EntityDataAccess:
     def resolve_release_references(
         entity_repository: EntityRepository, release: Release
     ):
-        changed = False
+        """
+        Resolves release references within a release's data structure.
 
+        This method updates label and company information in a `Release` object
+        to use internal IDs instead of names.
+
+        Args:
+            entity_repository (EntityRepository): The repository for entity database operations.
+            release (Release): The release object to resolve references in.
+
+        Returns:
+            bool: True if any references were resolved, False otherwise.
+        """
+        changed = False
+        # NOTE: This was removed because it is now done in the runtime section
         # for entry in release.artists:
         #     entity_type = EntityType.ARTIST
         #     entity_id = entry["id"]
@@ -143,27 +225,43 @@ class EntityDataAccess:
         entity_type: EntityType,
         entity_name: str,
     ) -> int | None:
+        """
+        Retrieves the internal ID of an entity based on its type and name.
+
+        This method first checks the cache for the entity ID. If not found, it
+        queries the database and updates the cache.
+
+        Args:
+            entity_repository (EntityRepository): The repository for entity database operations.
+            entity_type (EntityType): The type of the entity (e.g., ARTIST, LABEL).
+            entity_name (str): The name of the entity.
+
+        Returns:
+            int | None: The internal ID of the entity, or None if not found.
+        """
         cache = CacheManager.get_cache()
+        """Get an instance of the cache."""
 
         entity_key_str = (
             f"{entity_name}{EntityDataAccess.CACHE_KEY_SEPARATOR}{entity_type}"
         )
+        """Create the cache key."""
 
         id_ = cache.get(entity_key_str)
+        """Get the value from the cache."""
         if id_ == EntityDataAccess.CACHE_ENTRY_IS_NULL:
             return None
+        """If cache entry was marked as null, return None."""
 
-        # if entity_id is not None:
-        #     log.debug(f"cache hit for {key_str}")
         if id_ is None:
-            # log.debug(f"not cached, try db")
             try:
                 int_id = entity_repository.get_id_by_entity_type_and_entity_name(
                     entity_type, entity_name
                 )
+                """Get the internal id from the db."""
                 # Store the internal id, not entity_id
                 cache.set(entity_key_str, int_id)
-                # log.debug(f"cache set for {key_str} -> {int_id}")
+                """Cache the internal id."""
                 id_ = int_id
 
             except NotFoundError:
@@ -173,55 +271,24 @@ class EntityDataAccess:
                     )
                 id_ = None
                 cache.set(entity_key_str, EntityDataAccess.CACHE_ENTRY_IS_NULL)
+                """Mark the cache entry as null."""
 
         return id_
-
-    # @staticmethod
-    # def update_corpus(
-    #     entity_repository: EntityRepository,
-    #     corpus: Dict,
-    #     entity_key: Tuple[EntityType, str],
-    # ):
-    #     from discograph.library.cache.cache_manager import cache
-    #
-    #     # log.debug(f"            corpus before: {corpus}")
-    #     if entity_key in corpus:
-    #         return
-    #
-    #     entity_type, entity_name = entity_key
-    #     entity_key_str = f"{entity_name}-{entity_type}"
-    #     entity_id = cache.get(entity_key_str)
-    #     if entity_id == "###":
-    #         return
-    #
-    #     # if entity_id is not None:
-    #     #     log.debug(f"cache hit for {key_str}")
-    #     if entity_id is None:
-    #         # log.debug(f"not cached, try db")
-    #         try:
-    #             entity = entity_repository.get_by_type_and_name(
-    #                 entity_type, entity_name
-    #             )
-    #             # Store the internal id, not entity_id
-    #             cache.set(entity_key_str, entity.id)
-    #             # log.debug(f"cache set for {key_str} -> {entity_id}")
-    #
-    #         except NotFoundError:
-    #             if LOGGING_TRACE:
-    #                 log.debug(f"update_corpus key not found: {entity_key}")
-    #             entity_id = None
-    #             cache.set(entity_key_str, "###")
-    #
-    #     if entity_id is not None:
-    #         corpus[entity_key] = entity_id
-    #     # else:
-    #     #     log.debug(f"entity_id is None")
-    #     # log.debug(f"            corpus after : {corpus}")
 
     @staticmethod
     def init_text_search_index(
         entity_repository: EntityRepository, index: TextSearchIndex
     ) -> None:
+        """
+        Initializes the text search index with entity names and IDs.
+
+        This method iterates through all entities in the database and adds them
+        to the text search index.
+
+        Args:
+            entity_repository (EntityRepository): The repository for entity database operations.
+            index (TextSearchIndex): The text search index to initialize.
+        """
         count = 0
         for id_, entity_name in entity_repository.all_ids_and_names():
             index.index_entry(id_, entity_name)

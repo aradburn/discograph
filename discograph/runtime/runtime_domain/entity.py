@@ -1,9 +1,30 @@
+"""
+This module defines the domain objects for representing entities in the Discograph runtime system.
+
+It provides the `RuntimeEntity` and `RuntimeEntityDB` classes for handling
+entities, their attributes, and their representation in different stages, such
+as before and after database persistence.
+
+Key functionalities include:
+    - Representing entities with attributes like ID, external ID, type, name,
+      relation counts, metadata, and related entities.
+    - Providing a separate class for the database representation of entities
+      (`RuntimeEntityDB`).
+    - Managing entity attributes like aliases, groups, members, countries,
+      genres, and styles.
+    - Converting entities between domain and database representations
+      (`RuntimeEntity.to_db`, `RuntimeEntityDB.to_domain`).
+    - Generating JSON-compatible entity keys.
+    - Calculating entity size based on related members or sublabels.
+"""
+
 __all__ = [
     "RuntimeEntity",
     "RuntimeEntityDB",
 ]
 
 import logging
+from typing import Any
 
 from discograph.library.domain.base import InternalDomainObject
 from discograph.library.fields.entity_type import EntityType
@@ -15,34 +36,53 @@ class RuntimeEntity(InternalDomainObject):
     """
     Represents a runtime entity.
 
+    This class represents an entity within the Discograph system during runtime,
+    encapsulating its properties and relationships.
+
     Attributes:
         id (int): The unique identifier for the runtime entity.
-        entity_id (int): The ID of the entity.
-        entity_type (EntityType): The type of the entity.
+        entity_id (int): The ID of the entity, typically an external ID
+            from a source like Discogs.
+        entity_type (EntityType): The type of the entity (e.g., ARTIST, LABEL).
         entity_name (str): The name of the entity.
-        relation_counts (dict | list): The relation counts of the entity.
-        entity_metadata (dict | list): The metadata of the entity.
-        entities (dict | list): The entities related to this entity.
+        relation_counts (dict[str, int]): The relation counts of the entity.
+            This is a dictionary of relation names and their counts.
+        entity_metadata (dict[str, Any]): The metadata of the entity, stored as
+            a dictionary of metadata entries.
+        entities (dict[str, Any]): The entities related to this entity, such as
+            aliases, groups, members, or sublabels.
         countries (str | None): The countries associated with the entity.
         genres (str | None): The genres associated with the entity.
         styles (str | None): The styles associated with the entity.
     """
 
     id: int
+    """The unique identifier for the runtime entity."""
     entity_id: int
+    """The ID of the entity."""
     entity_type: EntityType
+    """The type of the entity."""
     entity_name: str
-    relation_counts: dict | list
-    entity_metadata: dict | list
-    entities: dict | list
+    """The name of the entity."""
+    relation_counts: dict[str, int]
+    """The relation counts of the entity."""
+    entity_metadata: dict[str, Any]
+    """The metadata of the entity."""
+    entities: dict[str, Any]
+    """The entities related to this entity."""
     countries: str | None = None
+    """The countries associated with the entity."""
     genres: str | None = None
+    """The genres associated with the entity."""
     styles: str | None = None
+    """The styles associated with the entity."""
 
     @property
     def entity_key(self) -> tuple[int, EntityType]:
         """
         Returns the key for the entity.
+
+        The entity key is a tuple consisting of the entity ID and entity type.
 
         Returns:
             tuple[int, EntityType]: The key for the entity.
@@ -54,6 +94,9 @@ class RuntimeEntity(InternalDomainObject):
         """
         Returns the JSON representation of the entity key.
 
+        This is a string representation of the entity key, suitable for use
+        in JSON-formatted data.
+
         Returns:
             str: The JSON entity key for the entity.
         """
@@ -64,16 +107,18 @@ class RuntimeEntity(InternalDomainObject):
         """
         Returns the size of the entity.
 
+        The size is determined by the number of members (for artists) or
+        sublabels (for labels) associated with the entity.
+
         Returns:
             int: The size of the entity.
         """
         members = []
-        if self.entity_type == EntityType.ARTIST:
-            if "members" in self.entities:
-                members = self.entities["members"]
-        elif self.entity_type == EntityType.LABEL:
-            if "sublabels" in self.entities:
-                members = self.entities["sublabels"]
+        if isinstance(self.entities, dict):
+            if self.entity_type == EntityType.ARTIST:
+                members = self.entities.get("members", [])
+            elif self.entity_type == EntityType.LABEL:
+                members = self.entities.get("sublabels", [])
         return len(members)
 
     @staticmethod
@@ -101,6 +146,10 @@ class RuntimeEntity(InternalDomainObject):
         """
         Converts the runtime entity to its database representation.
 
+        This method prepares the `RuntimeEntity` instance for storage in the
+        database by transforming its attributes into the format expected by
+        the database schema (`RuntimeEntityDB`).
+
         Returns:
             RuntimeEntityDB: The database representation of the runtime entity.
         """
@@ -123,6 +172,9 @@ class RuntimeEntityDB(InternalDomainObject):
     """
     Represents a runtime entity in the database.
 
+    This class represents an entity as it is stored in the runtime database,
+    including its attributes and relationships.
+
     Attributes:
         id (int): The unique identifier for the runtime entity.
         entity_id (int): The ID of the entity.
@@ -139,21 +191,37 @@ class RuntimeEntityDB(InternalDomainObject):
     """
 
     id: int
+    """The unique identifier for the runtime entity."""
     entity_id: int
+    """The ID of the entity."""
     entity_type: EntityType
+    """The type of the entity."""
     entity_name: str
+    """The name of the entity."""
     relation_counts: dict | list
+    """The relation counts of the entity."""
     entity_metadata: dict | list
+    """The metadata of the entity."""
     aliases: dict | list | None = None
+    """The aliases of the entity."""
     groups: dict | list | None = None
+    """The groups associated with the entity."""
     members: dict | list | None = None
+    """The members associated with the entity."""
     countries: str | None = None
+    """The countries associated with the entity."""
     genres: str | None = None
+    """The genres associated with the entity."""
     styles: str | None = None
+    """The styles associated with the entity."""
 
     def to_domain(self) -> RuntimeEntity:
         """
         Converts the runtime entity from its database representation to its domain representation.
+
+        This method transforms the `RuntimeEntityDB` instance into a
+        `RuntimeEntity` instance, making it suitable for use within the
+        application's domain logic.
 
         Returns:
             RuntimeEntity: The domain representation of the runtime entity.

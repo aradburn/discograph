@@ -15,23 +15,40 @@ log = logging.getLogger(__name__)
 
 class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
     """
-    This class implements the base interface for working with the database
-    and makes it easier to work with type annotations.
+    Base class for creating repositories that interact with the runtime database.
 
-    The Session class implements the database interaction layer.
+    This class provides a generic interface for common database operations, such as
+    creating, retrieving, updating, and deleting data. It simplifies database
+    interactions and enforces type safety through the use of generics.
+
+    It inherits from `RuntimeSession` to manage database sessions and transactions.
 
     Attributes:
-        schema_class (Type[RuntimeConcreteTable]): The schema class for the repository.
+        schema_class (Type[RuntimeConcreteTable]): The SQLAlchemy schema class
+            representing the database table that this repository interacts with.
+            This attribute must be set in subclasses.
+
+    Type parameters:
+        RuntimeConcreteTable: A type variable representing a concrete subclass of
+            `RuntimeBaseTable`, which is used to define the schema class for this
+            repository.
     """
 
     schema_class: Type[RuntimeConcreteTable]
+    """
+    The SQLAlchemy schema class for the repository. This attribute must be
+    set in subclasses to specify the table that the repository will interact with.
+    """
 
     def __init__(self) -> None:
         """
         Initializes the RuntimeBaseRepository instance.
 
+        This method initializes the database session through the parent class
+        `RuntimeSession` and ensures that the `schema_class` attribute is set.
+
         Raises:
-            UnprocessableError: If the schema_class attribute is not set.
+            UnprocessableError: If the `schema_class` attribute is not set.
         """
         super().__init__()
 
@@ -45,19 +62,22 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
     ) -> RuntimeConcreteTable:
         """
         Updates an existing instance of the model in the related table.
-        If some data does not exist in the payload, then the null value will
-        be passed to the schema class.
+
+        This method updates a single record in the database based on the
+        provided key-value pair and updates the record with data from the
+        payload.
 
         Args:
-            key (str): The key to filter the update.
-            value (Any): The value to filter the update.
-            payload (dict[str, Any]): The data to update.
+            key (str): The name of the column to filter the update.
+            value (Any): The value to filter the update with.
+            payload (dict[str, Any]): A dictionary containing the data to
+                update in the record.
 
         Returns:
             RuntimeConcreteTable: The updated schema instance.
 
         Raises:
-            DatabaseError: If there is an error during the update.
+            DatabaseError: If there is any error during the update operation.
         """
         try:
             query = (
@@ -71,9 +91,6 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
                 .returning(self.schema_class)
             )
             result: Result = self.execute(query)
-            # result: Result = await self.execute(query)
-            # self._session.flush()
-            # await self._session.flush()
         except self._ERRORS:
             raise DatabaseError
 
@@ -84,23 +101,22 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
 
     def _get(self, key: str, value: Any) -> RuntimeConcreteTable:
         """
-        Returns only one result by filters.
+        Retrieves a single record from the database based on the provided filter.
 
         Args:
-            key (str): The key to filter the query.
-            value (Any): The value to filter the query.
+            key (str): The name of the column to filter the query.
+            value (Any): The value to filter the query with.
 
         Returns:
             RuntimeConcreteTable: The retrieved schema instance.
 
         Raises:
-            NotFoundError: If no result is found.
+            NotFoundError: If no matching record is found.
         """
         query = select(self.schema_class).where(
             cast("ColumnElement[bool]", getattr(self.schema_class, key) == value)
         )
         result: Result = self.execute(query)
-        # result: Result = await self.execute(query)
 
         if not (_result := result.scalars().one_or_none()):
             raise NotFoundError
@@ -109,17 +125,16 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
 
     def count(self) -> int:
         """
-        Counts the number of rows in the table.
+        Counts the total number of records in the associated database table.
 
         Returns:
-            int: The count of rows.
+            int: The total count of records.
 
         Raises:
-            UnprocessableError: If the count function returns a non-integer value.
+            UnprocessableError: If the database query returns a non-integer value.
         """
         query = select(func.count()).select_from(self.schema_class)
         result: Result = self.execute(query)
-        # result: Result = await self.execute(func.count(self.schema_class.id))
         value = result.scalar()
 
         if not isinstance(value, int):
@@ -134,21 +149,21 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
 
     def _first(self, by: str = "id") -> RuntimeConcreteTable:
         """
-        Returns the first result ordered by the specified column.
+        Retrieves the first record from the database table based on a sorting criteria.
 
         Args:
+            by (str): The name of the column to order the results by.
+                Defaults to "id".
+
         Returns:
-            RuntimeConcreteTable: The first schema instance.
+            RuntimeConcreteTable: The first record as a schema instance.
 
         Raises:
-            NotFoundError: If no result is found.
+            NotFoundError: If no records are found in the table.
         """
         result: Result = self.execute(
             select(self.schema_class).order_by(asc(by)).limit(1)
         )
-        # result: Result = await self.execute(
-        #     select(self.schema_class).order_by(asc(by)).limit(1)
-        # )
 
         if not (_result := result.scalar_one_or_none()):
             raise NotFoundError
@@ -157,23 +172,21 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
 
     def _last(self, by: str = "id") -> RuntimeConcreteTable:
         """
-        Returns the last result ordered by the specified column.
+        Retrieves the last record from the database table based on a sorting criteria.
 
         Args:
-            by (str): The column to order by. Defaults to "id".
+            by (str): The name of the column to order the results by.
+                Defaults to "id".
 
         Returns:
-            RuntimeConcreteTable: The last schema instance.
+            RuntimeConcreteTable: The last record as a schema instance.
 
         Raises:
-            NotFoundError: If no result is found.
+            NotFoundError: If no records are found in the table.
         """
         result: Result = self.execute(
             select(self.schema_class).order_by(desc(by)).limit(1)
         )
-        # result: Result = await self.execute(
-        #     select(self.schema_class).order_by(desc(by)).limit(1)
-        # )
 
         if not (_result := result.scalar_one_or_none()):
             raise NotFoundError
@@ -182,55 +195,53 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
 
     def _save(self, payload: dict[str, Any]) -> RuntimeConcreteTable:
         """
-        Saves a new instance of the model in the related table.
+        Saves a new record to the database.
 
         Args:
-            payload (dict[str, Any]): The data to save.
+            payload (dict[str, Any]): A dictionary containing the data to save.
 
         Returns:
             RuntimeConcreteTable: The saved schema instance.
 
         Raises:
-            DatabaseError: If there is an error during the save.
+            DatabaseError: If there is any error during the save operation.
         """
         try:
             schema = self.schema_class(**payload)
             self._session.add(schema)
             self._session.flush()
             self._session.refresh(schema)
-            # await self._session.flush()
-            # await self._session.refresh(schema)
             return schema
         except self._ERRORS:
             raise DatabaseError
 
     def save_all(self, payloads: list[dict[str, Any]]) -> None:
         """
-        Saves multiple instances of the model in the related table.
+        Saves multiple new records to the database in a single operation.
 
         Args:
-            payloads (list[dict[str, Any]]): The data to save.
+            payloads (list[dict[str, Any]]): A list of dictionaries, where
+                each dictionary contains the data for a single record.
 
         Raises:
-            DatabaseError: If there is an error during the save.
+            DatabaseError: If there is any error during the save operation.
         """
         try:
             instances = [self.schema_class(**payload) for payload in payloads]
             self._session.add_all(instances)
             self._session.flush()
-            # await self._session.flush()
         except self._ERRORS:
             raise DatabaseError
 
     def _all(self) -> Generator[RuntimeConcreteTable, None, None]:
         """
-        Returns all instances of the model in the related table.
+        Retrieves all records from the database table.
 
         Yields:
-            Generator[RuntimeConcreteTable, None, None]: A generator of schema instances.
+            Generator[RuntimeConcreteTable, None, None]: A generator yielding
+                each record as a schema instance.
         """
         result: Result = self.execute(select(self.schema_class))
-        # result: Result = await self.execute(select(self.schema_class))
         schemas = result.scalars().all()
 
         for schema in schemas:
@@ -238,29 +249,33 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
 
     def delete(self, id_: int) -> None:
         """
-        Deletes an instance of the model by its ID.
+        Deletes a record from the database based on its ID.
 
         Args:
-            id_ (int): The ID of the instance to delete.
+            id_ (int): The ID of the record to delete.
         """
         self.execute(
             delete(self.schema_class).where(
                 cast("ColumnElement[bool]", self.schema_class.id == id_)
             )
         )
-        # await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))
         self._session.flush()
-        # await self._session.flush()
 
     def commit(self) -> None:
         """
-        Commits the current transaction.
+        Commits the current database transaction.
+
+        This method should be called to persist any changes made to the
+        database.
         """
         self._session.commit()
 
     def rollback(self) -> None:
         """
-        Rolls back the current transaction.
+        Rolls back the current database transaction.
+
+        This method should be called to undo any changes made to the
+        database within the current transaction.
         """
         self._session.rollback()
 
@@ -268,10 +283,16 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         """
         Performs a VACUUM operation on the database.
 
+        This method optimizes the database by reclaiming storage space and
+        optionally analyzing tables.
+
         Args:
-            has_tablename (bool): Indicates if the table name should be included in the query.
-            is_full (bool): Indicates if the FULL option should be used.
-            is_analyze (bool): Indicates if the ANALYZE option should be used.
+            has_tablename (bool): If True, the table name will be included in
+                the VACUUM query.
+            is_full (bool): If True, a "FULL" vacuum operation will be performed,
+                which reclaims more storage space but can take longer.
+            is_analyze (bool): If True, the database will be analyzed after the
+                vacuum operation to update the query planner's statistics.
         """
         query = "VACUUM"
         if is_full:
@@ -282,6 +303,5 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
             query += " " + self.schema_class.__tablename__
         query += ";"
         if has_tablename:
-            # log.debug("vacuum close transaction")
             self._session.execute(text("COMMIT"))
         self._session.execute(text(query))

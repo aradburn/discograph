@@ -1,6 +1,6 @@
 import logging
 import multiprocessing
-from typing import List, Any
+from typing import List
 
 from sqlalchemy.exc import OperationalError, IntegrityError
 
@@ -66,7 +66,7 @@ class WorkerRelationPassOne(multiprocessing.Process):
                     # log.exception("Error in WorkerRelationPassOne worker", exc_info=True)
                     raise
 
-                relations = self.to_relations_from_dict(relation_dicts)
+                relations = RelationUncommitted.from_dicts(relation_dicts)
 
                 if len(relations) > 0:
                     self.create_relation_bulk(
@@ -146,20 +146,6 @@ class WorkerRelationPassOne(multiprocessing.Process):
             relation_repository.rollback()
             log.debug(f"OperationalError in worker process")
             raise e
-
-    @classmethod
-    def to_relations_from_dict(
-        cls, relation_dicts: list[dict[str, Any]]
-    ) -> List[RelationUncommitted]:
-        relation_uncommitteds = []
-        for relation_dict in relation_dicts:
-            relation_uncommitted = RelationUncommitted(
-                subject=relation_dict["subject"],
-                role_name=relation_dict["role"],
-                object=relation_dict["object"],
-            )
-            relation_uncommitteds.append(relation_uncommitted)
-        return relation_uncommitteds
 
     @classmethod
     def to_relation_release_years(

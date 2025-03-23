@@ -19,8 +19,8 @@ log = logging.getLogger(__name__)
 
 
 class RuntimeDatabaseManager:
-    runtime_database_helper: RuntimeDatabaseHelper | None = None
-    _threading_model: ThreadingModel | None = None
+    runtime_database_helper: RuntimeDatabaseHelper
+    _threading_model: ThreadingModel
 
     @staticmethod
     def get_concurrency_count() -> int:

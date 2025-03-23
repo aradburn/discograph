@@ -68,6 +68,14 @@ RUNTIME_DATABASE_TABLE_NAMES_WITHOUT_ROLE = [
     "runtime_relation",
     "runtime_entity",
 ]
+ROLE_FILENAMES = [
+    "aerophones.csv",
+    "chordophones.csv",
+    "electrophones.csv",
+    "idiophones.csv",
+    "membranophones.csv",
+]
+
 env_file = find_dotenv()
 env_config = dotenv_values()  # take environment variables from .env.
 load_dotenv(override=True, verbose=True)  # take environment variables from .env.

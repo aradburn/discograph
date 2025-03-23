@@ -17,11 +17,40 @@ log = logging.getLogger(__name__)
 
 
 class RelationRepository(BaseRepository[RelationTable]):
+    """
+    Repository for managing Relation objects in the database.
+
+    This class provides methods for interacting with the RelationTable in the
+    database, including creating, retrieving, and deleting relations. It supports
+    various query operations, such as finding relations by ID, key, or associated
+    entity. It also includes bulk creation and deletion capabilities.
+
+    Inherits from:
+        BaseRepository[RelationTable]: Provides the basic database interaction
+            functionality.
+
+    Attributes:
+        schema_class (Type[RelationTable]): The SQLAlchemy table class for relations.
+    """
+
     schema_class = RelationTable
+    """The SQLAlchemy table class for relations."""
 
     def _get_one_by_query(
         self, query: Select[tuple[RelationTable]]
     ) -> RelationInternal:
+        """
+        Executes a query that should return a single Relation.
+
+        Args:
+            query: The SQLAlchemy query to execute.
+
+        Returns:
+            RelationInternal: The retrieved relation.
+
+        Raises:
+            NotFoundError: If no relation is found matching the query.
+        """
         result: Result = self.execute(query)
         # result: Result = await self.execute(query)
 
@@ -34,6 +63,15 @@ class RelationRepository(BaseRepository[RelationTable]):
     def _get_all_by_query(
         self, query: Select[tuple[RelationTable]]
     ) -> List[RelationInternal]:
+        """
+        Executes a query that should return multiple Relations.
+
+        Args:
+            query: The SQLAlchemy query to execute.
+
+        Returns:
+            List[RelationInternal]: A list of retrieved relations.
+        """
         result: Result = self.execute(query)
         # result: Result = await self.execute(query)
 
@@ -43,6 +81,12 @@ class RelationRepository(BaseRepository[RelationTable]):
         return relations
 
     def all(self) -> Generator[RelationDB, None, None]:
+        """
+        Retrieves all relations from the database.
+
+        Yields:
+            Generator[RelationDB, None, None]: A generator yielding each relation.
+        """
         query = select(RelationTable)
         with self._session.execute(
             query, execution_options={"yield_per": 1000}
@@ -53,6 +97,18 @@ class RelationRepository(BaseRepository[RelationTable]):
                     yield RelationDB.model_validate(row[0])
 
     def get(self, relation_id: int) -> RelationDB:
+        """
+        Retrieves a relation by its ID.
+
+        Args:
+            relation_id: The ID of the relation to retrieve.
+
+        Returns:
+            RelationDB: The retrieved relation.
+
+        Raises:
+            NotFoundError: If no relation is found with the given ID.
+        """
         # print(f"get")
         query = select(RelationTable).where(RelationTable.id == relation_id)
         result: Result = self.execute(query)
@@ -64,6 +120,19 @@ class RelationRepository(BaseRepository[RelationTable]):
         return RelationDB.model_validate(instance)
 
     def get_id_by_key(self, key: dict) -> int:
+        """
+        Retrieves the ID of a relation by its key.
+
+        Args:
+            key: A dictionary representing the key of the relation, containing
+                'subject', 'role_id', and 'object'.
+
+        Returns:
+            int: The ID of the relation.
+
+        Raises:
+            NotFoundError: If no relation is found with the given key.
+        """
         query = select(RelationTable.id).where(
             (RelationTable.subject == key["subject"])
             & (RelationTable.predicate == key["role_id"])
@@ -77,6 +146,18 @@ class RelationRepository(BaseRepository[RelationTable]):
         return instance
 
     def find_by_id(self, relation_id: int) -> RelationInternal:
+        """
+        Retrieves a relation by its ID, with an option to lock the row for update.
+
+        Args:
+            relation_id: The ID of the relation to retrieve.
+
+        Returns:
+            RelationInternal: The retrieved relation.
+
+        Raises:
+            NotFoundError: If no relation is found with the given ID.
+        """
         query = (
             select(RelationTable)
             .with_for_update(of=RelationTable, nowait=True)
@@ -85,6 +166,19 @@ class RelationRepository(BaseRepository[RelationTable]):
         return self._get_one_by_query(query)
 
     def find_by_key(self, key: dict) -> RelationInternal:
+        """
+        Retrieves a relation by its key components (subject, role, object).
+
+        Args:
+            key: A dictionary representing the key of the relation. It can
+                contain 'role_id', 'role_name', or 'role'.
+
+        Returns:
+            RelationInternal: The retrieved relation.
+
+        Raises:
+            NotFoundError: If no relation is found with the given key.
+        """
         if "role_id" not in key:
             if "role_name" in key:
                 role_name = key["role_name"]
@@ -100,6 +194,15 @@ class RelationRepository(BaseRepository[RelationTable]):
         return self._get_one_by_query(query)
 
     def find_by_entity(self, id_: int) -> List[RelationInternal]:
+        """
+        Retrieves all relations associated with a given entity ID.
+
+        Args:
+            id_: The ID of the entity.
+
+        Returns:
+            List[RelationInternal]: A list of relations associated with the entity.
+        """
         # if roles:
         #     where_clause &= RelationTable.role.in_(roles)
         # TODO search by year
@@ -124,6 +227,17 @@ class RelationRepository(BaseRepository[RelationTable]):
     def find_by_entity_and_roles(
         self, id_: int, role_ids: list[int]
     ) -> List[RelationInternal]:
+        """
+        Retrieves all relations associated with a given entity ID and a set of roles.
+
+        Args:
+            id_: The ID of the entity.
+            role_ids: A list of role IDs.
+
+        Returns:
+            List[RelationInternal]: A list of relations associated with the entity
+                and the specified roles.
+        """
         if id_ is None:
             return []
 
@@ -154,6 +268,20 @@ class RelationRepository(BaseRepository[RelationTable]):
     def create(
         self, relation: RelationUncommitted, on_conflict_do_nothing=False
     ) -> RelationInternal:
+        """
+        Creates a new relation in the database.
+
+        Args:
+            relation: The RelationUncommitted object to create.
+            on_conflict_do_nothing: If True, prevents the operation from failing if
+                a unique constraint is violated.
+
+        Returns:
+            RelationInternal: The created relation.
+
+        Raises:
+            DatabaseError: If there is an error during the database operation.
+        """
         from discograph.offline.offline_database_manager import OfflineDatabaseManager
 
         relation_dict = relation.model_dump(exclude={"role_name"})
@@ -177,6 +305,14 @@ class RelationRepository(BaseRepository[RelationTable]):
     def create_bulk(
         self, relations: List[RelationUncommitted], on_conflict_do_nothing=False
     ) -> None:
+        """
+        Creates multiple new relations in the database.
+
+        Args:
+            relations: A list of RelationUncommitted objects to create.
+            on_conflict_do_nothing: If True, prevents the operation from failing if
+                a unique constraint is violated.
+        """
         from discograph.offline.offline_database_manager import OfflineDatabaseManager
 
         relation_dicts = []
@@ -194,6 +330,12 @@ class RelationRepository(BaseRepository[RelationTable]):
         self._session.execute(query)
 
     def delete_by_entitys(self, id_: int) -> None:
+        """
+        Deletes all relations associated with a given entity ID.
+
+        Args:
+            id_: The ID of the entity.
+        """
         self.execute(
             delete(self.schema_class).where(
                 (RelationTable.predicate == id_) | (RelationTable.object == id_)

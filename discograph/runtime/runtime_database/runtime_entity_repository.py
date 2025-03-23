@@ -1,5 +1,27 @@
+"""
+This module defines the `RuntimeEntityRepository` class, which is responsible for
+managing `RuntimeEntity` objects in the runtime database.
+
+It provides methods for performing various operations on entities, such as
+creating, retrieving, updating, and deleting entities. It also supports
+searching for entities based on different criteria.
+
+Key functionalities include:
+    - Retrieving entities by ID, entity ID and type, type and name.
+    - Retrieving multiple entities by a list of entity keys.
+    - Counting entities by type.
+    - Iterating through all entities or a subset based on a type.
+    - Creating new entities and updating existing ones.
+    - Deleting entities by ID.
+    - Searching for entities based on various criteria.
+
+The `RuntimeEntityRepository` interacts with the `RuntimeEntityTable` in the
+database to persist and retrieve entity data. It utilizes SQLAlchemy for database
+operations and inherits common functionality from `RuntimeBaseRepository`.
+"""
+
 import logging
-from typing import Generator, Any, cast, List
+from typing import Generator, Any, cast, List, Iterator
 
 from sqlalchemy import Result, select, update, Select, delete, func
 
@@ -16,11 +38,41 @@ log = logging.getLogger(__name__)
 
 
 class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
+    """
+    Repository for managing `RuntimeEntity` objects in the runtime database.
+
+    This class provides methods for interacting with the `RuntimeEntityTable`
+    in the runtime database, including creating, retrieving, updating, and
+    deleting entities. It supports various query operations, such as finding
+    entities by ID, entity ID and type, or a list of entity keys.
+
+    Inherits from:
+        RuntimeBaseRepository[RuntimeEntityTable]: Provides the basic runtime
+            database interaction functionality.
+
+    Attributes:
+        schema_class (Type[RuntimeEntityTable]): The SQLAlchemy table class
+            for runtime entities.
+    """
+
     schema_class = RuntimeEntityTable
+    """The SQLAlchemy table class for runtime entities."""
 
     def _get_one_by_query(
         self, query: Select[tuple[RuntimeEntityTable]]
     ) -> RuntimeEntity:
+        """
+        Executes a query that should return a single `RuntimeEntity`.
+
+        Args:
+            query: The SQLAlchemy query to execute.
+
+        Returns:
+            RuntimeEntity: The retrieved entity.
+
+        Raises:
+            NotFoundError: If no entity is found matching the query.
+        """
         result: Result = self.execute(query)
         # result: Result = await self.execute(query)
 
@@ -33,6 +85,15 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
     def _get_all_by_query(
         self, query: Select[tuple[RuntimeEntityTable]]
     ) -> List[RuntimeEntity]:
+        """
+        Executes a query that should return multiple `RuntimeEntity` objects.
+
+        Args:
+            query: The SQLAlchemy query to execute.
+
+        Returns:
+            List[RuntimeEntity]: A list of retrieved entities.
+        """
         result: Result = self.execute(query)
 
         instances = result.scalars().all()
@@ -43,6 +104,18 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         return entities
 
     def count_by_type(self, entity_type: EntityType) -> int:
+        """
+        Counts the number of entities of a specific type.
+
+        Args:
+            entity_type: The type of entity to count.
+
+        Returns:
+            int: The number of entities of the specified type.
+
+        Raises:
+            UnprocessableError: If the database query returns a non-integer value.
+        """
         query = (
             select(func.count())
             .select_from(self.schema_class)
@@ -63,6 +136,13 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         return value
 
     def all(self) -> Generator[RuntimeEntity, None, None]:
+        """
+        Retrieves all entities from the runtime database.
+
+        Yields:
+            Generator[RuntimeEntity, None, None]: A generator yielding each
+                entity.
+        """
         query = select(RuntimeEntityTable)
         with self._session.execute(
             query, execution_options={"yield_per": 1000}
@@ -72,7 +152,14 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
                 for row in partition:
                     yield RuntimeEntityDB.model_validate(row[0]).to_domain()
 
-    def all_ids_and_names(self) -> Generator[tuple[int, str], None, None]:
+    def all_ids_and_names(self) -> Iterator[tuple[int, str]]:
+        """
+        Retrieves all entity IDs and names from the runtime database.
+
+        Yields:
+            Generator[tuple[int, str], None, None]: A generator yielding each
+            entity's ID and name as a tuple.
+        """
         query = select(RuntimeEntityTable.id, RuntimeEntityTable.entity_name)
         with self._session.execute(
             query, execution_options={"yield_per": 1000}
@@ -83,12 +170,37 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
                     yield row
 
     def get_by_id(self, id_: int) -> RuntimeEntity:
+        """
+        Retrieves an entity by its internal ID.
+
+        Args:
+            id_: The internal ID of the entity to retrieve.
+
+        Returns:
+            RuntimeEntity: The retrieved entity.
+
+        Raises:
+            NotFoundError: If no entity is found with the given ID.
+        """
         query = select(RuntimeEntityTable).where(RuntimeEntityTable.id == id_)
         return self._get_one_by_query(query)
 
     def get_by_entity_id_and_entity_type(
         self, entity_id: int, entity_type: EntityType
     ) -> RuntimeEntity:
+        """
+        Retrieves an entity by its external entity ID and entity type.
+
+        Args:
+            entity_id: The external ID of the entity.
+            entity_type: The type of the entity.
+
+        Returns:
+            RuntimeEntity: The retrieved entity.
+
+        Raises:
+            NotFoundError: If no entity is found with the given ID and type.
+        """
         query = select(RuntimeEntityTable).where(
             (RuntimeEntityTable.entity_id == entity_id)
             & (RuntimeEntityTable.entity_type == entity_type)
@@ -96,9 +208,24 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         return self._get_one_by_query(query)
 
     def get_ids(self):
+        """
+        Retrieves all internal entity IDs.
+
+        Returns:
+            list[int]: A list of internal entity IDs.
+        """
         return self._session.scalars(select(RuntimeEntityTable.id)).all()
 
     def get_ids_by_type(self, entity_type: EntityType):
+        """
+        Retrieves all internal entity IDs of a specific entity type.
+
+        Args:
+            entity_type: The type of entity.
+
+        Returns:
+            list[int]: A list of internal entity IDs of the specified type.
+        """
         return self._session.scalars(
             select(RuntimeEntityTable.id).where(
                 RuntimeEntityTable.entity_type == entity_type
@@ -106,6 +233,15 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         ).all()
 
     def get_entity_ids_by_type(self, entity_type: EntityType):
+        """
+        Retrieves all external entity IDs of a specific entity type.
+
+        Args:
+            entity_type: The type of entity.
+
+        Returns:
+            list[int]: A list of external entity IDs of the specified type.
+        """
         return self._session.scalars(
             select(RuntimeEntityTable.entity_id).where(
                 RuntimeEntityTable.entity_type == entity_type
@@ -115,6 +251,16 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
     def get_entity_id_by_entity_type_and_entity_name(
         self, entity_type: EntityType, entity_name: str
     ):
+        """
+        Retrieves an external entity ID by entity type and name.
+
+        Args:
+            entity_type: The type of the entity.
+            entity_name: The name of the entity.
+
+        Returns:
+            int | None: The external entity ID, or None if not found.
+        """
         return self._session.execute(
             select(RuntimeEntityTable.entity_id).where(
                 (RuntimeEntityTable.entity_name == entity_name)
@@ -125,6 +271,16 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
     def get_id_by_entity_type_and_entity_name(
         self, entity_type: EntityType, entity_name: str
     ):
+        """
+        Retrieves an internal entity ID by entity type and name.
+
+        Args:
+            entity_type: The type of the entity.
+            entity_name: The name of the entity.
+
+        Returns:
+            int | None: The internal entity ID, or None if not found.
+        """
         return self._session.execute(
             select(RuntimeEntityTable.id).where(
                 (RuntimeEntityTable.entity_name == entity_name)
@@ -135,6 +291,16 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
     def get_id_by_entity_type_and_entity_id(
         self, entity_type: EntityType, entity_id: int
     ):
+        """
+        Retrieves an internal entity ID by entity type and external entity ID.
+
+        Args:
+            entity_type: The type of the entity.
+            entity_id: The external entity ID.
+
+        Returns:
+            int | None: The internal entity ID, or None if not found.
+        """
         return self._session.execute(
             select(RuntimeEntityTable.id).where(
                 (RuntimeEntityTable.entity_id == entity_id)
@@ -143,6 +309,16 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         ).scalar_one_or_none()
 
     def get_batched_ids(self, num_in_batch: int):
+        """
+        Retrieves all internal entity IDs in batches.
+
+        Args:
+            num_in_batch: The number of IDs per batch.
+
+        Returns:
+            Generator[list[int], None, None]: A generator yielding lists of
+                internal entity IDs.
+        """
         return utils.batched(self.get_ids(), num_in_batch)
 
     # def find_by_search_content(self, search_string: str) -> List[RuntimeEntity]:
@@ -153,6 +329,15 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
     #     return self._get_all_by_query(query)
 
     def create(self, entity: RuntimeEntity) -> RuntimeEntity:
+        """
+        Creates a new entity in the runtime database.
+
+        Args:
+            entity: The `RuntimeEntity` object to create.
+
+        Returns:
+            RuntimeEntity: The created entity.
+        """
         entity_uncommitted = entity.to_db()
         instance: RuntimeEntityTable = self._save(entity_uncommitted.model_dump())
         # instance: EntityTable = await self._save(schema.model_dump())
@@ -162,6 +347,19 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
     def get_by_type_and_name(
         self, entity_type: EntityType, entity_name: str
     ) -> RuntimeEntity:
+        """
+        Retrieves an entity by its type and name.
+
+        Args:
+            entity_type: The type of the entity.
+            entity_name: The name of the entity.
+
+        Returns:
+            RuntimeEntity: The retrieved entity.
+
+        Raises:
+            NotFoundError: If no entity is found with the given type and name.
+        """
         query = (
             select(RuntimeEntityTable)
             .where(
@@ -177,10 +375,19 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         id_: int,
         payload: dict[str, Any],
     ) -> RuntimeEntityTable:
-        """Updates an existed instance of the model in the related table.
-        If some data is not exist in the payload then the null value will
-        be passed to the schema class."""
+        """
+        Updates an existing entity in the database.
 
+        Args:
+            id_: The internal ID of the entity to update.
+            payload: A dictionary containing the data to update.
+
+        Returns:
+            RuntimeEntityTable: The updated entity.
+
+        Raises:
+            DatabaseError: If there is an error during the update operation.
+        """
         query = (
             update(self.schema_class)
             .where(RuntimeEntityTable.id == id_)
@@ -198,12 +405,28 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         return schema
 
     def delete_by_id(self, id_: int) -> None:
+        """
+        Deletes an entity by its internal ID.
+
+        Args:
+            id_: The internal ID of the entity to delete.
+        """
         self.execute(delete(self.schema_class).where(RuntimeEntityTable.id == id_))
         # await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))
         # self._session.flush()
         # await self._session.flush()
 
     def search_multi(self, entity_keys) -> List[RuntimeEntity]:
+        """
+        Retrieves multiple entities based on a list of entity keys.
+
+        Args:
+            entity_keys: A list of tuples, where each tuple contains an
+                external entity ID and an entity type.
+
+        Returns:
+            List[RuntimeEntity]: A list of retrieved entities.
+        """
         artist_ids: List[int] = []
         label_ids: List[int] = []
         for entity_id, entity_type in entity_keys:

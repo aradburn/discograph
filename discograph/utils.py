@@ -13,7 +13,7 @@ from collections.abc import Mapping
 from datetime import datetime, date
 from functools import wraps
 from random import random
-from typing import List, Any
+from typing import List, Any, Sequence, Iterator, TypeVar
 
 import requests
 from dateutil.relativedelta import relativedelta
@@ -33,6 +33,7 @@ STRIP_PATTERN = re.compile(r"\(\d+\)|not on label|self[ -]released|[()&\".,]")
 # STRIP_PATTERN = re.compile(r"(\(\d+\)|[^(\w\s)]+)")
 # REMOVE_PUNCTUATION = re.compile(r"[^\w\s]")
 WORD_PATTERN = re.compile(r"\s+")
+T = TypeVar("T")
 
 
 class SkipFilter:
@@ -103,7 +104,7 @@ def parse_request_args(args):
     return roles, year
 
 
-def batched(iterable, n) -> list[Any]:
+def batched(iterable: Sequence[T], n) -> Iterator[List[T]]:
     # batched('ABCDEFG', 3) → ABC DEF G
     if n < 1:
         raise ValueError("n must be at least one")
@@ -124,7 +125,7 @@ def batched(iterable, n) -> list[Any]:
 #         yield itertools.chain([peek], slice_iter)
 
 
-def split_list(num_chunks: int, seq) -> list[Any]:
+def split_list(num_chunks: int, seq: Sequence[T]) -> Iterator[T]:
     num_items = count(seq)
     # print(f"num_items: {num_items}")
     num_chunks = min(num_items, num_chunks)

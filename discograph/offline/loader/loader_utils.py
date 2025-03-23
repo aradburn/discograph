@@ -1,176 +1,162 @@
-import datetime
+"""
+This module provides utility functions for the data loading process in the Discograph offline system.
+
+It defines the `LoaderUtils` class, which offers a collection of static
+methods for handling common tasks related to data loading, such as:
+    - **Finding XML file paths**: Locating Discogs XML dump files based on
+      the data directory, date, and dump type.
+    - **Finding Role paths**: Locating Role files (csv).
+    - **Creating XML iterators**: Generating iterators for efficient parsing
+      of XML files, including cleaning up the XML elements.
+    - **Path Management**: Manages file paths using `os.path.join` and `glob`.
+    - **Logging**: Provides logging information for debugging and tracking
+      the progress of file operations.
+
+Key functionalities include:
+    - **`get_xml_path`**: This method constructs the full path to a Discogs
+      XML dump file based on the provided data directory, XML tag (e.g.,
+      "artists", "releases"), and date. It uses `glob` to find the most recent
+      file matching the pattern, handles date-based and test-data file names.
+    - **`get_role_paths`**: This method gets a list of role file path from the
+    ROLE_DIR, it returns all .csv files.
+    - **`get_iterator`**: This method creates an iterator for parsing a
+      Discogs XML dump file. It opens the gzipped XML file, uses
+      `ParserUtils.iterparse` to iterate over specific XML elements, and
+      then cleans the elements using `ParserUtils.clean_elements`.
+    - **Path Handling**: The class uses `os.path.join` to correctly construct
+      file paths across different operating systems.
+    - **Error Handling**: The code implicitly handles cases where files might
+      not be found by using `glob`, which returns an empty list if no files
+      match the pattern.
+    - **Logging**: The class uses `logging` to provide detailed information
+      about the file paths being accessed.
+
+The `LoaderUtils` class interacts with the following components:
+    - `discograph.config`: For accessing configuration settings like `ROLE_DIR`.
+    - `discograph.offline.loader.parser_utils.ParserUtils`: For parsing
+      and cleaning XML elements.
+    - `logging`: For logging operations.
+    - `os`: For file system operations.
+    - `glob`: For file name pattern matching.
+    - `gzip`: for opening compressed files
+
+The module utilizes `logging` for logging operations, `os` for file system
+operations, `glob` for file pattern matching, `gzip` for reading
+compressed files, and `typing` for type hinting.
+"""
+
 import glob
 import gzip
 import logging
 import os
-import re
-from typing import Optional, List
-from xml.dom import minidom
-from xml.etree import ElementTree
+from typing import List
 
 from discograph.config import ROLE_DIR
+from discograph.offline.loader.parser_utils import ParserUtils
 
 log = logging.getLogger(__name__)
+"""
+The logger for the LoaderUtils module.
+"""
 
 
 class LoaderUtils:
-    # CLASS CONSTANTS
+    """
+    Provides utility functions for the data loading process.
 
-    DATE_REGEX = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
-    DATE_NO_DASHES_REGEX = re.compile(r"^(\d{4})(\d{2})(\d{2})$")
-    YEAR_REGEX = re.compile(r"^\d\d\d\d$")
+    This class offers static methods for handling common tasks related to data
+    loading, such as finding XML file paths, creating iterators, and managing
+    file paths.
+    """
 
     # PUBLIC STATIC METHODS
 
     @staticmethod
-    def get_xml_path(data_directory: str, tag: str, date: str = ""):
-        # Date in the format yyyymmdd, use test_yyyymmdd for test data
-        # data_directory = os.path.abspath(
-        #     os.path.join(
-        #         os.path.abspath(os.path.dirname(__file__)),
-        #         "..",
-        #         "data",
-        #     )
-        # )
+    def get_xml_path(data_directory: str, tag: str, date: str = "") -> str:
+        """
+        Constructs the full path to a Discogs XML dump file.
+
+        This method takes the data directory, XML tag (e.g., "artists",
+        "releases"), and date as input and returns the full path to the
+        corresponding XML dump file. It uses `glob` to find the most recent
+        file matching the pattern.
+
+        Args:
+            data_directory (str): The directory containing the XML files.
+            tag (str): The XML tag representing the dump type (e.g., "artist", "release").
+            date (str, optional): The date of the dump in YYYYMMDD format.
+                Defaults to "".
+
+        Returns:
+            str: The full path to the XML dump file.
+        """
         glob_pattern = f"discogs_{date}_{tag}s.xml.gz"
+        """Create the glob pattern for matching the file."""
         log.debug(f"data_directory: {data_directory}")
+        """Log the data directory."""
         log.debug(f"glob_pattern: {glob_pattern}")
-        # with contextmanagers.TemporaryDirectoryChange(data_directory):
+        """Log the glob pattern."""
         files = sorted(glob.glob(glob_pattern, root_dir=data_directory))
+        """Find all matching files using glob and sort them."""
         log.debug(f"files: {files}")
+        """Log the found files."""
         full_path_files = os.path.join(data_directory, files[-1])
+        """Construct the full path to the most recent file."""
         log.debug(f"full_path_files: {full_path_files}")
+        """Log the full path."""
         return full_path_files
 
     @staticmethod
     def get_role_paths() -> List[str]:
+        """
+        Gets a list of paths to role CSV files.
+
+        This method returns a list of full paths to all CSV files in the
+        `ROLE_DIR` directory.
+
+        Returns:
+            List[str]: A list of full paths to role CSV files.
+        """
         data_directory = ROLE_DIR
+        """Set the data directory to ROLE_DIR."""
         glob_pattern = "*.csv"
+        """Set the glob pattern to match CSV files."""
         log.debug(f"data_directory: {data_directory}")
+        """Log the data directory."""
         log.debug(f"glob_pattern: {glob_pattern}")
-        # with contextmanagers.TemporaryDirectoryChange(data_directory):
+        """Log the glob pattern."""
         files = sorted(glob.glob(glob_pattern, root_dir=data_directory))
+        """Find all matching files using glob and sort them."""
         log.debug(f"files: {files}")
+        """Log the found files."""
         full_path_files = [os.path.join(data_directory, file) for file in files]
+        """Construct the full paths to each file."""
         log.debug(f"full_path_files: {full_path_files}")
+        """Log the full paths."""
         return full_path_files
 
     @staticmethod
-    def clean_elements(elements):
-        for element in elements:
-            image_tags = element.findall("images")
-            if image_tags:
-                element.remove(*image_tags)
-            # url_tags = element.findall('urls')
-            # if url_tags:
-            #    element.remove(*url_tags)
-            yield element
-
-    @staticmethod
-    def parse_release_date(date_string: Optional[str]) -> Optional[datetime]:
-        # empty string
-        if not date_string:
-            return None
-        # yyyy-mm-dd
-        match = LoaderUtils.DATE_REGEX.match(date_string)
-        if match:
-            year, month, day = match.groups()
-            return LoaderUtils.validate_release_date(year, month, day)
-        # yyyymmdd
-        match = LoaderUtils.DATE_NO_DASHES_REGEX.match(date_string)
-        if match:
-            year, month, day = match.groups()
-            return LoaderUtils.validate_release_date(year, month, day)
-        # yyyy
-        match = LoaderUtils.YEAR_REGEX.match(date_string)
-        if match:
-            year, month, day = match.group(), "1", "1"
-            return LoaderUtils.validate_release_date(year, month, day)
-        # other: "?", "????", "None", "Unknown"
-        return None
-
-    @staticmethod
-    def element_to_datetime(element):
-        if element is None or element.text is None:
-            return None
-        date_string = element.text.strip()
-        return LoaderUtils.parse_release_date(date_string)
-
-    @staticmethod
-    def element_to_integer(element):
-        if element is not None and element.text is not None:
-            return int(element.text)
-        return None
-
-    @staticmethod
-    def element_to_string(element):
-        if element is not None:
-            return element.text or None
-        return None
-
-    @staticmethod
-    def element_to_strings(element):
-        if element is not None and len(element):
-            return [_.text for _ in element]
-        return None
-
-    # noinspection PyUnusedLocal
-    @staticmethod
-    def element_to_none(element):
-        return None
-
-    @staticmethod
     def get_iterator(data_directory: str, tag: str, date: str):
+        """
+        Creates an iterator for parsing a Discogs XML dump file.
+
+        This method returns an iterator that yields cleaned XML elements from
+        a Discogs XML dump file.
+
+        Args:
+            data_directory (str): The directory containing the XML files.
+            tag (str): The XML tag representing the dump type (e.g., "artist", "release").
+            date (str): The date of the dump in YYYYMMDD format.
+
+        Returns:
+            iterator: An iterator over the cleaned XML elements.
+        """
         file_path = LoaderUtils.get_xml_path(data_directory, tag, date)
+        """Get the full path to the XML file."""
         file_pointer = gzip.GzipFile(file_path, "r")
-        iterator = LoaderUtils.iterparse(file_pointer, tag)
-        iterator = LoaderUtils.clean_elements(iterator)
+        """Open the XML file using gzip to read compressed files."""
+        iterator = ParserUtils.iterparse(file_pointer, tag)
+        """Get an iterator over the XML elements with the specified tag."""
+        iterator = ParserUtils.clean_elements(iterator)
+        """Clean the XML elements."""
         return iterator
-
-    @staticmethod
-    def iterparse(source, tag: str):
-        context = ElementTree.iterparse(source, events=("start", "end"))
-        context = iter(context)
-        _, root = next(context)
-        depth = 0
-        for event, element in context:
-            if element.tag == tag:
-                if event == "start":
-                    depth += 1
-                else:
-                    depth -= 1
-                    if depth == 0:
-                        yield element
-                        root.clear()
-
-    @staticmethod
-    def prettify(element):
-        string = ElementTree.tostring(element, "utf-8")
-        reparsed = minidom.parseString(string)
-        return reparsed.toprettyxml(indent="    ")
-
-    @staticmethod
-    def validate_release_date(
-        year_str: str, month_str: str, day_str: str
-    ) -> datetime.datetime:
-        # log.debug(f"year_str: {year_str}")
-        # log.debug(f"month_str: {month_str}")
-        # log.debug(f"day_str: {day_str}")
-        try:
-            year = int(year_str)
-            month = int(month_str)
-            day = int(day_str)
-            if month < 1:
-                month = 1
-            if day < 1:
-                day = 1
-            if month > 12 >= day:
-                day, month = month, day
-            date = datetime.datetime(year, month, 1, 0, 0)
-            day_offset = day - 1
-            date = date + datetime.timedelta(days=day_offset)
-        except ValueError:
-            log.error(f"BAD DATE: {year_str},{month_str},{day_str}")
-            date = None
-        # log.debug(f"date: {date}")
-        return date

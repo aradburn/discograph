@@ -1,3 +1,26 @@
+"""
+This module defines the `RuntimeDatabaseHelper` class and related utilities for managing the runtime database.
+
+It provides an abstract base class for interacting with various database backends,
+handling database setup, shutdown, table management, and various data access operations.
+
+Key functionalities include:
+    - Abstract methods for setting up and shutting down the database.
+    - Methods for creating and dropping database tables.
+    - Loading tables with initial data (e.g., roles).
+    - Generating SQL insert queries.
+    - Retrieving network data for entities.
+    - Retrieving random entities.
+    - Searching text indexes.
+    - Managing database connections and sessions.
+    - Caching of frequently accessed data.
+
+The `RuntimeDatabaseHelper` class is designed to be subclassed for specific
+database implementations, such as SQLite or PostgreSQL. It utilizes SQLAlchemy
+for database operations and defines a set of methods that each subclass must
+implement.
+"""
+
 import logging
 from abc import ABC, abstractmethod
 from typing import Type, List, Any
@@ -31,42 +54,97 @@ log = logging.getLogger(__name__)
 
 
 class RuntimeDatabaseHelper(ABC):
-    runtime_engine: Engine | None = None
-    runtime_session_factory: sessionmaker | None = None
-    flask_db_session: scoped_session | None = None
+    """
+    Abstract base class for managing the runtime database.
 
-    idx_entity_one_id: Index | None = None
-    idx_entity_two_id: Index | None = None
+    This class provides an interface for interacting with the runtime database,
+    including methods for setting up and shutting down the database, creating
+    and dropping tables, loading initial data, and performing various data
+    access operations.
 
-    text_search_index: TextSearchIndex | None = None
-    entity_details_index: EntityDetailsIndex | None = None
+    Subclasses should implement the abstract methods to provide database-specific
+    functionality.
+
+    Attributes:
+        runtime_engine (Engine | None): The SQLAlchemy engine for the runtime database.
+        runtime_session_factory (sessionmaker | None): The SQLAlchemy session factory
+            for creating database sessions.
+        flask_db_session (scoped_session | None): A scoped session for Flask database operations.
+        idx_entity_one_id (Index | None): An index for entity one ID.
+        idx_entity_two_id (Index | None): An index for entity two ID.
+        text_search_index (TextSearchIndex | None): An index for text-based searches.
+        entity_details_index (EntityDetailsIndex | None): An index for entity details.
+        entity_count_cached (int): A cached count of entities.
+        MAX_NODES (int): The maximum number of nodes in a network.
+        MAX_NODES_MOBILE (int): The maximum number of nodes in a mobile network.
+        MAX_DEGREE (int): The maximum degree of a node in a network.
+        MAX_DEGREE_MOBILE (int): The maximum degree of a node in a mobile network.
+        LINK_RATIO (int): A ratio for link calculations.
+    """
+
+    runtime_engine: Engine
+    """The SQLAlchemy engine for the runtime database."""
+    runtime_session_factory: sessionmaker
+    """The SQLAlchemy session factory for creating database sessions."""
+    flask_db_session: scoped_session
+    """A scoped session for Flask database operations."""
+
+    idx_entity_one_id: Index
+    """An index for entity one ID."""
+    idx_entity_two_id: Index
+    """An index for entity two ID."""
+
+    text_search_index: TextSearchIndex
+    """An index for text-based searches."""
+    entity_details_index: EntityDetailsIndex
+    """An index for entity details."""
 
     entity_count_cached = 0
+    """A cached count of entities."""
 
     MAX_NODES = 400
+    """The maximum number of nodes in a network."""
     MAX_NODES_MOBILE = 25
+    """The maximum number of nodes in a mobile network."""
 
     MAX_DEGREE = 5
+    """The maximum degree of a node in a network."""
     # was 12
     MAX_DEGREE_MOBILE = 3
+    """The maximum degree of a node in a mobile network."""
 
     LINK_RATIO = 10
+    """A ratio for link calculations."""
     # was 3
 
     @staticmethod
     @abstractmethod
     def setup_database(config: Configuration) -> Engine:
+        """
+        Sets up the database connection and returns the engine.
+
+        Args:
+            config: The application configuration.
+
+        Returns:
+            Engine: The SQLAlchemy engine.
+        """
         pass
 
     @staticmethod
     @abstractmethod
     def shutdown_database() -> None:
+        """Shuts down the database connection."""
         pass
 
     @classmethod
     def initialize(cls) -> None:
-        """ensure the parent proc's database connections are not touched
-        in the new connection pool"""
+        """
+        Initializes the database connection.
+
+        Ensures that the parent process's database connections are not touched
+        in the new connection pool.
+        """
         from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
 
         RuntimeDatabaseManager.runtime_database_helper.runtime_engine.dispose(
@@ -76,11 +154,25 @@ class RuntimeDatabaseHelper(ABC):
     @staticmethod
     @abstractmethod
     def check_connection(config: Configuration, engine: Engine) -> None:
+        """
+        Checks the database connection.
+
+        Args:
+            config: The application configuration.
+            engine: The SQLAlchemy engine.
+        """
         pass
 
     @classmethod
     @abstractmethod
-    def create_tables(cls, tables: List[str] = None) -> None:
+    def create_tables(cls, tables: List[str]) -> None:
+        """
+        Creates database tables.
+
+        Args:
+            tables: An optional list of table names to create. If None, all tables
+                defined in `RuntimeBase.metadata` will be created.
+        """
         from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
         from discograph.runtime.runtime_database import ALL_RUNTIME_DATABASE_TABLES
 
@@ -101,7 +193,14 @@ class RuntimeDatabaseHelper(ABC):
 
     @classmethod
     @abstractmethod
-    def drop_tables(cls, tables: List[str] = None) -> None:
+    def drop_tables(cls, tables: List[str]) -> None:
+        """
+        Drops database tables.
+
+        Args:
+            tables: An optional list of table names to drop. If None, all tables
+                defined in `RuntimeBase.metadata` will be dropped.
+        """
         from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
 
         if tables is not None:
@@ -122,6 +221,7 @@ class RuntimeDatabaseHelper(ABC):
 
     @classmethod
     def load_tables(cls) -> None:
+        """Loads tables with initial data."""
         log.info("Load tables")
         RuntimeRoleDataAccess.load_all_roles()
 
@@ -133,16 +233,25 @@ class RuntimeDatabaseHelper(ABC):
     @staticmethod
     @abstractmethod
     def has_vacuum_tablename() -> bool:
+        """
+        Indicates whether the database supports vacuuming a specific table.
+        """
         pass
 
     @staticmethod
     @abstractmethod
     def is_vacuum_full() -> bool:
+        """
+        Indicates whether a full vacuum operation is supported.
+        """
         pass
 
     @staticmethod
     @abstractmethod
     def is_vacuum_analyze() -> bool:
+        """
+        Indicates whether the analyze operation is supported after a vacuum.
+        """
         pass
 
     @staticmethod
@@ -152,6 +261,17 @@ class RuntimeDatabaseHelper(ABC):
         values: dict,
         on_conflict_do_nothing=False,
     ) -> ReturningInsert[tuple[RuntimeConcreteTable]]:
+        """
+        Generates an SQL insert query.
+
+        Args:
+            schema_class: The schema class for the table.
+            values: A dictionary of values to insert.
+            on_conflict_do_nothing: Whether to do nothing on conflict.
+
+        Returns:
+            ReturningInsert[tuple[RuntimeConcreteTable]]: The insert query.
+        """
         pass
 
     @staticmethod
@@ -161,6 +281,17 @@ class RuntimeDatabaseHelper(ABC):
         values: List[dict],
         on_conflict_do_nothing=False,
     ) -> Insert[tuple[RuntimeConcreteTable]]:
+        """
+        Generates an SQL insert bulk query.
+
+        Args:
+            schema_class: The schema class for the table.
+            values: A list of dictionaries, each containing values to insert.
+            on_conflict_do_nothing: Whether to do nothing on conflict.
+
+        Returns:
+            Insert[tuple[RuntimeConcreteTable]]: The bulk insert query.
+        """
         pass
 
     @staticmethod
@@ -169,9 +300,23 @@ class RuntimeDatabaseHelper(ABC):
         relation_repository: RuntimeRelationRepository,
         entity_id: int,
         entity_type: EntityType,
-        on_mobile=False,
-        roles=None,
+        on_mobile,
+        roles: List[str],
     ):
+        """
+        Retrieves network data for an entity.
+
+        Args:
+            entity_repository: The entity repository.
+            relation_repository: The relation repository.
+            entity_id: The ID of the entity.
+            entity_type: The type of the entity.
+            on_mobile: Whether the request is from a mobile device.
+            roles: An optional list of roles to filter by.
+
+        Returns:
+            Any: The network data.
+        """
         from discograph.runtime.data_access_layer.relation_grapher import (
             RelationGrapher,
         )
@@ -212,6 +357,7 @@ class RuntimeDatabaseHelper(ABC):
         relation_grapher = RelationGrapher(
             center_entity=entity,
             degree=degree,
+            link_ratio=RuntimeDatabaseHelper.LINK_RATIO,
             max_nodes=max_nodes,
             role_names=roles,
         )
@@ -225,7 +371,15 @@ class RuntimeDatabaseHelper(ABC):
     def get_random_entity(
         entity_repository: RuntimeEntityRepository,
     ) -> tuple[int, EntityType]:
+        """
+        Retrieves a random entity.
 
+        Args:
+            entity_repository: The entity repository.
+
+        Returns:
+            tuple[int, EntityType]: A tuple containing the entity ID and type.
+        """
         # structural_roles = [
         #     "Alias",
         #     "Member Of",
@@ -282,7 +436,7 @@ class RuntimeDatabaseHelper(ABC):
                 and (
                     "Member Of" in relation_counts
                     or "Alias" in relation_counts
-                    or ("members" in entities and len(entities["members"]) > 0)
+                    or ("members" in entities and len(list(entities.get("members", []))) > 0)
                     or ("groups" in entities and len(entities["groups"]) > 0)
                 )
                 and entity.entity_type == EntityType.ARTIST
@@ -314,6 +468,18 @@ class RuntimeDatabaseHelper(ABC):
         entity_id: int,
         entity_type: EntityType,
     ) -> dict[str, Any]:
+        """
+        Retrieves relations for an entity.
+
+        Args:
+            entity_repository: The entity repository.
+            relation_repository: The relation repository.
+            entity_id: The ID of the entity.
+            entity_type: The type of the entity.
+
+        Returns:
+            dict[str, Any]: The relations data.
+        """
         # TODO Add info on releases back in one day
         entity = entity_repository.get_by_entity_id_and_entity_type(
             entity_id, entity_type
@@ -339,24 +505,6 @@ class RuntimeDatabaseHelper(ABC):
             data.append(datum)
         data = {"results": tuple(data)}
         return data
-
-    # @classmethod
-    # def get_relation_by_key(
-    #     cls,
-    #     relation_repository: RuntimeRelationRepository,
-    #     relation_release_year_repository: RuntimeRelationReleaseYearRepository,
-    #     key: dict[str, Any],
-    # ) -> RuntimeRelation:
-    #     relation_internal = relation_repository.find_by_key(key)
-    #     relation = relation_internal.to_relation()
-    #
-    #     relation_release_years = relation_release_year_repository.get(relation.id)
-    #     relation.releases = {}
-    #     for relation_release_year in relation_release_years:
-    #         relation.releases[str(relation_release_year.release_id)] = (
-    #             relation_release_year.year
-    #         )
-    #     return relation
 
     @classmethod
     def search_text_index(cls, search_text):

@@ -6,7 +6,7 @@ from flask_caching import BaseCache, SimpleCache
 from flask_caching.backends.rediscache import RedisCache
 from flask_caching.backends.filesystemcache import FileSystemCache
 
-from discograph.config import CacheType
+from discograph.config import CacheType, Configuration
 
 log = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class CacheManager:
     cache: BaseCache | None = None
 
     @classmethod
-    def setup_cache(cls, config) -> None:
+    def setup_cache(cls, config: Configuration) -> None:
         """
         Initializes the cache based on the provided configuration.
 
@@ -40,7 +40,7 @@ class CacheManager:
             - CacheType.REDIS: Uses a RedisCache for caching in a Redis server.
 
         Args:
-            config (dict): A dictionary containing the application's configuration.
+            config (Configuration): A Configuration dictionary containing the application's configuration.
                            The 'CACHE_TYPE' key is used to determine the cache type.
 
         Raises:

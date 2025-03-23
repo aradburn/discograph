@@ -1,9 +1,26 @@
-import logging
-from typing import Dict, Any
+"""
+This module defines the domain objects for representing relations in the Discograph runtime system.
 
-from discograph import utils
-from discograph.library.cache.role_cache import RoleCache
-from discograph.library.domain.base import InternalDomainObject
+It provides classes for handling relations, including their representation in
+various stages, such as before database persistence (`RuntimeRelationUncommitted`),
+after database persistence (`RuntimeRelationDB`, `RuntimeRelationInternal`),
+and for public consumption (`RuntimeRelation`, `RuntimeRelationResult`).
+
+Key functionalities include:
+    - Representing relations with attributes like subject, object, and role.
+    - Providing a separate class for relations before they are committed to
+      the database (`RuntimeRelationUncommitted`).
+    - Managing relations with an ID after they are stored in the database
+      (`RuntimeRelationDB`, `RuntimeRelationInternal`).
+    - Exposing a simplified, public-facing representation of relations
+      (`RuntimeRelation`) with entity IDs and types.
+    - Handling search result relations with additional attributes like distance
+      (`RuntimeRelationResult`).
+    - Converting relations between different representations (e.g., from
+      `RuntimeRelationDB` to `RuntimeRelationInternal`).
+    - Generating unique link keys for relations.
+    - Generating JSON-compatible entity keys.
+"""
 
 __all__ = [
     "RuntimeRelationUncommitted",
@@ -13,6 +30,12 @@ __all__ = [
     "RuntimeRelationResult",
 ]
 
+import logging
+from typing import Dict, Any
+
+from discograph import utils
+from discograph.library.cache.role_cache import RoleCache
+from discograph.library.domain.base import InternalDomainObject
 from discograph.library.fields.entity_type import EntityType
 
 log = logging.getLogger(__name__)
@@ -28,7 +51,10 @@ class _RuntimeRelationBase(InternalDomainObject):
 
 class RuntimeRelationUncommitted(_RuntimeRelationBase):
     """
-    This schema is used for creating an instance without an id before it is persisted into the database.
+    Represents a relation before it is persisted into the database.
+
+    This class is used to hold the data for a new relation before it is
+    assigned an ID and stored in the database.
 
     Attributes:
         subject (int): The ID of the subject entity.
@@ -37,25 +63,35 @@ class RuntimeRelationUncommitted(_RuntimeRelationBase):
     """
 
     subject: int
+    """The ID of the subject entity."""
     role_name: str
+    """The name of the role."""
     object: int
+    """The ID of the object entity."""
 
 
 class RuntimeRelationDB(_RuntimeRelationBase):
     """
-    Saved Relation representation, database internal representation.
+    Represents a relation as stored in the database.
+
+    This class reflects the internal representation of a relation in the
+    database, with an ID, subject, predicate (role ID), and object.
 
     Attributes:
         id (int): The unique identifier for the relation.
         subject (int): The ID of the subject entity.
-        predicate (int): The ID of the predicate entity.
+        predicate (int): The ID of the predicate entity (role ID).
         object (int): The ID of the object entity.
     """
 
     id: int
+    """The unique identifier for the relation."""
     subject: int
+    """The ID of the subject entity."""
     predicate: int
+    """The ID of the predicate entity (role ID)."""
     object: int
+    """The ID of the object entity."""
 
     def to_domain(self) -> "RuntimeRelationInternal":
         """
@@ -65,7 +101,9 @@ class RuntimeRelationDB(_RuntimeRelationBase):
             RuntimeRelationInternal: The internal representation of the relation.
         """
         relation_db_dict: dict = self.model_dump()
-        role_id: int = relation_db_dict.get("predicate")
+        role_id = relation_db_dict.get("predicate")
+        if role_id is None:
+            raise ValueError("Role ID is None")
         role_name = RoleCache.role_id_to_role_name_lookup[role_id]
         relation_db_dict.update(role=role_name)
         return RuntimeRelationInternal.model_validate(relation_db_dict)
@@ -73,7 +111,10 @@ class RuntimeRelationDB(_RuntimeRelationBase):
 
 class RuntimeRelationInternal(_RuntimeRelationBase):
     """
-    Saved Relation representation, database internal representation.
+    Represents a relation internally, after retrieval from the database.
+
+    This class is used for internal representations of relations. It
+    includes subject, role, and object IDs.
 
     Attributes:
         id (int): The unique identifier for the relation.
@@ -83,14 +124,22 @@ class RuntimeRelationInternal(_RuntimeRelationBase):
     """
 
     id: int
+    """The unique identifier for the relation."""
     subject: int
+    """The ID of the subject entity."""
     role: str
+    """The role of the relation."""
     object: int
+    """The ID of the object entity."""
 
 
 class RuntimeRelation(_RuntimeRelationBase):
     """
-    Domain Relation representation, public facing.
+    Represents a relation in the domain, exposed publicly.
+
+    This class is used for public-facing representations of relations. It
+    provides entity IDs and types for both ends of the relation, along with
+    the role and associated releases.
 
     Attributes:
         id (int): The unique identifier for the relation.
@@ -103,12 +152,19 @@ class RuntimeRelation(_RuntimeRelationBase):
     """
 
     id: int
+    """The unique identifier for the relation."""
     entity_one_id: int
+    """The ID of the first entity."""
     entity_one_type: EntityType
+    """The type of the first entity."""
     entity_two_id: int
+    """The ID of the second entity."""
     entity_two_type: EntityType
+    """The type of the second entity."""
     role: str
+    """The role of the relation."""
     releases: Dict[str, int | None] | None = None
+    """The releases associated with the relation."""
 
     @property
     def entity_one_key(self) -> tuple[int, EntityType]:
@@ -169,6 +225,9 @@ class RuntimeRelation(_RuntimeRelationBase):
         """
         Returns the link key for the relation.
 
+        The link key is a string representation of the relation, suitable for
+        use as a unique identifier in various contexts.
+
         Returns:
             str: The link key for the relation.
         """
@@ -185,7 +244,10 @@ class RuntimeRelation(_RuntimeRelationBase):
 
 class RuntimeRelationResult(RuntimeRelation):
     """
-    Domain Search result Relation representation, public facing.
+    Represents a relation as a search result.
+
+    This class extends the `RuntimeRelation` class to include additional
+    attributes relevant to search results, such as distance.
 
     Attributes:
         id (int): The unique identifier for the relation.
@@ -194,8 +256,11 @@ class RuntimeRelationResult(RuntimeRelation):
     """
 
     id: int
+    """The unique identifier for the relation."""
     role: str
+    """The role of the relation."""
     distance: int | None = None
+    """The distance of the relation, if available."""
 
     def as_json(self) -> Dict[str, Any]:
         """
@@ -210,6 +275,6 @@ class RuntimeRelationResult(RuntimeRelation):
             "source": self.json_entity_one_key,
             "target": self.json_entity_two_key,
         }
-        if hasattr(self, "distance"):
-            data["distance"] = self.distance
+        if hasattr(self, "distance") and self.distance is not None:
+            data["distance"] = str(self.distance)
         return data

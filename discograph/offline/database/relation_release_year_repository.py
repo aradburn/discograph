@@ -18,11 +18,38 @@ log = logging.getLogger(__name__)
 
 
 class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
+    """
+    Repository for managing RelationReleaseYear objects in the database.
+
+    This class provides methods for interacting with the RelationReleaseYearTable
+    in the database, including creating, retrieving, and bulk creating relation-release-year pairs.
+
+    Inherits from:
+        BaseRepository[RelationReleaseYearTable]: Provides the basic database interaction
+            functionality.
+
+    Attributes:
+        schema_class (Type[RelationReleaseYearTable]): The SQLAlchemy table class
+            for relation-release-year pairs.
+    """
+
     schema_class = RelationReleaseYearTable
+    """
+        The SQLAlchemy table class for relation-release-year pairs.
+    """
 
     def _get_all_by_query(
         self, query: Select[tuple[RelationReleaseYearTable]]
     ) -> List[RelationReleaseYear]:
+        """
+        Executes a query that should return multiple RelationReleaseYear objects.
+
+        Args:
+            query: The SQLAlchemy query to execute.
+
+        Returns:
+            List[RelationReleaseYear]: A list of retrieved relation-release-year objects.
+        """
         result: Result = self.execute(query)
         # result: Result = await self.execute(query)
 
@@ -37,11 +64,28 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
         return relation_release_years
 
     def all(self) -> Generator[RelationReleaseYear, None, None]:
+        """
+        Retrieves all relation-release-year pairs from the database.
+
+        Yields:
+            Generator[RelationReleaseYear, None, None]: A generator yielding each
+                relation-release-year pair.
+        """
         for instance in self._all():
             # async for instance in self._all():
             yield RelationReleaseYear.model_validate(instance)
 
     def get(self, relation_id: int) -> List[RelationReleaseYear]:
+        """
+        Retrieves all relation-release-year pairs associated with a given relation ID.
+
+        Args:
+            relation_id: The ID of the relation.
+
+        Returns:
+            List[RelationReleaseYear]: A list of relation-release-year pairs associated
+                with the specified relation ID.
+        """
         # print(f"get")
         query = (
             select(RelationReleaseYearTable)
@@ -58,6 +102,20 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
         relation_release_year: RelationReleaseYearUncommitted,
         on_conflict_do_nothing=False,
     ) -> RelationReleaseYear:
+        """
+        Creates a new relation-release-year pair in the database.
+
+        Args:
+            relation_release_year: The RelationReleaseYearUncommitted object to create.
+            on_conflict_do_nothing: If True, prevents the operation from failing if
+                a unique constraint is violated.
+
+        Returns:
+            RelationReleaseYear: The created relation-release-year object.
+
+        Raises:
+            DatabaseError: If there is an error during the database operation.
+        """
         from discograph.offline.offline_database_manager import OfflineDatabaseManager
 
         relation_release_year_dict = relation_release_year.model_dump()
@@ -81,6 +139,15 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
         relation_release_years: List[RelationReleaseYearUncommitted],
         on_conflict_do_nothing=False,
     ) -> None:
+        """
+        Creates multiple new relation-release-year pairs in the database.
+
+        Args:
+            relation_release_years: A list of RelationReleaseYearUncommitted objects
+                to create.
+            on_conflict_do_nothing: If True, prevents the operation from failing if
+                a unique constraint is violated.
+        """
         from discograph.offline.offline_database_manager import OfflineDatabaseManager
 
         relation_release_year_dicts = []

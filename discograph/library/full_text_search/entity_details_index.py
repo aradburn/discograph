@@ -7,8 +7,33 @@ log = logging.getLogger(__name__)
 
 
 class EntityDetailsIndex:
+    """
+    Provides an index for efficiently storing and retrieving detailed information
+    about entities, including their countries, genres, and styles.
+
+    This class maintains separate indexes for countries, genres, and styles,
+    allowing quick lookups of this information for a given entity ID. It
+    also provides methods for calculating and logging the size of the indexes.
+
+    Attributes:
+        entity_countries (dict[int, list[int]]): A dictionary mapping entity IDs to
+            lists of country indexes.
+        countries_list (list[str]): A list of unique country names, serving as a
+            lookup table for country indexes.
+        entity_genres (dict[int, list[int]]): A dictionary mapping entity IDs to
+            lists of genre indexes.
+        genres_list (list[str]): A list of unique genre names, serving as a
+            lookup table for genre indexes.
+        entity_styles (dict[int, list[int]]): A dictionary mapping entity IDs to
+            lists of style indexes.
+        styles_list (list[str]): A list of unique style names, serving as a
+            lookup table for style indexes.
+    """
 
     def __init__(self):
+        """
+        Initializes an empty EntityDetailsIndex.
+        """
         self.entity_countries: dict[int, list[int]] = {}
         self.countries_list: list[str] = []
         self.entity_genres: dict[int, list[int]] = {}
@@ -17,6 +42,16 @@ class EntityDetailsIndex:
         self.styles_list: list[str] = []
 
     def index_country(self, id_: int, country: str) -> None:
+        """
+        Indexes a country for a given entity ID.
+
+        The country name is split into tokens based on delimiters (&, /, ,), normalized
+        by stripping whitespace, and then added to the index if not already present.
+
+        Args:
+            id_: The ID of the entity.
+            country: The name of the country.
+        """
         for token in re.split(r"[&,/]", country):
             normalized_token = token.strip()
             if normalized_token == "":
@@ -31,6 +66,16 @@ class EntityDetailsIndex:
             # print(f"country add: {id_}: {self.entity_countries[id_]}")
 
     def index_genre(self, id_: int, genre: str) -> None:
+        """
+        Indexes a genre for a given entity ID.
+
+        The genre name is split into tokens based on delimiters (&, /, ,), normalized
+        by stripping whitespace, and then added to the index if not already present.
+
+        Args:
+            id_: The ID of the entity.
+            genre: The name of the genre.
+        """
         for token in re.split(r"[&,/]", genre):
             normalized_token = token.strip()
             if normalized_token == "":
@@ -45,6 +90,16 @@ class EntityDetailsIndex:
             # print(f"details add: {id_}: {self.entity_genres[id_]}")
 
     def index_style(self, id_: int, style: str) -> None:
+        """
+        Indexes a style for a given entity ID.
+
+        The style name is split into tokens based on delimiters (&, /, ,), normalized
+        by stripping whitespace, and then added to the index if not already present.
+
+        Args:
+            id_: The ID of the entity.
+            style: The name of the style.
+        """
         for token in re.split(r"[&,/]", style):
             normalized_token = token.strip()
             if normalized_token == "":
@@ -59,6 +114,16 @@ class EntityDetailsIndex:
             # print(f"details add: {id_}: {self.entity_styles[id_]}")
 
     def get_countries_for_id(self, id_: int) -> str | None:
+        """
+        Gets a comma-separated string of country names for a given entity ID.
+
+        Args:
+            id_: The ID of the entity.
+
+        Returns:
+            str | None: A comma-separated string of country names, or None if no
+                countries are found for the entity.
+        """
         entity_countries = self.entity_countries.get(id_)
         if entity_countries is None:
             return None
@@ -68,6 +133,16 @@ class EntityDetailsIndex:
         return ",".join(entity_countries_strs)
 
     def get_genres_for_id(self, id_: int) -> str | None:
+        """
+        Gets a comma-separated string of genre names for a given entity ID.
+
+        Args:
+            id_: The ID of the entity.
+
+        Returns:
+            str | None: A comma-separated string of genre names, or None if no
+                genres are found for the entity.
+        """
         entity_genres = self.entity_genres.get(id_)
         if entity_genres is None:
             return None
@@ -77,6 +152,16 @@ class EntityDetailsIndex:
         return ",".join(entity_genres_strs)
 
     def get_styles_for_id(self, id_: int) -> str | None:
+        """
+        Gets a comma-separated string of style names for a given entity ID.
+
+        Args:
+            id_: The ID of the entity.
+
+        Returns:
+            str | None: A comma-separated string of style names, or None if no
+                styles are found for the entity.
+        """
         entity_styles = self.entity_styles.get(id_)
         if entity_styles is None:
             return None
@@ -86,6 +171,9 @@ class EntityDetailsIndex:
         return ",".join(entity_styles_strs)
 
     def print_sizes(self) -> None:
+        """
+        Calculates and logs the size of the various indexes in the class.
+        """
         log.debug(f"number of entity_countries : {len(self.entity_countries)}")
         size_entity_countries = calculate_size(self.entity_countries)
         log.debug(f"size of entity_countries   : {size_entity_countries}")
@@ -102,6 +190,9 @@ class EntityDetailsIndex:
         log.debug(f"number of styles           : {len(self.styles_list)}")
 
     def print_details(self) -> None:
+        """
+        Prints the contents of the various indexes in the class.
+        """
         print("Countries")
         for country in self.countries_list:
             print(country)

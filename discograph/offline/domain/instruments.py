@@ -1,10 +1,25 @@
+"""
+This module defines domain objects related to musical instruments, specifically
+the `Instrument` class and the `HornbostelSachs` class for instrument classification.
+
+It provides a structured way to represent and categorize musical instruments
+within the Discograph system.
+
+Key functionalities include:
+    - Representing individual musical instruments with attributes like label,
+      instrument names, and description.
+    - Representing the Hornbostel-Sachs classification system as a hierarchy of
+      instrument categories.
+    - Providing iteration capabilities for the Hornbostel-Sachs classification.
+"""
+
 __all__ = [
     "Instrument",
     "HornbostelSachs",
 ]
 
 import logging
-from typing import List, Dict
+from typing import List, Dict, Iterator
 
 from pydantic import ConfigDict, RootModel
 
@@ -17,17 +32,37 @@ class Instrument(InternalDomainObject):
     """
     Represents a musical instrument.
 
+    This class encapsulates information about a specific musical instrument,
+    including its label, a list of associated instrument names, and a
+    description.
+
     Attributes:
-        label (str): The label of the instrument.
-        instruments (List[str]): A list of instrument names.
-        description (str): A description of the instrument.
+        label (str): The label or common name of the instrument.
+        instruments (List[str]): A list of instrument names associated with
+            this instrument. This can include variations or synonyms.
+        description (str): A detailed description of the instrument, including
+            its characteristics and usage.
     """
 
     model_config = ConfigDict(alias_generator=lambda field_name: field_name.title())
+    """
+        Configuration settings for the Pydantic model.
+
+        - `alias_generator`: A function to generate aliases for field names.
+                             In this case, it converts field names to title case.
+    """
 
     label: str
+    """The label or common name of the instrument."""
     instruments: List[str]
+    """
+    A list of instrument names associated with this instrument.
+    This can include variations or synonyms.
+    """
     description: str
+    """
+    A detailed description of the instrument, including its characteristics and usage.
+    """
     # mimopage: str
 
 
@@ -35,20 +70,30 @@ class HornbostelSachs(RootModel):
     """
     Represents the Hornbostel-Sachs classification system for musical instruments.
 
+    The Hornbostel-Sachs system is a widely used method for classifying musical
+    instruments based on how they produce sound. This class provides a structured
+    way to represent the hierarchy of instrument categories defined by this system.
+
     Attributes:
-        root (Dict[str, Instrument]): A dictionary mapping instrument categories to Instrument objects.
+        root (Dict[str, Instrument]): A dictionary mapping instrument categories
+            (e.g., 'Aerophones', 'Chordophones') to their corresponding
+            `Instrument` objects. Each `Instrument` object contains further
+            details about the instruments within that category.
     """
 
     root: Dict[str, Instrument]
+    """
+    A dictionary mapping instrument categories to their corresponding `Instrument` objects.
+    """
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         """
-        Returns an iterator over the root dictionary.
+        Returns an iterator over the root dictionary's keys (instrument categories).
+
+        This allows for convenient iteration over the instrument categories in the
+        Hornbostel-Sachs classification.
 
         Returns:
-            Iterator: An iterator over the root dictionary.
+            Iterator[str]: An iterator over the instrument categories.
         """
-        return iter(self.__root__)
-
-    # def __getitem__(self, item):
-    #     return self.__root__[item]
+        return iter(self.root)

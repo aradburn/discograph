@@ -4,14 +4,14 @@ import logging
 import os
 from typing import List
 
-from discograph.config import INSTRUMENTS_PATH, INSTRUMENTS_DIR
+from discograph.config import INSTRUMENTS_PATH, INSTRUMENTS_DIR, ROLE_FILENAMES
 from discograph.exceptions import NotFoundError
 from discograph.library.cache.cache_manager import CacheManager
 from discograph.library.fields.role_type import RoleType
-from discograph.logging_config import LOGGING_TRACE
 from discograph.offline.data_access_layer.role_data_access import RoleDataAccess
-from discograph.offline.database.role_repository import RoleRepository
+from discograph.offline.data_access_layer.role_data_utils import RoleDataUtils
 from discograph.offline.database.offline_transaction import offline_transaction
+from discograph.offline.database.role_repository import RoleRepository
 from discograph.offline.domain.instruments import HornbostelSachs
 from discograph.offline.domain.role import (
     RoleUncommitted,
@@ -27,17 +27,17 @@ class LoaderRole(LoaderBase):
 
     @classmethod
     def load_roles_into_database(cls) -> None:
-        log.debug(f"Loading initial roles ")
+        log.info(f"Loading initial roles ")
 
         # Read from each source of roles and save into database, deduplicating role names as we go
-        file_roles = LoaderRole.load_roles_from_files()
-        LoaderRole.save_roles(file_roles)
+        file_roles = cls.load_roles_from_files()
+        cls.save_roles(file_roles)
 
-        hornbostel_sachs_roles = LoaderRole.load_hornbostel_sachs_instruments()
-        LoaderRole.save_roles(hornbostel_sachs_roles)
+        hornbostel_sachs_roles = cls.load_hornbostel_sachs_instruments()
+        cls.save_roles(hornbostel_sachs_roles)
 
-        wikipedia_roles = LoaderRole.load_wikipedia_instruments()
-        LoaderRole.save_roles(wikipedia_roles)
+        wikipedia_roles = cls.load_wikipedia_instruments()
+        cls.save_roles(wikipedia_roles)
 
         # Load back in all roles from database
         # TODO check if needed
@@ -46,20 +46,13 @@ class LoaderRole(LoaderBase):
 
     @classmethod
     def load_wikipedia_instruments(cls) -> List[RoleUncommitted]:
-        log.debug(f"Loading Wikipedia instruments")
+        log.info(f"Loading Wikipedia instruments")
 
         roles = []
         loaded_count = 0
-        filename_list = [
-            "aerophones.csv",
-            "chordophones.csv",
-            "electrophones.csv",
-            "idiophones.csv",
-            "membranophones.csv",
-        ]
 
         # Load wikipedia data
-        for filename in filename_list:
+        for filename in ROLE_FILENAMES:
             role_path = os.path.join(INSTRUMENTS_DIR, filename)
             log.debug(f"Loading from: {role_path}")
             with open(role_path) as csvfile:
@@ -71,7 +64,7 @@ class LoaderRole(LoaderBase):
                     row: dict
                     instrument_name = row["Instrument"]
                     instrument_class = row["Classification"]
-                    normalised_role_name_list = RoleDataAccess.normalise_role_names(
+                    normalised_role_name_list = RoleDataUtils.normalise_role_names(
                         instrument_name
                     )
 
@@ -98,7 +91,7 @@ class LoaderRole(LoaderBase):
     @classmethod
     def load_hornbostel_sachs_instruments(cls) -> List[RoleUncommitted]:
         # Load Hornbostel Sachs instrument data
-        log.debug(f"Load Hornbostel Sachs instrument data")
+        log.info(f"Load Hornbostel Sachs instrument data")
 
         roles = []
         loaded_count = 0
@@ -106,8 +99,6 @@ class LoaderRole(LoaderBase):
         with open(INSTRUMENTS_PATH) as f:
             json_data = json.load(f)
             instruments_data = HornbostelSachs(**json_data)
-            if LOGGING_TRACE:
-                print(f"instruments_data: {instruments_data}")
 
             for key, instrument_entry in instruments_data.root.items():
                 instrument_class_key = key[0]
@@ -120,7 +111,7 @@ class LoaderRole(LoaderBase):
                 subcategory_name = RoleType.subcategory_names[subcategory_id]
 
                 for instrument_name in instrument_entry.instruments:
-                    normalised_role_name_list = RoleDataAccess.normalise_role_names(
+                    normalised_role_name_list = RoleDataUtils.normalise_role_names(
                         instrument_name
                     )
 
@@ -140,7 +131,7 @@ class LoaderRole(LoaderBase):
 
     @classmethod
     def load_roles_from_files(cls) -> List[RoleUncommitted]:
-        log.debug(f"Loading roles from files")
+        log.info(f"Loading roles from files")
 
         roles = []
         loaded_count = 0
@@ -156,7 +147,7 @@ class LoaderRole(LoaderBase):
                 for row in csv_reader:
                     row: dict
                     role_name = row["name"]
-                    normalised_role_name_list = RoleDataAccess.normalise_role_names(
+                    normalised_role_name_list = RoleDataUtils.normalise_role_names(
                         role_name
                     )
 
@@ -173,12 +164,6 @@ class LoaderRole(LoaderBase):
                             subcategory_id = RoleType.Subcategory.NONE
                             subcategory_enum = RoleType.Subcategory.NONE
                         subcategory_name = RoleType.subcategory_names[subcategory_id]
-                        if LOGGING_TRACE:
-                            log.debug(f"role_name: {role_name}")
-                            log.debug(f"category_id: {category_id}")
-                            log.debug(f"category_name: {category_name}")
-                            log.debug(f"subcategory_id: {subcategory_id}")
-                            log.debug(f"subcategory_name: {subcategory_name}")
 
                         # Add new role
                         new_role = RoleUncommitted(
@@ -207,15 +192,9 @@ class LoaderRole(LoaderBase):
             for role_uncommitted in roles:
                 try:
                     role_repository.get_by_name(name=role_uncommitted.role_name)
-                    if LOGGING_TRACE:
-                        log.debug(
-                            f"Role record already exists in db: {role_uncommitted.role_name}"
-                        )
                 except NotFoundError:
                     # Add new role
-                    created_role = role_repository.create(role_uncommitted)
-                    if LOGGING_TRACE:
-                        log.debug(f"Added role to db: {created_role}")
+                    role_repository.create(role_uncommitted)
                     role_repository.commit()
                     added_count += 1
 

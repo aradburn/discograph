@@ -1,35 +1,91 @@
+"""
+This module defines the base class for data loaders in the Discograph offline system.
+
+It provides a foundation for loading data from XML files into the database,
+handling bulk inserts, updates, and deletes. It also includes functionality
+for managing concurrency and tracking the progress of data loading operations.
+
+Key components:
+    - `LoaderBase`: An abstract base class for data loaders.
+    - Methods for bulk database operations (insert, update, delete).
+    - Methods for iterating through and parsing XML files.
+    - Methods for managing concurrency and waiting for worker processes.
+    - Methods for handling data preprocessing and transformation.
+    - Methods for tracking updated IDs and identifying records to be deleted.
+    - Constants for batch sizes, reporting frequency, and retry limits.
+    - Helper functions for getting XML paths and setting up iterators.
+
+The `LoaderBase` class is designed to be subclassed by specific data loaders,
+which implement the abstract methods to provide database-specific and
+domain-specific logic.
+
+The module utilizes `gzip` for handling compressed XML files, `logging` for
+logging operations, `abc` for abstract base classes, `typing` for type
+hinting, `SortedSet` for managing sorted sets of IDs, and `sqlalchemy.exc.DataError`
+for database-related exceptions. It interacts with `discograph.utils` for utility
+functions, `discograph.offline.offline_database_manager` for database management,
+`discograph.offline.database.base_repository` for database operations,
+`discograph.library.fields.entity_type` for entity types, `discograph.offline.loader.loader_utils`
+for loader-specific utilities, and `discograph.logging_config` for logging.
+"""
+
 import gzip
 import logging
 from abc import abstractmethod
-from typing import List, Generator, Self, Any
+from typing import List, Any
 
 from sortedcontainers import SortedSet
 from sqlalchemy.exc import DataError
 
 from discograph import utils
-from discograph.offline.offline_database_manager import OfflineDatabaseManager
-from discograph.offline.database.base_repository import BaseRepository
 from discograph.library.fields.entity_type import EntityType
-from discograph.offline.loader.loader_utils import LoaderUtils
 from discograph.logging_config import LOGGING_TRACE
+from discograph.offline.database.base_repository import BaseRepository
+from discograph.offline.loader.loader_utils import LoaderUtils
+from discograph.offline.loader.parser_base import ParserBase
+from discograph.offline.loader.parser_utils import ParserUtils
+from discograph.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
+"""
+The logger for the LoaderBase module.
+"""
 
 
 class LoaderBase:
+    """
+    Abstract base class for data loaders.
+
+    This class provides a framework for loading data from XML files into the
+    database, handling bulk operations, concurrency, and data preprocessing.
+
+    Attributes:
+        BULK_INSERT_BATCH_SIZE (int): The batch size for bulk insert operations.
+        BULK_UPDATE_BATCH_SIZE (int): The batch size for bulk update operations.
+        BULK_REPORTING_SIZE (int): The number of records to process before reporting progress.
+        MAX_RETRYS (int): The maximum number of retries for database operations.
+        _tags_to_fields_mapping (dict): A mapping from XML tags to database fields and procedures.
+    """
+
     BULK_INSERT_BATCH_SIZE = 1000
+    """The batch size for bulk insert operations."""
     BULK_UPDATE_BATCH_SIZE = 100
+    """The batch size for bulk update operations."""
     BULK_REPORTING_SIZE = 1000
+    """The number of records to process before reporting progress."""
     # BULK_INSERT_BATCH_SIZE = 10000
     # BULK_UPDATE_BATCH_SIZE = 1000
     # BULK_REPORTING_SIZE = 10000
     MAX_RETRYS = 10
+    """The maximum number of retries for database operations."""
     _tags_to_fields_mapping: dict = None
+    """A mapping from XML tags to database fields and procedures."""
 
     @classmethod
     def loader_pass_one_manager(
         cls,
         repository: BaseRepository,
+        parser: ParserBase,
         data_directory: str,
         date: str,
         xml_tag: str,
@@ -37,21 +93,48 @@ class LoaderBase:
         skip_without: List[str],
         is_bulk_inserts=False,
     ) -> int:
+        """
+        Manages the first pass of the data loading process.
+
+        This method iterates through an XML file, extracts data, and performs
+        bulk insert or update operations in the database. It also manages
+        concurrency and identifies records that need to be deleted.
+
+        Args:
+            repository (BaseRepository): The repository for database operations.
+            parser: Parser to parse the XML data.
+            data_directory (str): The directory containing the XML files.
+            date (str): The date of the XML data dump.
+            xml_tag (str): The XML tag representing the records to load.
+            id_attr (str): The attribute name for the ID in the data.
+            skip_without (List[str]): A list of required fields, skip record if any are missing.
+            is_bulk_inserts (bool): Whether to perform bulk inserts or updates.
+
+        Returns:
+            int: The number of processed records.
+
+        Raises:
+            DataError: If there is an error during a database operation.
+            RuntimeError: If an error occurs in a worker process.
+
+        """
         # Loader pass one.
         set_of_updated_ids: SortedSet[int] = SortedSet()
+        """A sorted set to keep track of updated IDs."""
 
         initial_count = repository.count()
+        """The initial count of records in the database."""
 
         processed_count = 0
         xml_path = LoaderUtils.get_xml_path(data_directory, xml_tag, date)
         log.info(f"Loading data from {xml_path}")
         with gzip.GzipFile(xml_path, "r") as file_pointer:
-            iterator = LoaderUtils.iterparse(file_pointer, xml_tag)
+            iterator = ParserUtils.iterparse(file_pointer, xml_tag)
             bulk_records = []
             workers = []
             for i, element in enumerate(iterator):
                 try:
-                    data = cls.tags_to_fields(element)
+                    data = parser.tags_to_fields(element)
                     if skip_without:
                         if any(not data.get(_) for _ in skip_without):
                             continue
@@ -162,25 +245,79 @@ class LoaderBase:
     @classmethod
     @abstractmethod
     def insert_bulk(cls, bulk_inserts: list[dict[str, Any]], processed_count: int):
+        """
+        Performs a bulk insert operation.
+
+        This method is called to insert a batch of records into the database.
+        It must be implemented by subclasses to provide database-specific
+        logic.
+
+        Args:
+            bulk_inserts (list[dict[str, Any]]): The list of records to insert.
+            processed_count (int): The number of records processed so far.
+        """
         pass
 
     @classmethod
     @abstractmethod
     def update_bulk(cls, bulk_updates: list[dict[str, Any]], processed_count: int):
+        """
+        Performs a bulk update operation.
+
+        This method is called to update a batch of records in the database.
+        It must be implemented by subclasses to provide database-specific
+        logic.
+
+        Args:
+            bulk_updates (list[dict[str, Any]]): The list of records to update.
+            processed_count (int): The number of records processed so far.
+        """
         pass
 
     @classmethod
     @abstractmethod
     def delete_bulk(cls, bulk_deletes: list[int], processed_count: int):
+        """
+        Performs a bulk delete operation.
+
+        This method is called to delete a batch of records from the database.
+        It must be implemented by subclasses to provide database-specific
+        logic.
+
+        Args:
+            bulk_deletes (list[int]): The list of IDs to delete.
+            processed_count (int): The number of records processed so far.
+        """
         pass
 
     @classmethod
     @abstractmethod
     def get_set_of_ids(cls, entity_type):
+        """
+        Retrieves a set of IDs from the database.
+
+        This method is called to get a set of IDs for a specific entity type.
+        It must be implemented by subclasses to provide database-specific logic.
+
+        Args:
+            entity_type: The type of entity to retrieve IDs for.
+        """
         pass
 
     @classmethod
     def loader_wait_for_worker(cls, worker) -> None:
+        """
+        Waits for a worker process to finish.
+
+        This method waits for a worker process to complete its task and checks
+        for errors.
+
+        Args:
+            worker: The worker process to wait for.
+
+        Raises:
+            RuntimeError: If the worker process exits with a non-zero exit code.
+        """
         if LOGGING_TRACE:
             log.debug(f"wait for worker {worker.name}")
         worker.join()
@@ -188,54 +325,3 @@ class LoaderBase:
         if worker.exitcode > 0:
             log.error(f"worker {worker.name} exitcode: {worker.exitcode}")
             raise RuntimeError("Error in worker process")
-
-    @classmethod
-    def load_from_xml(
-        cls,
-        domain_class,
-        data_directory: str,
-        date: str,
-        xml_tag: str,
-        id_attr: str,
-        skip_without: list[str],
-    ) -> Generator[Self, None, None]:
-        xml_path = LoaderUtils.get_xml_path(data_directory, xml_tag, date)
-        log.info(f"Loading data from {xml_path}")
-        with gzip.GzipFile(xml_path, "r") as file_pointer:
-            iterator = LoaderUtils.iterparse(file_pointer, xml_tag)
-            for i, element in enumerate(iterator):
-                data = cls.tags_to_fields(element)
-                if skip_without:
-                    if any(not data.get(_) for _ in skip_without):
-                        continue
-                if element.get("id"):
-                    data[id_attr] = element.get("id")
-                # log.debug(f"data: {data}")
-
-                new_instance = domain_class(**data)
-                # log.debug(f"new_instance: {new_instance}")
-                yield new_instance
-
-    @classmethod
-    def from_element(cls, element) -> Self:
-        pass
-
-    @classmethod
-    def preprocess_data(cls, data: dict, element) -> dict[str, Any]:
-        return data
-
-    @classmethod
-    def tags_to_fields(cls, element, ignore_none=None, mapping=None) -> dict[str, Any]:
-        data = {}
-        mapping = mapping or cls._tags_to_fields_mapping
-        for child_element in element:
-            entry = mapping.get(child_element.tag, None)
-            if entry is None:
-                continue
-            field_name, procedure = entry
-            value = procedure(child_element)
-            if ignore_none and value is None:
-                continue
-            data[field_name] = value
-        data = cls.preprocess_data(data, element)
-        return data

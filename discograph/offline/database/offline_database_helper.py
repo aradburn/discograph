@@ -20,38 +20,53 @@ log = logging.getLogger(__name__)
 
 
 class OfflineDatabaseHelper(ABC):
+    """
+    Abstract base class for managing offline database operations.
+
+    This class provides a blueprint for interacting with the offline database,
+    including setting up connections, creating and dropping tables, loading data,
+    and managing vacuum operations. It also defines constants for graph query limitations.
+
+    Attributes:
+        offline_engine (Engine | None): The SQLAlchemy engine for the offline database.
+        offline_session_factory (sessionmaker | None): The session factory for the offline database.
+    """
+
     offline_engine: Engine | None = None
+    """The SQLAlchemy engine for the offline database."""
     offline_session_factory: sessionmaker | None = None
-
-    # idx_entity_one_id: Index | None = None
-    # idx_entity_two_id: Index | None = None
-
-    entity_count_cached = 0
-
-    MAX_NODES = 400
-    MAX_NODES_MOBILE = 25
-
-    MAX_DEGREE = 5
-    # was 12
-    MAX_DEGREE_MOBILE = 3
-
-    LINK_RATIO = 10
-    # was 3
+    """The session factory for the offline database."""
 
     @staticmethod
     @abstractmethod
     def setup_database(config: Configuration) -> Engine:
+        """
+        Abstract method to set up the database connection.
+
+        Args:
+            config: The database configuration.
+
+        Returns:
+            Engine: The SQLAlchemy engine.
+        """
         pass
 
     @staticmethod
     @abstractmethod
     def shutdown_database() -> None:
+        """
+        Abstract method to shut down the database connection.
+        """
         pass
 
     @classmethod
     def initialize(cls) -> None:
-        """ensure the parent proc's database connections are not touched
-        in the new connection pool"""
+        """
+        Initializes the database connection for a new process.
+
+        Ensures that the parent process's database connections are not touched in
+        the new connection pool.
+        """
         from discograph.offline.offline_database_manager import OfflineDatabaseManager
 
         OfflineDatabaseManager.offline_database_helper.offline_engine.dispose(
@@ -61,11 +76,24 @@ class OfflineDatabaseHelper(ABC):
     @staticmethod
     @abstractmethod
     def check_connection(config: Configuration, engine: Engine) -> None:
+        """
+        Abstract method to check the database connection.
+
+        Args:
+            config: The database configuration.
+            engine: The SQLAlchemy engine.
+        """
         pass
 
     @classmethod
     @abstractmethod
     def create_tables(cls, tables: List[str] = None) -> None:
+        """
+        Creates tables in the database.
+
+        Args:
+            tables: A list of table names to create. If None, all tables are created.
+        """
         from discograph.offline.offline_database_manager import OfflineDatabaseManager
 
         # for table in ALL_OFFLINE_DATABASE_TABLES:
@@ -90,6 +118,12 @@ class OfflineDatabaseHelper(ABC):
     @classmethod
     @abstractmethod
     def drop_tables(cls, tables: List[str] = None) -> None:
+        """
+        Drops tables from the database.
+
+        Args:
+            tables: A list of table names to drop. If None, all tables are dropped.
+        """
         from discograph.offline.offline_database_manager import OfflineDatabaseManager
 
         if tables is not None:
@@ -110,6 +144,16 @@ class OfflineDatabaseHelper(ABC):
 
     @classmethod
     def load_tables(cls, data_directory: str, date: str, is_bulk_inserts: bool) -> None:
+        """
+        Loads data into the tables.
+
+        This method orchestrates the loading process by executing a series of stages.
+
+        Args:
+            data_directory: The directory containing the data files.
+            date: The date of the data to load.
+            is_bulk_inserts: Whether to use bulk inserts.
+        """
         log.info("Load tables")
         stages = cls.get_load_table_stages(data_directory, date, is_bulk_inserts)
         for stage in stages:
@@ -120,6 +164,15 @@ class OfflineDatabaseHelper(ABC):
     def load_table_stage(
         cls, data_directory: str, date: str, is_bulk_inserts: bool, stage: int
     ) -> None:
+        """
+        Loads a specific stage of the data loading process.
+
+        Args:
+            data_directory: The directory containing the data files.
+            date: The date of the data to load.
+            is_bulk_inserts: Whether to use bulk inserts.
+            stage: The index of the stage to execute.
+        """
         stages = cls.get_load_table_stages(data_directory, date, is_bulk_inserts)
         log.debug(f"Run stage: {stage}")
         stages[stage]()
@@ -128,6 +181,17 @@ class OfflineDatabaseHelper(ABC):
     def get_load_table_stages(
         cls, data_directory: str, date: str, is_bulk_inserts: bool
     ) -> list[partial]:
+        """
+        Gets the list of stages for loading data into the tables.
+
+        Args:
+            data_directory: The directory containing the data files.
+            date: The date of the data to load.
+            is_bulk_inserts: Whether to use bulk inserts.
+
+        Returns:
+            list[partial]: A list of partial functions representing the loading stages.
+        """
         from discograph.offline.loader.loader_entity import LoaderEntity
         from discograph.offline.loader.loader_relation import LoaderRelation
         from discograph.offline.loader.loader_release import LoaderRelease
@@ -207,16 +271,34 @@ class OfflineDatabaseHelper(ABC):
     @staticmethod
     @abstractmethod
     def has_vacuum_tablename() -> bool:
+        """
+        Abstract method to indicate whether vacuum should be performed on a table.
+
+        Returns:
+            bool: True if vacuum should be performed on a table, False otherwise.
+        """
         pass
 
     @staticmethod
     @abstractmethod
     def is_vacuum_full() -> bool:
+        """
+        Abstract method to indicate whether a full vacuum should be performed.
+
+        Returns:
+            bool: True if a full vacuum should be performed, False otherwise.
+        """
         pass
 
     @staticmethod
     @abstractmethod
     def is_vacuum_analyze() -> bool:
+        """
+        Abstract method to indicate whether a vacuum analyze should be performed.
+
+        Returns:
+            bool: True if a vacuum analyze should be performed, False otherwise.
+        """
         pass
 
     @staticmethod
@@ -224,6 +306,17 @@ class OfflineDatabaseHelper(ABC):
     def generate_insert_query(
         schema_class: Type[ConcreteTable], values: dict, on_conflict_do_nothing=False
     ) -> ReturningInsert[tuple[ConcreteTable]]:
+        """
+        Abstract method to generate an insert query.
+
+        Args:
+            schema_class: The table schema class.
+            values: The values to insert.
+            on_conflict_do_nothing: Whether to do nothing on conflict.
+
+        Returns:
+            ReturningInsert[tuple[ConcreteTable]]: The insert query.
+        """
         pass
 
     @staticmethod
@@ -233,6 +326,17 @@ class OfflineDatabaseHelper(ABC):
         values: List[dict],
         on_conflict_do_nothing=False,
     ) -> Insert[tuple[ConcreteTable]]:
+        """
+        Abstract method to generate a bulk insert query.
+
+        Args:
+            schema_class: The table schema class.
+            values: The list of values to insert.
+            on_conflict_do_nothing: Whether to do nothing on conflict.
+
+        Returns:
+            Insert[tuple[ConcreteTable]]: The bulk insert query.
+        """
         pass
 
     # @classmethod
@@ -276,6 +380,17 @@ class OfflineDatabaseHelper(ABC):
         relation_release_year_repository: RelationReleaseYearRepository,
         key: dict[str, Any],
     ) -> Relation:
+        """
+        Retrieves a relation by its key.
+
+        Args:
+            relation_repository: The relation repository.
+            relation_release_year_repository: The relation release year repository.
+            key: The key to search for.
+
+        Returns:
+            Relation: The found relation.
+        """
         relation_internal = relation_repository.find_by_key(key)
         relation = relation_internal.to_relation()
 
