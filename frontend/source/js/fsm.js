@@ -627,25 +627,6 @@ export const DiscographFsm = machina.Fsm.extend({
     toggleLoading: function(status) {
         console.log("toggleLoading: ", status);
         
-        // Try to get the loading element
-        let pageLoading = document.getElementById('page-loading');
-        
-        // If it doesn't exist, create it with Bootstrap spinner styling
-        if (!pageLoading) {
-            pageLoading = document.createElement('div');
-            pageLoading.id = 'page-loading';
-            pageLoading.className = 'position-fixed top-50 start-50 translate-middle';
-            pageLoading.innerHTML = `
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            `;
-            // Add any necessary styling
-            pageLoading.style.zIndex = '1000';
-            // Append to body
-            document.body.appendChild(pageLoading);
-        }
-        
         // Update loading animation
         loading.toggle(status);
     },
