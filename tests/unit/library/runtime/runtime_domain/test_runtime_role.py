@@ -1,4 +1,4 @@
-import pytest
+from discograph.library.fields.role_type import RoleType
 from discograph.runtime.runtime_domain.role import (
     RuntimeRole,
     RuntimeRoleJSTree,
@@ -6,7 +6,6 @@ from discograph.runtime.runtime_domain.role import (
     RuntimeRoleJSTreeState,
     RuntimeRoleJSTreeWrapper,
 )
-from discograph.library.fields.role_type import RoleType
 
 
 def test_creates_runtime_role_with_valid_data():

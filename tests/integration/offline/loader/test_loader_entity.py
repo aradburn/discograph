@@ -3,15 +3,15 @@ import unittest
 from discograph import utils
 from discograph.config import TEST_DATA_DIR
 from discograph.offline.domain.entity import Entity
-from discograph.offline.loader.loader_entity import LoaderEntity
 from discograph.offline.loader.loader_utils import LoaderUtils
+from discograph.offline.loader.parser_entity import ParserEntity
 
 
 class TestLoaderEntity(unittest.TestCase):
     def test_from_element_01(self):
         iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "artist", "testinsert")
         element = next(iterator)
-        entity = LoaderEntity().from_element(element)
+        entity = ParserEntity().from_element(element)
         actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
         expected_entity = {
             "entities": {},
@@ -76,7 +76,7 @@ class TestLoaderEntity(unittest.TestCase):
         element = next(iterator)
         while element.find("name").text != "Seefeel":
             element = next(iterator)
-        entity = LoaderEntity().from_element(element)
+        entity = ParserEntity().from_element(element)
         actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
         expected_entity = {
             "entities": {
@@ -113,7 +113,7 @@ class TestLoaderEntity(unittest.TestCase):
     def test_from_element_03(self):
         iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "label", "testinsert")
         element = next(iterator)
-        entity = LoaderEntity().from_element(element)
+        entity = ParserEntity().from_element(element)
         actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
         expected_entity = {
             "entities": {},
@@ -138,7 +138,7 @@ class TestLoaderEntity(unittest.TestCase):
 
     def test_load_artists_from_xml_file(self):
         date = "testinsert"
-        entity_generator = LoaderEntity().load_from_xml(
+        entity_generator = ParserEntity().load_from_xml(
             domain_class=Entity,
             data_directory=TEST_DATA_DIR,
             date=date,
@@ -151,7 +151,7 @@ class TestLoaderEntity(unittest.TestCase):
 
     def test_load_labels_from_xml_file(self):
         date = "testinsert"
-        entity_generator = LoaderEntity().load_from_xml(
+        entity_generator = ParserEntity().load_from_xml(
             domain_class=Entity,
             data_directory=TEST_DATA_DIR,
             date=date,

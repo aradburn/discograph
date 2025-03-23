@@ -3,8 +3,8 @@ from xml.etree import ElementTree
 
 from discograph import utils
 from discograph.config import TEST_DATA_DIR
-from discograph.offline.loader.loader_release import LoaderRelease
 from discograph.offline.loader.loader_utils import LoaderUtils
+from discograph.offline.loader.parser_release import ParserRelease
 
 
 class TestLoaderRelease(unittest.TestCase):
@@ -121,7 +121,7 @@ class TestLoaderRelease(unittest.TestCase):
         release_element = ElementTree.fromstring(source)
 
         # WHEN
-        release = LoaderRelease().from_element(release_element)
+        release = ParserRelease().from_element(release_element)
         actual = utils.normalize_dict(release.model_dump())
 
         # THEN
@@ -174,7 +174,7 @@ class TestLoaderRelease(unittest.TestCase):
         release_element = next(iterator)
 
         # WHEN
-        release = LoaderRelease().from_element(release_element)
+        release = ParserRelease().from_element(release_element)
         actual = utils.normalize_dict(release.model_dump())
 
         # THEN
@@ -250,7 +250,7 @@ class TestLoaderRelease(unittest.TestCase):
         release_element = next(iterator)
 
         # WHEN
-        release = LoaderRelease().from_element(release_element)
+        release = ParserRelease().from_element(release_element)
         actual = utils.normalize_dict(release.model_dump())
 
         # THEN

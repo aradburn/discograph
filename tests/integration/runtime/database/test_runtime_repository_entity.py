@@ -2,8 +2,8 @@ import pydantic
 
 from discograph.config import TEST_DATA_DIR
 from discograph.library.fields.entity_type import EntityType
-from discograph.offline.loader.loader_entity import LoaderEntity
 from discograph.offline.loader.loader_utils import LoaderUtils
+from discograph.offline.loader.parser_entity import ParserEntity
 from discograph.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
@@ -19,7 +19,7 @@ class TestRuntimeRepositoryEntity(RuntimeRepositoryTestCase):
         # GIVEN
         iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "artist", "testinsert")
         entity_element = next(iterator)
-        entity = LoaderEntity().from_element(entity_element)
+        entity = ParserEntity().from_element(entity_element)
         print(f"entity: {entity}")
 
         countries = "UK"
@@ -44,7 +44,7 @@ class TestRuntimeRepositoryEntity(RuntimeRepositoryTestCase):
         # GIVEN
         iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "label", "testinsert")
         entity_element = next(iterator)
-        entity = LoaderEntity().from_element(entity_element)
+        entity = ParserEntity().from_element(entity_element)
         print(f"entity: {entity}")
         countries = "US"
         genres = "Electronic"
@@ -83,7 +83,7 @@ class TestRuntimeRepositoryEntity(RuntimeRepositoryTestCase):
         next(iterator)
         next(iterator)
         entity_element = next(iterator)
-        entity = LoaderEntity().from_element(entity_element)
+        entity = ParserEntity().from_element(entity_element)
         print(f"entity: {entity}")
 
         countries = "UK"

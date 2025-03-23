@@ -19,7 +19,7 @@ class TestCache(unittest.TestCase):
     #     shutdown_logging()
 
     def test_01(self):
-        CacheManager.setup_cache(vars(SqliteOfflineTestConfiguration))
+        CacheManager.setup_cache(SqliteOfflineTestConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -30,7 +30,7 @@ class TestCache(unittest.TestCase):
 
     def test_02(self):
         cache_key = "test_key"
-        CacheManager.setup_cache(vars(SqliteOfflineTestConfiguration))
+        CacheManager.setup_cache(SqliteOfflineTestConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -48,7 +48,7 @@ class TestCache(unittest.TestCase):
 
     def test_03(self):
         cache_key = "test_key"
-        CacheManager.setup_cache(vars(SqliteOfflineTestConfiguration))
+        CacheManager.setup_cache(SqliteOfflineTestConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -70,7 +70,7 @@ class TestCache(unittest.TestCase):
         assert actual == expected
 
     def test_04(self):
-        CacheManager.setup_cache(vars(SqliteDevelopmentConfiguration))
+        CacheManager.setup_cache(SqliteDevelopmentConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -81,7 +81,7 @@ class TestCache(unittest.TestCase):
 
     def test_05(self):
         cache_key = "test_key"
-        CacheManager.setup_cache(vars(SqliteDevelopmentConfiguration))
+        CacheManager.setup_cache(SqliteDevelopmentConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -99,7 +99,7 @@ class TestCache(unittest.TestCase):
 
     def test_06(self):
         cache_key = "test_key"
-        CacheManager.setup_cache(vars(SqliteDevelopmentConfiguration))
+        CacheManager.setup_cache(SqliteDevelopmentConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -121,7 +121,7 @@ class TestCache(unittest.TestCase):
         assert actual == expected
 
     def test_postgres_01(self):
-        CacheManager.setup_cache(vars(PostgresDevelopmentConfiguration))
+        CacheManager.setup_cache(PostgresDevelopmentConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -132,7 +132,7 @@ class TestCache(unittest.TestCase):
 
     def test_postgres_02(self):
         cache_key = "test_key"
-        CacheManager.setup_cache(vars(PostgresDevelopmentConfiguration))
+        CacheManager.setup_cache(PostgresDevelopmentConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -150,7 +150,7 @@ class TestCache(unittest.TestCase):
 
     def test_postgres_03(self):
         cache_key = "test_key"
-        CacheManager.setup_cache(vars(PostgresDevelopmentConfiguration))
+        CacheManager.setup_cache(PostgresDevelopmentConfiguration())
 
         cache = CacheManager.get_cache()
 

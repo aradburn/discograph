@@ -3,6 +3,9 @@ import logging
 from discograph import utils
 from discograph.library.fields.entity_type import EntityType
 from discograph.runtime.data_access_layer.relation_grapher import RelationGrapher
+from discograph.runtime.runtime_database.runtime_database_helper import (
+    RuntimeDatabaseHelper,
+)
 from discograph.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
@@ -42,6 +45,8 @@ class TestDatabaseRelationGrapher(RuntimeDatabaseTestCase):
             grapher = RelationGrapher(
                 center_entity=artist,
                 degree=1,
+                link_ratio=RuntimeDatabaseHelper.LINK_RATIO,
+                max_nodes=RuntimeDatabaseHelper.MAX_NODES,
                 role_names=roles,
             )
             network = grapher.get_relation_graph(entity_repository, relation_repository)
@@ -172,6 +177,7 @@ class TestDatabaseRelationGrapher(RuntimeDatabaseTestCase):
             grapher = RelationGrapher(
                 center_entity=artist,
                 degree=2,
+                link_ratio=RuntimeDatabaseHelper.LINK_RATIO,
                 max_nodes=5,
                 role_names=roles,
             )
@@ -302,6 +308,7 @@ class TestDatabaseRelationGrapher(RuntimeDatabaseTestCase):
                 center_entity=artist,
                 degree=2,
                 link_ratio=2,
+                max_nodes=RuntimeDatabaseHelper.MAX_NODES,
                 role_names=roles,
             )
             network = grapher.get_relation_graph(entity_repository, relation_repository)
@@ -436,6 +443,8 @@ class TestDatabaseRelationGrapher(RuntimeDatabaseTestCase):
             grapher = RelationGrapher(
                 center_entity=artist,
                 degree=12,
+                link_ratio=RuntimeDatabaseHelper.LINK_RATIO,
+                max_nodes=RuntimeDatabaseHelper.MAX_NODES,
                 role_names=roles,
             )
             network = grapher.get_relation_graph(entity_repository, relation_repository)
@@ -651,6 +660,8 @@ class TestDatabaseRelationGrapher(RuntimeDatabaseTestCase):
             grapher = RelationGrapher(
                 center_entity=label,
                 degree=2,
+                link_ratio=RuntimeDatabaseHelper.LINK_RATIO,
+                max_nodes=RuntimeDatabaseHelper.MAX_NODES,
                 role_names=roles,
             )
             network = grapher.get_relation_graph(entity_repository, relation_repository)

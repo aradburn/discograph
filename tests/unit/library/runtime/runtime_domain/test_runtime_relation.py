@@ -27,6 +27,7 @@ def test_creates_runtime_relation_with_valid_data():
 
 def test_raises_value_error_for_unrecognized_entity_one_type():
     with pytest.raises(ValueError):
+        # noinspection PyTypeChecker
         relation = RuntimeRelation(
             id=1,
             entity_one_id=100,
@@ -40,6 +41,7 @@ def test_raises_value_error_for_unrecognized_entity_one_type():
 
 def test_raises_value_error_for_unrecognized_entity_two_type():
     with pytest.raises(ValueError):
+        # noinspection PyTypeChecker
         relation = RuntimeRelation(
             id=1,
             entity_one_id=100,

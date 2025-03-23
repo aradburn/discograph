@@ -1,4 +1,5 @@
-import pytest
+from xml.etree.ElementTree import Element
+
 from discograph.runtime.data_access_layer.role_entry import RoleEntry
 
 
@@ -27,10 +28,10 @@ def test_creates_role_entry_from_text_without_detail():
 
 
 def test_creates_role_entry_from_element_with_valid_data():
-    class MockElement:
+    class MockElement(Element):
         text = "Producer [Music Production], Engineer [Sound Engineering]"
 
-    elements = RoleEntry.from_element(MockElement())
+    elements = RoleEntry.from_element(MockElement("role"))
     assert len(elements) == 2
     assert elements[0].name == "Producer"
     assert elements[0].detail == "Music Production"
@@ -39,18 +40,18 @@ def test_creates_role_entry_from_element_with_valid_data():
 
 
 def test_creates_role_entry_from_element_with_no_text():
-    class MockElement:
+    class MockElement(Element):
         text = None
 
-    elements = RoleEntry.from_element(MockElement())
+    elements = RoleEntry.from_element(MockElement("role"))
     assert elements == []
 
 
 def test_creates_role_entry_from_element_with_empty_text():
-    class MockElement:
+    class MockElement(Element):
         text = ""
 
-    elements = RoleEntry.from_element(MockElement())
+    elements = RoleEntry.from_element(MockElement("role"))
     assert elements == []
 
 
