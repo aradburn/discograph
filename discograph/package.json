@@ -1,29 +1,41 @@
 {
-    "name": "discograph2",
-    "description": "Social Graphing for the Discogs Database",
-    "author": {
-        "name": "Josiah Wolf Oberholtzer",
-        "url": "http://josiahwolfoberholtzer.com"
-    },
-    "contributors": [
-        {
-            "name": "Andy Radburn",
-            "url": "http://andyradburn.co.uk"
-        }
-    ],
-    "homepage": "http://discograph2.org",
-    "license": "MIT",
-    "readme": "../README.md",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/aradburn/discograph.git"
-    },
-    "dependencies": {
-        "grunt": "1.6.1",
-        "grunt-jsbeautifier": "0.2.13",
-        "grunt-contrib-concat": "2.1.0",
-        "grunt-contrib-less": "3.0.0",
-        "grunt-contrib-watch": "1.1.0"
-    },
-    "engine": "node >= 21.2.0"
+  "name": "discograph2",
+  "description": "Social Graphing for the Discogs Database",
+  "private": true,
+  "version": "2.1.0",
+  "type": "module",
+  "author": {
+    "name": "Josiah Wolf Oberholtzer",
+    "url": "http://josiahwolfoberholtzer.com"
+  },
+  "contributors": [
+    {
+      "name": "Andy Radburn",
+      "url": "http://andyradburn.co.uk"
+    }
+  ],
+  "homepage": "http://discograph2.org",
+  "license": "MIT",
+  "readme": "../README.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aradburn/discograph.git"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.3",
+    "bootstrap-icons": "^1.11.3",
+    "d3": "^7.9.0",
+    "d3-v6-tip": "^1.0.9",
+    "file-saver": "^2.0.5"
+  },
+  "devDependencies": {
+    "sass": "^1.85.1",
+    "vite": "^6.2.0"
+  },
+  "engine": "node >= 21.2.0"
 }
