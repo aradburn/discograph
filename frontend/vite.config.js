@@ -1,5 +1,4 @@
 import path from "node:path";
-
 import { defineConfig } from "vite";
 
 export default defineConfig({
@@ -39,4 +38,16 @@ export default defineConfig({
     emptyOutDir: true,
     copyPublicDir: false,
   },
+  css: {
+      preprocessorOptions: {
+          scss: {
+              api: 'modern-compiler', // or "modern"
+              silenceDeprecations: ['mixed-decls', 'color-functions', 'global-builtin', 'import']
+          }
+      }
+  },
+  optimizeDeps: {
+    include: ["jquery", "corejs-typeahead"],
+  },
+
 });

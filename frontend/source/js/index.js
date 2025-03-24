@@ -4,6 +4,11 @@
  * @module discograph
  * @version 0.2
  */
+import 'jquery';
+import jQuery from "jquery";
+// Inject jQuery into the global scope
+Object.assign(window, { $: jQuery, jQuery });
+
 // Import our custom CSS
 import '../css/discograph.scss'
 

@@ -5,6 +5,10 @@
  */
 
 import { RequestNetworkEvent } from "./network/events";
+import Bloodhound from 'corejs-typeahead/dist/bloodhound.js';
+import 'corejs-typeahead/dist/typeahead.jquery.js';
+import "../css/typeahead-bootstrap.css";
+
 
 /**
  * Initializes the typeahead search functionality
@@ -34,11 +38,9 @@ export const initTypeahead = () => {
     });
 
     const inputElement = document.getElementById("typeahead");
-    console.log("inputElement: ", inputElement);
-//    const loadingElement = document.querySelector("#search .loading");
-//    console.log("loadingElement: ", loadingElement);
+    const loadingElement = document.getElementById("typeahead-loading");
 
-    if (!inputElement) {
+    if (!inputElement || !loadingElement) {
         console.log("Error - Typeahead missing input or loading element");
         return;
     }
@@ -69,8 +71,8 @@ export const initTypeahead = () => {
     );
 
     // Handle keyboard events
-    inputElement.addEventListener('keydown', (event) => {
-        console.log("Typeahead keydownassdf");
+    $(inputElement).bind('keydown', (event) => {
+        console.log("Typeahead keydown");
 
         if (event.key === 'Enter') {
             event.preventDefault();
@@ -82,31 +84,33 @@ export const initTypeahead = () => {
     });
 
     // Handle loading state
-    ['typeahead:asynccancel', 'typeahead:asyncreceive'].forEach(eventName => {
-        inputElement.addEventListener(eventName, () => {
-            loadingElement.classList.add("invisible");
-        });
+    $(inputElement).bind('typeahead:asyncreceive', () => {
+        loadingElement.classList.add("visually-hidden");
     });
-
-    inputElement.addEventListener('typeahead:asyncrequest', () => {
-        loadingElement.classList.remove("invisible");
+    $(inputElement).bind('typeahead:asynccancel', () => {
+        loadingElement.classList.add("visually-hidden");
+    });
+    $(inputElement).bind('typeahead:asyncrequest', () => {
+        loadingElement.classList.remove("visually-hidden");
     });
 
     // Handle selection state
-    inputElement.addEventListener('typeahead:autocomplete', (event) => {
-        // @ts-ignore
-        elementData.set(inputElement, event.detail.datum.key);
+    $(inputElement).bind('typeahead:autocomplete', (event, datum) => {
+        $(this).data("selectedKey", datum.key);
     });
 
-    inputElement.addEventListener('typeahead:render', (event) => {
-        // @ts-ignore
-        const suggestion = event.detail.suggestion;
-        elementData.set(inputElement, suggestion?.key || null);
+    $(inputElement).bind('typeahead:render', (event, suggestion, async, name) => {
+        if (suggestion !== undefined) {
+            $(inputElement).data("selectedKey", suggestion.key);
+        } else {
+            $(inputElement).data("selectedKey", null);
+        }
     });
 
-    inputElement.addEventListener('typeahead:selected', (event) => {
-        // @ts-ignore
-        elementData.set(inputElement, event.detail.datum.key);
+    $(inputElement).bind('typeahead:selected', (event, datum) => {
+        console.log("typeahead:selected: ", datum);
+        console.log("typeahead:selected: ", $(inputElement));
+        $(inputElement).data("selectedKey", datum.key);
         navigateTypeahead();
     });
 
@@ -127,10 +131,14 @@ export const initTypeahead = () => {
  * and updates the browser history.
  */
 const navigateTypeahead = () => {
+    console.log("navigateTypeahead");
+
     const inputElement = document.getElementById("typeahead");
     if (!inputElement) return;
 
-    const datum = elementData.get(inputElement);
+    var datum = $(inputElement).data("selectedKey");
+    console.log("navigateTypeahead: ", datum);
+
     if (datum) {
         // @ts-ignore
         $(inputElement).typeahead("close");
@@ -138,6 +146,7 @@ const navigateTypeahead = () => {
         
         // Create and dispatch custom event
         const pushHistory = true;
+        console.log("dispatching RequestNetworkEvent");
         window.dispatchEvent(new RequestNetworkEvent(datum, pushHistory));
     }
 };
