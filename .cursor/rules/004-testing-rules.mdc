@@ -1,0 +1,8 @@
+---
+description: Enforce general coding rules for tests to prevent common errors.
+globs: 
+alwaysApply: true
+---
+- Write tests first, then the code, then run the tests and update the code until tests pass.
+- Include appropriate unit tests for all code. Use subdirectories named **`/__tests__/`** inline in the source tree. Everything in a **`/__tests__/`** subdirectory will be treated and run as a test.
+- Include appropriate integration tests or end-to-end (e2e) tests in **`/tests`** for all components.

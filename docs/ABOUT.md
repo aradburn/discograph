@@ -15,14 +15,16 @@ The front-end:
 - [JQuery](https://jquery.com): mostly just for event binding
 - [Twitter Typeahead](https://github.com/twitter/typeahead.js/): for looking up entities
 - [Bootstrap](http://getbootstrap.com/): for CSS
-- and Grunt, etc.
+- [Vite](https://vitejs.dev/): for bundling and serving the front-end
 
 The back-end:
 
 - Python 3
 - [Flask](https://flask.palletsprojects.com/en/3.0.x/): a light-weight Werkzeug-based web framework
 - [SQLAlchemy](https://www.sqlalchemy.org/): a object-relational mapper to access the database
-- [PostgreSQL](https://www.postgresql.org/): the primary datastore
+- [Pydantic](https://pydantic-docs.helpmanual.io/): for data validation
+- [PostgreSQL](https://www.postgresql.org/): the primary offline database
+- [SQLite](https://www.sqlite.org/): for a smaller runtime database
 - [Redis](https://redis.io/): for caching and rate limiting
 
 The DB Structure
@@ -32,6 +34,8 @@ A classic graph-search problem, with two primary tables:
 
 - *Entities*: all artists and labels
 - *Relations*: any connection drawn between two entities (including the same one)
+- *Roles*: the credit roles for each relation
+- *Releases*: the releases that the relations are drawn on
 
 Relations are extracted from artists, labels and releases:
 
@@ -117,8 +121,7 @@ The `relations` table looks like this:
 - `entity_one_id`
 - `entity_two_type`
 - `entity_two_id`
-- `release_id` (will soon be migrated to a JSON store to reduce the number of rows in the relations table, by collapsing
-  relations with identical entities and roles into a single row of multiple releases)
+- `release_id`
 - `role` (the credit role)
 - `year` (currently just aspirational)
 - `random` (random float for efficiently looking up random relations)
