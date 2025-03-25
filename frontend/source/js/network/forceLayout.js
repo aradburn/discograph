@@ -22,12 +22,12 @@ import { dg } from '../dg';
  * Configuration Constants
  */
 // Force configuration for nodes
-const NODE_STRENGTH = -800           // Repulsion strength between nodes
+const NODE_STRENGTH = -1000           // Repulsion strength between nodes
 const DISTANCE_MAX = 2000           // Maximum distance for force calculations
 const COLLIDE_ITERATIONS = 2        // Number of collision detection iterations
 const COLLIDE_BUFFER = 12          // Extra space around nodes for collision detection
-const CENTER_STRENGTH = 0.025      // Strength of centering force
-const RADIAL_STRENGTH = 0.08      // Strength of radial force
+//const CENTER_STRENGTH = 0.025      // Strength of centering force
+//const RADIAL_STRENGTH = 0.08      // Strength of radial force
 
 // Simulation parameters
 const THETA = 0.9                  // Barnes-Hut approximation criterion
@@ -36,11 +36,11 @@ const ALPHA_DECAY = 0.03          // Rate at which simulation cools down
 const VELOCITY_DECAY = 0.24       // Friction coefficient for node movement
 
 // Link configuration
-const LINK_STRENGTH = 1.8         // Strength of links between nodes
+const LINK_STRENGTH = 0.8         // Strength of links between nodes
 const LINK_DISTANCE_ALIAS = 20    // Distance for alias relationships
 const LINK_DISTANCE_RELEASED_ON = 200  // Distance for "Released On" relationships
-const LINK_DISTANCE = 60          // Default link distance
-const LINK_DISTANCE_RANDOM = 20   // Random variation in link distance
+const LINK_DISTANCE = 120          // Default link distance
+//const LINK_DISTANCE_RANDOM = 0   // Random variation in link distance
 const LINK_ITERATIONS = 3         // Number of iterations for link force calculation
 
 // Graph size limits
@@ -48,8 +48,12 @@ const MAX_NODES_BEFORE_PRUNING = 600   // Maximum nodes before pruning is trigge
 const MAX_LINKS_BEFORE_PRUNING = 1800  // Maximum links before pruning is triggered
 
 // To give repeatable and predictable random behaviour, any number in [0, 1)
-const random_seed = 0.42;
-const random = d3.randomNormal.source(d3.randomLcg(random_seed))(0, 1);
+//const random_seed = 0.42;
+//const random = d3.randomNormal.source(d3.randomLcg(random_seed))(0, 1);
+
+var nodeStrengthMultiplier = 1.0;
+var linkStrengthMultiplier = 1.0;
+var gravStrengthMultiplier = 1.0;
 
 /**
  * Determines the distance between linked nodes based on their relationship type
@@ -59,15 +63,15 @@ const random = d3.randomNormal.source(d3.randomLcg(random_seed))(0, 1);
 function linkDistance(d, i) {
     if (d.isSpline) {
         if (d.role == 'Released On') {
-            return LINK_DISTANCE_RELEASED_ON / 2;
+            return LINK_DISTANCE_RELEASED_ON * linkStrengthMultiplier / 2;
         }
-        return d.distance < 1 ? LINK_DISTANCE / 2 : LINK_DISTANCE / 10;
+        return d.distance < 1 ? LINK_DISTANCE * linkStrengthMultiplier / 2 : LINK_DISTANCE * linkStrengthMultiplier / 10;
     } else if (d.role == 'Alias') {
-        return LINK_DISTANCE_ALIAS;
+        return LINK_DISTANCE_ALIAS * linkStrengthMultiplier;
     } else if (d.role == 'Released On') {
-        return LINK_DISTANCE_RELEASED_ON;
+        return LINK_DISTANCE_RELEASED_ON * linkStrengthMultiplier;
     } else {
-        return LINK_DISTANCE;
+        return LINK_DISTANCE * linkStrengthMultiplier;
     }
 }
 
@@ -77,15 +81,16 @@ function linkDistance(d, i) {
  * @returns {number} The repulsion strength
  */
 function nodeStrength(d, i) {
+//    console.log("nodeStrength: ", d);
     if (d.distance) {
-        var dist = 4 - clamp(d.distance, 0, 3);
-        return dist * NODE_STRENGTH;
+        var dist = 1; //4 - clamp(d.distance, 0, 3);
+        return dist * NODE_STRENGTH * nodeStrengthMultiplier;
     } else if (d.isIntermediate) {
-        return NODE_STRENGTH / 10;
+        return NODE_STRENGTH * nodeStrengthMultiplier / 10;
     } else if (d.cluster) {
-              return 100;
+        return 100 * nodeStrengthMultiplier;
     } else {
-        return NODE_STRENGTH;
+        return NODE_STRENGTH * nodeStrengthMultiplier;
     }
 }
 
@@ -95,12 +100,10 @@ function nodeStrength(d, i) {
  * @returns {number} The gravity strength
  */
 function gravityStrength(d, i) {
-    var dist = d.distance ? 4 - clamp(d.distance, 0, 3) : 1.0;
     var maxDimension = Math.max(dg.svg_dimensions[0], dg.svg_dimensions[1]);
-    var scaling = dist / 10.0;
+    var scaling = gravStrengthMultiplier / 10.0;
     var radialDistance = (maxDimension - Math.max(d.x - dg.svg_dimensions[0] / 2, d.y - dg.svg_dimensions[1] / 2)) / maxDimension;
-    var g = radialDistance * scaling;
-    return g;
+    return radialDistance * scaling;
 }
 
 /**
@@ -116,6 +119,33 @@ export const setupForceLayout = () => {
         .on("tick", function() { onTick(this); })
         .on("end", function() { onNetworkEnd(this); })
         .stop();
+
+    const nodeSlider = document.getElementById("nodeRange");
+    const linkSlider = document.getElementById("linkRange");
+    const gravSlider = document.getElementById("gravRange");
+
+    nodeSlider.oninput = function() {
+        nodeStrengthMultiplier = (parseInt(this.value) - 50) * 2.0 / 10.0;
+        if (dg.network.forceLayout) {
+            dg.network.forceLayout.force("charge", d3.forceManyBody().strength(nodeStrength).distanceMax(DISTANCE_MAX).theta(THETA));
+            restartForceLayout(ALPHA / 10.0);
+        }
+    }
+    linkSlider.oninput = function() {
+        linkStrengthMultiplier = (parseInt(this.value) - 50) * 2.0 / 50.0;
+        if (dg.network.forceLayout) {
+            dg.network.forceLayout.force("link", d3.forceLink().id((d) => (/** @type {NodeType} */ (d)).key).links(dg.network.pageData.links).distance(linkDistance).iterations(LINK_ITERATIONS));
+            restartForceLayout(ALPHA / 10.0);
+        }
+    }
+    gravSlider.oninput = function() {
+        gravStrengthMultiplier = (parseInt(this.value) - 50) * 2.0 / 10.0;
+        if (dg.network.forceLayout) {
+            dg.network.forceLayout.force("x", d3.forceX(dg.svg_dimensions[0] / 2).strength(gravityStrength));
+            dg.network.forceLayout.force("y", d3.forceY(dg.svg_dimensions[1] / 2).strength(gravityStrength));
+            restartForceLayout(ALPHA / 10.0);
+        }
+    }
 }
 
 /**
@@ -175,7 +205,7 @@ export const startForceLayout = () => {
     
     dg.network.forceLayout.nodes(dg.network.pageData.nodes);
 
-    if (nodeData.length > 16 && nodeData.length < 500) {
+    if (nodeData.length > 16) {
         dg.network.forceLayout.force("x", d3.forceX(dg.svg_dimensions[0] / 2).strength(gravityStrength));
         dg.network.forceLayout.force("y", d3.forceY(dg.svg_dimensions[1] / 2).strength(gravityStrength));
     } else {
@@ -294,18 +324,22 @@ export const processJson = (json) => {
             oldNode.missing = newNode.missing;
             oldNode.missingByPage = newNode.missingByPage;
             oldNode.pages = newNode.pages;
-            var dist = oldNode.distance ? oldNode.distance : 1.0;
-            var dx = (random() * 2.0 - 1.0) * LINK_DISTANCE * dist * 10;
-            var dy = (random() * 2.0 - 1.0) * LINK_DISTANCE * dist * 10;
-            oldNode.x = dg.network.newNodeCoords[0] + dx;
-            oldNode.y = dg.network.newNodeCoords[1] + dy;
+            oldNode.x = dg.network.newNodeCoords[0];
+            oldNode.y = dg.network.newNodeCoords[1];
+//            var dist = oldNode.distance ? oldNode.distance : 1.0;
+//            var dx = (random() * 2.0 - 1.0) * LINK_DISTANCE * dist * 10;
+//            var dy = (random() * 2.0 - 1.0) * LINK_DISTANCE * dist * 10;
+//            oldNode.x = dg.network.newNodeCoords[0] + dx;
+//            oldNode.y = dg.network.newNodeCoords[1] + dy;
         } else {
-            var dist = newNode.distance ? newNode.distance : 1.0;
-            var dx = (random() * 2.0 - 1.0) * LINK_DISTANCE * dist * 10;
-            var dy = (random() * 2.0 - 1.0) * LINK_DISTANCE * dist * 10;
-            //console.log("dx: " + dx + " dy: " + dy);
-            newNode.x = dg.network.newNodeCoords[0] + dx;
-            newNode.y = dg.network.newNodeCoords[1] + dy;
+            newNode.x = dg.network.newNodeCoords[0];
+            newNode.y = dg.network.newNodeCoords[1];
+//            var dist = newNode.distance ? newNode.distance : 1.0;
+//            var dx = (random() * 2.0 - 1.0) * LINK_DISTANCE * dist * 10;
+//            var dy = (random() * 2.0 - 1.0) * LINK_DISTANCE * dist * 10;
+//            //console.log("dx: " + dx + " dy: " + dy);
+//            newNode.x = dg.network.newNodeCoords[0] + dx;
+//            newNode.y = dg.network.newNodeCoords[1] + dy;
             dg.network.data.nodeMap.set(key, newNode);
         }
     });
@@ -345,11 +379,17 @@ export const processJson = (json) => {
     prune(3, 1)
     prune(3, 2)
     prune(3, 3)
+    prune(3, 4)
+    prune(3, 5)
+    prune(3, 10)
     prune(3, 100)
     prune(3, 1000000)
     prune(2, 1)
     prune(2, 2)
     prune(2, 3)
+    prune(2, 4)
+    prune(2, 5)
+    prune(2, 10)
     prune(2, 100)
     prune(2, 100000)
 

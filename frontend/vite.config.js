@@ -10,7 +10,7 @@ export default defineConfig({
 //    },
 //  },
   build: {
-    outDir: path.join(__dirname, "./source_compiled/"),
+    outDir: path.join(__dirname, "./dist/"),
     manifest: "manifest.json",
     assetsDir: "bundled",
     rollupOptions: {

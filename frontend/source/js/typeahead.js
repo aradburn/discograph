@@ -38,10 +38,10 @@ export const initTypeahead = () => {
     });
 
     const inputElement = document.getElementById("typeahead");
-    const loadingElement = document.getElementById("typeahead-loading");
+//    const loadingElement = document.getElementById("typeahead-loading");
 
-    if (!inputElement || !loadingElement) {
-        console.log("Error - Typeahead missing input or loading element");
+    if (!inputElement) {
+        console.log("Error - Typeahead missing input element");
         return;
     }
 
@@ -66,6 +66,7 @@ export const initTypeahead = () => {
                         <em>(${data.key.split('-')[0]})</em>
                     </div>
                 `,
+                pending: (query) => `<div>Loading...</div>`,
             },
         }
     );
@@ -84,15 +85,15 @@ export const initTypeahead = () => {
     });
 
     // Handle loading state
-    $(inputElement).bind('typeahead:asyncreceive', () => {
-        loadingElement.classList.add("visually-hidden");
-    });
-    $(inputElement).bind('typeahead:asynccancel', () => {
-        loadingElement.classList.add("visually-hidden");
-    });
-    $(inputElement).bind('typeahead:asyncrequest', () => {
-        loadingElement.classList.remove("visually-hidden");
-    });
+//    $(inputElement).bind('typeahead:asyncreceive', () => {
+//        loadingElement.classList.add("visually-hidden");
+//    });
+//    $(inputElement).bind('typeahead:asynccancel', () => {
+//        loadingElement.classList.add("visually-hidden");
+//    });
+//    $(inputElement).bind('typeahead:asyncrequest', () => {
+//        loadingElement.classList.remove("visually-hidden");
+//    });
 
     // Handle selection state
     $(inputElement).bind('typeahead:autocomplete', (event, datum) => {

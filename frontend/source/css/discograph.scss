@@ -27,6 +27,38 @@ body {
     /* background-color: #1C575A !important;*/
 }
 
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  width: 90%;
+}
+/***** Thumb Styles *****/
+/***** Chrome, Safari, Opera, and Edge Chromium *****/
+input[type="range"]::-webkit-slider-thumb {
+   -webkit-appearance: none; /* Override default look */
+   appearance: none;
+   margin-top: -12px; /* Centers thumb on the track */
+   background-color: #5cd5eb;
+   height: 1.6rem;
+   width: 0.8rem;
+}
+/***** Firefox *****/
+input[type="range"]::-moz-range-thumb {
+    border: none; /*Removes extra border that FF applies*/
+    border-radius: 0; /*Removes default border-radius that FF applies*/
+    background-color: #5cd5eb;
+    height: 1.6rem;
+    width: 0.8rem;
+}
+.form-range::-moz-range-thumb,
+input[type=range]::-moz-range-thumb,
+input[type=range]::-webkit-slider-thumb,
+input[type=range]::slider-thumb {
+    background-color: #1C5A51 !important;
+}
+
 #nav-bottom {
     background-image: linear-gradient(#ddd, #ccc 60%);
 }
@@ -114,7 +146,7 @@ a {
             cursor: help;
             dominant-baseline: middle;
             text-anchor: middle;
-            font: 8px 'Open Sans', sans-serif;
+            font: 1.0rem 'Open Sans', sans-serif;
 
             &.inner {
                 fill: #000;
@@ -164,7 +196,7 @@ a {
             }
 
             text {
-                font-size: 10px;
+                font-size: 1.2rem;
             }
         }
 
@@ -200,7 +232,7 @@ a {
         text {
             &.inner {
                 pointer-events: none;
-                font: 10px 'Open Sans', sans-serif;
+                font: 1.2rem 'Open Sans', sans-serif;
                 fill: #000;
                 stroke: none;
                 dominant-baseline: middle;
@@ -209,7 +241,7 @@ a {
 
             &.outer {
                 pointer-events: none;
-                font: 10px 'Open Sans', sans-serif;
+                font: 1.2rem 'Open Sans', sans-serif;
                 stroke: #FFFFFF77;
                 stroke-width: 3px;
                 fill: none;

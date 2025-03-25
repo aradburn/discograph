@@ -41,9 +41,9 @@ class RuntimeEntityDataAccess:
                     count += len(cast(Dict, entity.entities["sublabels"]))
             else:
                 count += relation_counts.get(role, 0)
-        log.debug(
-            f"roles_to_relation_count entity: {entity} roles: {roles} -> {count})"
-        )
+        # log.debug(
+        #     f"roles_to_relation_count entity: {entity} roles: {roles} -> {count})"
+        # )
         return count
 
     @staticmethod
@@ -188,7 +188,7 @@ class RuntimeEntityDataAccess:
         with open(filename, "rb") as file:
             # read pickle dump information from that file
             entity_details_index: EntityDetailsIndex = pickle.load(file)
-            log.debug(f"Countries:")
+            # log.debug(f"Countries:")
             for country in sorted(entity_details_index.countries_list):
                 print(f"{country}")
         log.debug(
