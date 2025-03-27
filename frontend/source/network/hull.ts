@@ -1,0 +1,58 @@
+/**
+ * Network visualization hull effect handlers
+ * This module provides functions for managing convex hulls around groups of nodes
+ * @module network/hull
+ */
+
+import type { Selection, EnterElement } from "d3";
+import { BaseType } from "d3";
+import type { SimNode } from "./forceLayout";
+import { NetworkNode } from "./node";
+
+export type HullGroup = SimNode[];
+
+export type HullEnterSelection = Selection<
+  EnterElement,
+  SimNode[],
+  SVGGElement,
+  unknown
+>;
+
+export type HullExitSelection = Selection<
+  SVGGElement,
+  SimNode[],
+  SVGGElement,
+  unknown
+>;
+
+export type HullUpdateSelection = Selection<
+  SVGGElement,
+  SimNode[],
+  SVGGElement,
+  unknown
+>;
+
+/**
+ * Handles the enter selection for network hulls (convex hulls around groups of nodes).
+ * Creates a new group element for each entering hull and appends a path element to it.
+ *
+ * @param {HullEnterSelection} hullEnter - The D3 enter selection for hulls
+ * @returns {void}
+ */
+export const onHullEnter = (hullEnter: HullEnterSelection): void => {
+  const hullGroup = hullEnter.append("g").attr("class", "hull");
+  // Note: Commented out for reference
+  // .attr("class", (d: HullGroup) => "hull hull-" + d.key);
+  hullGroup.append("path");
+};
+
+/**
+ * Handles the exit selection for network hulls.
+ * Removes hull elements that are no longer needed from the DOM.
+ *
+ * @param {HullExitSelection} hullExit - The D3 exit selection for hulls
+ * @returns {void}
+ */
+export const onHullExit = (hullExit: HullExitSelection): void => {
+  hullExit.remove();
+};
