@@ -4,15 +4,15 @@
  * @module network/halo
  */
 
-import type { Selection, BaseType, EnterElement } from "d3";
 import type { NetworkNode } from "./node";
 import { getOuterRadius } from "./tick";
+import type * as d3 from "d3";
 
-type HaloSelection = Selection<
-  EnterElement | BaseType,
-  NetworkNode,
-  BaseType,
-  unknown
+type HaloSelection = d3.Selection<
+    d3.EnterElement | d3.BaseType,
+    NetworkNode,
+    d3.BaseType,
+    unknown
 >;
 
 /**
@@ -27,18 +27,18 @@ type HaloSelection = Selection<
  * 4. Adds a circular halo effect around the node
  */
 export const onHaloEnter = (haloEnter: HaloSelection): void => {
-  const haloGroup = haloEnter
-    .append("g")
-    .attr("id", (d: NetworkNode) => d.key)
-    .attr("class", (d: NetworkNode) => {
-      const classes = ["node", d.key.split("-")[0]];
-      return classes.join(" ");
-    });
+    const haloGroup = haloEnter
+        .append("g")
+        .attr("id", (d: NetworkNode) => d.key)
+        .attr("class", (d: NetworkNode) => {
+            const classes = ["node", d.key.split("-")[0]];
+            return classes.join(" ");
+        });
 
-  haloGroup
-    .append("circle")
-    .attr("class", "halo")
-    .attr("r", (d: NetworkNode) => getOuterRadius(d) + 40);
+    haloGroup
+        .append("circle")
+        .attr("class", "halo")
+        .attr("r", (d: NetworkNode) => getOuterRadius(d) + 40);
 };
 
 /**
@@ -47,5 +47,5 @@ export const onHaloEnter = (haloEnter: HaloSelection): void => {
  * @returns {void}
  */
 export const onHaloExit = (haloExit: HaloSelection): void => {
-  haloExit.remove();
+    haloExit.remove();
 };

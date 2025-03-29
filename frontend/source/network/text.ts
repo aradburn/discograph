@@ -4,24 +4,24 @@
  * updating, and removal, as well as debug information display.
  */
 
-import type { Selection, BaseType, EnterElement } from "d3";
+import type * as d3 from "d3";
 import { getOuterRadius } from "./tick";
 import { getNodeColorClass } from "../color";
 import { dg } from "../dg";
 import type { NetworkNode } from "./node";
 
-type TextSelection = Selection<SVGGElement, NetworkNode, BaseType, unknown>;
-type TextEnterSelection = Selection<
-  EnterElement,
-  NetworkNode,
-  BaseType,
-  unknown
+type TextSelection = d3.Selection<SVGGElement, NetworkNode, d3.BaseType, unknown>;
+type TextEnterSelection = d3.Selection<
+    d3.EnterElement,
+    NetworkNode,
+    d3.BaseType,
+    unknown
 >;
-type TextUpdateSelection = Selection<
-  SVGGElement,
-  NetworkNode,
-  BaseType,
-  unknown
+type TextUpdateSelection = d3.Selection<
+    SVGGElement,
+    NetworkNode,
+    d3.BaseType,
+    unknown
 >;
 
 /**
@@ -36,14 +36,14 @@ export const LABEL_OFFSET_Y = 9;
  * @returns {string} Truncated name (with debug info if debug mode is enabled)
  */
 export const getNodeText = (d: NetworkNode): string => {
-  let name = d.name;
-  if (name.length > 50) {
-    name = `${name.slice(0, 50)}...`;
-  }
-  if (dg.debug) {
-    name = `${name}${getNodeDebug(d)}`;
-  }
-  return name;
+    let name = d.name;
+    if (name.length > 50) {
+        name = `${name.slice(0, 50)}...`;
+    }
+    if (dg.debug) {
+        name = `${name}${getNodeDebug(d)}`;
+    }
+    return name;
 };
 
 /**
@@ -52,15 +52,15 @@ export const getNodeText = (d: NetworkNode): string => {
  * @returns {string} Formatted debug information string
  */
 export const getNodeDebug = (d: NetworkNode): string => {
-  const links = d.links?.length ?? 0;
-  return (
-    ` dist: ${d.distance}` +
-    ` radi: ${d.radius}` +
-    ` link: ${links}` +
-    ` miss: ${d.missing}` +
-    ` clus: ${d.cluster ?? "undefined"}` +
-    ` colr: ${getNodeColorClass(d)}`
-  );
+    const links = d.links?.length ?? 0;
+    return (
+        ` dist: ${d.distance}` +
+        ` radi: ${d.radius}` +
+        ` link: ${links}` +
+        ` miss: ${d.missing}` +
+        ` clus: ${d.cluster ?? "undefined"}` +
+        ` colr: ${getNodeColorClass(d)}`
+    );
 };
 
 /**
@@ -69,30 +69,30 @@ export const getNodeDebug = (d: NetworkNode): string => {
  * @param {TextEnterSelection} textEnter - D3 enter selection for text elements
  */
 export const onTextEnter = (textEnter: TextEnterSelection): void => {
-  const textGroup = textEnter
-    .append("g")
-    .attr("id", (d: NetworkNode) => d.key)
-    .attr("class", (d: NetworkNode) => {
-      const classes = ["node", d.key.split("-")[0]];
-      if (d.cluster !== undefined) {
-        classes.push("cluster");
-      }
-      return classes.join(" ");
-    });
+    const textGroup = textEnter
+        .append("g")
+        .attr("id", (d: NetworkNode) => d.key)
+        .attr("class", (d: NetworkNode) => {
+            const classes = ["node", d.key.split("-")[0]];
+            if (d.cluster !== undefined) {
+                classes.push("cluster");
+            }
+            return classes.join(" ");
+        });
 
-  textGroup
-    .append("text")
-    .attr("class", "outer")
-    .attr("dy", (d: NetworkNode) => getOuterRadius(d) + LABEL_OFFSET_Y)
-    .attr("width", (d: NetworkNode) => getOuterRadius(d) * 3)
-    .text(getNodeText);
+    textGroup
+        .append("text")
+        .attr("class", "outer")
+        .attr("dy", (d: NetworkNode) => getOuterRadius(d) + LABEL_OFFSET_Y)
+        .attr("width", (d: NetworkNode) => getOuterRadius(d) * 3)
+        .text(getNodeText);
 
-  textGroup
-    .append("text")
-    .attr("class", "inner")
-    .attr("dy", (d: NetworkNode) => getOuterRadius(d) + LABEL_OFFSET_Y)
-    .attr("width", (d: NetworkNode) => getOuterRadius(d) * 3)
-    .text(getNodeText);
+    textGroup
+        .append("text")
+        .attr("class", "inner")
+        .attr("dy", (d: NetworkNode) => getOuterRadius(d) + LABEL_OFFSET_Y)
+        .attr("width", (d: NetworkNode) => getOuterRadius(d) * 3)
+        .text(getNodeText);
 };
 
 /**
@@ -101,7 +101,7 @@ export const onTextEnter = (textEnter: TextEnterSelection): void => {
  * @param {TextSelection} textExit - D3 exit selection for text elements
  */
 export const onTextExit = (textExit: TextSelection): void => {
-  textExit.remove();
+    textExit.remove();
 };
 
 /**
@@ -110,6 +110,6 @@ export const onTextExit = (textExit: TextSelection): void => {
  * @param {TextUpdateSelection} textUpdate - D3 update selection for text elements
  */
 export const onTextUpdate = (textUpdate: TextUpdateSelection): void => {
-  textUpdate.select(".outer").text(getNodeText);
-  textUpdate.select(".inner").text(getNodeText);
+    textUpdate.select(".outer").text(getNodeText);
+    textUpdate.select(".inner").text(getNodeText);
 };

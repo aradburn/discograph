@@ -11,59 +11,59 @@ import "./css/typeahead-bootstrap.css";
 import jQuery from "jquery";
 
 interface JQuery<T = HTMLElement> {
-  typeahead(options: TypeaheadOptions, dataset: DatasetOptions): JQuery<T>;
-  typeahead(method: string, value?: string): JQuery<T>;
+    typeahead(options: TypeaheadOptions, dataset: DatasetOptions): JQuery<T>;
+    typeahead(method: string, value?: string): JQuery<T>;
 }
 
 interface SearchResult {
-  name: string;
-  key: string;
+    name: string;
+    key: string;
 }
 
 interface BloodhoundTokenizers {
-  whitespace: (str: string) => string[];
+    whitespace: (str: string) => string[];
 }
 
 interface BloodhoundStatic {
-  tokenizers: BloodhoundTokenizers;
-  new <T>(options: BloodhoundOptions): BloodhoundEngine<T>;
+    tokenizers: BloodhoundTokenizers;
+    new <T>(options: BloodhoundOptions): BloodhoundEngine<T>;
 }
 
 interface BloodhoundEngine<T> {
-  initialize(): Promise<void>;
-  add(data: T[]): void;
-  get(query: string): T[];
-  search(query: string): Promise<T[]>;
-  clear(): void;
+    initialize(): Promise<void>;
+    add(data: T[]): void;
+    get(query: string): T[];
+    search(query: string): Promise<T[]>;
+    clear(): void;
 }
 
 interface BloodhoundOptions {
-  datumTokenizer: (datum: string) => string[];
-  queryTokenizer: (query: string) => string[];
-  remote: {
-    url: string;
-    wildcard: string;
-    filter: (response: { results: SearchResult[] }) => SearchResult[];
-    rateLimitBy: "debounce";
-    rateLimitWait: number;
-  };
+    datumTokenizer: (datum: string) => string[];
+    queryTokenizer: (query: string) => string[];
+    remote: {
+        url: string;
+        wildcard: string;
+        filter: (response: { results: SearchResult[] }) => SearchResult[];
+        rateLimitBy: "debounce";
+        rateLimitWait: number;
+    };
 }
 
 interface TypeaheadOptions {
-  hint: boolean;
-  highlight: boolean;
-  minLength: number;
+    hint: boolean;
+    highlight: boolean;
+    minLength: number;
 }
 
 interface DatasetOptions {
-  name: string;
-  display: string;
-  limit: number;
-  source: BloodhoundEngine<SearchResult>;
-  templates: {
-    suggestion: (data: SearchResult) => string;
-    pending: (query: string) => string;
-  };
+    name: string;
+    display: string;
+    limit: number;
+    source: BloodhoundEngine<SearchResult>;
+    templates: {
+        suggestion: (data: SearchResult) => string;
+        pending: (query: string) => string;
+    };
 }
 
 const $ = jQuery;
@@ -79,99 +79,99 @@ const $ = jQuery;
  * - Clear button functionality
  */
 export const initTypeahead = (): void => {
-  // Initialize Bloodhound suggestion engine with remote data source
-  const bloodhoundConstructor = Bloodhound as unknown as BloodhoundStatic;
-  const typeaheadBloodhound = new bloodhoundConstructor<SearchResult>({
-    datumTokenizer: bloodhoundConstructor.tokenizers.whitespace,
-    queryTokenizer: bloodhoundConstructor.tokenizers.whitespace,
-    remote: {
-      url: "/api/search/%QUERY",
-      wildcard: "%QUERY",
-      filter: (response) => response.results,
-      rateLimitBy: "debounce",
-      rateLimitWait: 1000, // Debounce API calls by 1 second
-    },
-  });
+    // Initialize Bloodhound suggestion engine with remote data source
+    const bloodhoundConstructor = Bloodhound as unknown as BloodhoundStatic;
+    const typeaheadBloodhound = new bloodhoundConstructor<SearchResult>({
+        datumTokenizer: bloodhoundConstructor.tokenizers.whitespace,
+        queryTokenizer: bloodhoundConstructor.tokenizers.whitespace,
+        remote: {
+            url: "/api/search/%QUERY",
+            wildcard: "%QUERY",
+            filter: (response) => response.results,
+            rateLimitBy: "debounce",
+            rateLimitWait: 1000, // Debounce API calls by 1 second
+        },
+    });
 
-  const inputElement = document.getElementById("typeahead");
+    const inputElement = document.getElementById("typeahead");
 
-  if (!inputElement) {
-    console.log("Error - Typeahead missing input element");
-    return;
-  }
+    if (!inputElement) {
+        console.log("Error - Typeahead missing input element");
+        return;
+    }
 
-  // Configure and initialize typeahead
-  ($(inputElement) as unknown as JQuery).typeahead(
-    {
-      hint: false,
-      highlight: true,
-      minLength: 4, // Minimum characters before search begins
-    },
-    {
-      name: "results",
-      display: "name",
-      limit: 1000,
-      source: typeaheadBloodhound,
-      templates: {
-        suggestion: (data: SearchResult) => `
+    // Configure and initialize typeahead
+    ($(inputElement) as unknown as JQuery).typeahead(
+        {
+            hint: false,
+            highlight: true,
+            minLength: 4, // Minimum characters before search begins
+        },
+        {
+            name: "results",
+            display: "name",
+            limit: 1000,
+            source: typeaheadBloodhound,
+            templates: {
+                suggestion: (data: SearchResult) => `
           <div>
             <span>${data.name}</span>
             <em>(${data.key.split("-")[0]})</em>
           </div>
         `,
-        pending: () => `<div>Loading...</div>`,
-      },
-    },
-  );
+                pending: () => `<div>Loading...</div>`,
+            },
+        },
+    );
 
-  // Handle keyboard events
-  $(inputElement).on("keydown", (event: JQuery.KeyboardEventBase) => {
-    console.log("Typeahead keydown");
+    // Handle keyboard events
+    $(inputElement).on("keydown", (event: JQuery.KeyboardEventBase) => {
+        console.log("Typeahead keydown");
 
-    if (event.key === "Enter") {
-      event.preventDefault();
-      navigateTypeahead();
-    } else if (event.key === "Escape") {
-      ($(inputElement) as unknown as JQuery).typeahead("close");
-    }
-  });
-
-  // Handle selection state
-  $(inputElement).on(
-    "typeahead:autocomplete",
-    (_: JQuery.EventBase, datum: SearchResult) => {
-      $(inputElement).data("selectedKey", datum.key);
-    },
-  );
-
-  $(inputElement).on(
-    "typeahead:render",
-    (_: JQuery.EventBase, suggestion: SearchResult | undefined) => {
-      if (suggestion !== undefined) {
-        $(inputElement).data("selectedKey", suggestion.key);
-      } else {
-        $(inputElement).data("selectedKey", null);
-      }
-    },
-  );
-
-  $(inputElement).on(
-    "typeahead:selected",
-    (_: JQuery.EventBase, datum: SearchResult) => {
-      console.log("typeahead:selected: ", datum);
-      console.log("typeahead:selected: ", $(inputElement));
-      $(inputElement).data("selectedKey", datum.key);
-      navigateTypeahead();
-    },
-  );
-
-  // Initialize clear button functionality
-  const clearButton = document.querySelector("#search .clear");
-  if (clearButton) {
-    clearButton.addEventListener("click", () => {
-      ($(inputElement) as unknown as JQuery).typeahead("val", "");
+        if (event.key === "Enter") {
+            event.preventDefault();
+            navigateTypeahead();
+        } else if (event.key === "Escape") {
+            ($(inputElement) as unknown as JQuery).typeahead("close");
+        }
     });
-  }
+
+    // Handle selection state
+    $(inputElement).on(
+        "typeahead:autocomplete",
+        (_: JQuery.EventBase, datum: SearchResult) => {
+            $(inputElement).data("selectedKey", datum.key);
+        },
+    );
+
+    $(inputElement).on(
+        "typeahead:render",
+        (_: JQuery.EventBase, suggestion: SearchResult | undefined) => {
+            if (suggestion !== undefined) {
+                $(inputElement).data("selectedKey", suggestion.key);
+            } else {
+                $(inputElement).data("selectedKey", null);
+            }
+        },
+    );
+
+    $(inputElement).on(
+        "typeahead:selected",
+        (_: JQuery.EventBase, datum: SearchResult) => {
+            console.log("typeahead:selected: ", datum);
+            console.log("typeahead:selected: ", $(inputElement));
+            $(inputElement).data("selectedKey", datum.key);
+            navigateTypeahead();
+        },
+    );
+
+    // Initialize clear button functionality
+    const clearButton = document.querySelector("#search .clear");
+    if (clearButton) {
+        clearButton.addEventListener("click", () => {
+            ($(inputElement) as unknown as JQuery).typeahead("val", "");
+        });
+    }
 };
 
 /**
@@ -181,21 +181,21 @@ export const initTypeahead = (): void => {
  * and updates the browser history.
  */
 const navigateTypeahead = (): void => {
-  console.log("navigateTypeahead");
+    console.log("navigateTypeahead");
 
-  const inputElement = document.getElementById("typeahead");
-  if (!inputElement) return;
+    const inputElement = document.getElementById("typeahead");
+    if (!inputElement) return;
 
-  const datum = $(inputElement).data("selectedKey") as string | null;
-  console.log("navigateTypeahead: ", datum);
+    const datum = $(inputElement).data("selectedKey") as string | null;
+    console.log("navigateTypeahead: ", datum);
 
-  if (datum) {
-    ($(inputElement) as unknown as JQuery).typeahead("close");
-    inputElement.blur();
+    if (datum) {
+        ($(inputElement) as unknown as JQuery).typeahead("close");
+        inputElement.blur();
 
-    // Create and dispatch custom event
-    const pushHistory = true;
-    console.log("dispatching RequestNetworkEvent");
-    window.dispatchEvent(new RequestNetworkEvent(datum, pushHistory));
-  }
+        // Create and dispatch custom event
+        const pushHistory = true;
+        console.log("dispatching RequestNetworkEvent");
+        window.dispatchEvent(new RequestNetworkEvent(datum, pushHistory));
+    }
 };

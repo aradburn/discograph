@@ -29,6 +29,7 @@ export default defineConfig({
         "source/network/node.ts",
         "source/network/text.ts",
         "source/network/tick.ts",
+        "source/network/tooltips.ts",
         "source/svg.ts",
         "source/relations.ts",
         "source/roles.ts",

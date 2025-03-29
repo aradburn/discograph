@@ -4,32 +4,30 @@
  * @module network/hull
  */
 
-import type { Selection, EnterElement } from "d3";
-import { BaseType } from "d3";
 import type { SimNode } from "./forceLayout";
-import { NetworkNode } from "./node";
+import type * as d3 from "d3";
 
 export type HullGroup = SimNode[];
 
-export type HullEnterSelection = Selection<
-  EnterElement,
-  SimNode[],
-  SVGGElement,
-  unknown
+export type HullEnterSelection = d3.Selection<
+    d3.EnterElement,
+    SimNode[],
+    SVGGElement,
+    unknown
 >;
 
-export type HullExitSelection = Selection<
-  SVGGElement,
-  SimNode[],
-  SVGGElement,
-  unknown
+export type HullExitSelection = d3.Selection<
+    SVGGElement,
+    SimNode[],
+    SVGGElement,
+    unknown
 >;
 
-export type HullUpdateSelection = Selection<
-  SVGGElement,
-  SimNode[],
-  SVGGElement,
-  unknown
+export type HullUpdateSelection = d3.Selection<
+    SVGGElement,
+    SimNode[],
+    SVGGElement,
+    unknown
 >;
 
 /**
@@ -40,10 +38,10 @@ export type HullUpdateSelection = Selection<
  * @returns {void}
  */
 export const onHullEnter = (hullEnter: HullEnterSelection): void => {
-  const hullGroup = hullEnter.append("g").attr("class", "hull");
-  // Note: Commented out for reference
-  // .attr("class", (d: HullGroup) => "hull hull-" + d.key);
-  hullGroup.append("path");
+    const hullGroup = hullEnter.append("g").attr("class", "hull");
+    // Note: Commented out for reference
+    // .attr("class", (d: HullGroup) => "hull hull-" + d.key);
+    hullGroup.append("path");
 };
 
 /**
@@ -54,5 +52,5 @@ export const onHullEnter = (hullEnter: HullEnterSelection): void => {
  * @returns {void}
  */
 export const onHullExit = (hullExit: HullExitSelection): void => {
-  hullExit.remove();
+    hullExit.remove();
 };

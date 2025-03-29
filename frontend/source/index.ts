@@ -10,10 +10,10 @@ import jQuery from "jquery";
 
 // Declare jQuery globals
 declare global {
-  interface Window {
-    $: typeof jQuery;
-    jQuery: typeof jQuery;
-  }
+    interface Window {
+        $: typeof jQuery;
+        jQuery: typeof jQuery;
+    }
 }
 
 // Inject jQuery into the global scope

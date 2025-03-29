@@ -1,0 +1,123 @@
+/**
+ * Network Tooltip Manager
+ * Manages dynamic Bootstrap tooltips for D3.js network visualization elements
+ */
+
+import { Tooltip } from "bootstrap";
+import type { NetworkNode } from "./node";
+import type { NetworkLink } from "./link";
+
+interface TooltipOptions {
+    placement?: "top" | "bottom" | "left" | "right";
+    container?: string;
+    delay?: number | { show: number; hide: number };
+    offset?: [number, number];
+}
+
+/**
+ * Manages dynamic tooltips for network elements using Bootstrap's Tooltip
+ */
+export class TooltipManager<T extends NetworkNode | NetworkLink> {
+    private tooltip: Tooltip | null = null;
+    private element: Element | null = null;
+    private readonly options: TooltipOptions;
+    private readonly contentFn: (data: T) => string;
+
+    /**
+     * Creates a new TooltipManager instance
+     * @param contentFn - Function that generates tooltip content from data
+     * @param options - Bootstrap tooltip options
+     */
+    constructor(contentFn: (data: T) => string, options: TooltipOptions = {}) {
+        this.contentFn = contentFn;
+        this.options = {
+            placement: "top",
+            container: "body",
+            delay: { show: 200, hide: 100 },
+            offset: [0, 0],
+            ...options,
+        };
+    }
+
+    /**
+     * Shows the tooltip for a given element and data
+     * @param data - The data to generate tooltip content from
+     * @param element - The DOM element to attach the tooltip to
+     */
+    show(data: T, element: Element): void {
+        this.hide(); // Clean up any existing tooltip
+
+        // Create temporary container for the tooltip content
+        const container = document.createElement("div");
+        container.innerHTML = this.contentFn(data);
+
+        // Initialize new tooltip
+        this.element = element;
+        this.tooltip = new Tooltip(element, {
+            ...this.options,
+            title: container.innerHTML,
+            html: true,
+        });
+
+        this.tooltip.show();
+    }
+
+    /**
+     * Hides and disposes of the current tooltip
+     */
+    hide(): void {
+        if (this.tooltip) {
+            this.tooltip.dispose();
+            this.tooltip = null;
+        }
+        this.element = null;
+    }
+
+    /**
+     * Updates the content of the current tooltip if it exists
+     * @param data - The new data to generate tooltip content from
+     */
+    update(data: T): void {
+        if (this.tooltip && this.element) {
+            this.show(data, this.element);
+        }
+    }
+
+    /**
+     * Disposes of the tooltip and cleans up resources
+     */
+    dispose(): void {
+        this.hide();
+    }
+}
+
+// Create tooltip managers for nodes and links
+export const nodeTooltip = new TooltipManager<NetworkNode>(
+    (node) => `<span>${node.name}</span>`,
+    {
+        placement: "bottom",
+        offset: [-20, 0],
+        delay: { show: 200, hide: 100 },
+    },
+);
+
+export const linkTooltip = new TooltipManager<NetworkLink>(
+    (link) => `
+    <div>${link.source.name}</div>
+    <div>${link.role}</div>
+    <div>${link.target.name}</div>
+  `,
+    {
+        placement: "top",
+        offset: [20, 0],
+        delay: { show: 200, hide: 100 },
+    },
+);
+
+/**
+ * Hides all active tooltips
+ */
+export const hideAllTooltips = (): void => {
+    nodeTooltip.hide();
+    linkTooltip.hide();
+};
