@@ -1,10 +1,6 @@
 import { getOuterRadius } from "./node";
 import type { APINetworkDataResponse } from "../api";
 
-// Graph size limits
-const MAX_NODES_BEFORE_PRUNING = 600; // Maximum nodes before pruning is triggered
-const MAX_LINKS_BEFORE_PRUNING = 1800; // Maximum links before pruning is triggered
-
 export type NodeKey = string;
 export type LinkKey = string;
 
@@ -203,8 +199,8 @@ export const processAPINetworkDataResponse = (
     processedLinks.forEach((link) => {
         const sourceNode = nodeMap.get(link.source.key);
         const targetNode = nodeMap.get(link.target.key);
-//         console.log("sourceNode:", sourceNode);
-//         console.log("targetNode:", targetNode);
+        //         console.log("sourceNode:", sourceNode);
+        //         console.log("targetNode:", targetNode);
         if (sourceNode && targetNode) {
             if (sourceNode.links === undefined)
                 sourceNode.links = [] as NetworkLink[];
@@ -212,8 +208,8 @@ export const processAPINetworkDataResponse = (
                 targetNode.links = [] as NetworkLink[];
             sourceNode.links.push(link);
             targetNode.links.push(link);
-//             console.log("updated sourceNode links:", sourceNode.links);
-//             console.log("updated targetNode links:", targetNode.links);
+            //             console.log("updated sourceNode links:", sourceNode.links);
+            //             console.log("updated targetNode links:", targetNode.links);
         }
     });
 
@@ -448,135 +444,4 @@ export const convertNetworkDataToSimData = (
     //         }
     //     });
     return newSimData;
-};
-
-export const pruneSimData = (simData: SimData): void => {
-    // Get some useful stats
-    const distances: number[] = [];
-    const distance_counts = [0, 0, 0, 0, 0, 0];
-    Array.from(simData.nodeMap.values()).forEach((node) => {
-        if (node.distance !== undefined) {
-            distances.push(node.distance);
-            if (node.distance < distance_counts.length) {
-                distance_counts[node.distance]++;
-            }
-        }
-    });
-    simData.maxDistance = Math.max(...distances);
-    console.log("maxDistance: ", simData.maxDistance);
-    console.log("distance_counts: ", distance_counts);
-    console.log("initial node size: ", simData.nodeMap.size);
-    console.log("initial link size: ", simData.linkMap.size);
-
-    // Prune dist==3
-    prune(simData, 3, 1);
-    prune(simData, 3, 2);
-    prune(simData, 3, 3);
-    prune(simData, 3, 4);
-    prune(simData, 3, 5);
-    prune(simData, 3, 10);
-    prune(simData, 3, 100);
-    prune(simData, 3, 1000000);
-    prune(simData, 2, 1);
-    prune(simData, 2, 2);
-    prune(simData, 2, 3);
-    prune(simData, 2, 4);
-    prune(simData, 2, 5);
-    prune(simData, 2, 10);
-    prune(simData, 2, 100);
-    prune(simData, 2, 100000);
-
-    console.log("processNetworkData output nodes:", simData.nodeMap);
-    console.log("processNetworkData output links:", simData.linkMap);
-};
-
-/**
- * Prunes the network to keep it within size limits
- * @param {number} maxDist - Maximum distance from center to keep
- * @param {number} minLinks - Minimum number of links to keep a node
- */
-const prune = (simData: SimData, maxDist: number, minLinks: number): void => {
-    if (
-        simData.nodeMap.size > MAX_NODES_BEFORE_PRUNING ||
-        simData.linkMap.size > MAX_LINKS_BEFORE_PRUNING
-    ) {
-        const nodeKeysToPrune: NodeKey[] = [];
-        Array.from(simData.nodeMap.values()).forEach((node) => {
-            if (
-                node.distance &&
-                node.distance >= maxDist &&
-                node.links &&
-                node.links.length <= minLinks
-            ) {
-                nodeKeysToPrune.push(node.key);
-            }
-        });
-        nodeKeysToPrune.forEach((key) => {
-            simData.nodeMap.delete(key);
-        });
-        console.log("pruned nodes: ", nodeKeysToPrune.length);
-
-        const linkKeysToPrune: LinkKey[] = [];
-        const intermediateNodesToPrune: NodeKey[] = [];
-        const intermediateLinksToPrune: NodeKey[] = [];
-
-        Array.from(simData.linkMap.values()).forEach((link) => {
-            if (
-                (link.source && nodeKeysToPrune.includes(link.source.key)) ||
-                (link.target && nodeKeysToPrune.includes(link.target.key))
-            ) {
-                linkKeysToPrune.push(link.key);
-                link.source.hasMissing = true;
-                link.target.hasMissing = true;
-                link.source.missing = (link.source.missing ?? 0) + 1;
-                link.target.missing = (link.target.missing ?? 0) + 1;
-            }
-        });
-
-        linkKeysToPrune.forEach((key) => {
-            intermediateNodesToPrune.push(key);
-            simData.linkMap.delete(key);
-        });
-        console.log("pruned links: ", linkKeysToPrune.length);
-
-        intermediateNodesToPrune.forEach((key) => {
-            simData.nodeMap.delete(key);
-        });
-        console.log(
-            "pruned intermediate nodes: ",
-            intermediateNodesToPrune.length,
-        );
-
-        Array.from(simData.linkMap.values()).forEach((link) => {
-            if (
-                (link.source &&
-                    intermediateNodesToPrune.includes(link.source.key)) ||
-                (link.target &&
-                    intermediateNodesToPrune.includes(link.target.key))
-            ) {
-                intermediateLinksToPrune.push(link.key);
-                link.source.hasMissing = true;
-                link.target.hasMissing = true;
-                link.source.missing = (link.source.missing ?? 0) + 1;
-                link.target.missing = (link.target.missing ?? 0) + 1;
-            }
-        });
-
-        intermediateLinksToPrune.forEach((key) => {
-            simData.linkMap.delete(key);
-        });
-        console.log(
-            "pruned intermediate links: ",
-            intermediateLinksToPrune.length,
-        );
-
-        console.log(
-            `node size after pruning (maxDist: ${maxDist}, minLinks: ${minLinks}): `,
-            simData.nodeMap.size,
-        );
-        console.log(
-            `link size after pruning (maxDist: ${maxDist}, minLinks: ${minLinks}): `,
-            simData.linkMap.size,
-        );
-    }
 };

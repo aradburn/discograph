@@ -14,7 +14,6 @@ import { onLinkEnter, onLinkExit, onLinkUpdate } from "./link";
 import { onTick } from "./tick";
 import { onNetworkEnd } from "./events";
 import { dg } from "../dg";
-import type { Network } from "../dg";
 import { clamp } from "../utils";
 
 /**
@@ -47,10 +46,8 @@ let linkStrengthMultiplier = 1.0;
 let gravStrengthMultiplier = 1.0;
 
 function linkDistance(d: SimLink): number {
-    if (d.role == 'Alias')
-        return LINK_DISTANCE_ALIAS;
-    if (d.role == 'Released On')
-        return LINK_DISTANCE_RELEASED_ON;
+    if (d.role == "Alias") return LINK_DISTANCE_ALIAS;
+    if (d.role == "Released On") return LINK_DISTANCE_RELEASED_ON;
     if (d.isSpline) {
         return d.distance < 1 ? LINK_DISTANCE / 2 : LINK_DISTANCE / 10;
     } else {
@@ -75,7 +72,13 @@ function gravityStrength(d: SimNode): number {
     var dist = d.distance ? 4 - clamp(d.distance, 0, 3) : 1.0;
     var maxDimension = Math.max(dg.svg_dimensions[0], dg.svg_dimensions[1]);
     var scaling = dist / 10.0;
-    var radialDistance = (maxDimension - Math.max(d.x - dg.svg_dimensions[0] / 2, d.y - dg.svg_dimensions[1] / 2)) / maxDimension;
+    var radialDistance =
+        (maxDimension -
+            Math.max(
+                d.x - dg.svg_dimensions[0] / 2,
+                d.y - dg.svg_dimensions[1] / 2,
+            )) /
+        maxDimension;
     var g = radialDistance * scaling;
     return g;
 }
@@ -169,11 +172,11 @@ export const setupForceLayout = (): void => {
         }
     };
 
-//     setupChargeForce(70);
-//     setupLinkForce(65);
-//     setupGravityForce(70);
-//
-//     restartForceLayout(ALPHA / 10.0);
+    //     setupChargeForce(70);
+    //     setupLinkForce(65);
+    //     setupGravityForce(70);
+    //
+    //     restartForceLayout(ALPHA / 10.0);
 
     console.log("dg.network.forceLayout: ", dg.network.forceLayout);
 };
@@ -317,9 +320,9 @@ export const startForceLayout = (): void => {
     nodeSlider.value = "22";
     linkSlider.value = "22";
     gravSlider.value = "22";
-    setupChargeForce(nodeSlider.value);
-    setupLinkForce(linkSlider.value);
-    setupGravityForce(gravSlider.value);
+    setupChargeForce(parseInt(nodeSlider.value));
+    setupLinkForce(parseInt(linkSlider.value));
+    setupGravityForce(parseInt(gravSlider.value));
 
     restartForceLayout(ALPHA);
 };

@@ -9,6 +9,9 @@ import type { SimNode, SimLink } from "./data";
 interface TooltipOptions {
     placement?: "top" | "bottom" | "left" | "right";
     container?: string;
+    customClass?: string;
+    html?: boolean;
+    trigger?: "hover" | "click" | "focus" | "manual";
     delay?: number | { show: number; hide: number };
     offset?: [number, number];
 }
@@ -30,9 +33,9 @@ export class TooltipManager<T extends SimNode | SimLink> {
     constructor(contentFn: (data: T) => string, options: TooltipOptions = {}) {
         this.contentFn = contentFn;
         this.options = {
-//             container: "body",
-//             delay: { show: 200, hide: 100 },
-//             offset: [0, 0],
+            //             container: "body",
+            //             delay: { show: 200, hide: 100 },
+            //             offset: [0, 0],
             ...options,
         };
     }
@@ -46,8 +49,8 @@ export class TooltipManager<T extends SimNode | SimLink> {
         this.hide(); // Clean up any existing tooltip
 
         // Create temporary container for the tooltip content
-//         const container = document.createElement("div");
-//         container.innerHTML = this.contentFn(data);
+        //         const container = document.createElement("div");
+        //         container.innerHTML = this.contentFn(data);
 
         // Initialize new tooltip
         this.element = element;
@@ -55,19 +58,17 @@ export class TooltipManager<T extends SimNode | SimLink> {
             ...this.options,
             template: '<div class="tooltip-inner"></div>',
             title: this.contentFn(data),
-//             title: container.innerHTML,
-//             html: true,
+            //             title: container.innerHTML,
+            //             html: true,
         });
 
-
         // Set tooltip content
-//         this.tooltip.setContent({
-//             '.tooltip-inner': this.contentFn(data),
-//         });
+        //         this.tooltip.setContent({
+        //             '.tooltip-inner': this.contentFn(data),
+        //         });
 
         this.tooltip.show();
         console.log("this.tooltip:", this.tooltip);
-
     }
 
     /**

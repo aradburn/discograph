@@ -31,12 +31,6 @@ export interface APINetworkDataResponse {
     links: APINetworkLink[];
 }
 
-export interface APIError {
-    name: string;
-    status: number;
-    message: string;
-}
-
 const getNetworkURL = (entityKey: NodeKey): string => {
     const [entityType, entityId] = entityKey.split("-");
     let url = `/api/${entityType}/network/${entityId}`;
@@ -67,6 +61,7 @@ export const fetchAPINetwork = async (
     const url = getNetworkURL(entityKey);
 
     const response = await fetch(url);
+    if (!response.ok) throw new Error(response.statusText);
     return (await response.json()) as APINetworkDataResponse;
 };
 
@@ -74,6 +69,7 @@ export const fetchAPIRandom = async (): Promise<NetworkCenter> => {
     const url = getRandomURL();
 
     const response = await fetch(url);
+    if (!response.ok) throw new Error(response.statusText);
     return (await response.json()) as NetworkCenter;
 };
 
@@ -83,5 +79,6 @@ export const fetchAPIRadial = async (
     const url = getRadialURL(entityKey);
 
     const response = await fetch(url);
+    if (!response.ok) throw new Error(response.statusText);
     return (await response.json()) as RelationsData;
 };

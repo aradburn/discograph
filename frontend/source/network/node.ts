@@ -199,9 +199,9 @@ const onNodeEnterEventBindings = (nodeEnter: NodeSelection): void => {
             if (status) {
                 nodeTooltip.show(d, self);
                 // Hide after 5 seconds
-//                 setTimeout(() => {
-//                     hideAllTooltips();
-//                 }, 5000);
+                //                 setTimeout(() => {
+                //                     hideAllTooltips();
+                //                 }, 5000);
             } else {
                 nodeTooltip.hide();
             }

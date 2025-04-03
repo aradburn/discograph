@@ -21,17 +21,18 @@ import type {
 import {
     processAPINetworkDataResponse,
     convertNetworkDataToSimData,
-    pruneSimData,
 } from "./network/data";
+import { pruneSimData } from "./network/pruning";
 import type { RelationsData } from "./relations";
 import { dg } from "./dg";
 import { initWindow } from "./init";
-import type { APINetworkDataResponse, APIError } from "./api";
+import type { APINetworkDataResponse } from "./api";
 import { fetchAPINetwork, fetchAPIRandom, fetchAPIRadial } from "./api";
 import { resetNetworkTransform } from "./network/init";
 import { ALPHA } from "./network/forceLayout";
 import type { SimNode, SimLink } from "./network/data";
 import { RequestNetworkEvent, SelectEntityEvent } from "./network/events";
+import { showMessage } from "./messages";
 import * as d3 from "d3";
 import $ from "jquery";
 
@@ -420,35 +421,9 @@ export const DiscographFsm = window.machina.Fsm.extend({
         },
     } as FSMStates,
 
-    handleError: function (this: FSMInstance, apiError: APIError) {
-        let message = "Something went wrong!";
-        const status = apiError?.status || 404;
+    handleError: function (this: FSMInstance, error: Error) {
+        showMessage(error.message, "error");
 
-        if (status === 429) {
-            message = "Hey, slow down, buddy. Give it a minute.";
-        }
-
-        const text = `
-      <div class="alert alert-danger alert-dismissible" role="alert">
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-        <strong>${status}!</strong> ${message}
-      </div>
-    `;
-
-        const flash = document.getElementById("flash");
-        if (flash) {
-            flash.innerHTML += text;
-        }
-
-        //         if (this.rolesBackup) {
-        //             const filterSelect = document.querySelector("#filter select");
-        //             if (filterSelect instanceof HTMLSelectElement) {
-        //                 filterSelect.value = this.rolesBackup.join(",");
-        //                 filterSelect.dispatchEvent(new Event("change"));
-        //             }
-        //         }
         this.transition("state-viewing-network");
     },
 
@@ -519,17 +494,10 @@ export const DiscographFsm = window.machina.Fsm.extend({
                     false,
                 );
             })
-            .catch((error: unknown) => {
+            .catch((error) => {
                 console.error("Error fetching network data:", error);
-                const apiError: APIError = {
-                    name: "APIError",
-                    status: error instanceof Error ? 500 : 404,
-                    message:
-                        error instanceof Error
-                            ? error.message
-                            : "Unknown error",
-                };
-                this.handleError(apiError);
+
+                this.handleError(error);
             });
     },
 
@@ -540,14 +508,10 @@ export const DiscographFsm = window.machina.Fsm.extend({
             .then((relationsData: RelationsData) => {
                 this.handle("received-radial", relationsData, false, false);
             })
-            .catch((error: Error) => {
+            .catch((error) => {
                 console.error("Error fetching radial data:", error);
-                const apiError: APIError = {
-                    name: "APIError",
-                    status: error instanceof Error ? 500 : 404,
-                    message: error.message,
-                };
-                this.handleError(apiError);
+
+                this.handleError(error);
             });
     },
 
@@ -558,17 +522,10 @@ export const DiscographFsm = window.machina.Fsm.extend({
             .then((networkCenter: NetworkCenter) => {
                 this.handle("received-random", networkCenter, true, false);
             })
-            .catch((error: unknown) => {
+            .catch((error) => {
                 console.error("Error fetching random data:", error);
-                const apiError: APIError = {
-                    name: "APIError",
-                    status: error instanceof Error ? 500 : 404,
-                    message:
-                        error instanceof Error
-                            ? error.message
-                            : "Unknown error",
-                };
-                this.handleError(apiError);
+
+                this.handleError(error);
             });
     },
 
@@ -600,8 +557,8 @@ export const DiscographFsm = window.machina.Fsm.extend({
         console.log("received-network convertNetworkDataToSimData");
         const simData: SimData = convertNetworkDataToSimData(networkData);
 
-        pruneSimData(simData);
-        dg.network.data = simData;
+        const prunedSimData: SimData = pruneSimData(simData);
+        dg.network.data = prunedSimData;
 
         console.log("received-network resetNetworkTransform");
         resetNetworkTransform();

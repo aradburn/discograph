@@ -162,6 +162,8 @@ export const initApp = (): void => {
     console.log("discograph initialized.");
 
     // Modals start off hidden to prevent them showing on startup before CSS gets loaded.
-    const modalHelp = document.querySelector("#modal-help");
-    modalHelp.style.opacity = "1";
+    const modalHelp = document.querySelector<HTMLDivElement>("#modal-help");
+    if (modalHelp) {
+        modalHelp.style.opacity = "1";
+    }
 };

@@ -94,7 +94,6 @@ input[type="range"]::slider-thumb {
     display: block;
     text-align: center;
     float: none;
-    vertical-align: middle;
     height: 50px;
     padding: 15px 15px;
     font-size: 18px;
@@ -106,11 +105,6 @@ input[type="range"]::slider-thumb {
     max-height: 70vh;
     overflow-y: auto;
     background-color: white;
-}
-
-#flash {
-    margin: auto;
-    width: 50%;
 }
 
 #svg {
