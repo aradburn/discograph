@@ -5,6 +5,7 @@
  * @version 0.2
  */
 
+import "~bootstrap/dist/css/bootstrap.min.css"
 import "jquery";
 import jQuery from "jquery";
 

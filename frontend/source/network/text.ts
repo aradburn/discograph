@@ -5,21 +5,21 @@
  */
 
 import type * as d3 from "d3";
-import { getOuterRadius } from "./tick";
+import { getOuterRadius } from "./node";
 import { getNodeColorClass } from "../color";
 import { dg } from "../dg";
-import type { NetworkNode } from "./node";
+import type { SimNode } from "./data";
 
-type TextSelection = d3.Selection<SVGGElement, NetworkNode, d3.BaseType, unknown>;
+type TextSelection = d3.Selection<SVGGElement, SimNode, d3.BaseType, unknown>;
 type TextEnterSelection = d3.Selection<
     d3.EnterElement,
-    NetworkNode,
+    SimNode,
     d3.BaseType,
     unknown
 >;
 type TextUpdateSelection = d3.Selection<
     SVGGElement,
-    NetworkNode,
+    SimNode,
     d3.BaseType,
     unknown
 >;
@@ -32,10 +32,10 @@ export const LABEL_OFFSET_Y = 9;
 
 /**
  * Generates the display text for a network node
- * @param {NetworkNode} d - The node data object
+ * @param {SimNode} d - The node data object
  * @returns {string} Truncated name (with debug info if debug mode is enabled)
  */
-export const getNodeText = (d: NetworkNode): string => {
+export const getNodeText = (d: SimNode): string => {
     let name = d.name;
     if (name.length > 50) {
         name = `${name.slice(0, 50)}...`;
@@ -48,10 +48,10 @@ export const getNodeText = (d: NetworkNode): string => {
 
 /**
  * Generates debug information text for a network node
- * @param {NetworkNode} d - The node data object
+ * @param {SimNode} d - The node data object
  * @returns {string} Formatted debug information string
  */
-export const getNodeDebug = (d: NetworkNode): string => {
+export const getNodeDebug = (d: SimNode): string => {
     const links = d.links?.length ?? 0;
     return (
         ` dist: ${d.distance}` +
@@ -71,8 +71,8 @@ export const getNodeDebug = (d: NetworkNode): string => {
 export const onTextEnter = (textEnter: TextEnterSelection): void => {
     const textGroup = textEnter
         .append("g")
-        .attr("id", (d: NetworkNode) => d.key)
-        .attr("class", (d: NetworkNode) => {
+        .attr("id", (d: SimNode) => d.key)
+        .attr("class", (d: SimNode) => {
             const classes = ["node", d.key.split("-")[0]];
             if (d.cluster !== undefined) {
                 classes.push("cluster");
@@ -83,15 +83,15 @@ export const onTextEnter = (textEnter: TextEnterSelection): void => {
     textGroup
         .append("text")
         .attr("class", "outer")
-        .attr("dy", (d: NetworkNode) => getOuterRadius(d) + LABEL_OFFSET_Y)
-        .attr("width", (d: NetworkNode) => getOuterRadius(d) * 3)
+        .attr("dy", (d: SimNode) => getOuterRadius(d) + LABEL_OFFSET_Y)
+        .attr("width", (d: SimNode) => getOuterRadius(d) * 3)
         .text(getNodeText);
 
     textGroup
         .append("text")
         .attr("class", "inner")
-        .attr("dy", (d: NetworkNode) => getOuterRadius(d) + LABEL_OFFSET_Y)
-        .attr("width", (d: NetworkNode) => getOuterRadius(d) * 3)
+        .attr("dy", (d: SimNode) => getOuterRadius(d) + LABEL_OFFSET_Y)
+        .attr("width", (d: SimNode) => getOuterRadius(d) * 3)
         .text(getNodeText);
 };
 

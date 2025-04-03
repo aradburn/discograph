@@ -1,8 +1,26 @@
-// Import all of Bootstrap's CSS
-@import "bootstrap/scss/bootstrap";
+$dg-primary-color: #c0d111;
+$dg-secondary-color: #4d8c6f;
+$dg-background-color: #1c5a51;
+$dg-text-inner-color: #000;
+$dg-text-outer-color: #fff;
+
+$dg-svg-background-color: #eee;
+
+$dg-tooltip-color: #111;
+$dg-tooltip-background-color: #ffffcc;
+
+$dg-node-tooltip-color: #111;
+$dg-node-tooltip-background-color: #ffffcc;
+$dg-node-tooltip-border-color: #800026;
+
+$dg-link-tooltip-color: #111;
+$dg-link-tooltip-background-color: #ffeda0;
+$dg-link-tooltip-border-color: #800026;
 
 $bootstrap-icons-font-dir: "bootstrap-icons/font/fonts";
-$bootstrap-icons-font-src: url("/public/fonts/bootstrap-icons.woff2") format("woff2"), url("/public/fonts/bootstrap-icons.woff") format("woff");
+$bootstrap-icons-font-src:
+    url("/public/fonts/bootstrap-icons.woff2") format("woff2"),
+    url("/public/fonts/bootstrap-icons.woff") format("woff");
 @import "bootstrap-icons/font/bootstrap-icons";
 
 html,
@@ -16,56 +34,63 @@ body {
     z-index: -1;
 }
 
+.custom-tooltip {
+    --bs-tooltip-bg: $dg-tooltip-background-color;
+    --bs-tooltip-color: $dg-tooltip-color;
+}
+
 #nav-top {
-    background-image: linear-gradient(#4D8C6F55 0%, #46735ebb 100%);
+    background-image: linear-gradient(
+        #{$dg-secondary-color}55 0%,
+        #46735ebb 100%
+    );
     /*    background-image: linear-gradient(#13808577 0%, #53466677 140%);*/
     /*    background-image: linear-gradient(#ddd, #ccc 60%);*/
 }
 
 #side-menu {
-    background-color: #1C5A51 !important;
+    background-color: $dg-background-color !important;
     /* background-color: #1C575A !important;*/
 }
 
 input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  background: transparent;
-  cursor: pointer;
-  width: 90%;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    width: 90%;
 }
 /***** Thumb Styles *****/
 /***** Chrome, Safari, Opera, and Edge Chromium *****/
 input[type="range"]::-webkit-slider-thumb {
-   -webkit-appearance: none; /* Override default look */
-   appearance: none;
-   margin-top: -12px; /* Centers thumb on the track */
-   background-color: #5cd5eb;
-   height: 1.6rem;
-   width: 0.8rem;
+    -webkit-appearance: none; /* Override default look */
+    appearance: none;
+    margin-top: -12px; /* Centers thumb on the track */
+    background-color: $dg-secondary-color;
+    height: 1.6rem;
+    width: 0.8rem;
 }
 /***** Firefox *****/
 input[type="range"]::-moz-range-thumb {
     border: none; /*Removes extra border that FF applies*/
     border-radius: 0; /*Removes default border-radius that FF applies*/
-    background-color: #5cd5eb;
+    background-color: $dg-secondary-color;
     height: 1.6rem;
     width: 0.8rem;
 }
 .form-range::-moz-range-thumb,
-input[type=range]::-moz-range-thumb,
-input[type=range]::-webkit-slider-thumb,
-input[type=range]::slider-thumb {
-    background-color: #1C5A51 !important;
+input[type="range"]::-moz-range-thumb,
+input[type="range"]::-webkit-slider-thumb,
+input[type="range"]::slider-thumb {
+    background-color: $dg-background-color !important;
 }
 
-#nav-bottom {
-    background-image: linear-gradient(#ddd, #ccc 60%);
-}
+// #nav-bottom {
+//     background-image: linear-gradient(#ddd, #ccc 60%);
+// }
 
 .navbar-title {
-    /*color: #777777;*/
-    transition: color ease-in-out .2s;
+    transition: color ease-in-out 0.2s;
     display: block;
     text-align: center;
     float: none;
@@ -80,7 +105,7 @@ input[type=range]::slider-thumb {
     width: 100%;
     max-height: 70vh;
     overflow-y: auto;
-    background-color: #fff;
+    background-color: white;
 }
 
 #flash {
@@ -90,7 +115,7 @@ input[type=range]::slider-thumb {
 
 #svg {
     pointer-events: visible;
-    background-color: #eee;
+    background-color: $dg-svg-background-color;
 
     text {
         font-variant-ligatures: none;
@@ -131,30 +156,50 @@ a {
                 /*     stroke: #000;*/
             }
 
-            &.distance-0 { stroke-width: 6; }
-            &.distance-1 { stroke-width: 5; }
-            &.distance-2 { stroke-width: 4; }
-            &.distance-3 { stroke-width: 3; }
-            &.distance-4 { stroke-width: 2; }
-            &.distance-5 { stroke-width: 2; }
-            &.distance-6 { stroke-width: 2; }
-            &.distance-7 { stroke-width: 2; }
-            &.distance-8 { stroke-width: 2; }
+            &.distance-0 {
+                stroke-width: 6;
+            }
+            &.distance-1 {
+                stroke-width: 5;
+            }
+            &.distance-2 {
+                stroke-width: 4;
+            }
+            &.distance-3 {
+                stroke-width: 3;
+            }
+            &.distance-4 {
+                stroke-width: 2;
+            }
+            &.distance-5 {
+                stroke-width: 2;
+            }
+            &.distance-6 {
+                stroke-width: 2;
+            }
+            &.distance-7 {
+                stroke-width: 2;
+            }
+            &.distance-8 {
+                stroke-width: 2;
+            }
         }
 
         text {
             cursor: help;
             dominant-baseline: middle;
             text-anchor: middle;
-            font: 1.0rem 'Open Sans', sans-serif;
+            font:
+                1rem "Open Sans",
+                sans-serif;
 
             &.inner {
-                fill: #000;
+                fill: $dg-text-inner-color;
                 stroke: none;
             }
 
             &.outer {
-                stroke: #fff;
+                stroke: $dg-text-outer-color;
                 stroke-width: 3px;
                 fill: none;
             }
@@ -181,7 +226,7 @@ a {
             path.inner {
                 opacity: 0.5;
                 /*     marker-end: url(#aggregate);*/
-                stroke: #00BD20;
+                stroke: #00bd20;
                 stroke-dasharray: 2, 4;
             }
         }
@@ -232,8 +277,10 @@ a {
         text {
             &.inner {
                 pointer-events: none;
-                font: 1.2rem 'Open Sans', sans-serif;
-                fill: #000;
+                font:
+                    1.2rem "Open Sans",
+                    sans-serif;
+                fill: $dg-text-inner-color;
                 stroke: none;
                 dominant-baseline: middle;
                 text-anchor: middle;
@@ -241,8 +288,10 @@ a {
 
             &.outer {
                 pointer-events: none;
-                font: 1.2rem 'Open Sans', sans-serif;
-                stroke: #FFFFFF77;
+                font:
+                    1.2rem "Open Sans",
+                    sans-serif;
+                stroke: #ffffff77;
                 stroke-width: 3px;
                 fill: none;
                 dominant-baseline: middle;
@@ -251,33 +300,33 @@ a {
 
             &.icon {
                 cursor: pointer;
-                fill: #FFFFFF;
-                font-family: 'Glyphicons Halflings';
+                fill: white;
+                font-family: "Glyphicons Halflings";
                 font-style: normal;
                 font-weight: 200;
                 font-size: 20px;
                 opacity: 0.5;
-                stroke: #000;
+                stroke: black;
             }
         }
 
         circle.halo {
             pointer-events: none;
-            fill: #000;
+            fill: black;
             opacity: 0;
             stroke: none;
         }
 
         path.more {
-            stroke: #000;
+            stroke: black;
             stroke-width: 1;
             stroke-opacity: 0.3;
             fill-opacity: 1;
-            fill: #fff;
+            fill: white;
         }
 
         &.selected {
-            stroke: #f00;
+            stroke: red;
 
             .halo {
                 opacity: 0.1;
@@ -285,13 +334,13 @@ a {
             }
 
             .more {
-                fill: #000;
+                fill: black;
             }
 
             &.label {
                 stroke: #f00;
                 .more {
-                    fill: #fff;
+                    fill: white;
                 }
             }
         }
@@ -300,7 +349,7 @@ a {
     .cluster {
         text {
             &.outer {
-                stroke: #FFFFFFFF;
+                stroke: white;
             }
         }
     }
@@ -312,26 +361,26 @@ a {
     g.segment {
         &.selected {
             path.arc {
-                fill: #00f;
+                fill: blue;
             }
             text.inner {
-                fill: #00f;
+                fill: blue;
             }
         }
 
         &:hover {
             path.arc {
-                fill: #f00;
+                fill: red;
             }
             text.inner {
-                fill: #f00;
+                fill: red;
             }
         }
     }
 
     path {
         &.arc {
-            stroke: #fff;
+            stroke: white;
             stroke-width: 1px;
         }
     }
@@ -339,19 +388,19 @@ a {
     text {
         text-rendering: optimizeLegibility;
         dominant-baseline: middle;
-        font-family: 'Open Sans', sans-serif;
+        font-family: "Open Sans", sans-serif;
         font-size: 12px;
         font-weight: bold;
 
-        &.outer {
-            fill: #fff;
-            stroke: #fff;
-            stroke-width: 3px;
+        &.inner {
+            fill: $dg-text-inner-color;
+            stroke: none;
         }
 
-        &.inner {
-            fill: #000;
-            stroke: none;
+        &.outer {
+            stroke: $dg-text-outer-color;
+            stroke-width: 3px;
+            fill: none;
         }
     }
 }
@@ -362,10 +411,10 @@ a {
     path {
         &.arc {
             opacity: 0.75;
-            stroke: #fff;
+            stroke: white;
             stroke-width: 1px;
             &:hover {
-                fill: #f00;
+                fill: red;
             }
         }
     }
@@ -412,66 +461,70 @@ a {
 
 .d3-node-tooltip {
     transform: scale(0.8);
-    line-height: 0.8em;
-    font-size: 1.0em;
+    line-height: 0.8rem;
+    font-size: 1rem;
     padding: 2px 4px;
-    background-color: #ffffcc;
-    color: #111;
+    background-color: $dg-node-tooltip-background-color;
+    color: $dg-node-tooltip-color;
     border-radius: 6px;
-    border: 2px solid #800026;
+    border: 2px solid $dg-node-tooltip-border-color;
     pointer-events: none !important;
     text-align: center;
-    box-shadow: 0 4px 20px 4px rgba(0,20,60,.1), 0 4px 80px -8px rgba(0,20,60,.2);
+    box-shadow:
+        0 4px 20px 4px rgba(0, 20, 60, 0.1),
+        0 4px 80px -8px rgba(0, 20, 60, 0.2);
     display: flex;
     flex-direction: column;
-    gap: 0em;
+    gap: 0rem;
 
     span {
-        opacity: 1.0;
-        font-size: 1.4em;
-        line-height: 1.4em;
+        opacity: 1;
+        font-size: 1.4rem;
+        line-height: 1.4rem;
     }
 }
 
 .d3-link-tooltip {
     transform: scale(0.8);
-    line-height: 0.8em;
-    font-size: 1.0em;
+    line-height: 0.8rem;
+    font-size: 1rem;
     padding: 0px;
-    background-color: #ffeda0;
-    color: #111;
-    opacity: 1.0;
+    background-color: $dg-link-tooltip-background-color !important;
+    color: $dg-link-tooltip-color !important;
+    opacity: 1;
     border-radius: 6px;
-    border: 2px solid #800026;
+    border: 2px solid $dg-link-tooltip-border-color;
     pointer-events: none !important;
     text-align: center;
-    box-shadow: 0 4px 20px 4px rgba(0,20,60,.1), 0 4px 80px -8px rgba(0,20,60,.2);
+    box-shadow:
+        0 4px 20px 4px rgba(0, 20, 60, 0.1),
+        0 4px 80px -8px rgba(0, 20, 60, 0.2);
     display: flex;
     flex-direction: column;
-    gap: 0em;
+    gap: 0rem;
 
     div {
         padding: 0px 4px;
         margin: 2px;
         display: inline-block;
-        background-color: #ffeda0;
+        background-color: $dg-link-tooltip-background-color;
 
         &:first-child {
-            font-size: 1.4em;
-            line-height: 1.4em;
+            font-size: 1.4rem;
+            line-height: 1.4rem;
             margin-bottom: 0;
         }
 
         &:nth-child(2) {
-            font-size: 0.8em;
-            line-height: 1.1em;
+            font-size: 0.8rem;
+            line-height: 1.1rem;
             border-width: 0px;
             margin: 0;
         }
 
         &:last-child {
-            font-size: 1.4em;
-            line-height: 1.4em;
+            font-size: 1.4rem;
+            line-height: 1.4rem;
             margin-top: 0;
         }
     }
@@ -479,121 +532,301 @@ a {
 
 // Color Palettes
 .YlOrRd {
-    .color-0 { fill: rgb(255,255,204); }
-    .color-1 { fill: rgb(255,237,160); }
-    .color-2 { fill: rgb(254,217,118); }
-    .color-3 { fill: rgb(254,178,76); }
-    .color-4 { fill: rgb(253,141,60); }
-    .color-5 { fill: rgb(252,78,42); }
-    .color-6 { fill: rgb(227,26,28); }
-    .color-7 { fill: rgb(189,0,38); }
-    .color-8 { fill: rgb(128,0,38); }
+    .color-0 {
+        fill: rgb(255, 255, 204);
+    }
+    .color-1 {
+        fill: rgb(255, 237, 160);
+    }
+    .color-2 {
+        fill: rgb(254, 217, 118);
+    }
+    .color-3 {
+        fill: rgb(254, 178, 76);
+    }
+    .color-4 {
+        fill: rgb(253, 141, 60);
+    }
+    .color-5 {
+        fill: rgb(252, 78, 42);
+    }
+    .color-6 {
+        fill: rgb(227, 26, 28);
+    }
+    .color-7 {
+        fill: rgb(189, 0, 38);
+    }
+    .color-8 {
+        fill: rgb(128, 0, 38);
+    }
 }
 
 .YlGnBu {
-    .color-0 { fill: rgb(255,255,217); }
-    .color-1 { fill: rgb(237,248,177); }
-    .color-2 { fill: rgb(199,233,180); }
-    .color-3 { fill: rgb(127,205,187); }
-    .color-4 { fill: rgb(65,182,196); }
-    .color-5 { fill: rgb(29,145,192); }
-    .color-6 { fill: rgb(34,94,168); }
-    .color-7 { fill: rgb(37,52,148); }
-    .color-8 { fill: rgb(8,29,88); }
+    .color-0 {
+        fill: rgb(255, 255, 217);
+    }
+    .color-1 {
+        fill: rgb(237, 248, 177);
+    }
+    .color-2 {
+        fill: rgb(199, 233, 180);
+    }
+    .color-3 {
+        fill: rgb(127, 205, 187);
+    }
+    .color-4 {
+        fill: rgb(65, 182, 196);
+    }
+    .color-5 {
+        fill: rgb(29, 145, 192);
+    }
+    .color-6 {
+        fill: rgb(34, 94, 168);
+    }
+    .color-7 {
+        fill: rgb(37, 52, 148);
+    }
+    .color-8 {
+        fill: rgb(8, 29, 88);
+    }
 }
 
 .RdGnBl {
-    .color-8 { fill: #ff0000; }
-    .color-7 { fill: #ff004c; }
-    .color-6 { fill: #f25f2d; }
-    .color-5 { fill: #dc8926; }
-    .color-4 { fill: #c5a841; }
-    .color-3 { fill: #b1c16c; }
-    .color-2 { fill: #a8d39c; }
-    .color-1 { fill: #b0e1c7; }
-    .color-0 { fill: #ccece6; }
+    .color-8 {
+        fill: #ff0000;
+    }
+    .color-7 {
+        fill: #ff004c;
+    }
+    .color-6 {
+        fill: #f25f2d;
+    }
+    .color-5 {
+        fill: #dc8926;
+    }
+    .color-4 {
+        fill: #c5a841;
+    }
+    .color-3 {
+        fill: #b1c16c;
+    }
+    .color-2 {
+        fill: #a8d39c;
+    }
+    .color-1 {
+        fill: #b0e1c7;
+    }
+    .color-0 {
+        fill: #ccece6;
+    }
 }
 
 .RdGnLb {
-    .color-8 { fill: #ff0000; }
-    .color-7 { fill: #df6e00; }
-    .color-6 { fill: #b99800; }
-    .color-5 { fill: #93b628; }
-    .color-4 { fill: #70cc72; }
-    .color-3 { fill: #5cdcb1; }
-    .color-2 { fill: #73e8e2; }
-    .color-1 { fill: #a8f0ff; }
-    .color-0 { fill: #b0e1c7; }
+    .color-8 {
+        fill: #ff0000;
+    }
+    .color-7 {
+        fill: #df6e00;
+    }
+    .color-6 {
+        fill: #b99800;
+    }
+    .color-5 {
+        fill: #93b628;
+    }
+    .color-4 {
+        fill: #70cc72;
+    }
+    .color-3 {
+        fill: #5cdcb1;
+    }
+    .color-2 {
+        fill: #73e8e2;
+    }
+    .color-1 {
+        fill: #a8f0ff;
+    }
+    .color-0 {
+        fill: #b0e1c7;
+    }
 }
 
 .Palette1 {
-    .color-0 { fill: #ff0000; }
-    .color-1 { fill: #f55700; }
-    .color-2 { fill: #e87d00; }
-    .color-3 { fill: #da9a00; }
-    .color-4 { fill: #ccb211; }
-    .color-5 { fill: #bfc744; }
-    .color-6 { fill: #b5da6d; }
-    .color-7 { fill: #afeb96; }
-    .color-8 { fill: #afeb96; }
+    .color-0 {
+        fill: #ff0000;
+    }
+    .color-1 {
+        fill: #f55700;
+    }
+    .color-2 {
+        fill: #e87d00;
+    }
+    .color-3 {
+        fill: #da9a00;
+    }
+    .color-4 {
+        fill: #ccb211;
+    }
+    .color-5 {
+        fill: #bfc744;
+    }
+    .color-6 {
+        fill: #b5da6d;
+    }
+    .color-7 {
+        fill: #afeb96;
+    }
+    .color-8 {
+        fill: #afeb96;
+    }
 }
 
 .Palette2 {
-    .color-0 { fill: #d53e4f; }
-    .color-1 { fill: #f46d43; }
-    .color-2 { fill: #fdae61; }
-    .color-3 { fill: #fee08b; }
-    .color-4 { fill: #ffffbf; }
-    .color-5 { fill: #e6f598; }
-    .color-6 { fill: #abdda4; }
-    .color-7 { fill: #66c2a5; }
-    .color-8 { fill: #3288bd; }
+    .color-0 {
+        fill: #d53e4f;
+    }
+    .color-1 {
+        fill: #f46d43;
+    }
+    .color-2 {
+        fill: #fdae61;
+    }
+    .color-3 {
+        fill: #fee08b;
+    }
+    .color-4 {
+        fill: #ffffbf;
+    }
+    .color-5 {
+        fill: #e6f598;
+    }
+    .color-6 {
+        fill: #abdda4;
+    }
+    .color-7 {
+        fill: #66c2a5;
+    }
+    .color-8 {
+        fill: #3288bd;
+    }
 }
 
 .Palette3 {
-    .color-0 { fill: #800026; }
-    .color-1 { fill: #bd0026; }
-    .color-2 { fill: #e31a1c; }
-    .color-3 { fill: #fc4e2a; }
-    .color-4 { fill: #fd8d3c; }
-    .color-5 { fill: #feb24c; }
-    .color-6 { fill: #fed976; }
-    .color-7 { fill: #ffeda0; }
-    .color-8 { fill: #ffffcc; }
+    .color-0 {
+        fill: #800026;
+    }
+    .color-1 {
+        fill: #bd0026;
+    }
+    .color-2 {
+        fill: #e31a1c;
+    }
+    .color-3 {
+        fill: #fc4e2a;
+    }
+    .color-4 {
+        fill: #fd8d3c;
+    }
+    .color-5 {
+        fill: #feb24c;
+    }
+    .color-6 {
+        fill: #fed976;
+    }
+    .color-7 {
+        fill: #ffeda0;
+    }
+    .color-8 {
+        fill: #ffffcc;
+    }
 }
 
 .Palette4 {
-    .color-0 { fill: #23682e; }
-    .color-1 { fill: #347a3d; }
-    .color-2 { fill: #448b4c; }
-    .color-3 { fill: #549e5b; }
-    .color-4 { fill: #64b16b; }
-    .color-5 { fill: #74c47c; }
-    .color-6 { fill: #85d78d; }
-    .color-7 { fill: #96eb9e; }
-    .color-8 { fill: #a7ffaf; }
+    .color-0 {
+        fill: #23682e;
+    }
+    .color-1 {
+        fill: #347a3d;
+    }
+    .color-2 {
+        fill: #448b4c;
+    }
+    .color-3 {
+        fill: #549e5b;
+    }
+    .color-4 {
+        fill: #64b16b;
+    }
+    .color-5 {
+        fill: #74c47c;
+    }
+    .color-6 {
+        fill: #85d78d;
+    }
+    .color-7 {
+        fill: #96eb9e;
+    }
+    .color-8 {
+        fill: #a7ffaf;
+    }
 }
 
 .LinkRedPalette {
-    .color-0 { stroke: #800026; }
-    .color-1 { stroke: #bd0026; }
-    .color-2 { stroke: #e31a1c; }
-    .color-3 { stroke: #fc4e2a; }
-    .color-4 { stroke: #fd8d3c; }
-    .color-5 { stroke: #feb24c; }
-    .color-6 { stroke: #fed976; }
-    .color-7 { stroke: #ffeda0; }
-    .color-8 { stroke: #ffffcc; }
+    .color-0 {
+        stroke: #800026;
+    }
+    .color-1 {
+        stroke: #bd0026;
+    }
+    .color-2 {
+        stroke: #e31a1c;
+    }
+    .color-3 {
+        stroke: #fc4e2a;
+    }
+    .color-4 {
+        stroke: #fd8d3c;
+    }
+    .color-5 {
+        stroke: #feb24c;
+    }
+    .color-6 {
+        stroke: #fed976;
+    }
+    .color-7 {
+        stroke: #ffeda0;
+    }
+    .color-8 {
+        stroke: #ffffcc;
+    }
 }
 
 .LinkGreenPalette {
-    .color-0 { stroke: #23682e; }
-    .color-1 { stroke: #347a3d; }
-    .color-2 { stroke: #448b4c; }
-    .color-3 { stroke: #549e5b; }
-    .color-4 { stroke: #64b16b; }
-    .color-5 { stroke: #74c47c; }
-    .color-6 { stroke: #85d78d; }
-    .color-7 { stroke: #96eb9e; }
-    .color-8 { stroke: #a7ffaf; }
-} 
+    .color-0 {
+        stroke: #23682e;
+    }
+    .color-1 {
+        stroke: #347a3d;
+    }
+    .color-2 {
+        stroke: #448b4c;
+    }
+    .color-3 {
+        stroke: #549e5b;
+    }
+    .color-4 {
+        stroke: #64b16b;
+    }
+    .color-5 {
+        stroke: #74c47c;
+    }
+    .color-6 {
+        stroke: #85d78d;
+    }
+    .color-7 {
+        stroke: #96eb9e;
+    }
+    .color-8 {
+        stroke: #a7ffaf;
+    }
+}

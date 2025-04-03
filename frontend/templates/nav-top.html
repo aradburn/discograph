@@ -35,7 +35,7 @@
                     </span>
 
                     <input id="typeahead" type="text" class="form-control rounded-0 px-2 py-1" placeholder="Search">
-                    
+
                     <span class="clear bg-light-subtle opacity-50 input-group-text px-2 py-0" role="button">
                         <i class="bi bi-backspace"></i>
                     </span>
@@ -50,8 +50,10 @@
                     fs-5 d-flex justify-content-center
                     col-lg-1 col-md-1 col-sm-1 col-1
                     order-3 order-md-4">
-            <div id="request-random" class="d-flex flex-row" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                 title="Choose a random artist" role="button">
+            <div id="request-random" class="d-flex flex-row"
+                 data-bs-toggle="tooltip" data-bs-placement="bottom"
+                 title="Choose a random artist"
+                 role="button">
                 <i class="bi bi-shuffle px-1 py-0"></i>
                 <div class="collapse navbar-collapse px-1 py-0">RANDOM</div>
             </div>
@@ -62,10 +64,18 @@
                     fs-5 d-flex justify-content-center
                     col-lg-1 col-md-1 col-sm-1 col-1
                     order-5 order-md-5">
-            <div id="help" class="d-flex flex-row" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                 title="Help" data-bs-toggle="modal" data-bs-target="#modal-help" role="button">
+            <div id="help" class="d-flex flex-row"
+                 title="Help"
+                 data-bs-toggle="modal" data-bs-target="#modal-help"
+                 role="button">
                 <i class="bi bi-question-circle px-1 py-0"></i>
-                <div class="collapse navbar-collapse px-1 py-0">HELP</div>
+                <div class="collapse navbar-collapse px-1 py-0"
+                     data-bs-toggle="tooltip"
+                     data-bs-placement="bottom"
+                     data-bs-custom-class="custom-tooltip"
+                     data-bs-title="Help with Discograph">
+                    HELP
+                </div>
             </div>
         </div>
     </div>

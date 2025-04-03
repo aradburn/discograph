@@ -5,37 +5,15 @@
  */
 
 import * as d3 from "d3";
-import { debounce } from "../init";
-import type { NetworkNode } from "./node";
+import { debounce } from "../utils";
+import type { SimLink } from "./data";
 import { getLinkColorClass } from "../color";
 import { linkTooltip } from "./tooltips";
 
-export interface NetworkLink {
-    key: string;
-    source: NetworkNode;
-    target: NetworkNode;
-    role: string;
-    distance?: number;
-    isSpline?: boolean;
-    intermediate?: NetworkNode;
-    pages?: unknown;
-}
-
-type LinkSelection = d3.Selection<
-    SVGGElement,
-    NetworkLink,
-    d3.BaseType,
-    unknown
->;
+type LinkSelection = d3.Selection<SVGGElement, SimLink, d3.BaseType, unknown>;
 type LinkEnterSelection = d3.Selection<
     d3.EnterElement,
-    NetworkLink,
-    d3.BaseType,
-    unknown
->;
-type LinkUpdateSelection = d3.Selection<
-    SVGGElement,
-    NetworkLink,
+    SimLink,
     d3.BaseType,
     unknown
 >;
@@ -48,16 +26,15 @@ const LINK_OUT_TRANSITION_TIME = 500; // Duration of link exit transition in mil
 const LINK_PALETTE = "LinkGreenPalette"; // Default color palette for links
 
 /**
- * Generates HTML content for link tooltips
- * @param {NetworkLink} d - Link data object
- * @returns {string} HTML string for tooltip content
+ * Generates HTML content for link annotation, initial letters of the role
+ * @param {SimNode} d - Link data object
+ * @returns {string} HTML string for link text
  */
-const linkAnnotation = (d: NetworkLink): string => {
-    return [
-        `<div>${d.source.name}</div>`,
-        `<div>${d.role}</div>`,
-        `<div>${d.target.name}</div>`,
-    ].join("");
+const linkAnnotation = (d: SimLink): string => {
+    return d.role
+        .split(" ")
+        .map((x) => x[0])
+        .join("");
 };
 
 /**
@@ -68,8 +45,8 @@ const linkAnnotation = (d: NetworkLink): string => {
 export const onLinkEnter = (linkEnter: LinkEnterSelection): void => {
     const newLinkEnter = linkEnter
         .append("g")
-        .attr("id", (d: NetworkLink) => `link-${d.key}`)
-        .attr("class", (d: NetworkLink) => {
+        .attr("id", (d: SimLink) => `link-${d.key}`)
+        .attr("class", (d: SimLink) => {
             const parts = d.key.split("-");
             const role = parts.slice(2, 2 + parts.length - 4).join("-");
             return ["link", role, LINK_PALETTE].join(" ");
@@ -84,7 +61,7 @@ export const onLinkEnter = (linkEnter: LinkEnterSelection): void => {
  * @param {LinkSelection} linkEnter - D3 selection of entering link elements
  */
 const onLinkEnterElementConstruction = (linkEnter: LinkSelection): void => {
-    linkEnter.append("path").attr("class", (d: NetworkLink) => {
+    linkEnter.append("path").attr("class", (d: SimLink) => {
         return [
             "inner",
             `distance-${Math.min(d.source.distance, d.target.distance)}`,
@@ -102,11 +79,9 @@ const onLinkEnterElementConstruction = (linkEnter: LinkSelection): void => {
  */
 const onLinkEnterEventBindings = (linkEnter: LinkSelection): void => {
     const handleTooltip = debounce(
-        (element: SVGGElement, d: NetworkLink, status: boolean) => {
+        (element: SVGGElement, d: SimLink, status: boolean) => {
             if (status) {
-                const textElement = element.querySelector(
-                    "text",
-                ) as SVGGElement;
+                const textElement = element.querySelector("text");
                 linkTooltip.show(d, textElement);
             } else {
                 linkTooltip.hide();
@@ -115,12 +90,12 @@ const onLinkEnterEventBindings = (linkEnter: LinkSelection): void => {
         LINK_DEBOUNCE_TIME,
     );
 
-    linkEnter.on("mouseover", function (event: MouseEvent, d: NetworkLink) {
+    linkEnter.on("mouseover", function (event: MouseEvent, d: SimLink) {
         d3.select(this).classed("selected", true);
         handleTooltip(this, d, true);
     });
 
-    linkEnter.on("mouseout", function (event: MouseEvent, d: NetworkLink) {
+    linkEnter.on("mouseout", function (event: MouseEvent, d: SimLink) {
         d3.select(this)
             .classed("selected", false)
             .transition()
@@ -142,6 +117,6 @@ export const onLinkExit = (linkExit: LinkSelection): void => {
  * Currently empty but available for future implementation
  * @param {LinkUpdateSelection} linkSelection - D3 selection of updating link elements
  */
-export const onLinkUpdate = (_linkSelection: LinkUpdateSelection): void => {
+export const onLinkUpdate = (_linkSelection: LinkSelection): void => {
     // Available for future implementation
 };

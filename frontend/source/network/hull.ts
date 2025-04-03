@@ -4,7 +4,7 @@
  * @module network/hull
  */
 
-import type { SimNode } from "./forceLayout";
+import type { SimNode } from "./data";
 import type * as d3 from "d3";
 
 export type HullGroup = SimNode[];

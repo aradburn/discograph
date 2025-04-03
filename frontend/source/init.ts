@@ -9,6 +9,8 @@ import { initTypeahead } from "./typeahead";
 import { dg } from "./dg";
 import { DiscographFsm } from "./fsm";
 import type { TreeConfig } from "./roles";
+import { debounce } from "./utils";
+import { showMessage, clearMessages } from "./messages";
 
 declare global {
     interface Window {
@@ -19,63 +21,6 @@ declare global {
 // Constants for viewport and SVG scaling
 export const VIEWPORT_SIZE_MULTIPLIER = 3.0;
 export const SVG_SCALING_MULTIPLIER = 0.8;
-
-/**
- * Clamps a value between a minimum and maximum
- */
-export const clamp = (value: number, min: number, max: number): number => {
-    return Math.max(min, Math.min(max, value));
-};
-
-/**
- * Debounces a function call
- */
-export const debounce = <T extends (...args: Parameters<T>) => void>(
-    func: T,
-    wait: number,
-): ((...args: Parameters<T>) => void) => {
-    let timeout: number | null = null;
-    return (...args: Parameters<T>) => {
-        if (timeout) window.clearTimeout(timeout);
-        timeout = window.setTimeout(() => func(...args), wait);
-    };
-};
-
-/**
- * Shows a message in the message container
- */
-export const showMessage = (message: string, type: string = "info"): void => {
-    const container = document.querySelector("#messages");
-    if (!container) return;
-
-    const messageElement = document.createElement("div");
-    messageElement.className = `alert alert-${type} alert-dismissible fade show`;
-    messageElement.setAttribute("role", "alert");
-    messageElement.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-    container.appendChild(messageElement);
-};
-
-/**
- * Clears all messages from the message container
- * @param delay - Optional delay in milliseconds before clearing messages
- */
-export const clearMessages = (delay: number = 0): void => {
-    const clear = () => {
-        const container = document.querySelector("#messages");
-        if (container) {
-            container.innerHTML = "";
-        }
-    };
-
-    if (delay > 0) {
-        window.setTimeout(clear, delay);
-    } else {
-        clear();
-    }
-};
 
 /**
  * Initializes window dimensions and event handlers
@@ -215,4 +160,8 @@ export const initApp = (): void => {
     // Initialize the Discograph Finite State Machine
     dg.fsm = new DiscographFsm();
     console.log("discograph initialized.");
+
+    // Modals start off hidden to prevent them showing on startup before CSS gets loaded.
+    const modalHelp = document.querySelector("#modal-help");
+    modalHelp.style.opacity = "1";
 };

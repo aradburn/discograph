@@ -5,24 +5,23 @@
  */
 
 import * as d3 from "d3";
+import type { SimNode, SimLink } from "./data";
 import { onHullEnter, onHullExit } from "./hull";
 import { onHaloEnter, onHaloExit } from "./halo";
 import { onNodeEnter, onNodeExit, onNodeUpdate } from "./node";
-import type { NetworkNode } from "./node";
-import type { NetworkLink } from "./link";
 import { onTextEnter, onTextExit, onTextUpdate } from "./text";
 import { onLinkEnter, onLinkExit, onLinkUpdate } from "./link";
-import { onTick, getOuterRadius } from "./tick";
+import { onTick } from "./tick";
 import { onNetworkEnd } from "./events";
-import type { DraggableNodeBase } from "./events";
 import { dg } from "../dg";
 import type { Network } from "../dg";
+import { clamp } from "../utils";
 
 /**
  * Configuration Constants
  */
 // Force configuration for nodes
-const NODE_STRENGTH = -1000; // Repulsion strength between nodes
+const NODE_STRENGTH = -800; // Repulsion strength between nodes
 const DISTANCE_MAX = 2000; // Maximum distance for force calculations
 const COLLIDE_ITERATIONS = 2; // Number of collision detection iterations
 const COLLIDE_BUFFER = 12; // Extra space around nodes for collision detection
@@ -37,63 +36,48 @@ const VELOCITY_DECAY = 0.24; // Friction coefficient for node movement
 
 // Link configuration
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const LINK_STRENGTH = 0.8; // Strength of links between nodes
+const LINK_STRENGTH = 1.8; // Strength of links between nodes
 const LINK_DISTANCE_ALIAS = 20; // Distance for alias relationships
 const LINK_DISTANCE_RELEASED_ON = 200; // Distance for "Released On" relationships
-const LINK_DISTANCE = 120; // Default link distance
+const LINK_DISTANCE = 60; // Default link distance
 const LINK_ITERATIONS = 3; // Number of iterations for link force calculation
-
-// Graph size limits
-const MAX_NODES_BEFORE_PRUNING = 600; // Maximum nodes before pruning is triggered
-const MAX_LINKS_BEFORE_PRUNING = 1800; // Maximum links before pruning is triggered
 
 let nodeStrengthMultiplier = 1.0;
 let linkStrengthMultiplier = 1.0;
 let gravStrengthMultiplier = 1.0;
 
-/**
- * Properties added to nodes by D3's force simulation
- */
-interface SimulationProps extends DraggableNodeBase {
-    vx?: number;
-    vy?: number;
-    index?: number;
-    isIntermediate?: boolean;
-    cluster?: number;
-    fixed?: boolean;
-    missing?: number;
-    hasMissing?: boolean;
-    links?: NetworkLink[];
-    pages?: unknown;
-}
-
-/**
- * Node type with simulation properties
- */
-export type SimNode = NetworkNode & SimulationProps;
-
-/**
- * Link type for force simulation
- */
-export interface SimLink
-    extends Omit<NetworkLink, "source" | "target" | "intermediate"> {
-    source: SimNode;
-    target: SimNode;
-    role: string;
-    isSpline?: boolean;
-    distance?: number;
-    intermediate?: SimNode;
-    pages?: unknown;
-}
-
-/**
- * Network type for force simulation
- */
-declare global {
-    interface DiscographCore {
-        network: Network;
-        svg_dimensions: [number, number];
+function linkDistance(d: SimLink): number {
+    if (d.role == 'Alias')
+        return LINK_DISTANCE_ALIAS;
+    if (d.role == 'Released On')
+        return LINK_DISTANCE_RELEASED_ON;
+    if (d.isSpline) {
+        return d.distance < 1 ? LINK_DISTANCE / 2 : LINK_DISTANCE / 10;
+    } else {
+        return LINK_DISTANCE;
     }
+}
+
+function nodeStrength(d: SimNode): number {
+    if (d.distance) {
+        var dist = 4 - clamp(d.distance, 0, 3);
+        return dist * NODE_STRENGTH;
+    } else if (d.isIntermediate) {
+        return NODE_STRENGTH / 10;
+    } else if (d.cluster) {
+        return 100;
+    } else {
+        return NODE_STRENGTH;
+    }
+}
+
+function gravityStrength(d: SimNode): number {
+    var dist = d.distance ? 4 - clamp(d.distance, 0, 3) : 1.0;
+    var maxDimension = Math.max(dg.svg_dimensions[0], dg.svg_dimensions[1]);
+    var scaling = dist / 10.0;
+    var radialDistance = (maxDimension - Math.max(d.x - dg.svg_dimensions[0] / 2, d.y - dg.svg_dimensions[1] / 2)) / maxDimension;
+    var g = radialDistance * scaling;
+    return g;
 }
 
 /**
@@ -102,20 +86,7 @@ declare global {
  * @returns {number} The desired distance between nodes
  */
 function calculateLinkDistance(d: SimLink): number {
-    if (d.isSpline) {
-        if (d.role === "Released On") {
-            return (LINK_DISTANCE_RELEASED_ON * linkStrengthMultiplier) / 2;
-        }
-        return d.distance && d.distance < 1
-            ? (LINK_DISTANCE * linkStrengthMultiplier) / 2
-            : (LINK_DISTANCE * linkStrengthMultiplier) / 10;
-    } else if (d.role === "Alias") {
-        return LINK_DISTANCE_ALIAS * linkStrengthMultiplier;
-    } else if (d.role === "Released On") {
-        return LINK_DISTANCE_RELEASED_ON * linkStrengthMultiplier;
-    } else {
-        return LINK_DISTANCE * linkStrengthMultiplier;
-    }
+    return linkDistance(d) * linkStrengthMultiplier;
 }
 
 /**
@@ -124,16 +95,7 @@ function calculateLinkDistance(d: SimLink): number {
  * @returns {number} The repulsion strength
  */
 function calculateNodeStrength(d: SimNode): number {
-    if (d.distance) {
-        const dist = 1; // 4 - clamp(d.distance, 0, 3);
-        return dist * NODE_STRENGTH * nodeStrengthMultiplier;
-    } else if (d.isIntermediate) {
-        return (NODE_STRENGTH * nodeStrengthMultiplier) / 10;
-    } else if (d.cluster) {
-        return 100 * nodeStrengthMultiplier;
-    } else {
-        return NODE_STRENGTH * nodeStrengthMultiplier;
-    }
+    return nodeStrength(d) * nodeStrengthMultiplier;
 }
 
 /**
@@ -142,19 +104,7 @@ function calculateNodeStrength(d: SimNode): number {
  * @returns {number} The gravity strength
  */
 function calculateGravityStrength(d: SimNode): number {
-    if (typeof d.x !== "number" || typeof d.y !== "number") {
-        return 0;
-    }
-    const maxDimension = Math.max(dg.svg_dimensions[0], dg.svg_dimensions[1]);
-    const scaling = gravStrengthMultiplier / 10.0;
-    const radialDistance =
-        (maxDimension -
-            Math.max(
-                d.x - dg.svg_dimensions[0] / 2,
-                d.y - dg.svg_dimensions[1] / 2,
-            )) /
-        maxDimension;
-    return radialDistance * scaling;
+    return gravityStrength(d) * gravStrengthMultiplier;
 }
 
 /**
@@ -164,8 +114,7 @@ export const setupForceLayout = (): void => {
     console.log("setupForceLayout");
 
     dg.network.forceLayout = d3
-        .forceSimulation<SimNode>()
-        .nodes(dg.network.pageData.nodes)
+        .forceSimulation<SimNode>(Array.from(dg.network.data.nodeMap.values()))
         .force(
             "collide",
             d3
@@ -200,7 +149,6 @@ export const setupForceLayout = (): void => {
     }
 
     nodeSlider.oninput = function (this: HTMLInputElement) {
-        nodeStrengthMultiplier = ((parseInt(this.value) - 50) * 2.0) / 10.0;
         if (dg.network.forceLayout) {
             setupChargeForce(parseInt(this.value));
             restartForceLayout(ALPHA / 10.0);
@@ -210,7 +158,7 @@ export const setupForceLayout = (): void => {
     linkSlider.oninput = function (this: HTMLInputElement) {
         if (dg.network.forceLayout) {
             setupLinkForce(parseInt(this.value));
-            restartForceLayout(ALPHA / 10.0);
+            restartForceLayout(ALPHA / 5.0);
         }
     };
 
@@ -221,16 +169,19 @@ export const setupForceLayout = (): void => {
         }
     };
 
-    setupChargeForce(60);
-    setupLinkForce(50);
-    setupGravityForce(50);
+//     setupChargeForce(70);
+//     setupLinkForce(65);
+//     setupGravityForce(70);
+//
+//     restartForceLayout(ALPHA / 10.0);
 
     console.log("dg.network.forceLayout: ", dg.network.forceLayout);
 };
 
 const setupChargeForce = (nodeStrength: number): void => {
-    nodeStrengthMultiplier = ((nodeStrength - 50) * 2.0) / 10.0;
-    dg.network.forceLayout = dg.network.forceLayout.force(
+    nodeStrengthMultiplier = ((nodeStrength - 20) * 2.0) / 5.0;
+    console.log("nodeStrengthMultiplier: ", nodeStrengthMultiplier);
+    dg.network.forceLayout.force(
         "charge",
         d3
             .forceManyBody<SimNode>()
@@ -241,26 +192,28 @@ const setupChargeForce = (nodeStrength: number): void => {
 };
 
 const setupLinkForce = (linkStrength: number): void => {
-    linkStrengthMultiplier = ((linkStrength - 50) * 2.0) / 50.0;
-    dg.network.forceLayout = dg.network.forceLayout.force(
+    linkStrengthMultiplier = ((linkStrength - 20) * 2.0) / 5.0;
+    console.log("linkStrengthMultiplier: ", linkStrengthMultiplier);
+    dg.network.forceLayout.force(
         "link",
         d3
             .forceLink<SimNode, SimLink>()
             .id((d) => d.key ?? "")
-            .links(dg.network.pageData.links)
+            .links(Array.from(dg.network.data.linkMap.values()))
             .distance(calculateLinkDistance)
             .iterations(LINK_ITERATIONS),
     );
 };
 
 const setupGravityForce = (gravityStrength: number): void => {
-    gravStrengthMultiplier = ((gravityStrength - 50) * 2.0) / 10.0;
-    dg.network.forceLayout = dg.network.forceLayout
+    gravStrengthMultiplier = ((gravityStrength - 20) * 2.0) / 5.0;
+    console.log("gravStrengthMultiplier: ", gravStrengthMultiplier);
+    dg.network.forceLayout
         .force(
             "x",
             d3
                 .forceX<SimNode>(dg.svg_dimensions[0] / 2)
-                .strength(gravityStrength),
+                .strength(calculateGravityStrength),
         )
         .force(
             "y",
@@ -277,9 +230,13 @@ const setupGravityForce = (gravityStrength: number): void => {
 export const startForceLayout = (): void => {
     console.log("Start D3 layout");
     const keyFunc = (d: SimNode | SimLink): string => ("key" in d ? d.key : "");
-    const nodeData = dg.network.pageData.nodes.filter((d) => !d.isIntermediate);
+    const nodeData = Array.from(dg.network.data.nodeMap.values()).filter(
+        (d) => !d.isIntermediate,
+    );
     console.log("nodeData: ", nodeData);
-    const linkData = dg.network.pageData.links.filter((d) => !d.isSpline);
+    const linkData = Array.from(dg.network.data.linkMap.values()).filter(
+        (d) => !d.isSpline,
+    );
     console.log("linkData: ", linkData);
 
     dg.network.selections.halo =
@@ -306,7 +263,7 @@ export const startForceLayout = (): void => {
     dg.network.selections.link =
         dg.network.selections.link?.data(linkData, keyFunc) ?? null;
 
-    const clusterNodes = dg.network.pageData.nodes.filter(
+    const clusterNodes = Array.from(dg.network.data.nodeMap.values()).filter(
         (d) => d.cluster !== undefined,
     );
     const hullGroups = Array.from(
@@ -343,10 +300,26 @@ export const startForceLayout = (): void => {
         onLinkUpdate(dg.network.selections.link);
     }
 
-    dg.network.pageData.nodes.forEach((n) => {
+    Array.from(dg.network.data.nodeMap.values()).forEach((n) => {
         n.fixed = false;
     });
     console.log("dg.network.forceLayout: ", dg.network.forceLayout);
+
+    // Restart simulation
+    console.log("Updating forceLayout");
+    // console.log("dg.network.pageData.nodes: ", dg.network.pageData.nodes);
+    dg.network.forceLayout.nodes(Array.from(dg.network.data.nodeMap.values()));
+
+    const nodeSlider = document.getElementById("nodeRange") as HTMLInputElement;
+    const linkSlider = document.getElementById("linkRange") as HTMLInputElement;
+    const gravSlider = document.getElementById("gravRange") as HTMLInputElement;
+
+    nodeSlider.value = "22";
+    linkSlider.value = "22";
+    gravSlider.value = "22";
+    setupChargeForce(nodeSlider.value);
+    setupLinkForce(linkSlider.value);
+    setupGravityForce(gravSlider.value);
 
     restartForceLayout(ALPHA);
 };
@@ -369,263 +342,6 @@ export const restartForceLayout = (alpha: number): void => {
 export const stopForceLayout = (): void => {
     if (dg.network.forceLayout) {
         dg.network.forceLayout.stop();
-    }
-};
-
-/**
- * Processes the JSON data to create nodes and links for the force layout
- * @param {Object} json - The JSON data containing nodes and links
- */
-export const processJson = (json: {
-    nodes: SimNode[];
-    links: SimLink[];
-}): void => {
-    const newNodeMap = new Map<string, SimNode>();
-    const newLinkMap = new Map<string, SimLink>();
-
-    // Setup node size
-    json.nodes.forEach((node) => {
-        node.radius = getOuterRadius(node);
-        newNodeMap.set(node.key, node);
-    });
-
-    // Setup links, add intermediate node at center of link
-    json.links.forEach((link) => {
-        const source = link.source;
-        const target = link.target;
-        if (link.role !== "Alias") {
-            const role = link.role?.toLowerCase().replace(/\s+/g, "-") ?? "";
-            const intermediateNode: SimNode = {
-                key: link.key,
-                isIntermediate: true,
-                pages: link.pages,
-                size: 0,
-                name: "",
-                type: "artist", // Default type
-                x: 0,
-                y: 0,
-                distance: 0,
-                radius: 0,
-                missing: 0,
-            };
-
-            const s2iSplineLink: SimLink = {
-                isSpline: true,
-                key: `${source.key}-${role}-[${target.key}]`,
-                pages: link.pages,
-                source: source,
-                target: intermediateNode,
-                role: role,
-            };
-
-            const i2tSplineLink: SimLink = {
-                isSpline: true,
-                key: `[${source.key}]-${role}-${target.key}`,
-                pages: link.pages,
-                source: intermediateNode,
-                target: target,
-                role: role,
-            };
-
-            link.intermediate = intermediateNode;
-            newNodeMap.set(link.key, intermediateNode);
-            newLinkMap.set(s2iSplineLink.key, s2iSplineLink);
-            newLinkMap.set(i2tSplineLink.key, i2tSplineLink);
-        }
-        newLinkMap.set(link.key, link);
-    });
-
-    // Update current lists of nodes and links
-    const nodeKeysToRemove: string[] = [];
-    Array.from(dg.network.data.nodeMap.keys()).forEach((key) => {
-        if (!newNodeMap.has(key)) {
-            nodeKeysToRemove.push(key);
-        }
-    });
-    nodeKeysToRemove.forEach((key) => {
-        dg.network.data.nodeMap.delete(key);
-    });
-
-    const linkKeysToRemove: string[] = [];
-    Array.from(dg.network.data.linkMap.keys()).forEach((key) => {
-        if (!newLinkMap.has(key)) {
-            linkKeysToRemove.push(key);
-        }
-    });
-    linkKeysToRemove.forEach((key) => {
-        dg.network.data.linkMap.delete(key);
-    });
-
-    newNodeMap.forEach((newNode, key) => {
-        if (dg.network.data.nodeMap.has(key)) {
-            const oldNode = dg.network.data.nodeMap.get(key);
-            if (oldNode) {
-                oldNode.cluster = newNode.cluster;
-                oldNode.distance = newNode.distance;
-                oldNode.links = newNode.links;
-                oldNode.missing = newNode.missing;
-                oldNode.x = dg.network.newNodeCoords[0];
-                oldNode.y = dg.network.newNodeCoords[1];
-            }
-        } else {
-            newNode.x = dg.network.newNodeCoords[0];
-            newNode.y = dg.network.newNodeCoords[1];
-            dg.network.data.nodeMap.set(key, newNode);
-        }
-    });
-
-    newLinkMap.forEach((newLink, key) => {
-        if (dg.network.data.linkMap.has(key)) {
-            const oldLink = dg.network.data.linkMap.get(key);
-            if (oldLink) {
-                oldLink.pages = newLink.pages;
-            }
-        } else {
-            const sourceNode = dg.network.data.nodeMap.get(newLink.source.key);
-            const targetNode = dg.network.data.nodeMap.get(newLink.target.key);
-            if (sourceNode && targetNode) {
-                newLink.source = sourceNode;
-                newLink.target = targetNode;
-                if (newLink.intermediate) {
-                    const intermediateNode = dg.network.data.nodeMap.get(
-                        newLink.intermediate.key,
-                    );
-                    if (intermediateNode) {
-                        newLink.intermediate = intermediateNode;
-                    }
-                }
-                dg.network.data.linkMap.set(key, newLink);
-            }
-        }
-    });
-
-    // Get some useful stats
-    const distances: number[] = [];
-    const distance_counts = [0, 0, 0, 0, 0, 0];
-    Array.from(dg.network.data.nodeMap.values()).forEach((node) => {
-        if (node.distance !== undefined) {
-            distances.push(node.distance);
-            if (node.distance < distance_counts.length) {
-                distance_counts[node.distance]++;
-            }
-        }
-    });
-    dg.network.data.maxDistance = Math.max(...distances);
-    console.log("maxDistance: ", dg.network.data.maxDistance);
-    console.log("distance_counts: ", distance_counts);
-    console.log("initial node size: ", dg.network.data.nodeMap.size);
-    console.log("initial link size: ", dg.network.data.linkMap.size);
-
-    // Prune dist==3
-    prune(3, 1);
-    prune(3, 2);
-    prune(3, 3);
-    prune(3, 4);
-    prune(3, 5);
-    prune(3, 10);
-    prune(3, 100);
-    prune(3, 1000000);
-    prune(2, 1);
-    prune(2, 2);
-    prune(2, 3);
-    prune(2, 4);
-    prune(2, 5);
-    prune(2, 10);
-    prune(2, 100);
-    prune(2, 100000);
-
-    dg.network.pageData.nodes = Array.from(dg.network.data.nodeMap.values());
-    dg.network.pageData.links = Array.from(dg.network.data.linkMap.values());
-};
-
-/**
- * Prunes the network to keep it within size limits
- * @param {number} maxDist - Maximum distance from center to keep
- * @param {number} minLinks - Minimum number of links to keep a node
- */
-const prune = (maxDist: number, minLinks: number): void => {
-    if (
-        dg.network.data.nodeMap.size > MAX_NODES_BEFORE_PRUNING ||
-        dg.network.data.linkMap.size > MAX_LINKS_BEFORE_PRUNING
-    ) {
-        const nodeKeysToPrune: string[] = [];
-        Array.from(dg.network.data.nodeMap.values()).forEach((node) => {
-            if (
-                node.distance &&
-                node.distance >= maxDist &&
-                node.links &&
-                node.links.length <= minLinks
-            ) {
-                nodeKeysToPrune.push(node.key);
-            }
-        });
-        nodeKeysToPrune.forEach((key) => {
-            dg.network.data.nodeMap.delete(key);
-        });
-        console.log("pruned nodes: ", nodeKeysToPrune.length);
-
-        const linkKeysToPrune: string[] = [];
-        const intermediateNodesToPrune: string[] = [];
-        const intermediateLinksToPrune: string[] = [];
-
-        Array.from(dg.network.data.linkMap.values()).forEach((link) => {
-            if (
-                (link.source && nodeKeysToPrune.includes(link.source.key)) ||
-                (link.target && nodeKeysToPrune.includes(link.target.key))
-            ) {
-                linkKeysToPrune.push(link.key);
-                link.source.hasMissing = true;
-                link.target.hasMissing = true;
-                link.source.missing = (link.source.missing ?? 0) + 1;
-                link.target.missing = (link.target.missing ?? 0) + 1;
-            }
-        });
-
-        linkKeysToPrune.forEach((key) => {
-            intermediateNodesToPrune.push(key);
-            dg.network.data.linkMap.delete(key);
-        });
-        console.log("pruned links: ", linkKeysToPrune.length);
-
-        intermediateNodesToPrune.forEach((key) => {
-            dg.network.data.nodeMap.delete(key);
-        });
-        console.log(
-            "pruned intermediate nodes: ",
-            intermediateNodesToPrune.length,
-        );
-
-        Array.from(dg.network.data.linkMap.values()).forEach((link) => {
-            if (
-                (link.source &&
-                    intermediateNodesToPrune.includes(link.source.key)) ||
-                (link.target &&
-                    intermediateNodesToPrune.includes(link.target.key))
-            ) {
-                intermediateLinksToPrune.push(link.key);
-                link.source.hasMissing = true;
-                link.target.hasMissing = true;
-                link.source.missing = (link.source.missing ?? 0) + 1;
-                link.target.missing = (link.target.missing ?? 0) + 1;
-            }
-        });
-
-        intermediateLinksToPrune.forEach((key) => {
-            dg.network.data.linkMap.delete(key);
-        });
-        console.log(
-            "pruned intermediate links: ",
-            intermediateLinksToPrune.length,
-        );
-
-        console.log(
-            `node size after pruning (maxDist: ${maxDist}, minLinks: ${minLinks}): `,
-            dg.network.data.nodeMap.size,
-        );
-        console.log(
-            `link size after pruning (maxDist: ${maxDist}, minLinks: ${minLinks}): `,
-            dg.network.data.linkMap.size,
-        );
     }
 };
 

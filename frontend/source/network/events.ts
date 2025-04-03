@@ -5,22 +5,11 @@
  */
 
 import { dg } from "../dg";
-import type { NetworkNode } from "./node";
 import { nodeTooltip } from "./tooltips";
 import { onTick } from "./tick";
 import { restartForceLayout, stopForceLayout } from "./forceLayout";
 import type * as d3 from "d3";
-
-export interface DraggableNodeBase {
-    dragx?: number;
-    dragy?: number;
-    x: number;
-    y: number;
-    fx?: number | null;
-    fy?: number | null;
-}
-
-export type DraggableNode = NetworkNode & DraggableNodeBase;
+import type { SimNode } from "./data";
 
 interface D3DragEventWithSource<GElement extends Element, Datum, Subject>
     extends d3.D3DragEvent<GElement, Datum, Subject> {
@@ -29,10 +18,10 @@ interface D3DragEventWithSource<GElement extends Element, Datum, Subject>
 
 /**
  * Reheat the simulation when drag starts, and fix the subject position.
- * @param {D3DragEventWithSource<SVGGElement, DraggableNode, DraggableNode>} event - The drag event object
+ * @param {D3DragEventWithSource<SVGGElement, SimNode, SimNode>} event - The drag event object
  */
 export const onDragStart = (
-    event: D3DragEventWithSource<SVGGElement, DraggableNode, DraggableNode>,
+    event: D3DragEventWithSource<SVGGElement, SimNode, SimNode>,
 ): void => {
     const node = event.subject;
     node.fx = node.x;
@@ -49,7 +38,7 @@ export const onDragStart = (
  * @param {d3.D3DragEvent<SVGGElement, DraggableNode, DraggableNode>} event - The drag event object
  */
 export const onDrag = (
-    event: d3.D3DragEvent<SVGGElement, DraggableNode, DraggableNode>,
+    event: d3.D3DragEvent<SVGGElement, SimNode, SimNode>,
 ): void => {
     const node = event.subject;
     node.fx = event.x;
@@ -69,7 +58,7 @@ export const onDrag = (
  * @param {D3DragEventWithSource<SVGGElement, DraggableNode, DraggableNode>} event - The drag event object
  */
 export const onDragEnd = (
-    event: D3DragEventWithSource<SVGGElement, DraggableNode, DraggableNode>,
+    event: D3DragEventWithSource<SVGGElement, SimNode, SimNode>,
 ): void => {
     const node = event.subject;
     if (node.dragx === node.x && node.dragy === node.y) {
@@ -101,7 +90,7 @@ export const onNetworkStart = (): void => {
  * @param {d3.Simulation<DraggableNode, undefined>} event - The completion event object
  */
 export const onNetworkEnd = (
-    event: d3.Simulation<DraggableNode, undefined>,
+    event: d3.Simulation<SimNode, undefined>,
 ): void => {
     dg.network.layers.link?.selectAll(".link").classed("noninteractive", false);
     dg.network.layers.node?.selectAll(".node").classed("noninteractive", false);

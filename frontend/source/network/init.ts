@@ -9,28 +9,12 @@ import { dg } from "../dg";
 import * as d3 from "d3";
 import { VIEWPORT_SIZE_MULTIPLIER } from "../init";
 import { hideAllTooltips } from "./tooltips";
-import type { NetworkNode } from "./node";
-import type { NetworkLink } from "./link";
-
-type NetworkSVGElement = SVGGElement | SVGSVGElement;
-// type NetworkBaseSelection = d3.Selection<
-//     NetworkSVGElement,
-//     unknown,
-//     d3.BaseType,
-//     unknown
-// >;
-
-// type NetworkLayerSelection = d3.Selection<
-//     SVGGElement,
-//     NetworkNode | NetworkLink,
-//     HTMLElement,
-//     unknown
-// >;
+import type { SimNode, SimLink } from "./data";
 
 type TransformFunction = (
     selection:
-        | d3.Selection<NetworkSVGElement, unknown, d3.BaseType, unknown>
-        | d3.Transition<NetworkSVGElement, unknown, d3.BaseType, unknown>,
+        | d3.Selection<d3.BaseType, unknown, d3.BaseType, unknown>
+        | d3.Transition<d3.BaseType, unknown, d3.BaseType, unknown>,
     transform: d3.ZoomTransform,
     point?: [number, number],
 ) => void;
@@ -45,9 +29,7 @@ type TransformFunction = (
  */
 export const initNetwork = (): void => {
     const svgElement = d3.select("#svg");
-    const root = svgElement
-        .append("g")
-        .attr("id", "networkLayer");
+    const root = svgElement.append("g").attr("id", "networkLayer");
     dg.network.layers = {
         root: root,
         halo: root.append("g").attr("id", "haloLayer"),
@@ -58,25 +40,21 @@ export const initNetwork = (): void => {
 
     dg.network.selections = {
         halo:
-            dg.network.layers.halo?.selectAll<SVGGElement, NetworkNode>(
-                ".node",
-            ) ?? null,
+            dg.network.layers.halo?.selectAll<SVGGElement, SimNode>(".node") ??
+            null,
         hull:
-            dg.network.layers.halo?.selectAll<SVGGElement, NetworkNode[]>(
+            dg.network.layers.halo?.selectAll<SVGGElement, SimNode[]>(
                 ".hull",
             ) ?? null,
         link:
-            dg.network.layers.link?.selectAll<SVGGElement, NetworkLink>(
-                ".link",
-            ) ?? null,
+            dg.network.layers.link?.selectAll<SVGGElement, SimLink>(".link") ??
+            null,
         node:
-            dg.network.layers.node?.selectAll<SVGGElement, NetworkNode>(
-                ".node",
-            ) ?? null,
+            dg.network.layers.node?.selectAll<SVGGElement, SimNode>(".node") ??
+            null,
         text:
-            dg.network.layers.text?.selectAll<SVGGElement, NetworkNode>(
-                ".node",
-            ) ?? null,
+            dg.network.layers.text?.selectAll<SVGGElement, SimNode>(".node") ??
+            null,
     };
 
     dg.network.zoom = d3
@@ -114,7 +92,7 @@ export const initNetwork = (): void => {
  * Uses the current zoom state to calculate the proper inversion for smooth animation.
  */
 export const resetNetworkTransform = (): void => {
-    const svgElement: NetworkBaseSelection = d3.select("#svg");
+    const svgElement = d3.select("#svg");
     const initialTransform = d3.zoomIdentity
         .scale(VIEWPORT_SIZE_MULTIPLIER)
         .translate(

@@ -4,31 +4,15 @@
  */
 
 import * as d3 from "d3";
-import type { SimNode, SimLink } from "./network/forceLayout";
-import type { NetworkNode } from "./network/node";
-import type { NetworkLink } from "./network/link";
+import type {
+    NodeKey,
+    LinkKey,
+    SimData,
+    SimNode,
+    SimLink,
+} from "./network/data";
+import type { Relations, ArcData } from "./relations";
 import type { DiscographFsm } from "./fsm";
-
-/**
- * Core network data structure
- */
-interface NetworkData {
-    json: { center: { key: string } } | null;
-    nodeMap: Map<string, SimNode>;
-    linkMap: Map<string, SimLink>;
-    maxDistance: number;
-    pageCount: number;
-}
-
-/**
- * Current page state and data
- */
-interface PageData {
-    currentPage: number;
-    links: SimLink[];
-    nodes: SimNode[];
-    selectedNodeKey: string | null;
-}
 
 /**
  * D3 selections for network visualization elements
@@ -45,49 +29,11 @@ interface NetworkSelections {
  * SVG layer containers for network visualization
  */
 interface NetworkLayers {
-    root: d3.Selection<SVGGElement, SimNode | SimLink, SVGGElement, unknown> | null;
-    halo: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown> | null;
-    text: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown> | null;
-    node: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown> | null;
-    link: d3.Selection<SVGGElement, SimLink, SVGGElement, unknown> | null;
-}
-
-/**
- * Data structure for individual relations
- */
-interface RelationData {
-    year: number;
-    category: string;
-    role: string;
-}
-
-/**
- * Collection of relation data
- */
-interface RelationsData {
-    results: RelationData[];
-}
-
-/**
- * SVG layer containers for relations visualization
- */
-interface RelationsLayers {
-    root: d3.Selection<
-        SVGGElement,
-        NetworkNode | NetworkLink,
-        HTMLElement,
-        unknown
-    > | null;
-}
-
-/**
- * Relations state and functionality
- */
-export interface Relations {
-    data: RelationsData;
-    byYear: d3.InternMap<number, d3.InternMap<string, RelationData[]>>;
-    byRole: d3.InternMap<string, number>;
-    layers: RelationsLayers;
+    root: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null;
+    halo: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null;
+    text: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null;
+    node: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null;
+    link: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null;
 }
 
 /**
@@ -109,24 +55,13 @@ export interface Network {
     /** Zoom behavior */
     zoom: d3.ZoomBehavior<SVGGElement, unknown> | null;
     /** Core data storage for the network */
-    data: NetworkData;
+    data: SimData;
     /** Current page state and selections */
-    pageData: PageData;
+    // pageData: PageData;
     /** D3 selections for various visual elements */
     selections: NetworkSelections;
     /** SVG layer containers for different visual elements */
     layers: NetworkLayers;
-}
-
-/**
- * Arc data type for relations visualization
- */
-interface ArcData {
-    startAngle: number;
-    endAngle: number;
-    innerRadius: number;
-    outerRadius: number;
-    padAngle?: number;
 }
 
 /**
@@ -139,12 +74,14 @@ export interface DiscographCore {
     debug: boolean;
     /** Device pixel ratio */
     dpr: number;
-    /** Container dimensions [width, height] */
+    /** SVG container dimensions [width, height] */
     dimensions: [number, number];
     /** SVG dimensions [width, height] */
     svg_dimensions: [number, number];
     /** Network state and functionality */
     network: Network;
+    /** Currently selected node key */
+    selectedNodeKey: NodeKey;
     /** Relations state and functionality */
     relations: Relations;
     /** Finite state machine instance */
@@ -172,18 +109,38 @@ export const dg: DiscographCore = {
         newNodeCoords: [0, 0],
         zoom: null,
         data: {
-            json: null,
-            nodeMap: new Map(),
-            linkMap: new Map(),
+            //             nodes: [],
+            //             links: [],
+            center: {
+                x: 0,
+                y: 0,
+                type: "artist",
+                key: "",
+                name: "",
+                size: 0,
+                missing: 0,
+                hasMissing: false,
+                distance: 0,
+                radius: 0,
+                lastClickTime: 0,
+                lastTouchTime: 0,
+                links: [],
+                cluster: 0,
+                fixed: false,
+                isIntermediate: false,
+            },
+            //             pageCount: 0,
+            nodeMap: new Map<NodeKey, SimNode>(),
+            linkMap: new Map<LinkKey, SimLink>(),
             maxDistance: 0,
-            pageCount: 1,
-        },
-        pageData: {
-            currentPage: 1,
-            links: [],
-            nodes: [],
-            selectedNodeKey: null,
-        },
+            //             json: null,
+        } as SimData,
+        // pageData: {
+        //     currentPage: 1,
+        //     links: [],
+        //     nodes: [],
+        //     selectedNodeKey: null,
+        // },
         selections: {
             halo: null,
             hull: null,
@@ -199,6 +156,7 @@ export const dg: DiscographCore = {
             link: null,
         },
     },
+    selectedNodeKey: null,
     relations: {
         data: {
             results: [],

@@ -6,18 +6,16 @@
  */
 
 import * as d3 from "d3";
-import type { Selection, BaseType, EnterElement } from "d3";
 import { symbol, symbolCross, now } from "d3";
 
-import { debounce } from "../init";
+import { debounce } from "../utils";
 import { getNodeColorClass } from "../color";
 import { dg } from "../dg";
 import { onDragStart, onDragEnd, onDrag, RequestNetworkEvent } from "./events";
 import { hideAllTooltips } from "./tooltips";
-import type { NetworkLink } from "./link";
-import { getOuterRadius, getInnerRadius } from "./tick";
 import { SelectEntityEvent } from "./events";
 import { nodeTooltip } from "./tooltips";
+import type { SimNode } from "./data";
 
 // Configuration Constants
 /**
@@ -28,48 +26,66 @@ import { nodeTooltip } from "./tooltips";
  * @const {string} NODE_LABEL_PALETTE - Color palette identifier for label nodes
  */
 
+// Constants
+export const NODE_INNER_RADIUS = 8;
+export const NODE_OUTER_RADIUS = 11;
 const NODE_DEBOUNCE_TIME = 250;
-const NODE_OUT_TRANSITION_TIME = 500;
-const NODE_UPDATE_TRANSITION_TIME = 5000;
+const _NODE_OUT_TRANSITION_TIME = 500;
+const _NODE_UPDATE_TRANSITION_TIME = 5000;
 const NODE_ARTIST_PALETTE = "Palette3";
 const NODE_LABEL_PALETTE = "Palette4";
 
-export interface BaseNode {
-    key: string;
-    name: string;
-    size: number;
-    missing?: number;
-    hasMissing?: boolean;
-    lastClickTime?: number;
-    lastTouchTime?: number;
-    x: number;
-    y: number;
-    distance: number;
-    radius: number;
-    links?: NetworkLink[];
-    cluster?: number;
-    fixed?: boolean;
-    isIntermediate?: boolean;
-    pages?: unknown;
-}
-
-export interface ArtistNode extends BaseNode {
-    type: "artist";
-}
-
-export interface LabelNode extends BaseNode {
-    type: "label";
-}
-
-export type NetworkNode = ArtistNode | LabelNode;
-
-type NodeSelection = Selection<SVGGElement, NetworkNode, BaseType, unknown>;
-type NodeEnterSelection = Selection<
-    EnterElement,
-    NetworkNode,
-    BaseType,
+type NodeSelection = d3.Selection<SVGGElement, SimNode, d3.BaseType, unknown>;
+type NodeEnterSelection = d3.Selection<
+    d3.EnterElement,
+    SimNode,
+    d3.BaseType,
     unknown
 >;
+
+/**
+ * Calculates the base radius for a node based on its properties
+ * @param {number} size - Size of the node
+ * @param {number} distance - Distance of the node from the center node
+ * @param {number} numLinks - Number of links associated with the node
+ * @param {number} cluster - Indicates if the node is part of a cluster
+ * @returns {number} - Calculated radius for the node
+ */
+export const getRadius = (
+    size: number,
+    distance: number,
+    numLinks: number,
+    cluster: number | undefined,
+): number => {
+    const boost1 = distance === 0 ? 10 : distance === 1 ? 5 : 0;
+    const boost2 = numLinks >= 20 ? 10 : numLinks >= 10 ? 5 : 0;
+    const alias = cluster !== undefined ? 2 : 1;
+    return Math.round((Math.sqrt(size) * 2 + boost1 + boost2) / alias);
+};
+
+/**
+ * Calculates the outer radius of a node
+ * @param {SimNode} d - Node data
+ * @returns {number} - Outer radius value
+ */
+export const getOuterRadius = (d: SimNode): number => {
+    return (
+        NODE_OUTER_RADIUS +
+        getRadius(d.size, d.distance ?? 0, (d.links ?? []).length, d.cluster)
+    );
+};
+
+/**
+ * Calculates the inner radius of a node
+ * @param {SimNode} d - Node data
+ * @returns {number} - Inner radius value
+ */
+export const getInnerRadius = (d: SimNode): number => {
+    return (
+        NODE_INNER_RADIUS +
+        getRadius(d.size, d.distance ?? 0, (d.links ?? []).length, d.cluster)
+    );
+};
 
 /**
  * Handles the enter phase for new nodes in the D3 update pattern
@@ -92,7 +108,7 @@ export const onNodeEnter = (nodeEnter: NodeEnterSelection): void => {
         })
         .call(
             d3
-                .drag<SVGGElement, NetworkNode>()
+                .drag<SVGGElement, SimNode>()
                 .on("start", onDragStart)
                 .on("drag", onDrag)
                 .on("end", onDragEnd),
@@ -179,13 +195,13 @@ const onNodeEnterElementConstruction = (nodeEnter: NodeSelection): void => {
  */
 const onNodeEnterEventBindings = (nodeEnter: NodeSelection): void => {
     const debounceToolTip = debounce(
-        (self: SVGGElement, d: NetworkNode, status: boolean) => {
+        (self: SVGGElement, d: SimNode, status: boolean) => {
             if (status) {
                 nodeTooltip.show(d, self);
                 // Hide after 5 seconds
-                setTimeout(() => {
-                    hideAllTooltips();
-                }, 5000);
+//                 setTimeout(() => {
+//                     hideAllTooltips();
+//                 }, 5000);
             } else {
                 nodeTooltip.hide();
             }
@@ -194,25 +210,25 @@ const onNodeEnterEventBindings = (nodeEnter: NodeSelection): void => {
     );
 
     nodeEnter
-        .on("mouseover", (event: MouseEvent, d: NetworkNode) =>
+        .on("mouseover", (event: MouseEvent, d: SimNode) =>
             onNodeMouseOver(event, d),
         )
         .on(
             "mouseenter",
-            function (this: SVGGElement, event: MouseEvent, d: NetworkNode) {
+            function (this: SVGGElement, event: MouseEvent, d: SimNode) {
                 debounceToolTip(this, d, true);
             },
         )
-        .on("mouseleave", (event: MouseEvent, d: NetworkNode) => {
+        .on("mouseleave", (_event: MouseEvent, _d: SimNode) => {
             nodeTooltip.hide();
         })
-        .on("mousedown", (event: MouseEvent, d: NetworkNode) =>
+        .on("mousedown", (event: MouseEvent, d: SimNode) =>
             onNodeMouseDown(event, d),
         )
-        .on("dblclick", (event: MouseEvent, d: NetworkNode) =>
+        .on("dblclick", (event: MouseEvent, d: SimNode) =>
             onNodeMouseDoubleClick(event, d),
         )
-        .on("touchstart", (event: TouchEvent, d: NetworkNode) =>
+        .on("touchstart", (event: TouchEvent, d: SimNode) =>
             onNodeTouchStart(event, d),
         );
 };
@@ -230,20 +246,16 @@ export const onNodeExit = (nodeExit: NodeSelection): void => {
  * @param {NodeSelection} nodeUpdate - D3 selection of updating nodes
  */
 export const onNodeUpdate = (nodeUpdate: NodeSelection): void => {
+    nodeUpdate.selectAll<SVGGElement, SimNode>(".outer").attr("class", (d) => {
+        const classes = ["outer", getNodeColorClass(d)];
+        return classes.join(" ");
+    });
+    nodeUpdate.selectAll<SVGGElement, SimNode>(".inner").attr("class", (d) => {
+        const classes = ["inner", getNodeColorClass(d)];
+        return classes.join(" ");
+    });
     nodeUpdate
-        .selectAll<SVGGElement, NetworkNode>(".outer")
-        .attr("class", (d) => {
-            const classes = ["outer", getNodeColorClass(d)];
-            return classes.join(" ");
-        });
-    nodeUpdate
-        .selectAll<SVGGElement, NetworkNode>(".inner")
-        .attr("class", (d) => {
-            const classes = ["inner", getNodeColorClass(d)];
-            return classes.join(" ");
-        });
-    nodeUpdate
-        .selectAll<SVGGElement, NetworkNode>(".more")
+        .selectAll<SVGGElement, SimNode>(".more")
         .style("opacity", (d) => (d.missing > 0 ? 1 : 0));
 };
 
@@ -254,22 +266,22 @@ export const onNodeUpdate = (nodeUpdate: NodeSelection): void => {
 /**
  * Handles mouse over events on nodes
  * @param {MouseEvent} event - DOM event object
- * @param {NetworkNode} d - Node data
+ * @param {SimNode} d - Node data
  * Raises the hovered node to the top of the visualization
  */
-export const onNodeMouseOver = (event: MouseEvent, d: NetworkNode): void => {
-    const debounceHandler = debounce((self: unknown, d: NetworkNode) => {
+export const onNodeMouseOver = (event: MouseEvent, d: SimNode): void => {
+    const debounceHandler = debounce((_self: unknown, _d: SimNode) => {
         //console.log("node: ", d);
     }, NODE_DEBOUNCE_TIME);
 
     debounceHandler(this, d);
 
     dg.network.layers.node
-        ?.selectAll<SVGGElement, NetworkNode>(".node")
+        ?.selectAll<SVGGElement, SimNode>(".node")
         .filter((n) => n.key === d.key)
         .raise();
     dg.network.layers.text
-        ?.selectAll<SVGGElement, NetworkNode>(".node")
+        ?.selectAll<SVGGElement, SimNode>(".node")
         .filter((n) => n.key === d.key)
         .raise();
 };
@@ -277,10 +289,10 @@ export const onNodeMouseOver = (event: MouseEvent, d: NetworkNode): void => {
 /**
  * Handles mouse down events on nodes
  * @param {MouseEvent} event - DOM event object
- * @param {NetworkNode} d - Node data
+ * @param {SimNode} d - Node data
  * Implements single/double click timing logic for node selection and network updates
  */
-export const onNodeMouseDown = (event: MouseEvent, d: NetworkNode): void => {
+export const onNodeMouseDown = (event: MouseEvent, d: SimNode): void => {
     const thisTime = now();
     const lastTime = d.lastClickTime;
     d.lastClickTime = thisTime;
@@ -295,13 +307,10 @@ export const onNodeMouseDown = (event: MouseEvent, d: NetworkNode): void => {
 /**
  * Handles double click events on nodes
  * @param {MouseEvent} event - DOM event object
- * @param {NetworkNode} d - Node data
+ * @param {SimNode} d - Node data
  * Triggers network update request and prevents event propagation
  */
-export const onNodeMouseDoubleClick = (
-    event: MouseEvent,
-    d: NetworkNode,
-): void => {
+export const onNodeMouseDoubleClick = (event: MouseEvent, d: SimNode): void => {
     hideAllTooltips();
     window.dispatchEvent(new RequestNetworkEvent(d.key, true));
     event.stopPropagation();
@@ -310,10 +319,10 @@ export const onNodeMouseDoubleClick = (
 /**
  * Handles touch events on nodes
  * @param {TouchEvent} event - DOM event object
- * @param {NetworkNode} d - Node data
+ * @param {SimNode} d - Node data
  * Implements touch timing logic similar to mouse events
  */
-export const onNodeTouchStart = (event: TouchEvent, d: NetworkNode): void => {
+export const onNodeTouchStart = (event: TouchEvent, d: SimNode): void => {
     const thisTime = Date.now();
     const lastTime = d.lastTouchTime;
     d.lastTouchTime = thisTime;

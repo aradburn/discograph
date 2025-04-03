@@ -4,8 +4,7 @@
  */
 
 import { Tooltip } from "bootstrap";
-import type { NetworkNode } from "./node";
-import type { NetworkLink } from "./link";
+import type { SimNode, SimLink } from "./data";
 
 interface TooltipOptions {
     placement?: "top" | "bottom" | "left" | "right";
@@ -17,7 +16,7 @@ interface TooltipOptions {
 /**
  * Manages dynamic tooltips for network elements using Bootstrap's Tooltip
  */
-export class TooltipManager<T extends NetworkNode | NetworkLink> {
+export class TooltipManager<T extends SimNode | SimLink> {
     private tooltip: Tooltip | null = null;
     private element: Element | null = null;
     private readonly options: TooltipOptions;
@@ -31,10 +30,9 @@ export class TooltipManager<T extends NetworkNode | NetworkLink> {
     constructor(contentFn: (data: T) => string, options: TooltipOptions = {}) {
         this.contentFn = contentFn;
         this.options = {
-            placement: "top",
-            container: "body",
-            delay: { show: 200, hide: 100 },
-            offset: [0, 0],
+//             container: "body",
+//             delay: { show: 200, hide: 100 },
+//             offset: [0, 0],
             ...options,
         };
     }
@@ -48,18 +46,28 @@ export class TooltipManager<T extends NetworkNode | NetworkLink> {
         this.hide(); // Clean up any existing tooltip
 
         // Create temporary container for the tooltip content
-        const container = document.createElement("div");
-        container.innerHTML = this.contentFn(data);
+//         const container = document.createElement("div");
+//         container.innerHTML = this.contentFn(data);
 
         // Initialize new tooltip
         this.element = element;
         this.tooltip = new Tooltip(element, {
             ...this.options,
-            title: container.innerHTML,
-            html: true,
+            template: '<div class="tooltip-inner"></div>',
+            title: this.contentFn(data),
+//             title: container.innerHTML,
+//             html: true,
         });
 
+
+        // Set tooltip content
+//         this.tooltip.setContent({
+//             '.tooltip-inner': this.contentFn(data),
+//         });
+
         this.tooltip.show();
+        console.log("this.tooltip:", this.tooltip);
+
     }
 
     /**
@@ -92,16 +100,19 @@ export class TooltipManager<T extends NetworkNode | NetworkLink> {
 }
 
 // Create tooltip managers for nodes and links
-export const nodeTooltip = new TooltipManager<NetworkNode>(
+export const nodeTooltip = new TooltipManager<SimNode>(
     (node) => `<span>${node.name}</span>`,
     {
         placement: "bottom",
-        offset: [-20, 0],
-        delay: { show: 200, hide: 100 },
+        customClass: "d3-node-tooltip",
+        html: true,
+        offset: [0, 0],
+        delay: { show: 100, hide: 100 },
+        trigger: "manual",
     },
 );
 
-export const linkTooltip = new TooltipManager<NetworkLink>(
+export const linkTooltip = new TooltipManager<SimLink>(
     (link) => `
     <div>${link.source.name}</div>
     <div>${link.role}</div>
@@ -109,8 +120,11 @@ export const linkTooltip = new TooltipManager<NetworkLink>(
   `,
     {
         placement: "top",
-        offset: [20, 0],
-        delay: { show: 200, hide: 100 },
+        customClass: "d3-link-tooltip",
+        html: true,
+        offset: [0, 0],
+        delay: { show: 100, hide: 100 },
+        trigger: "manual",
     },
 );
 

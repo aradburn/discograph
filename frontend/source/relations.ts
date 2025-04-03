@@ -7,53 +7,50 @@
 
 import * as d3 from "d3";
 import { dg } from "./dg";
-import type { NetworkNode } from "./network/node";
-import type { NetworkLink } from "./network/link";
-import type { Relations } from "./dg";
 
+/**
+ * Data structure for individual relations
+ */
 interface RelationData {
     year: number;
     category: string;
     role: string;
 }
 
-interface RelationsData {
+/**
+ * Collection of relation data
+ */
+export interface RelationsData {
     results: RelationData[];
 }
 
-interface ExtendedRelations {
+/**
+ * SVG layer containers for relations visualization
+ */
+export interface RelationsLayers {
+    root: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null;
+}
+
+/**
+ * Relations state and functionality
+ */
+export interface Relations {
     data: RelationsData;
     byYear: d3.InternMap<number, d3.InternMap<string, RelationData[]>>;
     byRole: d3.InternMap<string, number>;
-    layers: {
-        root: d3.Selection<
-            SVGGElement,
-            NetworkNode | NetworkLink,
-            HTMLElement,
-            unknown
-        >;
-    };
+    layers: RelationsLayers;
 }
 
-declare module "./dg" {
-    interface DiscographCore {
-        relations: ExtendedRelations;
-    }
-}
-
-declare global {
-    interface Window {
-        relations: Relations;
-    }
-}
-
-interface ArcDatum {
+/**
+ * Arc data type for relations visualization
+ */
+export interface ArcData {
     role: string;
     count: number;
-    outerRadius: number;
     startAngle: number;
     endAngle: number;
     innerRadius: number;
+    outerRadius: number;
     padAngle?: number;
 }
 
@@ -63,14 +60,7 @@ interface ArcDatum {
  */
 export function initRelations(): void {
     const svgElement = d3.select("#svg");
-    const root = svgElement
-        .append("g")
-        .attr("id", "relationsLayer") as d3.Selection<
-        SVGGElement,
-        NetworkNode | NetworkLink,
-        HTMLElement,
-        unknown
-    >;
+    const root = svgElement.append("g").attr("id", "relationsLayer");
     dg.relations.layers.root = root;
 
     // Zoom functionality commented out for now
@@ -119,7 +109,7 @@ export function setRelationsData(data: RelationsData): void {
 export function createRadialChart(): void {
     console.log("createRadialChart()");
 
-    const textAnchor = (_d: ArcDatum, i: number): "start" | "end" => {
+    const textAnchor = (_d: ArcData, i: number): "start" | "end" => {
         const angle = (i + 0.5) / numBars;
         return angle < 0.5 ? "start" : "end";
     };
@@ -139,7 +129,7 @@ export function createRadialChart(): void {
         .exponent(0.25);
     const numBars = data.size;
 
-    const transform = (d: ArcDatum, i: number): string => {
+    const transform = (d: ArcData, i: number): string => {
         console.log("d: ", d);
         console.log("i: ", i);
         const hypotenuse = barScale(d.count) + 5;
@@ -160,7 +150,7 @@ export function createRadialChart(): void {
     initRelations();
 
     const arc = d3
-        .arc<ArcDatum>()
+        .arc<ArcData>()
         .startAngle((_d, i) => (i * 2 * Math.PI) / numBars)
         .endAngle((_d, i) => ((i + 1) * 2 * Math.PI) / numBars)
         .innerRadius(0)
@@ -186,7 +176,7 @@ export function createRadialChart(): void {
     }));
 
     const segments = radialGroup
-        .selectAll<SVGGElement, ArcDatum>("g")
+        .selectAll<SVGGElement, ArcData>("g")
         .data(arcData)
         .enter()
         .append("g")

@@ -4,13 +4,13 @@
  * @module network/halo
  */
 
-import type { NetworkNode } from "./node";
-import { getOuterRadius } from "./tick";
+import type { SimNode } from "./data";
+import { getOuterRadius } from "./node";
 import type * as d3 from "d3";
 
 type HaloSelection = d3.Selection<
     d3.EnterElement | d3.BaseType,
-    NetworkNode,
+    SimNode,
     d3.BaseType,
     unknown
 >;
@@ -29,8 +29,8 @@ type HaloSelection = d3.Selection<
 export const onHaloEnter = (haloEnter: HaloSelection): void => {
     const haloGroup = haloEnter
         .append("g")
-        .attr("id", (d: NetworkNode) => d.key)
-        .attr("class", (d: NetworkNode) => {
+        .attr("id", (d: SimNode) => d.key)
+        .attr("class", (d: SimNode) => {
             const classes = ["node", d.key.split("-")[0]];
             return classes.join(" ");
         });
@@ -38,7 +38,7 @@ export const onHaloEnter = (haloEnter: HaloSelection): void => {
     haloGroup
         .append("circle")
         .attr("class", "halo")
-        .attr("r", (d: NetworkNode) => getOuterRadius(d) + 40);
+        .attr("r", (d: SimNode) => getOuterRadius(d) + 40);
 };
 
 /**

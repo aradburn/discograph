@@ -1,25 +1,4 @@
-/**
- * Interfaces for node data structures
- */
-interface BaseNode {
-    type: "artist" | "label";
-    distance: number;
-}
-
-interface ArtistNode extends BaseNode {
-    type: "artist";
-}
-
-interface LabelNode extends BaseNode {
-    type: "label";
-}
-
-type Node = ArtistNode | LabelNode;
-
-interface Link {
-    source: Node;
-    target: Node;
-}
+import type { SimNode, SimLink } from "./network/data";
 
 /**
  * Clamps a number between min and max values.
@@ -36,7 +15,7 @@ export const clamp = (num: number, min: number, max: number): number =>
  * @param d - The node data object
  * @returns CSS class name for the node's color
  */
-export const getNodeColorClass = (d: Node): string => {
+export const getNodeColorClass = (d: SimNode): string => {
     return d.type === "artist"
         ? getArtistNodeColorClass(d)
         : getLabelNodeColorClass(d);
@@ -47,9 +26,10 @@ export const getNodeColorClass = (d: Node): string => {
  * @param d - The artist node data object
  * @returns CSS class name in the format 'color-X' where X is a number from 0-8
  */
-const getArtistNodeColorClass = (d: ArtistNode): string => {
-    const index = clamp(d.distance + 1, 0, 8);
-    return `color-${index}`;
+const getArtistNodeColorClass = (d: SimNode): string => {
+    const index = clamp(d.distance, 0, 8) + 1;
+    const clampedIndex = clamp(index, 0, 8);
+    return `color-${clampedIndex}`;
 };
 
 /**
@@ -57,9 +37,10 @@ const getArtistNodeColorClass = (d: ArtistNode): string => {
  * @param d - The label node data object
  * @returns CSS class name in the format 'color-X' where X is a number from 0-8
  */
-const getLabelNodeColorClass = (d: LabelNode): string => {
-    const index = clamp(d.distance + 2, 0, 8);
-    return `color-${index}`;
+const getLabelNodeColorClass = (d: SimNode): string => {
+    const index = clamp(d.distance, 0, 8) + 2;
+    const clampedIndex = clamp(index, 0, 8);
+    return `color-${clampedIndex}`;
 };
 
 /**
@@ -68,7 +49,7 @@ const getLabelNodeColorClass = (d: LabelNode): string => {
  * @param d - The link data object
  * @returns CSS class name in the format 'color-X' where X is a number from 0-8
  */
-export const getLinkColorClass = (d: Link): string => {
+export const getLinkColorClass = (d: SimLink): string => {
     let distance = Math.min(d.source.distance, d.target.distance);
     distance = distance === 0 ? 2 : 5;
     const index = clamp(distance, 0, 8);
