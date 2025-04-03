@@ -10,6 +10,8 @@ import {
     startForceLayout,
     restartForceLayout,
     stopForceLayout,
+    displayForceLayout,
+    setupForceSliders,
 } from "./network/forceLayout";
 import { debounce } from "./utils";
 import type {
@@ -566,6 +568,13 @@ export const DiscographFsm = window.machina.Fsm.extend({
         console.log("received-network startForceLayout");
         startForceLayout();
 
+        console.log("received-network displayForceLayout");
+        displayForceLayout();
+
+        setupForceSliders();
+
+        restartForceLayout(ALPHA);
+
         this.handle("select-entity", networkData.center.key, false, false);
     },
 
@@ -677,7 +686,7 @@ export const DiscographFsm = window.machina.Fsm.extend({
 
     selectEntity: function (
         this: FSMInstance,
-        entityKey: string | null,
+        entityKey: NodeKey | null,
         fixed: boolean,
     ) {
         console.log("selectEntity", entityKey, fixed);
@@ -689,7 +698,10 @@ export const DiscographFsm = window.machina.Fsm.extend({
 
         if (entityKey !== null) {
             const root = dg.network.layers.root;
-            if (!root) return;
+            if (!root) {
+                console.log("Network root not found");
+                return;
+            }
 
             nodeOn = root.selectAll<SVGGElement, SimNode>(
                 "g" + "#" + entityKey,
@@ -699,7 +711,10 @@ export const DiscographFsm = window.machina.Fsm.extend({
             );
 
             const nodeData = nodeOn.datum();
-            if (!nodeData) return;
+            if (!nodeData) {
+                console.log("nodeData not found");
+                return;
+            }
 
             console.log("nodeData: ", nodeData);
             const linkKeys = nodeData.links.map((l) => l.key);
@@ -713,7 +728,11 @@ export const DiscographFsm = window.machina.Fsm.extend({
             );
 
             const node = dg.network.data.nodeMap.get(entityKey);
-            if (!node) return;
+            if (!node) {
+                console.log("node not found");
+                return;
+            }
+            console.log("new selected node: ", node);
 
             const [, id] = node.key.split("-");
             const url = `http://discogs.com/${node.type}/${id}`;
@@ -723,6 +742,8 @@ export const DiscographFsm = window.machina.Fsm.extend({
             $("#navbar-title").text(node.name);
             nodeOn.raise();
             nodeOn.classed("selected", true);
+            console.log("nodeOn: ", nodeOn);
+
             if (fixed) {
                 //nodeOn.each(function(d) { d.fixed = true; });
                 node.fixed = true;
@@ -730,7 +751,10 @@ export const DiscographFsm = window.machina.Fsm.extend({
             // linkOn.classed('selected', true);
         } else {
             const root = dg.network.layers.root;
-            if (!root) return;
+            if (!root) {
+                console.log("entityKey is null, Network root not found");
+                return;
+            }
 
             nodeOff = root.selectAll<SVGGElement, SimNode>("g.node");
             _linkOff = dg.network.selections.link;
@@ -742,6 +766,7 @@ export const DiscographFsm = window.machina.Fsm.extend({
             });
         }
         if (_linkOff) {
+            console.log("selected link off");
             _linkOff.classed("selected", false);
         }
     },

@@ -21,6 +21,9 @@ import { clamp } from "../utils";
  */
 // Force configuration for nodes
 const NODE_STRENGTH = -800; // Repulsion strength between nodes
+const NODE_STRENGTH_CLUSTER = 100; // Repulsion strength between cluster nodes
+const NODE_STRENGTH_INTERMEDIATE = NODE_STRENGTH / 2; // Repulsion strength for intermediate nodes
+
 const DISTANCE_MAX = 2000; // Maximum distance for force calculations
 const COLLIDE_ITERATIONS = 2; // Number of collision detection iterations
 const COLLIDE_BUFFER = 12; // Extra space around nodes for collision detection
@@ -56,13 +59,10 @@ function linkDistance(d: SimLink): number {
 }
 
 function nodeStrength(d: SimNode): number {
+    if (d.isIntermediate) return NODE_STRENGTH_INTERMEDIATE;
+    if (d.cluster) return NODE_STRENGTH_CLUSTER;
     if (d.distance) {
-        var dist = 4 - clamp(d.distance, 0, 3);
-        return dist * NODE_STRENGTH;
-    } else if (d.isIntermediate) {
-        return NODE_STRENGTH / 10;
-    } else if (d.cluster) {
-        return 100;
+        return (4 - clamp(d.distance, 0, 3)) * NODE_STRENGTH;
     } else {
         return NODE_STRENGTH;
     }
@@ -113,8 +113,8 @@ function calculateGravityStrength(d: SimNode): number {
 /**
  * Sets up the initial force simulation with basic forces
  */
-export const setupForceLayout = (): void => {
-    console.log("setupForceLayout");
+export const initForceLayout = (): void => {
+    console.log("initForceLayout");
 
     dg.network.forceLayout = d3
         .forceSimulation<SimNode>(Array.from(dg.network.data.nodeMap.values()))
@@ -142,6 +142,10 @@ export const setupForceLayout = (): void => {
         })
         .stop();
 
+    console.log("init dg.network.forceLayout: ", dg.network.forceLayout);
+};
+
+export const initForceSliders = (): void => {
     const nodeSlider = document.getElementById("nodeRange") as HTMLInputElement;
     const linkSlider = document.getElementById("linkRange") as HTMLInputElement;
     const gravSlider = document.getElementById("gravRange") as HTMLInputElement;
@@ -171,18 +175,10 @@ export const setupForceLayout = (): void => {
             restartForceLayout(ALPHA / 10.0);
         }
     };
-
-    //     setupChargeForce(70);
-    //     setupLinkForce(65);
-    //     setupGravityForce(70);
-    //
-    //     restartForceLayout(ALPHA / 10.0);
-
-    console.log("dg.network.forceLayout: ", dg.network.forceLayout);
 };
 
 const setupChargeForce = (nodeStrength: number): void => {
-    nodeStrengthMultiplier = ((nodeStrength - 20) * 2.0) / 5.0;
+    nodeStrengthMultiplier = (nodeStrength / 20.0) + 0.4;
     console.log("nodeStrengthMultiplier: ", nodeStrengthMultiplier);
     dg.network.forceLayout.force(
         "charge",
@@ -195,7 +191,7 @@ const setupChargeForce = (nodeStrength: number): void => {
 };
 
 const setupLinkForce = (linkStrength: number): void => {
-    linkStrengthMultiplier = ((linkStrength - 20) * 2.0) / 5.0;
+    linkStrengthMultiplier = linkStrength / 20.0;
     console.log("linkStrengthMultiplier: ", linkStrengthMultiplier);
     dg.network.forceLayout.force(
         "link",
@@ -209,7 +205,7 @@ const setupLinkForce = (linkStrength: number): void => {
 };
 
 const setupGravityForce = (gravityStrength: number): void => {
-    gravStrengthMultiplier = ((gravityStrength - 20) * 2.0) / 5.0;
+    gravStrengthMultiplier = gravityStrength / 10.0;
     console.log("gravStrengthMultiplier: ", gravStrengthMultiplier);
     dg.network.forceLayout
         .force(
@@ -226,20 +222,40 @@ const setupGravityForce = (gravityStrength: number): void => {
         );
 };
 
+export const setupForceSliders = (): void => {
+    const nodeSlider = document.getElementById("nodeRange") as HTMLInputElement;
+    const linkSlider = document.getElementById("linkRange") as HTMLInputElement;
+    const gravSlider = document.getElementById("gravRange") as HTMLInputElement;
+
+    nodeSlider.value = "12";
+    linkSlider.value = "20";
+    gravSlider.value = "10";
+    setupChargeForce(parseInt(nodeSlider.value));
+    setupLinkForce(parseInt(linkSlider.value));
+    setupGravityForce(parseInt(gravSlider.value));
+};
+
 /**
  * Initializes and starts the force layout simulation
  * Updates node and link selections and applies forces
  */
-export const startForceLayout = (): void => {
+export const displayForceLayout = (): void => {
     console.log("Start D3 layout");
     const keyFunc = (d: SimNode | SimLink): string => ("key" in d ? d.key : "");
+
     const nodeData = Array.from(dg.network.data.nodeMap.values()).filter(
         (d) => !d.isIntermediate,
     );
-    console.log("nodeData: ", nodeData);
+
     const linkData = Array.from(dg.network.data.linkMap.values()).filter(
         (d) => !d.isSpline,
     );
+
+    // Debug nodes and links
+    //     const nodeData = Array.from(dg.network.data.nodeMap.values());
+    //     const linkData = Array.from(dg.network.data.linkMap.values());
+
+    console.log("nodeData: ", nodeData);
     console.log("linkData: ", linkData);
 
     dg.network.selections.halo =
@@ -306,25 +322,19 @@ export const startForceLayout = (): void => {
     Array.from(dg.network.data.nodeMap.values()).forEach((n) => {
         n.fixed = false;
     });
-    console.log("dg.network.forceLayout: ", dg.network.forceLayout);
+};
+
+/**
+ * Initializes and starts the force layout simulation
+ * Updates node and link selections and applies forces
+ */
+export const startForceLayout = (): void => {
+    console.log("Start D3 layout");
 
     // Restart simulation
     console.log("Updating forceLayout");
     // console.log("dg.network.pageData.nodes: ", dg.network.pageData.nodes);
     dg.network.forceLayout.nodes(Array.from(dg.network.data.nodeMap.values()));
-
-    const nodeSlider = document.getElementById("nodeRange") as HTMLInputElement;
-    const linkSlider = document.getElementById("linkRange") as HTMLInputElement;
-    const gravSlider = document.getElementById("gravRange") as HTMLInputElement;
-
-    nodeSlider.value = "22";
-    linkSlider.value = "22";
-    gravSlider.value = "22";
-    setupChargeForce(parseInt(nodeSlider.value));
-    setupLinkForce(parseInt(linkSlider.value));
-    setupGravityForce(parseInt(gravSlider.value));
-
-    restartForceLayout(ALPHA);
 };
 
 /**

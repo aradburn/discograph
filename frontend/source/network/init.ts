@@ -4,7 +4,7 @@
  * Creates a hierarchical structure of SVG groups for different visualization elements.
  */
 
-import { setupForceLayout } from "./forceLayout";
+import { initForceLayout, initForceSliders } from "./forceLayout";
 import { dg } from "../dg";
 import * as d3 from "d3";
 import { VIEWPORT_SIZE_MULTIPLIER } from "../init";
@@ -83,7 +83,8 @@ export const initNetwork = (): void => {
     ) as TransformFunction;
     svgElement.transition().duration(0).call(transform, initialTransform);
 
-    setupForceLayout();
+    initForceLayout();
+    initForceSliders();
 };
 
 /**

@@ -10,10 +10,7 @@
             <div id="side-menu"
                  class="col-12 col-sm-2 col-xl-1
                         p-2
-                        d-flex flex-row flex-sm-column flex-xl-column
-
-                        justify-content-evenly justify-content-sm-start justify-content-xl-start
-                        align-items-start align-items-sm-start align-items-xl-start
+                        flex-row
                         order-2 order-md-1
                         text-light bg-secondary-subtle
                         ">
@@ -24,12 +21,7 @@
             <div id="svg-panel"
                  class="col-12 col-sm-10 col-xl-11 px-0 d-flex flex-column flex-grow-1 flex-shrink-1 h-sm-100
                         order-1 order-md-2">
-                <main id="svg-container-fluid"
-                      class="container-fluid flex-grow-1 flex-shrink-1 px-0">
-
-                    <svg id="svg"></svg>
-
-                </main>
+                {% include "svg.html" %}
             </div>
         </div>
     </div>
@@ -49,5 +41,5 @@
             <div id="jstree_div" class="w-75 h-75"></div>
         </div>
     </div>
-    
+
 </div>
