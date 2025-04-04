@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { clamp, getNodeColorClass, getLinkColorClass } from "../color";
+import { getNodeColorClass, getLinkColorClass } from "../color";
 import type { SimNode, SimLink } from "../network/data";
 
 // Minimal mock types for testing purposes
@@ -10,31 +10,6 @@ type MockSimLink = {
 };
 
 describe("Color utility functions", () => {
-    describe("clamp", () => {
-        it("should return the number if it's within the range", () => {
-            expect(clamp(5, 0, 10)).toBe(5);
-        });
-
-        it("should clamp the number to the minimum value", () => {
-            expect(clamp(-5, 0, 10)).toBe(0);
-        });
-
-        it("should clamp the number to the maximum value", () => {
-            expect(clamp(15, 0, 10)).toBe(10);
-        });
-
-        it("should work correctly when min and max are the same", () => {
-            expect(clamp(5, 3, 3)).toBe(3);
-            expect(clamp(2, 3, 3)).toBe(3);
-        });
-
-        it("should handle negative ranges", () => {
-            expect(clamp(-5, -10, -1)).toBe(-5);
-            expect(clamp(-15, -10, -1)).toBe(-10);
-            expect(clamp(0, -10, -1)).toBe(-1);
-        });
-    });
-
     describe("getNodeColorClass", () => {
         it("should return correct class for artist node within range", () => {
             const node: MockSimNode = { type: "artist", distance: 3 };
