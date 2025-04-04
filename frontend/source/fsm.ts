@@ -569,9 +569,8 @@ export const DiscographFsm = window.machina.Fsm.extend({
         resetNetworkTransform();
 
         console.log("received-network startForceLayout");
-        startForceLayout();
+        startForceLayout(Array.from(prunedSimData.nodeMap.values()));
 
-        console.log("received-network displayForceLayout");
         displayForceLayout();
 
         setupForceSliders();

@@ -238,7 +238,8 @@ export const setupForceSliders = (): void => {
  * Updates node and link selections and applies forces
  */
 export const displayForceLayout = (): void => {
-    console.log("Start D3 layout");
+    console.log("displayForceLayout");
+
     const keyFunc = (d: SimNode | SimLink): string => ("key" in d ? d.key : "");
 
     const nodeData = Array.from(dg.network.data.nodeMap.values()).filter(
@@ -326,13 +327,12 @@ export const displayForceLayout = (): void => {
  * Initializes and starts the force layout simulation
  * Updates node and link selections and applies forces
  */
-export const startForceLayout = (): void => {
-    console.log("Start D3 layout");
+export const startForceLayout = (nodes: SimNode[]): void => {
+    console.log("Start D3 layout nodes:", nodes);
 
     // Restart simulation
     console.log("Updating forceLayout");
-    // console.log("dg.network.pageData.nodes: ", dg.network.pageData.nodes);
-    dg.network.forceLayout.nodes(Array.from(dg.network.data.nodeMap.values()));
+    dg.network.forceLayout.nodes(nodes);
 };
 
 /**
