@@ -251,7 +251,7 @@ export const processAPINetworkDataResponse = (
 export const convertNetworkDataToSimData = (
     networkData: NetworkData,
 ): SimData => {
-    console.log("processNetworkData input networkData:", networkData);
+    console.log("convertNetworkDataToSimData input:", networkData);
 
     const newNodeMap = new Map<NodeKey, SimNode>();
     const newLinkMap = new Map<LinkKey, SimLink>();
@@ -443,5 +443,7 @@ export const convertNetworkDataToSimData = (
     //             }
     //         }
     //     });
+
+    console.log("convertNetworkDataToSimData output: ", newSimData);
     return newSimData;
 };

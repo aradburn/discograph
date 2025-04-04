@@ -22,11 +22,11 @@ import { clamp } from "../utils";
 // Force configuration for nodes
 const NODE_STRENGTH = -800; // Repulsion strength between nodes
 const NODE_STRENGTH_CLUSTER = 100; // Repulsion strength between cluster nodes
-const NODE_STRENGTH_INTERMEDIATE = NODE_STRENGTH / 2; // Repulsion strength for intermediate nodes
+const NODE_STRENGTH_INTERMEDIATE = NODE_STRENGTH / 10; // Repulsion strength for intermediate nodes
 
 const DISTANCE_MAX = 2000; // Maximum distance for force calculations
 const COLLIDE_ITERATIONS = 2; // Number of collision detection iterations
-const COLLIDE_BUFFER = 12; // Extra space around nodes for collision detection
+const COLLIDE_BUFFER = 14; // Extra space around nodes for collision detection
 
 // Simulation parameters
 const THETA = 0.9; // Barnes-Hut approximation criterion
@@ -37,11 +37,9 @@ const ALPHA_DECAY = 0.03; // Rate at which simulation cools down
 const VELOCITY_DECAY = 0.24; // Friction coefficient for node movement
 
 // Link configuration
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const LINK_STRENGTH = 1.8; // Strength of links between nodes
-const LINK_DISTANCE_ALIAS = 20; // Distance for alias relationships
-const LINK_DISTANCE_RELEASED_ON = 200; // Distance for "Released On" relationships
 const LINK_DISTANCE = 60; // Default link distance
+const LINK_DISTANCE_ALIAS = LINK_DISTANCE / 3; // Distance for alias relationships
+const LINK_DISTANCE_RELEASED_ON = LINK_DISTANCE * 3; // Distance for "Released On" relationships
 const LINK_ITERATIONS = 3; // Number of iterations for link force calculation
 
 let nodeStrengthMultiplier = 1.0;
@@ -52,7 +50,7 @@ function linkDistance(d: SimLink): number {
     if (d.role == "Alias") return LINK_DISTANCE_ALIAS;
     if (d.role == "Released On") return LINK_DISTANCE_RELEASED_ON;
     if (d.isSpline) {
-        return d.distance < 1 ? LINK_DISTANCE / 2 : LINK_DISTANCE / 10;
+        return d.distance < 1 ? LINK_DISTANCE / 5 : LINK_DISTANCE / 10;
     } else {
         return LINK_DISTANCE;
     }
@@ -178,7 +176,7 @@ export const initForceSliders = (): void => {
 };
 
 const setupChargeForce = (nodeStrength: number): void => {
-    nodeStrengthMultiplier = (nodeStrength / 20.0) + 0.4;
+    nodeStrengthMultiplier = nodeStrength / 20.0 + 0.4;
     console.log("nodeStrengthMultiplier: ", nodeStrengthMultiplier);
     dg.network.forceLayout.force(
         "charge",
@@ -228,7 +226,7 @@ export const setupForceSliders = (): void => {
     const gravSlider = document.getElementById("gravRange") as HTMLInputElement;
 
     nodeSlider.value = "12";
-    linkSlider.value = "20";
+    linkSlider.value = "40";
     gravSlider.value = "10";
     setupChargeForce(parseInt(nodeSlider.value));
     setupLinkForce(parseInt(linkSlider.value));

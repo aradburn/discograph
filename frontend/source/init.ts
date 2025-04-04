@@ -170,9 +170,9 @@ export const initApp = (): void => {
     if (modalHelp) {
         modalHelp.style.opacity = "1";
     }
-    const sideMenuContent = document.querySelector<HTMLDivElement>("#side-menu-content");
+    const sideMenuContent =
+        document.querySelector<HTMLDivElement>("#side-menu-content");
     if (sideMenuContent) {
         sideMenuContent.style.opacity = "1";
     }
-
 };

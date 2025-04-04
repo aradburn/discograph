@@ -200,8 +200,10 @@ export const DiscographFsm = window.machina.Fsm.extend({
         };
 
         // Handle window resize events with debounce
+        // ### TODO move into init
         const handleResize = debounce(() => {
-            window.location.reload();
+            console.log("handleResize");
+            //             window.location.reload();
             resetSvgSize();
             initWindow();
             setSvgSize();
@@ -212,6 +214,7 @@ export const DiscographFsm = window.machina.Fsm.extend({
                 .transition()
                 .duration(250)
                 .attr("transform", transform);
+            // ### TODO center the network
 
             // Restart force layout if in network view
             if (this.state === "state-viewing-network") {
@@ -696,17 +699,17 @@ export const DiscographFsm = window.machina.Fsm.extend({
         let _linkOn: d3.Selection<SVGGElement, SimLink, SVGGElement, unknown>;
         let _linkOff: d3.Selection<SVGGElement, SimLink, SVGGElement, unknown>;
 
-        if (entityKey !== null) {
-            const root = dg.network.layers.root;
-            if (!root) {
-                console.log("Network root not found");
-                return;
-            }
+        const nodeLayer = dg.network.layers.node;
+        if (!nodeLayer) {
+            console.log("Network node layer not found");
+            return;
+        }
 
-            nodeOn = root.selectAll<SVGGElement, SimNode>(
+        if (entityKey !== null) {
+            nodeOn = nodeLayer.selectAll<SVGGElement, SimNode>(
                 "g" + "#" + entityKey,
             );
-            nodeOff = root.selectAll<SVGGElement, SimNode>(
+            nodeOff = nodeLayer.selectAll<SVGGElement, SimNode>(
                 "g.node:not(#" + entityKey + ")",
             );
 
@@ -750,15 +753,11 @@ export const DiscographFsm = window.machina.Fsm.extend({
             }
             // linkOn.classed('selected', true);
         } else {
-            const root = dg.network.layers.root;
-            if (!root) {
-                console.log("entityKey is null, Network root not found");
-                return;
-            }
-
-            nodeOff = root.selectAll<SVGGElement, SimNode>("g.node");
+            nodeOff = nodeLayer.selectAll<SVGGElement, SimNode>("g.node");
             _linkOff = dg.network.selections.link;
         }
+
+        console.log("nodeOff: ", nodeOff);
 
         if (nodeOff) {
             nodeOff.classed("selected", false).each(function (d) {

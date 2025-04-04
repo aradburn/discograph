@@ -1,14 +1,5 @@
 import type { SimNode, SimLink } from "./network/data";
-
-/**
- * Clamps a number between min and max values.
- * @param num - The number to clamp
- * @param min - The minimum value
- * @param max - The maximum value
- * @returns The clamped value
- */
-export const clamp = (num: number, min: number, max: number): number =>
-    Math.min(Math.max(num, min), max);
+import { clamp } from "./utils";
 
 /**
  * Determines the color class for a node based on its type.
