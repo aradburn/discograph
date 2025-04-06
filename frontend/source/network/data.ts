@@ -28,6 +28,8 @@ interface SimulationProps extends DraggableNodeBase {
     missing: number;
     hasMissing: boolean;
     links: NetworkLink[];
+    highlighted: boolean;
+    selected: boolean;
 }
 
 /**
@@ -46,7 +48,8 @@ export interface SimLink
     isSpline: boolean;
     distance: number;
     intermediate: SimNode;
-    // pages?: unknown;
+    highlighted: boolean;
+    selected: boolean;
 }
 
 /**
@@ -58,16 +61,6 @@ export interface SimData {
     linkMap: Map<LinkKey, SimLink>;
     maxDistance: number;
 }
-
-/**
- * Current page state and data
- */
-// export interface PageData {
-//     currentPage: number;
-//     links: SimLink[];
-//     nodes: SimNode[];
-//     selectedNodeKey: NodeKey | null;
-// }
 
 export interface NetworkNode {
     key: NodeKey;
@@ -288,6 +281,8 @@ export const convertNetworkDataToSimData = (
             dragy: 0,
             fx: null,
             fy: null,
+            highlighted: false,
+            selected: false,
         };
         simNode.radius = getOuterRadius(simNode);
         newNodeMap.set(node.key, simNode);
@@ -324,6 +319,8 @@ export const convertNetworkDataToSimData = (
                 dragy: 0,
                 fx: null,
                 fy: null,
+                highlighted: false,
+                selected: false,
             };
 
             const s2iSplineLink: SimLink = {
@@ -334,6 +331,8 @@ export const convertNetworkDataToSimData = (
                 role: role,
                 distance: 0,
                 intermediate: undefined,
+                highlighted: false,
+                selected: false,
             };
 
             const i2tSplineLink: SimLink = {
@@ -344,6 +343,8 @@ export const convertNetworkDataToSimData = (
                 role: role,
                 distance: 0,
                 intermediate: undefined,
+                highlighted: false,
+                selected: false,
             };
 
             newNodeMap.set(intermediateNode.key, intermediateNode);
@@ -358,6 +359,8 @@ export const convertNetworkDataToSimData = (
                 intermediate: intermediateNode,
                 role: link.role,
                 distance: link.distance,
+                highlighted: false,
+                selected: false,
             };
             newLinkMap.set(simLink.key, simLink);
         } else {
@@ -369,6 +372,8 @@ export const convertNetworkDataToSimData = (
                 intermediate: undefined,
                 role: link.role,
                 distance: link.distance,
+                highlighted: false,
+                selected: false,
             };
             newLinkMap.set(simLink.key, simLink);
         }

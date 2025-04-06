@@ -57,6 +57,8 @@ describe("network/halo", () => {
             dragy: 0,
             fx: null,
             fy: null,
+            highlighted: false,
+            selected: false,
         };
 
         // Create mock D3 selection chain functions

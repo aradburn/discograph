@@ -6,3 +6,10 @@ alwaysApply: true
 - Write tests first, then the code, then run the tests and update the code until tests pass.
 - Include appropriate unit tests for all code. Use subdirectories named **`/__tests__/`** inline in the source tree. Everything in a **`/__tests__/`** subdirectory will be treated and run as a test.
 - Include appropriate integration tests or end-to-end (e2e) tests in **`/tests`** for all components.
+- Use vitest for tests.
+- Use vitest types and not jest types.
+- Properly type mock functions.
+- Properly type event handlers.
+- Use arrow functions where appropriate.
+- Fix unbound method warnings.
+- Fix any lint errors in the tests

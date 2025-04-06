@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { onHullEnter, onHullExit } from "../hull";
 import type { HullEnterSelection, HullExitSelection } from "../hull";
-import type * as d3 from "d3";
 import type { Mock } from "vitest";
 
 type MockD3Chainable = {
