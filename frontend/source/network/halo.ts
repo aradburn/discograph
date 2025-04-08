@@ -8,16 +8,30 @@ import type { SimNode } from "./data";
 import { getOuterRadius } from "./node";
 import type * as d3 from "d3";
 
-type HaloSelection = d3.Selection<
-    d3.EnterElement | d3.BaseType,
+export type HaloEnterSelection = d3.Selection<
+    d3.EnterElement,
     SimNode,
-    d3.BaseType,
+    SVGGElement,
+    unknown
+>;
+
+export type HaloUpdateSelection = d3.Selection<
+    SVGGElement,
+    SimNode,
+    SVGGElement,
+    unknown
+>;
+
+export type HaloExitSelection = d3.Selection<
+    SVGGElement,
+    SimNode,
+    SVGGElement,
     unknown
 >;
 
 /**
  * Handles the creation and styling of halos when nodes are entered/activated
- * @param {HaloSelection} haloEnter - D3 selection of elements entering the visualization
+ * @param {HaloEnterSelection} haloEnter - D3 selection of elements entering the visualization
  * @returns {void}
  *
  * The function:
@@ -26,7 +40,9 @@ type HaloSelection = d3.Selection<
  * 3. Applies CSS classes based on the node type (first part of the key)
  * 4. Adds a circular halo effect around the node
  */
-export const onHaloEnter = (haloEnter: HaloSelection): void => {
+export const onHaloEnter = (
+    haloEnter: HaloEnterSelection,
+): HaloEnterSelection => {
     const haloGroup = haloEnter
         .append("g")
         .attr("id", (d: SimNode) => d.key)
@@ -39,13 +55,27 @@ export const onHaloEnter = (haloEnter: HaloSelection): void => {
         .append("circle")
         .attr("class", "halo")
         .attr("r", (d: SimNode) => getOuterRadius(d) + 40);
+
+    return haloGroup;
+};
+
+/**
+ * Handles the update of halos when node data is changed
+ * @param {HaloUpdateSelection} haloUpdate - D3 selection of elements being updated in the visualization
+ * @returns {HaloUpdateSelection}
+ */
+export const onHaloUpdate = (
+    haloUpdate: HaloUpdateSelection,
+): HaloUpdateSelection => {
+    // No updates needed
+    return haloUpdate;
 };
 
 /**
  * Handles the removal of halos when nodes are exited/deactivated
- * @param {HaloSelection} haloExit - D3 selection of elements being removed from the visualization
+ * @param {HaloExitSelection} haloExit - D3 selection of elements being removed from the visualization
  * @returns {void}
  */
-export const onHaloExit = (haloExit: HaloSelection): void => {
+export const onHaloExit = (haloExit: HaloExitSelection): void => {
     haloExit.remove();
 };

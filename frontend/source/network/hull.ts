@@ -16,14 +16,14 @@ export type HullEnterSelection = d3.Selection<
     unknown
 >;
 
-export type HullExitSelection = d3.Selection<
+export type HullUpdateSelection = d3.Selection<
     SVGGElement,
     SimNode[],
     SVGGElement,
     unknown
 >;
 
-export type HullUpdateSelection = d3.Selection<
+export type HullExitSelection = d3.Selection<
     SVGGElement,
     SimNode[],
     SVGGElement,
@@ -37,11 +37,27 @@ export type HullUpdateSelection = d3.Selection<
  * @param {HullEnterSelection} hullEnter - The D3 enter selection for hulls
  * @returns {void}
  */
-export const onHullEnter = (hullEnter: HullEnterSelection): void => {
+export const onHullEnter = (
+    hullEnter: HullEnterSelection,
+): HullEnterSelection => {
     const hullGroup = hullEnter.append("g").attr("class", "hull");
     // Note: Commented out for reference
     // .attr("class", (d: HullGroup) => "hull hull-" + d.key);
     hullGroup.append("path");
+
+    return hullGroup;
+};
+
+/**
+ * Handles the update of hulls when node data is changed
+ * @param {HullUpdateSelection} hullUpdate - D3 selection of elements being updated in the visualization
+ * @returns {HullUpdateSelection}
+ */
+export const onHullUpdate = (
+    hullUpdate: HullUpdateSelection,
+): HullUpdateSelection => {
+    // No updates needed, all done in tick
+    return hullUpdate;
 };
 
 /**

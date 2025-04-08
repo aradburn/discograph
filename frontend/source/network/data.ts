@@ -1,3 +1,4 @@
+import { dg } from "../dg";
 import { getOuterRadius } from "./node";
 import type { APINetworkDataResponse } from "../api";
 
@@ -378,8 +379,19 @@ export const convertNetworkDataToSimData = (
             newLinkMap.set(simLink.key, simLink);
         }
     });
+    console.log("convertNetworkDataToSimData output: ", newSimData);
+    return newSimData;
+};
 
-    // Update current lists of nodes and links
+export const updateGlobalData = (simData: SimData): void => {
+    console.log("updateGlobalData input:", simData);
+
+    dg.network.data.nodeMap = simData.nodeMap;
+    dg.network.data.linkMap = simData.linkMap;
+    dg.network.data.maxDistance = simData.maxDistance;
+    dg.network.data.center = simData.center;
+
+    // Update current global lists of nodes and links
     //     const nodeKeysToRemove: NodeKey[] = [];
     //     Array.from(dg.network.data.nodeMap.keys()).forEach((key) => {
     //         if (!newNodeMap.has(key)) {
@@ -399,8 +411,8 @@ export const convertNetworkDataToSimData = (
     //     linkKeysToRemove.forEach((key) => {
     //         dg.network.data.linkMap.delete(key);
     //     });
-    //
-    //     newNodeMap.forEach((newNode, newNodeKey) => {
+
+    //     simData.nodeMap.forEach((newNode, newNodeKey) => {
     //         if (dg.network.data.nodeMap.has(newNodeKey)) {
     //             const oldNode = dg.network.data.nodeMap.get(newNodeKey);
     //             if (oldNode) {
@@ -418,7 +430,7 @@ export const convertNetworkDataToSimData = (
     //         }
     //     });
     //
-    //     newLinkMap.forEach((newLink, newLinkKey) => {
+    //     simData.linkMap.forEach((newLink, newLinkKey) => {
     //         if (!dg.network.data.linkMap.has(newLinkKey)) {
     //             //             const oldLink = dg.network.data.linkMap.get(newLinkKey);
     //             //             if (oldLink) {
@@ -448,7 +460,4 @@ export const convertNetworkDataToSimData = (
     //             }
     //         }
     //     });
-
-    console.log("convertNetworkDataToSimData output: ", newSimData);
-    return newSimData;
 };

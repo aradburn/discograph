@@ -35,11 +35,24 @@ const _NODE_UPDATE_TRANSITION_TIME = 5000;
 const NODE_ARTIST_PALETTE = "Palette3";
 const NODE_LABEL_PALETTE = "Palette4";
 
-type NodeSelection = d3.Selection<SVGGElement, SimNode, d3.BaseType, unknown>;
 type NodeEnterSelection = d3.Selection<
     d3.EnterElement,
     SimNode,
-    d3.BaseType,
+    SVGGElement,
+    unknown
+>;
+
+type NodeUpdateSelection = d3.Selection<
+    SVGGElement,
+    SimNode,
+    SVGGElement,
+    unknown
+>;
+
+type NodeExitSelection = d3.Selection<
+    SVGGElement,
+    SimNode,
+    SVGGElement,
     unknown
 >;
 
@@ -91,7 +104,9 @@ export const getInnerRadius = (d: SimNode): number => {
  * Handles the enter phase for new nodes in the D3 update pattern
  * @param {NodeEnterSelection} nodeEnter - D3 selection of entering nodes
  */
-export const onNodeEnter = (nodeEnter: NodeEnterSelection): void => {
+export const onNodeEnter = (
+    nodeEnter: NodeEnterSelection,
+): NodeEnterSelection => {
     const nodeEnterSelection = nodeEnter
         .append("g")
         .attr("id", (d) => d.key)
@@ -113,13 +128,16 @@ export const onNodeEnter = (nodeEnter: NodeEnterSelection): void => {
                 .on("drag", onDrag)
                 .on("end", onDragEnd),
         );
+
     onNodeEnterElementConstruction(nodeEnterSelection);
     onNodeEnterEventBindings(nodeEnterSelection);
+
+    return nodeEnterSelection;
 };
 
 /**
  * Constructs the visual elements for nodes
- * @param {NodeSelection} nodeEnter - D3 selection of entering nodes
+ * @param {NodeEnterSelection} nodeEnter - D3 selection of entering nodes
  *
  * For Artist nodes:
  * - Adds shadow circle
@@ -132,10 +150,12 @@ export const onNodeEnter = (nodeEnter: NodeEnterSelection): void => {
  * For all nodes:
  * - Adds "more" indicator (+) symbol if node has hidden connections
  */
-const onNodeEnterElementConstruction = (nodeEnter: NodeSelection): void => {
+const onNodeEnterElementConstruction = (
+    nodeEnter: NodeEnterSelection,
+): void => {
     // ARTISTS
-    const artistEnter = nodeEnter.select(function (d) {
-        return d.type === "artist" ? this : null;
+    const artistEnter = nodeEnter.filter(function (d) {
+        return d.type === "artist";
     });
     artistEnter
         .append("circle")
@@ -159,8 +179,8 @@ const onNodeEnterElementConstruction = (nodeEnter: NodeSelection): void => {
         .attr("r", (d) => getInnerRadius(d));
 
     // LABELS
-    const labelEnter = nodeEnter.select(function (d) {
-        return d.type === "label" ? this : null;
+    const labelEnter = nodeEnter.filter(function (d) {
+        return d.type === "label";
     });
     labelEnter
         .append("rect")
@@ -183,7 +203,7 @@ const onNodeEnterElementConstruction = (nodeEnter: NodeSelection): void => {
 
 /**
  * Binds mouse and touch events to nodes
- * @param {NodeSelection} nodeEnter - D3 selection of entering nodes
+ * @param {NodeEnterSelection} nodeEnter - D3 selection of entering nodes
  *
  * Events handled:
  * - mouseover: Highlight node
@@ -193,11 +213,11 @@ const onNodeEnterElementConstruction = (nodeEnter: NodeSelection): void => {
  * - dblclick: Request network update
  * - touchstart: Handle touch interactions
  */
-const onNodeEnterEventBindings = (nodeEnter: NodeSelection): void => {
+const onNodeEnterEventBindings = (nodeEnter: NodeEnterSelection): void => {
     const debounceToolTip = debounce(
-        (self: SVGGElement, d: SimNode, status: boolean) => {
+        (element: SVGGElement, d: SimNode, status: boolean) => {
             if (status) {
-                nodeTooltip.show(d, self);
+                nodeTooltip.show(d, element);
                 // Hide after 5 seconds
                 //                 setTimeout(() => {
                 //                     hideAllTooltips();
@@ -234,29 +254,66 @@ const onNodeEnterEventBindings = (nodeEnter: NodeSelection): void => {
 };
 
 /**
- * Handles node removal from the visualization
- * @param {NodeSelection} nodeExit - D3 selection of exiting nodes
+ * Updates existing nodes in the visualization
+ * @param {NodeUpdateSelection} nodeUpdate - D3 selection of updating nodes
  */
-export const onNodeExit = (nodeExit: NodeSelection): void => {
-    nodeExit.remove();
+export const onNodeUpdate = (
+    nodeUpdate: NodeUpdateSelection,
+): NodeUpdateSelection => {
+    // ARTISTS
+    const artistUpdate = nodeUpdate.filter(function (d) {
+        return d.type === "artist";
+    });
+    artistUpdate
+        .select<SVGGElement>(".shadow")
+        .attr("cx", (d) => getOuterRadius(d) / 3 + 1)
+        .attr("cy", (d) => getOuterRadius(d) / 3 + 1)
+        .attr("r", (d) => Math.pow(getOuterRadius(d), 1.2) - 2);
+
+    artistUpdate
+        .select<SVGGElement>(".outer")
+        .attr("class", (d) => {
+            const classes = ["outer", getNodeColorClass(d)];
+            return classes.join(" ");
+        })
+        .attr("r", (d) => getOuterRadius(d));
+
+    artistUpdate
+        .select<SVGGElement>(".inner")
+        .attr("class", (d) => {
+            const classes = ["inner", getNodeColorClass(d)];
+            return classes.join(" ");
+        })
+        .attr("r", (d) => getInnerRadius(d));
+
+    // LABELS
+    const labelUpdate = nodeUpdate.filter(function (d) {
+        return d.type === "label";
+    });
+    labelUpdate
+        .select<SVGGElement>(".inner")
+        .attr("class", (d) => {
+            const classes = ["inner", getNodeColorClass(d)];
+            return classes.join(" ");
+        })
+        .attr("height", (d) => 2 * getInnerRadius(d))
+        .attr("width", (d) => 2 * getInnerRadius(d))
+        .attr("x", (d) => -1 * getInnerRadius(d))
+        .attr("y", (d) => -1 * getInnerRadius(d));
+
+    // Both ARTISTS and LABELS
+    nodeUpdate
+        .select<SVGGElement>(".more")
+        .style("opacity", (d) => (d.missing > 0 ? 1 : 0));
+    return nodeUpdate;
 };
 
 /**
- * Updates existing nodes in the visualization
- * @param {NodeSelection} nodeUpdate - D3 selection of updating nodes
+ * Handles node removal from the visualization
+ * @param {NodeSelection} nodeExit - D3 selection of exiting nodes
  */
-export const onNodeUpdate = (nodeUpdate: NodeSelection): void => {
-    nodeUpdate.selectAll<SVGGElement, SimNode>(".outer").attr("class", (d) => {
-        const classes = ["outer", getNodeColorClass(d)];
-        return classes.join(" ");
-    });
-    nodeUpdate.selectAll<SVGGElement, SimNode>(".inner").attr("class", (d) => {
-        const classes = ["inner", getNodeColorClass(d)];
-        return classes.join(" ");
-    });
-    nodeUpdate
-        .selectAll<SVGGElement, SimNode>(".more")
-        .style("opacity", (d) => (d.missing > 0 ? 1 : 0));
+export const onNodeExit = (nodeExit: NodeExitSelection): void => {
+    nodeExit.remove();
 };
 
 /**
@@ -269,7 +326,7 @@ export const onNodeUpdate = (nodeUpdate: NodeSelection): void => {
  * @param {SimNode} d - Node data
  * Raises the hovered node to the top of the visualization
  */
-export const onNodeMouseOver = (event: MouseEvent, d: SimNode): void => {
+const onNodeMouseOver = (event: MouseEvent, d: SimNode): void => {
     const debounceHandler = debounce((_self: unknown, _d: SimNode) => {
         //console.log("node: ", d);
     }, NODE_DEBOUNCE_TIME);
@@ -277,11 +334,11 @@ export const onNodeMouseOver = (event: MouseEvent, d: SimNode): void => {
     debounceHandler(this, d);
 
     dg.network.layers.node
-        ?.selectAll<SVGGElement, SimNode>(".node")
+        .selectAll<SVGGElement, SimNode>(".node")
         .filter((n) => n.key === d.key)
         .raise();
     dg.network.layers.text
-        ?.selectAll<SVGGElement, SimNode>(".node")
+        .selectAll<SVGGElement, SimNode>(".node")
         .filter((n) => n.key === d.key)
         .raise();
 };
@@ -292,7 +349,7 @@ export const onNodeMouseOver = (event: MouseEvent, d: SimNode): void => {
  * @param {SimNode} d - Node data
  * Implements single/double click timing logic for node selection and network updates
  */
-export const onNodeMouseDown = (event: MouseEvent, d: SimNode): void => {
+const onNodeMouseDown = (event: MouseEvent, d: SimNode): void => {
     const thisTime = now();
     const lastTime = d.lastClickTime;
     d.lastClickTime = thisTime;
@@ -310,7 +367,7 @@ export const onNodeMouseDown = (event: MouseEvent, d: SimNode): void => {
  * @param {SimNode} d - Node data
  * Triggers network update request and prevents event propagation
  */
-export const onNodeMouseDoubleClick = (event: MouseEvent, d: SimNode): void => {
+const onNodeMouseDoubleClick = (event: MouseEvent, d: SimNode): void => {
     hideAllTooltips();
     window.dispatchEvent(new RequestNetworkEvent(d.key, true));
     event.stopPropagation();
@@ -322,7 +379,7 @@ export const onNodeMouseDoubleClick = (event: MouseEvent, d: SimNode): void => {
  * @param {SimNode} d - Node data
  * Implements touch timing logic similar to mouse events
  */
-export const onNodeTouchStart = (event: TouchEvent, d: SimNode): void => {
+const onNodeTouchStart = (event: TouchEvent, d: SimNode): void => {
     const thisTime = Date.now();
     const lastTime = d.lastTouchTime;
     d.lastTouchTime = thisTime;

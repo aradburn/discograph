@@ -47,6 +47,8 @@ const createMockNode = (overrides = {}): SimNode => ({
     index: 0,
     dragx: 0,
     dragy: 0,
+    highlighted: false,
+    selected: false,
     ...overrides,
 });
 

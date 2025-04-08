@@ -23,6 +23,7 @@ import type {
 import {
     processAPINetworkDataResponse,
     convertNetworkDataToSimData,
+    updateGlobalData,
 } from "./network/data";
 import { pruneSimData } from "./network/pruning";
 import type { RelationsData } from "./relations";
@@ -563,7 +564,8 @@ export const DiscographFsm = window.machina.Fsm.extend({
         const simData: SimData = convertNetworkDataToSimData(networkData);
 
         const prunedSimData: SimData = pruneSimData(simData);
-        dg.network.data = prunedSimData;
+
+        updateGlobalData(prunedSimData);
 
         console.log("received-network resetNetworkTransform");
         resetNetworkTransform();
@@ -695,12 +697,18 @@ export const DiscographFsm = window.machina.Fsm.extend({
         dg.selectedNodeKey = entityKey;
         let nodeOn: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown>;
         let nodeOff: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown>;
-        let _linkOn: d3.Selection<SVGGElement, SimLink, SVGGElement, unknown>;
-        let _linkOff: d3.Selection<SVGGElement, SimLink, SVGGElement, unknown>;
+        let linkOn: d3.Selection<SVGGElement, SimLink, SVGGElement, unknown>;
+        let linkOff: d3.Selection<SVGGElement, SimLink, SVGGElement, unknown>;
 
         const nodeLayer = dg.network.layers.node;
         if (!nodeLayer) {
             console.log("Network node layer not found");
+            return;
+        }
+
+        const linkLayer = dg.network.layers.link;
+        if (!linkLayer) {
+            console.log("Network link layer not found");
             return;
         }
 
@@ -720,12 +728,14 @@ export const DiscographFsm = window.machina.Fsm.extend({
 
             console.log("nodeData: ", nodeData);
             const linkKeys = nodeData.links.map((l) => l.key);
-            const linkSelection = dg.network.selections.link;
+            const linkSelection = linkLayer.selectAll<SVGGElement, SimLink>(
+                "g.link",
+            );
 
-            _linkOn = linkSelection.filter((d: SimLink) =>
+            linkOn = linkSelection.filter((d: SimLink) =>
                 linkKeys.includes(d.key),
             );
-            _linkOff = linkSelection.filter(
+            linkOff = linkSelection.filter(
                 (d: SimLink) => !linkKeys.includes(d.key),
             );
 
@@ -750,22 +760,19 @@ export const DiscographFsm = window.machina.Fsm.extend({
                 //nodeOn.each(function(d) { d.fixed = true; });
                 node.fixed = true;
             }
-            // linkOn.classed('selected', true);
+            linkOn.classed("selected", true);
         } else {
             nodeOff = nodeLayer.selectAll<SVGGElement, SimNode>("g.node");
-            _linkOff = dg.network.selections.link;
+            linkOff = linkLayer.selectAll<SVGGElement, SimLink>("g.link");
         }
-
-        console.log("nodeOff: ", nodeOff);
 
         if (nodeOff) {
-            nodeOff.classed("selected", false).each(function (d) {
-                d.fixed = false;
-            });
+            console.log("nodeOff: ", nodeOff);
+            nodeOff.classed("selected", false).each((d) => (d.fixed = false));
         }
-        if (_linkOff) {
-            console.log("selected link off");
-            _linkOff.classed("selected", false);
+        if (linkOff) {
+            console.log("linkOff: ", linkOff);
+            linkOff.classed("selected", false);
         }
     },
 }) as unknown as new () => FSMInstance;

@@ -10,17 +10,22 @@ import { getNodeColorClass } from "../color";
 import { dg } from "../dg";
 import type { SimNode } from "./data";
 
-type TextSelection = d3.Selection<SVGGElement, SimNode, d3.BaseType, unknown>;
 type TextEnterSelection = d3.Selection<
     d3.EnterElement,
     SimNode,
-    d3.BaseType,
+    SVGGElement,
     unknown
 >;
 type TextUpdateSelection = d3.Selection<
     SVGGElement,
     SimNode,
-    d3.BaseType,
+    SVGGElement,
+    unknown
+>;
+type TextExitSelection = d3.Selection<
+    SVGGElement,
+    SimNode,
+    SVGGElement,
     unknown
 >;
 
@@ -68,7 +73,9 @@ export const getNodeDebug = (d: SimNode): string => {
  * Creates the text group and adds both outer and inner text elements
  * @param {TextEnterSelection} textEnter - D3 enter selection for text elements
  */
-export const onTextEnter = (textEnter: TextEnterSelection): void => {
+export const onTextEnter = (
+    textEnter: TextEnterSelection,
+): TextEnterSelection => {
     const textGroup = textEnter
         .append("g")
         .attr("id", (d: SimNode) => d.key)
@@ -93,15 +100,8 @@ export const onTextEnter = (textEnter: TextEnterSelection): void => {
         .attr("dy", (d: SimNode) => getOuterRadius(d) + LABEL_OFFSET_Y)
         .attr("width", (d: SimNode) => getOuterRadius(d) * 3)
         .text(getNodeText);
-};
 
-/**
- * Handles the exit selection for network node text elements
- * Removes text elements that are no longer needed
- * @param {TextSelection} textExit - D3 exit selection for text elements
- */
-export const onTextExit = (textExit: TextSelection): void => {
-    textExit.remove();
+    return textGroup;
 };
 
 /**
@@ -109,7 +109,19 @@ export const onTextExit = (textExit: TextSelection): void => {
  * Updates the text content of both outer and inner text elements
  * @param {TextUpdateSelection} textUpdate - D3 update selection for text elements
  */
-export const onTextUpdate = (textUpdate: TextUpdateSelection): void => {
+export const onTextUpdate = (
+    textUpdate: TextUpdateSelection,
+): TextUpdateSelection => {
     textUpdate.select(".outer").text(getNodeText);
     textUpdate.select(".inner").text(getNodeText);
+    return textUpdate;
+};
+
+/**
+ * Handles the exit selection for network node text elements
+ * Removes text elements that are no longer needed
+ * @param {TextExitSelection} textExit - D3 exit selection for text elements
+ */
+export const onTextExit = (textExit: TextExitSelection): void => {
+    textExit.remove();
 };

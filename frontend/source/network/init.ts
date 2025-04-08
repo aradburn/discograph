@@ -9,7 +9,6 @@ import { dg } from "../dg";
 import * as d3 from "d3";
 import { VIEWPORT_SIZE_MULTIPLIER } from "../init";
 import { hideAllTooltips } from "./tooltips";
-import type { SimNode, SimLink } from "./data";
 
 type TransformFunction = (
     selection:
@@ -30,32 +29,32 @@ type TransformFunction = (
 export const initNetwork = (): void => {
     const svgElement = d3.select("#svg");
     const root = svgElement.append("g").attr("id", "networkLayer");
-    dg.network.layers = {
-        root: root,
-        halo: root.append("g").attr("id", "haloLayer"),
-        link: root.append("g").attr("id", "linkLayer"),
-        node: root.append("g").attr("id", "nodeLayer"),
-        text: root.append("g").attr("id", "textLayer"),
-    };
+    dg.network.layers.root = root;
+    dg.network.layers.halo = root.append("g").attr("id", "haloLayer");
+    dg.network.layers.link = root.append("g").attr("id", "linkLayer");
+    dg.network.layers.node = root.append("g").attr("id", "nodeLayer");
+    dg.network.layers.text = root.append("g").attr("id", "textLayer");
 
-    dg.network.selections = {
-        halo:
-            dg.network.layers.halo?.selectAll<SVGGElement, SimNode>(".node") ??
-            null,
-        hull:
-            dg.network.layers.halo?.selectAll<SVGGElement, SimNode[]>(
-                ".hull",
-            ) ?? null,
-        link:
-            dg.network.layers.link?.selectAll<SVGGElement, SimLink>(".link") ??
-            null,
-        node:
-            dg.network.layers.node?.selectAll<SVGGElement, SimNode>(".node") ??
-            null,
-        text:
-            dg.network.layers.text?.selectAll<SVGGElement, SimNode>(".node") ??
-            null,
-    };
+    // dg.network.selections.halo = dg.network.layers.halo.selectAll<
+    //     SVGGElement,
+    //     SimNode
+    // >(".node");
+    // dg.network.selections.hull = dg.network.layers.halo.selectAll<
+    //     SVGGElement,
+    //     SimNode[]
+    // >(".hull");
+    // dg.network.selections.link = dg.network.layers.link.selectAll<
+    //     SVGGElement,
+    //     SimLink
+    // >(".link");
+    // dg.network.selections.node = dg.network.layers.node.selectAll<
+    //     SVGGElement,
+    //     SimNode
+    // >(".node");
+    // dg.network.selections.text = dg.network.layers.text.selectAll<
+    //     SVGGElement,
+    //     SimNode
+    // >(".node");
 
     dg.network.zoom = d3
         .zoom<SVGSVGElement, unknown>()

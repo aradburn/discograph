@@ -17,13 +17,13 @@ import type { DiscographFsm } from "./fsm";
 /**
  * D3 selections for network visualization elements
  */
-interface NetworkSelections {
-    halo: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown> | null;
-    hull: d3.Selection<SVGGElement, SimNode[], SVGGElement, unknown> | null;
-    node: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown> | null;
-    link: d3.Selection<SVGGElement, SimLink, SVGGElement, unknown> | null;
-    text: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown> | null;
-}
+// interface NetworkSelections {
+//     halo: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown> | null;
+//     hull: d3.Selection<SVGGElement, SimNode[], SVGGElement, unknown> | null;
+//     node: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown> | null;
+//     link: d3.Selection<SVGGElement, SimLink, SVGGElement, unknown> | null;
+//     text: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown> | null;
+// }
 
 /**
  * SVG layer containers for network visualization
@@ -59,7 +59,7 @@ export interface Network {
     /** Current page state and selections */
     // pageData: PageData;
     /** D3 selections for various visual elements */
-    selections: NetworkSelections;
+    //     selections: NetworkSelections;
     /** SVG layer containers for different visual elements */
     layers: NetworkLayers;
 }
@@ -129,11 +129,9 @@ export const dg: DiscographCore = {
                 fixed: false,
                 isIntermediate: false,
             },
-            //             pageCount: 0,
             nodeMap: new Map<NodeKey, SimNode>(),
             linkMap: new Map<LinkKey, SimLink>(),
             maxDistance: 0,
-            //             json: null,
         } as SimData,
         // pageData: {
         //     currentPage: 1,
@@ -141,13 +139,13 @@ export const dg: DiscographCore = {
         //     nodes: [],
         //     selectedNodeKey: null,
         // },
-        selections: {
-            halo: null,
-            hull: null,
-            node: null,
-            link: null,
-            text: null,
-        },
+        //         selections: {
+        //             halo: null,
+        //             hull: null,
+        //             node: null,
+        //             link: null,
+        //             text: null,
+        //         },
         layers: {
             root: null,
             halo: null,

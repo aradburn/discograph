@@ -10,11 +10,22 @@ import type { SimLink } from "./data";
 import { getLinkColorClass } from "../color";
 import { linkTooltip } from "./tooltips";
 
-type LinkSelection = d3.Selection<SVGGElement, SimLink, d3.BaseType, unknown>;
 type LinkEnterSelection = d3.Selection<
     d3.EnterElement,
     SimLink,
-    d3.BaseType,
+    SVGGElement,
+    unknown
+>;
+type LinkUpdateSelection = d3.Selection<
+    SVGGElement,
+    SimLink,
+    SVGGElement,
+    unknown
+>;
+type LinkExitSelection = d3.Selection<
+    SVGGElement,
+    SimLink,
+    SVGGElement,
     unknown
 >;
 
@@ -22,6 +33,7 @@ type LinkEnterSelection = d3.Selection<
  * Constants for link behavior and styling
  */
 const LINK_DEBOUNCE_TIME = 250; // Debounce time for link interactions in milliseconds
+const LINK_IN_TRANSITION_TIME = 50; // Duration of link exit transition in milliseconds
 const LINK_OUT_TRANSITION_TIME = 500; // Duration of link exit transition in milliseconds
 const LINK_PALETTE = "LinkGreenPalette"; // Default color palette for links
 
@@ -42,7 +54,9 @@ const linkAnnotation = (d: SimLink): string => {
  * Creates the basic structure for each link including its visual elements
  * @param {LinkEnterSelection} linkEnter - D3 selection of entering link elements
  */
-export const onLinkEnter = (linkEnter: LinkEnterSelection): void => {
+export const onLinkEnter = (
+    linkEnter: LinkEnterSelection,
+): LinkEnterSelection => {
     const newLinkEnter = linkEnter
         .append("g")
         .attr("id", (d: SimLink) => `link-${d.key}`)
@@ -53,14 +67,17 @@ export const onLinkEnter = (linkEnter: LinkEnterSelection): void => {
         });
     onLinkEnterElementConstruction(newLinkEnter);
     onLinkEnterEventBindings(newLinkEnter);
+    return newLinkEnter;
 };
 
 /**
  * Constructs the visual elements for each link
  * Creates paths and text elements for link visualization
- * @param {LinkSelection} linkEnter - D3 selection of entering link elements
+ * @param {LinkEnterSelection} linkEnter - D3 selection of entering link elements
  */
-const onLinkEnterElementConstruction = (linkEnter: LinkSelection): void => {
+const onLinkEnterElementConstruction = (
+    linkEnter: LinkEnterSelection,
+): void => {
     linkEnter.append("path").attr("class", (d: SimLink) => {
         return [
             "inner",
@@ -75,41 +92,16 @@ const onLinkEnterElementConstruction = (linkEnter: LinkSelection): void => {
 /**
  * Binds mouse events to link elements
  * Handles mouseover/mouseout events and tooltip display
- * @param {LinkSelection} linkEnter - D3 selection of entering link elements
+ * @param {LinkEnterSelection} linkEnter - D3 selection of entering link elements
  */
-const onLinkEnterEventBindings = (linkEnter: LinkSelection): void => {
-    const handleTooltip = debounce(
-        (element: SVGGElement, d: SimLink, status: boolean) => {
-            if (status) {
-                const textElement = element.querySelector("text");
-                linkTooltip.show(d, textElement);
-            } else {
-                linkTooltip.hide();
-            }
-        },
-        LINK_DEBOUNCE_TIME,
-    );
-
-    linkEnter.on("mouseover", function (event: MouseEvent, d: SimLink) {
-        d3.select(this).classed("selected", true);
-        handleTooltip(this, d, true);
-    });
-
-    linkEnter.on("mouseout", function (event: MouseEvent, d: SimLink) {
-        d3.select(this)
-            .classed("selected", false)
-            .transition()
-            .duration(LINK_OUT_TRANSITION_TIME);
-        handleTooltip(this, d, false);
-    });
-};
-
-/**
- * Handles the removal of links from the visualization
- * @param {LinkSelection} linkExit - D3 selection of exiting link elements
- */
-export const onLinkExit = (linkExit: LinkSelection): void => {
-    linkExit.remove();
+const onLinkEnterEventBindings = (linkEnter: LinkEnterSelection): void => {
+    linkEnter
+        .on("mouseover", function (event: MouseEvent, d: SimLink) {
+            onLinkMouseOver(event, d);
+        })
+        .on("mouseout", function (event: MouseEvent, d: SimLink) {
+            onLinkMouseOut(event, d);
+        });
 };
 
 /**
@@ -117,6 +109,62 @@ export const onLinkExit = (linkExit: LinkSelection): void => {
  * Currently empty but available for future implementation
  * @param {LinkUpdateSelection} linkSelection - D3 selection of updating link elements
  */
-export const onLinkUpdate = (_linkSelection: LinkSelection): void => {
+export const onLinkUpdate = (
+    linkSelection: LinkUpdateSelection,
+): LinkUpdateSelection => {
     // Available for future implementation
+    return linkSelection;
 };
+
+/**
+ * Handles the removal of links from the visualization
+ * @param {LinkExitSelection} linkExit - D3 selection of exiting link elements
+ */
+export const onLinkExit = (linkExit: LinkExitSelection): void => {
+    linkExit.remove();
+};
+
+/**
+ * Mouse event handlers
+ */
+
+/**
+ * Handles mouse over events on links
+ * @param {MouseEvent} event - DOM event object
+ * @param {SimLink} d - Link data
+ * Shows the tooltip for the hovered link
+ */
+const onLinkMouseOver = (event: MouseEvent, d: SimLink): void => {
+    d3.select(event.target)
+        .classed("selected", true)
+        .transition()
+        .duration(LINK_IN_TRANSITION_TIME);
+    handleLinkTooltip(event.target, d, true);
+};
+
+/**
+ * Handles mouse out events on links
+ * @param {MouseEvent} event - DOM event object
+ * @param {SimLink} d - Link data
+ * Hides the tooltip for the hovered link
+ */
+const onLinkMouseOut = (event: MouseEvent, d: SimLink): void => {
+    d3.select(event.target)
+        .classed("selected", false)
+        .transition()
+        .duration(LINK_OUT_TRANSITION_TIME);
+    handleLinkTooltip(event.target, d, false);
+};
+
+const handleLinkTooltip = debounce(
+    (element: SVGGElement, d: SimLink, status: boolean) => {
+        if (status) {
+            const textElement = element.parentElement.querySelector("text");
+            console.log("textElement: ", textElement);
+            linkTooltip.show(d, textElement);
+        } else {
+            linkTooltip.hide();
+        }
+    },
+    LINK_DEBOUNCE_TIME,
+);

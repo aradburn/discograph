@@ -68,6 +68,8 @@ describe("pruneSimData", () => {
             dragy: 0,
             fx: null,
             fy: null,
+            highlighted: false,
+            selected: false,
         };
 
         const node2: SimNode = {
@@ -75,6 +77,8 @@ describe("pruneSimData", () => {
             key: "2",
             name: "Node 2",
             distance: 2,
+            highlighted: false,
+            selected: false,
         };
 
         mockSimData.nodeMap.set("1", node1);
@@ -88,6 +92,8 @@ describe("pruneSimData", () => {
             distance: 1,
             isSpline: false,
             intermediate: undefined,
+            highlighted: false,
+            selected: false,
         };
 
         // Update nodes with the link
@@ -141,6 +147,8 @@ describe("pruneSimData", () => {
                 dragy: 0,
                 fx: null,
                 fy: null,
+                highlighted: false,
+                selected: false,
             };
             mockSimData.nodeMap.set(i.toString(), node);
 
@@ -155,6 +163,8 @@ describe("pruneSimData", () => {
                         distance: 1,
                         isSpline: false,
                         intermediate: undefined,
+                        highlighted: false,
+                        selected: false,
                     };
                     mockSimData.linkMap.set(`link${i}`, link);
 
@@ -216,6 +226,8 @@ describe("pruneSimData", () => {
                 dragy: 0,
                 fx: null,
                 fy: null,
+                highlighted: false,
+                selected: false,
             };
             mockSimData.nodeMap.set(i.toString(), node);
 
@@ -230,6 +242,8 @@ describe("pruneSimData", () => {
                         distance: 1,
                         isSpline: false,
                         intermediate: undefined,
+                        highlighted: false,
+                        selected: false,
                     };
                     mockSimData.linkMap.set(`link${i}`, link);
 
@@ -289,6 +303,8 @@ describe("pruneSimData", () => {
                 dragy: 0,
                 fx: null,
                 fy: null,
+                highlighted: false,
+                selected: false,
             };
             mockSimData.nodeMap.set(index.toString(), node);
         });

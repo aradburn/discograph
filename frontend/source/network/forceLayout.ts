@@ -6,11 +6,11 @@
 
 import * as d3 from "d3";
 import type { SimNode, SimLink } from "./data";
-import { onHullEnter, onHullExit } from "./hull";
-import { onHaloEnter, onHaloExit } from "./halo";
-import { onNodeEnter, onNodeExit, onNodeUpdate } from "./node";
-import { onTextEnter, onTextExit, onTextUpdate } from "./text";
-import { onLinkEnter, onLinkExit, onLinkUpdate } from "./link";
+import { onHullEnter, onHullUpdate, onHullExit } from "./hull";
+import { onHaloEnter, onHaloUpdate, onHaloExit } from "./halo";
+import { onNodeEnter, onNodeUpdate, onNodeExit } from "./node";
+import { onTextEnter, onTextUpdate, onTextExit } from "./text";
+import { onLinkEnter, onLinkUpdate, onLinkExit } from "./link";
 import { onTick } from "./tick";
 import { onNetworkEnd } from "./events";
 import { dg } from "../dg";
@@ -240,7 +240,7 @@ export const setupForceSliders = (): void => {
 export const displayForceLayout = (): void => {
     console.log("displayForceLayout");
 
-    const keyFunc = (d: SimNode | SimLink): string => ("key" in d ? d.key : "");
+    const keyFunc = (d: SimNode | SimLink): string => d.key;
 
     const nodeData = Array.from(dg.network.data.nodeMap.values()).filter(
         (d) => !d.isIntermediate,
@@ -257,29 +257,65 @@ export const displayForceLayout = (): void => {
     console.log("nodeData: ", nodeData);
     console.log("linkData: ", linkData);
 
-    dg.network.selections.halo =
-        dg.network.layers.halo?.selectAll<SVGGElement, SimNode>(".node") ??
-        null;
-    dg.network.selections.halo =
-        dg.network.selections.halo?.data(nodeData, keyFunc) ?? null;
+    dg.network.layers.halo
+        .selectAll<SVGGElement, SimNode>(".node")
+        .data(nodeData, keyFunc)
+        .join(
+            (enter) => {
+                return onHaloEnter(enter);
+            },
+            (update) => {
+                return onHaloUpdate(update);
+            },
+            (exit) => {
+                return onHaloExit(exit);
+            },
+        );
 
-    dg.network.selections.node =
-        dg.network.layers.node?.selectAll<SVGGElement, SimNode>(".node") ??
-        null;
-    dg.network.selections.node =
-        dg.network.selections.node?.data(nodeData, keyFunc) ?? null;
+    dg.network.layers.node
+        .selectAll<SVGGElement, SimNode>(".node")
+        .data(nodeData, keyFunc)
+        .join(
+            (enter) => {
+                return onNodeEnter(enter);
+            },
+            (update) => {
+                return onNodeUpdate(update);
+            },
+            (exit) => {
+                return onNodeExit(exit);
+            },
+        );
 
-    dg.network.selections.text =
-        dg.network.layers.text?.selectAll<SVGGElement, SimNode>(".node") ??
-        null;
-    dg.network.selections.text =
-        dg.network.selections.text?.data(nodeData, keyFunc) ?? null;
+    dg.network.layers.text
+        .selectAll<SVGGElement, SimNode>(".node")
+        .data(nodeData, keyFunc)
+        .join(
+            (enter) => {
+                return onTextEnter(enter);
+            },
+            (update) => {
+                return onTextUpdate(update);
+            },
+            (exit) => {
+                return onTextExit(exit);
+            },
+        );
 
-    dg.network.selections.link =
-        dg.network.layers.link?.selectAll<SVGGElement, SimLink>(".link") ??
-        null;
-    dg.network.selections.link =
-        dg.network.selections.link?.data(linkData, keyFunc) ?? null;
+    dg.network.layers.link
+        .selectAll<SVGGElement, SimLink>(".link")
+        .data(linkData, keyFunc)
+        .join(
+            (enter) => {
+                return onLinkEnter(enter);
+            },
+            (update) => {
+                return onLinkUpdate(update);
+            },
+            (exit) => {
+                return onLinkExit(exit);
+            },
+        );
 
     const clusterNodes = Array.from(dg.network.data.nodeMap.values()).filter(
         (d) => d.cluster !== undefined,
@@ -288,39 +324,25 @@ export const displayForceLayout = (): void => {
         d3.group(clusterNodes, (d) => d.cluster).values(),
     );
     const hullData = hullGroups.filter((d) => d.length > 1);
-    dg.network.selections.hull =
-        dg.network.layers.halo?.selectAll<SVGGElement, SimNode[]>(".hull") ??
-        null;
-    dg.network.selections.hull =
-        dg.network.selections.hull?.data(hullData) ?? null;
 
-    if (dg.network.selections.halo) {
-        onHaloEnter(dg.network.selections.halo.enter());
-        onHaloExit(dg.network.selections.halo.exit());
-    }
-    if (dg.network.selections.hull) {
-        onHullEnter(dg.network.selections.hull.enter());
-        onHullExit(dg.network.selections.hull.exit());
-    }
-    if (dg.network.selections.node) {
-        onNodeEnter(dg.network.selections.node.enter());
-        onNodeExit(dg.network.selections.node.exit());
-        onNodeUpdate(dg.network.selections.node);
-    }
-    if (dg.network.selections.text) {
-        onTextEnter(dg.network.selections.text.enter());
-        onTextExit(dg.network.selections.text.exit());
-        onTextUpdate(dg.network.selections.text);
-    }
-    if (dg.network.selections.link) {
-        onLinkEnter(dg.network.selections.link.enter());
-        onLinkExit(dg.network.selections.link.exit());
-        onLinkUpdate(dg.network.selections.link);
-    }
+    dg.network.layers.halo
+        .selectAll<SVGGElement, SimNode[]>(".hull")
+        .data(hullData)
+        .join(
+            (enter) => {
+                return onHullEnter(enter);
+            },
+            (update) => {
+                return onHullUpdate(update);
+            },
+            (exit) => {
+                return onHullExit(exit);
+            },
+        );
 
-    Array.from(dg.network.data.nodeMap.values()).forEach((n) => {
-        n.fixed = false;
-    });
+    Array.from(dg.network.data.nodeMap.values()).forEach(
+        (n) => (n.fixed = false),
+    );
 };
 
 /**
