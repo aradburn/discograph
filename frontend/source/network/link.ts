@@ -135,11 +135,11 @@ export const onLinkExit = (linkExit: LinkExitSelection): void => {
  * Shows the tooltip for the hovered link
  */
 const onLinkMouseOver = (event: MouseEvent, d: SimLink): void => {
-    d3.select(event.target)
+    d3.select(event.target as Element)
         .classed("selected", true)
         .transition()
         .duration(LINK_IN_TRANSITION_TIME);
-    handleLinkTooltip(event.target, d, true);
+    handleLinkTooltip(event.target as SVGGElement, d, true);
 };
 
 /**
@@ -148,20 +148,51 @@ const onLinkMouseOver = (event: MouseEvent, d: SimLink): void => {
  * @param {SimLink} d - Link data
  * Hides the tooltip for the hovered link
  */
-const onLinkMouseOut = (event: MouseEvent, d: SimLink): void => {
-    d3.select(event.target)
+export const onLinkMouseOut = (event: MouseEvent, d: SimLink): void => {
+    d3.select(event.target as Element)
         .classed("selected", false)
         .transition()
         .duration(LINK_OUT_TRANSITION_TIME);
-    handleLinkTooltip(event.target, d, false);
+    handleLinkTooltip(event.target as SVGGElement, d, false);
 };
 
-const handleLinkTooltip = debounce(
+export const handleLinkTooltip = debounce(
     (element: SVGGElement, d: SimLink, status: boolean) => {
+        if (!element) {
+            return; // Exit early if element is null or undefined
+        }
+
         if (status) {
-            const textElement = element.parentElement.querySelector("text");
-            console.log("textElement: ", textElement);
-            linkTooltip.show(d, textElement);
+            // Try to find a text element to attach the tooltip to
+            try {
+                // Try different methods to find a text element
+                let textElement: Element | null = null;
+
+                // Method 1: Direct querySelector on the element
+                if (element.querySelector) {
+                    textElement = element.querySelector("text");
+                }
+
+                // Method 2: Check parent element if no text found
+                if (
+                    !textElement &&
+                    element.parentElement &&
+                    element.parentElement.querySelector
+                ) {
+                    textElement = element.parentElement.querySelector("text");
+                }
+
+                // Method 3: Fallback to the element itself
+                if (textElement) {
+                    linkTooltip.show(d, textElement);
+                } else {
+                    linkTooltip.show(d, element);
+                }
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            } catch (_error) {
+                // In case of any errors, fallback to just using the element itself
+                linkTooltip.show(d, element);
+            }
         } else {
             linkTooltip.hide();
         }

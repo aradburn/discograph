@@ -145,7 +145,7 @@ describe("Network Node Text Module", () => {
             let textEnterSelection: d3.Selection<
                 d3.EnterElement,
                 SimNode,
-                d3.BaseType,
+                SVGGElement,
                 unknown
             >;
 
@@ -155,7 +155,7 @@ describe("Network Node Text Module", () => {
                 } as unknown as d3.Selection<
                     d3.EnterElement,
                     SimNode,
-                    d3.BaseType,
+                    SVGGElement,
                     unknown
                 >;
             });
@@ -225,7 +225,7 @@ describe("Network Node Text Module", () => {
                 } as unknown as d3.Selection<
                     SVGGElement,
                     SimNode,
-                    d3.BaseType,
+                    SVGGElement,
                     unknown
                 >;
 
@@ -244,7 +244,7 @@ describe("Network Node Text Module", () => {
                 } as unknown as d3.Selection<
                     SVGGElement,
                     SimNode,
-                    d3.BaseType,
+                    SVGGElement,
                     unknown
                 >;
 

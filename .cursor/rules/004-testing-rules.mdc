@@ -13,3 +13,5 @@ alwaysApply: true
 - Use arrow functions where appropriate.
 - Fix unbound method warnings.
 - Fix any lint errors in the tests
+- There is a frontend directory where package.json and the test files are located. Run the tests from there.
+- Fix failing tests one by one, use sequential thinking.

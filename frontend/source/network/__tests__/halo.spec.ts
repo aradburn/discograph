@@ -10,7 +10,18 @@ vi.mock("../node", () => ({
     getOuterRadius: vi.fn().mockReturnValue(10),
 }));
 
-type MockD3Selection = d3.Selection<d3.BaseType, SimNode, d3.BaseType, unknown>;
+type MockD3EnterSelection = d3.Selection<
+    d3.EnterElement,
+    SimNode,
+    SVGGElement,
+    unknown
+>;
+type MockD3ExitSelection = d3.Selection<
+    SVGGElement,
+    SimNode,
+    SVGGElement,
+    unknown
+>;
 type D3AttrFunction = (d: SimNode) => string | number;
 type MockD3Chainable = {
     append: Mock;
@@ -21,7 +32,8 @@ type MockD3Chainable = {
 };
 
 describe("network/halo", () => {
-    let mockSelection: MockD3Selection;
+    let mockEnterSelection: MockD3EnterSelection;
+    let mockExitSelection: MockD3ExitSelection;
     let mockNode: SimNode;
     let mockAppendFn: Mock;
     let mockAttrFn: Mock;
@@ -79,13 +91,16 @@ describe("network/halo", () => {
         mockAppendFn.mockReturnValue(mockChainableSelection);
         mockAttrFn.mockReturnValue(mockChainableSelection);
 
-        // Create mock D3 selection
-        mockSelection = mockChainableSelection as unknown as MockD3Selection;
+        // Create mock D3 selections
+        mockEnterSelection =
+            mockChainableSelection as unknown as MockD3EnterSelection;
+        mockExitSelection =
+            mockChainableSelection as unknown as MockD3ExitSelection;
     });
 
     describe("onHaloEnter", () => {
         it("should create a group element with correct ID and classes", () => {
-            onHaloEnter(mockSelection);
+            onHaloEnter(mockEnterSelection);
 
             // Verify group creation
             expect(mockAppendFn).toHaveBeenCalledWith("g");
@@ -115,7 +130,7 @@ describe("network/halo", () => {
         });
 
         it("should create a halo circle with correct radius", () => {
-            onHaloEnter(mockSelection);
+            onHaloEnter(mockEnterSelection);
 
             // Verify circle creation
             expect(mockAppendFn).toHaveBeenCalledWith("circle");
@@ -138,7 +153,7 @@ describe("network/halo", () => {
 
     describe("onHaloExit", () => {
         it("should remove the halo elements", () => {
-            onHaloExit(mockSelection);
+            onHaloExit(mockExitSelection);
             expect(mockRemoveFn).toHaveBeenCalled();
         });
     });

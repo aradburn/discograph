@@ -166,38 +166,7 @@ describe("Network Visualization Functions", () => {
                         unknown
                     >,
                 },
-                selections: {
-                    halo: d3.select(null) as d3.Selection<
-                        SVGGElement,
-                        SimNode,
-                        SVGGElement,
-                        unknown
-                    >,
-                    hull: d3.select(null) as d3.Selection<
-                        SVGGElement,
-                        SimNode[],
-                        SVGGElement,
-                        unknown
-                    >,
-                    node: d3.select(null) as d3.Selection<
-                        SVGGElement,
-                        SimNode,
-                        SVGGElement,
-                        unknown
-                    >,
-                    link: d3.select(null) as d3.Selection<
-                        SVGGElement,
-                        SimLink,
-                        SVGGElement,
-                        unknown
-                    >,
-                    text: d3.select(null) as d3.Selection<
-                        SVGGElement,
-                        SimNode,
-                        SVGGElement,
-                        unknown
-                    >,
-                },
+
                 dimensions: [800, 600],
                 forceLayout: {} as d3.Simulation<SimNode, SimLink>,
                 isUpdating: false,
