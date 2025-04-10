@@ -44,7 +44,7 @@ export interface Relations {
 /**
  * Arc data type for relations visualization
  */
-export interface ArcData {
+export interface RelationsArcData {
     role: string;
     count: number;
     startAngle: number;
@@ -109,7 +109,7 @@ export function setRelationsData(data: RelationsData): void {
 export function createRadialChart(): void {
     console.log("createRadialChart()");
 
-    const textAnchor = (_d: ArcData, i: number): "start" | "end" => {
+    const textAnchor = (_d: RelationsArcData, i: number): "start" | "end" => {
         const angle = (i + 0.5) / numBars;
         return angle < 0.5 ? "start" : "end";
     };
@@ -129,7 +129,7 @@ export function createRadialChart(): void {
         .exponent(0.25);
     const numBars = data.size;
 
-    const transform = (d: ArcData, i: number): string => {
+    const transform = (d: RelationsArcData, i: number): string => {
         console.log("d: ", d);
         console.log("i: ", i);
         const hypotenuse = barScale(d.count) + 5;
@@ -150,7 +150,7 @@ export function createRadialChart(): void {
     initRelations();
 
     const arc = d3
-        .arc<ArcData>()
+        .arc<RelationsArcData>()
         .startAngle((_d, i) => (i * 2 * Math.PI) / numBars)
         .endAngle((_d, i) => ((i + 1) * 2 * Math.PI) / numBars)
         .innerRadius(0)
@@ -176,7 +176,7 @@ export function createRadialChart(): void {
     }));
 
     const segments = radialGroup
-        .selectAll<SVGGElement, ArcData>("g")
+        .selectAll<SVGGElement, RelationsArcData>("g")
         .data(arcData)
         .enter()
         .append("g")

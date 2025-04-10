@@ -33,9 +33,6 @@ export class TooltipManager<T extends SimNode | SimLink> {
     constructor(contentFn: (data: T) => string, options: TooltipOptions = {}) {
         this.contentFn = contentFn;
         this.options = {
-            //             container: "body",
-            //             delay: { show: 200, hide: 100 },
-            //             offset: [0, 0],
             ...options,
         };
     }
@@ -48,27 +45,15 @@ export class TooltipManager<T extends SimNode | SimLink> {
     show(data: T, element: Element): void {
         this.hide(); // Clean up any existing tooltip
 
-        // Create temporary container for the tooltip content
-        //         const container = document.createElement("div");
-        //         container.innerHTML = this.contentFn(data);
-
         // Initialize new tooltip
         this.element = element;
         this.tooltip = new Tooltip(element, {
             ...this.options,
             template: '<div class="tooltip-inner"></div>',
             title: this.contentFn(data),
-            //             title: container.innerHTML,
-            //             html: true,
         });
 
-        // Set tooltip content
-        //         this.tooltip.setContent({
-        //             '.tooltip-inner': this.contentFn(data),
-        //         });
-
         this.tooltip.show();
-        console.log("this.tooltip:", this.tooltip);
     }
 
     /**
@@ -107,7 +92,7 @@ export const nodeTooltip = new TooltipManager<SimNode>(
         placement: "bottom",
         customClass: "d3-node-tooltip",
         html: true,
-        offset: [0, 0],
+        offset: [0, -16],
         delay: { show: 100, hide: 100 },
         trigger: "manual",
     },

@@ -1,7 +1,7 @@
 import { Tooltip } from "bootstrap";
 import { loading } from "./loading";
 import { initRelations } from "./relations";
-import { initNetwork } from "./network/init";
+import { initNetwork, resetNetworkTransform } from "./network/init";
 import { restartForceLayout, stopForceLayout } from "./network/forceLayout";
 import { initRoles } from "./roles";
 import { initSvg, printSvg } from "./svg";
@@ -11,6 +11,7 @@ import { DiscographFsm } from "./fsm";
 import type { TreeConfig } from "./roles";
 import { debounce } from "./utils";
 import { showMessage, clearMessages } from "./messages";
+import { ResizeEvent } from "./network/events";
 
 declare global {
     interface Window {
@@ -62,6 +63,8 @@ export const initWindow = (): void => {
         try {
             initWindow();
             initSvg();
+            resetNetworkTransform();
+            window.dispatchEvent(new ResizeEvent());
         } catch (error: unknown) {
             const errorMessage =
                 error instanceof Error

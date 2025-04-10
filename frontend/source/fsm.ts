@@ -5,7 +5,6 @@
  */
 
 import { loading } from "./loading";
-import { resetSvgSize, setSvgSize } from "./svg";
 import {
     startForceLayout,
     restartForceLayout,
@@ -28,7 +27,6 @@ import {
 import { pruneSimData } from "./network/pruning";
 import type { RelationsData } from "./relations";
 import { dg } from "./dg";
-import { initWindow } from "./init";
 import type { APINetworkDataResponse } from "./api";
 import { fetchAPINetwork, fetchAPIRandom, fetchAPIRadial } from "./api";
 import { resetNetworkTransform } from "./network/init";
@@ -203,27 +201,38 @@ export const DiscographFsm = window.machina.Fsm.extend({
         // Handle window resize events with debounce
         // ### TODO move into init
         const handleResize = debounce(() => {
-            console.log("handleResize");
+            console.log("handleResize fsm");
             //             window.location.reload();
-            resetSvgSize();
-            initWindow();
-            setSvgSize();
+            //             resetSvgSize();
+            //             initWindow();
+            //             setSvgSize();
 
-            // Center the visualization
-            const transform = `translate(${dg.dimensions[0] / 2},${dg.dimensions[1] / 2})`;
+            // Center the loading visualization
+            const transform = `translate(${dg.svg_dimensions[0] / 2},${dg.svg_dimensions[1] / 2})`;
             d3.selectAll(".centered")
                 .transition()
                 .duration(250)
                 .attr("transform", transform);
-            // ### TODO center the network
+
+            // Center the main node
+            if (dg.network.data.center) {
+                const centerNode = dg.network.data.nodeMap.get(
+                    dg.network.data.center.key,
+                );
+                if (centerNode) {
+                    centerNode.x = dg.network.newNodeCoords[0];
+                    centerNode.y = dg.network.newNodeCoords[1];
+                }
+            }
 
             // Restart force layout if in network view
             if (this.state === "state-viewing-network") {
-                restartForceLayout(ALPHA / 10.0);
+                console.log("restartForceLayout fsm");
+                restartForceLayout(ALPHA);
             }
-        }, 50);
+        }, 250);
 
-        window.addEventListener("resize", handleResize);
+        window.addEventListener("discograph:resize", handleResize);
 
         // Handle SVG mousedown events
         const svgDocument = document.getElementById("svg");
@@ -714,11 +723,20 @@ export const DiscographFsm = window.machina.Fsm.extend({
 
         if (entityKey !== null) {
             nodeOn = nodeLayer.selectAll<SVGGElement, SimNode>(
-                "g" + "#" + entityKey,
+                "g" + "#node-" + entityKey,
             );
             nodeOff = nodeLayer.selectAll<SVGGElement, SimNode>(
-                "g.node:not(#" + entityKey + ")",
+                "g.node:not(#node-" + entityKey + ")",
             );
+
+            if (nodeOn.empty()) {
+                console.log("nodeOn not found");
+                return;
+            }
+            if (nodeOff.empty()) {
+                console.log("nodeOff not found");
+                return;
+            }
 
             const nodeData = nodeOn.datum();
             if (!nodeData) {

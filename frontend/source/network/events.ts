@@ -150,10 +150,26 @@ export class SelectEntityEvent extends CustomEvent<SelectEntityEventDetail> {
     }
 }
 
+/**
+ * Custom event for resizing the network window
+ * @extends CustomEvent
+ */
+export class ResizeEvent extends Event {
+    /**
+     * Creates a new ResizeEvent
+     */
+    constructor() {
+        super("discograph:resize", {
+            bubbles: true,
+        });
+    }
+}
+
 // Add type declarations for custom events
 declare global {
     interface WindowEventMap {
         "discograph:request-network": RequestNetworkEvent;
         "discograph:select-entity": SelectEntityEvent;
+        "discograph:resize": ResizeEvent;
     }
 }

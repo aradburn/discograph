@@ -11,7 +11,7 @@ import type {
     SimNode,
     SimLink,
 } from "./network/data";
-import type { Relations, ArcData } from "./relations";
+import type { Relations, RelationsArcData } from "./relations";
 import type { DiscographFsm } from "./fsm";
 
 /**
@@ -87,7 +87,7 @@ export interface DiscographCore {
     /** Finite state machine instance */
     fsm: InstanceType<typeof DiscographFsm> | null;
     /** D3 arc generator for relations visualization */
-    arc: d3.Arc<ArcData, ArcData>;
+    arc: d3.Arc<RelationsArcData, RelationsArcData>;
 }
 
 /**
@@ -166,5 +166,5 @@ export const dg: DiscographCore = {
         },
     },
     fsm: null,
-    arc: d3.arc<ArcData, ArcData>(),
+    arc: d3.arc<RelationsArcData, RelationsArcData>(),
 };

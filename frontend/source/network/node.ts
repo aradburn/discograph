@@ -112,19 +112,13 @@ export const onNodeEnter = (
         .attr("id", (d) => `node-${d.key}`)
         .attr("class", (d) => {
             const entity_type = d.key.split("-")[0];
-            // Only add the palette class for labels, or if we're not in test mode
-            // (artist nodes in tests should just have "node artist" class)
-            const classes = ["node", entity_type];
-
-            // Only add palette for labels or in non-test environments
-            if (entity_type === "label" || !d.key.includes("test")) {
-                classes.push(
-                    entity_type === "artist"
-                        ? NODE_ARTIST_PALETTE
-                        : NODE_LABEL_PALETTE,
-                );
-            }
-
+            const classes = [
+                "node",
+                entity_type,
+                entity_type === "artist"
+                    ? NODE_ARTIST_PALETTE
+                    : NODE_LABEL_PALETTE,
+            ];
             return classes.join(" ");
         })
         .call(
@@ -204,7 +198,7 @@ const onNodeEnterElementConstruction = (
         .append("path")
         .attr("class", "more")
         .attr("d", symbol().type(symbolCross).size(64))
-        .style("opacity", (d) => (d.missing > 0 ? 1 : 0));
+        .style("opacity", (d) => (d.hasMissing || d.missing > 0 ? 1 : 0));
 };
 
 /**
@@ -311,7 +305,7 @@ export const onNodeUpdate = (
     // Both ARTISTS and LABELS
     nodeUpdate
         .select<SVGGElement>(".more")
-        .style("opacity", (d) => (d.missing > 0 ? 1 : 0));
+        .style("opacity", (d) => (d.hasMissing || d.missing > 0 ? 1 : 0));
     return nodeUpdate;
 };
 

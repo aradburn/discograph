@@ -149,13 +149,12 @@ export const processAPINetworkDataResponse = (
             radius: 0,
             links: [] as NetworkLink[],
             cluster: node.cluster,
-            missing: 0,
-            hasMissing: false,
+            missing: node.missing,
+            hasMissing: node.missing > 0 ? true : false,
             lastClickTime: 0,
             lastTouchTime: 0,
             isIntermediate: false,
             fixed: false,
-            // pages: node.pages,
         };
         nodeMap.set(node.key, processedNode);
         return processedNode;

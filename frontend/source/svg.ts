@@ -20,7 +20,6 @@ interface GradientStop {
  * Initializes the SVG element with basic setup
  * - Sets up window dimensions
  * - Creates SVG definitions (markers, gradients)
- * - Initializes tooltips for nodes and links
  */
 export const initSvg = (): void => {
     // Setup window dimensions on SVG element
@@ -28,9 +27,6 @@ export const initSvg = (): void => {
 
     // Setup SVG common definitions
     setupSvgDefs();
-
-    // No need to initialize tooltips here since we're using Bootstrap tooltips
-    d3.select("#svg");
 };
 
 /**
@@ -47,16 +43,6 @@ export const setSvgSize = (): void => {
         .attr("height", String(height))
         .attr("viewBox", `0 0 ${svgWidth} ${svgHeight}`)
         .attr("preserveAspectRatio", "none");
-};
-
-/**
- * Resets the SVG element size by removing explicit width/height CSS properties
- */
-export const resetSvgSize = (): void => {
-    const svg = document.querySelector("#svg");
-    if (svg instanceof SVGElement) {
-        svg.style.cssText = "";
-    }
 };
 
 /**

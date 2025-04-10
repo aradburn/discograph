@@ -305,7 +305,7 @@ describe("Network Node Functions", () => {
             // Test class attribute
             const classCall = idCalls.find((call) => call[0] === "class");
             const classFunc = classCall?.[1] as (d: SimNode) => string;
-            expect(classFunc(mockArtistNode)).toBe("node artist");
+            expect(classFunc(mockArtistNode)).toBe("node artist Palette3");
             expect(classFunc(mockLabelNode)).toBe("node label Palette4");
         });
 

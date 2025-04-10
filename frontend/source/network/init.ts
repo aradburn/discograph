@@ -7,8 +7,8 @@
 import { initForceLayout, initForceSliders } from "./forceLayout";
 import { dg } from "../dg";
 import * as d3 from "d3";
-import { VIEWPORT_SIZE_MULTIPLIER } from "../init";
 import { hideAllTooltips } from "./tooltips";
+import { VIEWPORT_SIZE_MULTIPLIER } from "../init";
 
 type TransformFunction = (
     selection:
@@ -35,27 +35,6 @@ export const initNetwork = (): void => {
     dg.network.layers.node = root.append("g").attr("id", "nodeLayer");
     dg.network.layers.text = root.append("g").attr("id", "textLayer");
 
-    // dg.network.selections.halo = dg.network.layers.halo.selectAll<
-    //     SVGGElement,
-    //     SimNode
-    // >(".node");
-    // dg.network.selections.hull = dg.network.layers.halo.selectAll<
-    //     SVGGElement,
-    //     SimNode[]
-    // >(".hull");
-    // dg.network.selections.link = dg.network.layers.link.selectAll<
-    //     SVGGElement,
-    //     SimLink
-    // >(".link");
-    // dg.network.selections.node = dg.network.layers.node.selectAll<
-    //     SVGGElement,
-    //     SimNode
-    // >(".node");
-    // dg.network.selections.text = dg.network.layers.text.selectAll<
-    //     SVGGElement,
-    //     SimNode
-    // >(".node");
-
     dg.network.zoom = d3
         .zoom<SVGSVGElement, unknown>()
         .extent([
@@ -67,20 +46,7 @@ export const initNetwork = (): void => {
 
     svgElement.call(dg.network.zoom);
 
-    const initialTransform = d3.zoomIdentity
-        .scale(VIEWPORT_SIZE_MULTIPLIER)
-        .translate(
-            -dg.svg_dimensions[0] / VIEWPORT_SIZE_MULTIPLIER,
-            -dg.svg_dimensions[1] / VIEWPORT_SIZE_MULTIPLIER,
-        );
-
-    //     dg.network.zoom.transform = initialTransform;
-    //     console.log("dg.network.zoom.transform: ", dg.network.zoom.transform);
-
-    const transform = dg.network.zoom.transform.bind(
-        dg.network.zoom,
-    ) as TransformFunction;
-    svgElement.transition().duration(0).call(transform, initialTransform);
+    resetNetworkTransform();
 
     initForceLayout();
     initForceSliders();
@@ -92,14 +58,21 @@ export const initNetwork = (): void => {
  * Uses the current zoom state to calculate the proper inversion for smooth animation.
  */
 export const resetNetworkTransform = (): void => {
+    const f = 0.5;
+    const scale =
+        Math.min(
+            dg.svg_dimensions[0] / dg.dimensions[0],
+            dg.svg_dimensions[1] / dg.dimensions[1],
+        ) * f;
+    console.log("scale: ", scale);
+
     const svgElement = d3.select("#svg");
     const initialTransform = d3.zoomIdentity
-        .scale(VIEWPORT_SIZE_MULTIPLIER)
+        .scale(scale)
         .translate(
-            -dg.svg_dimensions[0] / VIEWPORT_SIZE_MULTIPLIER,
-            -dg.svg_dimensions[1] / VIEWPORT_SIZE_MULTIPLIER,
+            (dg.dimensions[0] / f - dg.svg_dimensions[0]) / 2.0,
+            (dg.dimensions[1] / f - dg.svg_dimensions[1]) / 2.0,
         );
-    console.log("initialTransform: ", initialTransform);
 
     const svgNode = svgElement.node();
     if (!(svgNode instanceof Element)) {
@@ -107,11 +80,13 @@ export const resetNetworkTransform = (): void => {
         return;
     }
     const currentTransform = d3.zoomTransform(svgNode);
-    const x = dg.svg_dimensions[0] / VIEWPORT_SIZE_MULTIPLIER;
-    const y = dg.svg_dimensions[1] / VIEWPORT_SIZE_MULTIPLIER;
-    const invertedPoint = currentTransform.invert([x, y]);
-    console.log("currentTransform: ", currentTransform);
-    console.log("invertedPoint: ", invertedPoint);
+    //     const x = dg.svg_dimensions[0] / VIEWPORT_SIZE_MULTIPLIER;
+    //     const y = dg.svg_dimensions[1] / VIEWPORT_SIZE_MULTIPLIER;
+    //     const invertedPoint = currentTransform.invert([x, y]);
+    const invertedPoint = currentTransform.invert([
+        -(dg.dimensions[0] / f - dg.svg_dimensions[0]) / 2.0,
+        -(dg.dimensions[1] / f - dg.svg_dimensions[1]) / 2.0,
+    ]);
 
     const transform = dg.network.zoom.transform.bind(
         dg.network.zoom,
@@ -120,7 +95,6 @@ export const resetNetworkTransform = (): void => {
         .transition()
         .duration(750)
         .call(transform, initialTransform, invertedPoint);
-    //     console.log("transform: ", transform);
 };
 
 /**

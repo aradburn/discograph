@@ -18,7 +18,6 @@ export const getNodeColorClass = (d: SimNode): string => {
  * @returns CSS class name in the format 'color-X' where X is a number from 0-8
  */
 const getArtistNodeColorClass = (d: SimNode): string => {
-    console.log(`key: ${d.key}, distance: ${d.distance}`);
     const index = clamp(d.distance, 0, 8) + 1;
     const clampedIndex = clamp(index, 0, 8);
     return `color-${clampedIndex}`;
