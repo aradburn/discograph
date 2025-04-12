@@ -18,10 +18,9 @@ vi.mock("../tooltips", () => ({
 
 // Mock d3 functions we need
 vi.mock("d3", async (importOriginal) => {
-    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-    const mod = await importOriginal<typeof import("d3")>();
+    const originalModule = await importOriginal();
     return {
-        ...mod,
+        ...(originalModule as object),
         select: vi.fn().mockReturnValue({
             selectAll: vi.fn().mockReturnValue({
                 attr: vi.fn().mockReturnValue({}),
