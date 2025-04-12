@@ -8,7 +8,7 @@ import { initForceLayout, initForceSliders } from "./forceLayout";
 import { dg } from "../dg";
 import * as d3 from "d3";
 import { hideAllTooltips } from "./tooltips";
-import { VIEWPORT_SIZE_MULTIPLIER } from "../init";
+import { SVG_SCALING_MULTIPLIER } from "../init";
 
 type TransformFunction = (
     selection:
@@ -58,20 +58,21 @@ export const initNetwork = (): void => {
  * Uses the current zoom state to calculate the proper inversion for smooth animation.
  */
 export const resetNetworkTransform = (): void => {
-    const f = 0.5;
     const scale =
         Math.min(
             dg.svg_dimensions[0] / dg.dimensions[0],
             dg.svg_dimensions[1] / dg.dimensions[1],
-        ) * f;
+        ) * SVG_SCALING_MULTIPLIER;
     console.log("scale: ", scale);
 
     const svgElement = d3.select("#svg");
     const initialTransform = d3.zoomIdentity
         .scale(scale)
         .translate(
-            (dg.dimensions[0] / f - dg.svg_dimensions[0]) / 2.0,
-            (dg.dimensions[1] / f - dg.svg_dimensions[1]) / 2.0,
+            (dg.dimensions[0] / SVG_SCALING_MULTIPLIER - dg.svg_dimensions[0]) /
+                2.0,
+            (dg.dimensions[1] / SVG_SCALING_MULTIPLIER - dg.svg_dimensions[1]) /
+                2.0,
         );
 
     const svgNode = svgElement.node();
@@ -84,8 +85,10 @@ export const resetNetworkTransform = (): void => {
     //     const y = dg.svg_dimensions[1] / VIEWPORT_SIZE_MULTIPLIER;
     //     const invertedPoint = currentTransform.invert([x, y]);
     const invertedPoint = currentTransform.invert([
-        -(dg.dimensions[0] / f - dg.svg_dimensions[0]) / 2.0,
-        -(dg.dimensions[1] / f - dg.svg_dimensions[1]) / 2.0,
+        -(dg.dimensions[0] / SVG_SCALING_MULTIPLIER - dg.svg_dimensions[0]) /
+            2.0,
+        -(dg.dimensions[1] / SVG_SCALING_MULTIPLIER - dg.svg_dimensions[1]) /
+            2.0,
     ]);
 
     const transform = dg.network.zoom.transform.bind(

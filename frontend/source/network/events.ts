@@ -108,13 +108,15 @@ interface RequestNetworkEventDetail {
  * @extends CustomEvent
  */
 export class RequestNetworkEvent extends CustomEvent<RequestNetworkEventDetail> {
+    static readonly EVENT_NAME = "discograph:request-network";
+
     /**
      * Creates a new RequestNetworkEvent
      * @param {string} entityKey - The key of the entity to request
      * @param {boolean} pushHistory - Whether to push the network layout to the history stack
      */
     constructor(entityKey: string, pushHistory: boolean) {
-        super("discograph:request-network", {
+        super(RequestNetworkEvent.EVENT_NAME, {
             bubbles: true,
             detail: {
                 entityKey,

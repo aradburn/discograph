@@ -13,4 +13,10 @@ export default defineConfig({
             "tests/**/*.{test,spec}.{js,jsx,ts,tsx}",
         ],
     },
+    resolve: {
+        alias: {
+            "@": path.resolve(__dirname, "./source"),
+            "~bootstrap": path.resolve(__dirname, "./node_modules/bootstrap"),
+        },
+    },
 });

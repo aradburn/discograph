@@ -45,8 +45,8 @@ export const pruneSimData = (simData: SimData): SimData => {
         }
     }
 
-    console.log("processNetworkData output nodes:", simData.nodeMap);
-    console.log("processNetworkData output links:", simData.linkMap);
+    //     console.log("processNetworkData output nodes:", simData.nodeMap);
+    //     console.log("processNetworkData output links:", simData.linkMap);
 
     return simData;
 };

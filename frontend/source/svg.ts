@@ -150,7 +150,7 @@ function saveBlob(dataBlob: Blob, _filesize: number): void {
  * @param svgNode - The SVG DOM node to convert
  * @returns The serialized SVG string with proper namespace handling
  */
-const getSvgString = (svgNode: SVGElement): string => {
+export const getSvgString = (svgNode: SVGElement): string => {
     svgNode.setAttribute("xlink", "http://www.w3.org/1999/xlink");
     const cssStyleText = getCSSStyles(svgNode);
     appendCSS(cssStyleText, svgNode);
@@ -168,7 +168,7 @@ const getSvgString = (svgNode: SVGElement): string => {
  * @param parentElement - The parent SVG element
  * @returns Concatenated CSS rules
  */
-const getCSSStyles = (parentElement: SVGElement): string => {
+export const getCSSStyles = (parentElement: SVGElement): string => {
     const selectorTextArr = new Set<string>();
 
     // Add Parent element Id and Classes
@@ -268,7 +268,7 @@ const getCSSStyles = (parentElement: SVGElement): string => {
  * @param cssText - The CSS text to append
  * @param element - The target SVG element
  */
-const appendCSS = (cssText: string, element: SVGElement): void => {
+export const appendCSS = (cssText: string, element: SVGElement): void => {
     const styleElement = document.createElement("style");
     styleElement.setAttribute("type", "text/css");
     styleElement.textContent = cssText;
@@ -284,7 +284,7 @@ const appendCSS = (cssText: string, element: SVGElement): void => {
  * @param format - The output format (default: 'png')
  * @param callback - Callback function to handle the converted image
  */
-const svgString2Image = (
+export const svgString2Image = (
     svgString: string,
     width: number,
     height: number,

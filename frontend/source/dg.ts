@@ -15,17 +15,6 @@ import type { Relations, RelationsArcData } from "./relations";
 import type { DiscographFsm } from "./fsm";
 
 /**
- * D3 selections for network visualization elements
- */
-// interface NetworkSelections {
-//     halo: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown> | null;
-//     hull: d3.Selection<SVGGElement, SimNode[], SVGGElement, unknown> | null;
-//     node: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown> | null;
-//     link: d3.Selection<SVGGElement, SimLink, SVGGElement, unknown> | null;
-//     text: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown> | null;
-// }
-
-/**
  * SVG layer containers for network visualization
  */
 interface NetworkLayers {
@@ -56,10 +45,6 @@ export interface Network {
     zoom: d3.ZoomBehavior<SVGGElement, unknown> | null;
     /** Core data storage for the network */
     data: SimData;
-    /** Current page state and selections */
-    // pageData: PageData;
-    /** D3 selections for various visual elements */
-    //     selections: NetworkSelections;
     /** SVG layer containers for different visual elements */
     layers: NetworkLayers;
 }
@@ -109,8 +94,6 @@ export const dg: DiscographCore = {
         newNodeCoords: [0, 0],
         zoom: null,
         data: {
-            //             nodes: [],
-            //             links: [],
             center: {
                 x: 0,
                 y: 0,
@@ -133,19 +116,6 @@ export const dg: DiscographCore = {
             linkMap: new Map<LinkKey, SimLink>(),
             maxDistance: 0,
         } as SimData,
-        // pageData: {
-        //     currentPage: 1,
-        //     links: [],
-        //     nodes: [],
-        //     selectedNodeKey: null,
-        // },
-        //         selections: {
-        //             halo: null,
-        //             hull: null,
-        //             node: null,
-        //             link: null,
-        //             text: null,
-        //         },
         layers: {
             root: null,
             halo: null,

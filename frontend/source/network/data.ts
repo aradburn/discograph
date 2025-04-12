@@ -97,20 +97,9 @@ export interface NetworkLink {
 // Processed network data
 export interface NetworkData {
     nodeMap: Map<NodeKey, NetworkNode>;
-    //     nodes: NetworkNode[];
-    //     links: NetworkLink[];
     center: NetworkNode;
     linkMap: Map<LinkKey, NetworkLink>;
     maxDistance: number;
-    //     pageCount: number;
-    //     json: {
-    //         center: {
-    //             key: string;
-    //             name: string;
-    //         };
-    //         nodes: NetworkNode[];
-    //         links: NetworkLink[];
-    //     };
 }
 
 export interface NetworkCenter {
@@ -120,10 +109,10 @@ export interface NetworkCenter {
 export const processAPINetworkDataResponse = (
     apiNetworkDataResponse: APINetworkDataResponse,
 ): NetworkData => {
-    console.log(
-        "processAPINetworkDataResponse input apiNetworkDataResponse:",
-        apiNetworkDataResponse,
-    );
+    //     console.log(
+    //         "processAPINetworkDataResponse input apiNetworkDataResponse:",
+    //         apiNetworkDataResponse,
+    //     );
 
     if (
         !apiNetworkDataResponse ||
@@ -160,7 +149,7 @@ export const processAPINetworkDataResponse = (
         return processedNode;
     });
 
-    console.log("nodeMap:", nodeMap);
+    //     console.log("nodeMap:", nodeMap);
 
     const linkMap = new Map<LinkKey, NetworkLink>();
     const processedLinks = apiNetworkDataResponse.links.map((link) => {
@@ -180,13 +169,12 @@ export const processAPINetworkDataResponse = (
             distance: Math.min(source.distance, target.distance),
             isSpline: false,
             intermediate: undefined,
-            // pages: link.pages,
         };
         linkMap.set(link.key, processedLink);
         return processedLink;
     });
 
-    console.log("processedLinks:", processedLinks);
+    //     console.log("processedLinks:", processedLinks);
 
     // Update node links after all links are processed
     processedLinks.forEach((link) => {
@@ -206,7 +194,7 @@ export const processAPINetworkDataResponse = (
         }
     });
 
-    console.log("updated nodeMap:", nodeMap);
+    //     console.log("updated nodeMap:", nodeMap);
 
     const center = processedNodes.find(
         (n) => n.key === apiNetworkDataResponse.center.key,
@@ -217,22 +205,14 @@ export const processAPINetworkDataResponse = (
 
     const networkData: NetworkData = {
         nodeMap,
-        //         nodes: processedNodes,
-        //         links: processedLinks,
         center,
         linkMap,
         maxDistance: Math.max(...processedNodes.map((n) => n.distance)),
-        //         pageCount: 1,
-        //         json: {
-        //             center: { key: center.key, name: center.name },
-        //             nodes: processedNodes,
-        //             links: processedLinks,
-        //         },
     };
-    console.log(
-        "processAPINetworkDataResponse output networkData:",
-        networkData,
-    );
+    //     console.log(
+    //         "processAPINetworkDataResponse output networkData:",
+    //         networkData,
+    //     );
 
     return networkData;
 };
@@ -244,7 +224,7 @@ export const processAPINetworkDataResponse = (
 export const convertNetworkDataToSimData = (
     networkData: NetworkData,
 ): SimData => {
-    console.log("convertNetworkDataToSimData input:", networkData);
+    //     console.log("convertNetworkDataToSimData input:", networkData);
 
     const newNodeMap = new Map<NodeKey, SimNode>();
     const newLinkMap = new Map<LinkKey, SimLink>();
@@ -378,85 +358,15 @@ export const convertNetworkDataToSimData = (
             newLinkMap.set(simLink.key, simLink);
         }
     });
-    console.log("convertNetworkDataToSimData output: ", newSimData);
+    //     console.log("convertNetworkDataToSimData output: ", newSimData);
     return newSimData;
 };
 
 export const updateGlobalData = (simData: SimData): void => {
-    console.log("updateGlobalData input:", simData);
+    //     console.log("updateGlobalData input:", simData);
 
     dg.network.data.nodeMap = simData.nodeMap;
     dg.network.data.linkMap = simData.linkMap;
     dg.network.data.maxDistance = simData.maxDistance;
     dg.network.data.center = simData.center;
-
-    // Update current global lists of nodes and links
-    //     const nodeKeysToRemove: NodeKey[] = [];
-    //     Array.from(dg.network.data.nodeMap.keys()).forEach((key) => {
-    //         if (!newNodeMap.has(key)) {
-    //             nodeKeysToRemove.push(key);
-    //         }
-    //     });
-    //     nodeKeysToRemove.forEach((key) => {
-    //         dg.network.data.nodeMap.delete(key);
-    //     });
-    //
-    //     const linkKeysToRemove: LinkKey[] = [];
-    //     Array.from(dg.network.data.linkMap.keys()).forEach((key) => {
-    //         if (!newLinkMap.has(key)) {
-    //             linkKeysToRemove.push(key);
-    //         }
-    //     });
-    //     linkKeysToRemove.forEach((key) => {
-    //         dg.network.data.linkMap.delete(key);
-    //     });
-
-    //     simData.nodeMap.forEach((newNode, newNodeKey) => {
-    //         if (dg.network.data.nodeMap.has(newNodeKey)) {
-    //             const oldNode = dg.network.data.nodeMap.get(newNodeKey);
-    //             if (oldNode) {
-    //                 oldNode.cluster = newNode.cluster;
-    //                 oldNode.distance = newNode.distance;
-    //                 oldNode.links = newNode.links;
-    //                 oldNode.missing = newNode.missing;
-    //                 oldNode.x = dg.network.newNodeCoords[0];
-    //                 oldNode.y = dg.network.newNodeCoords[1];
-    //             }
-    //         } else {
-    //             newNode.x = dg.network.newNodeCoords[0];
-    //             newNode.y = dg.network.newNodeCoords[1];
-    //             dg.network.data.nodeMap.set(newNodeKey, newNode);
-    //         }
-    //     });
-    //
-    //     simData.linkMap.forEach((newLink, newLinkKey) => {
-    //         if (!dg.network.data.linkMap.has(newLinkKey)) {
-    //             //             const oldLink = dg.network.data.linkMap.get(newLinkKey);
-    //             //             if (oldLink) {
-    //             //                 oldLink.pages = newLink.pages;
-    //             //             }
-    //             //         } else {
-    //             const sourceNode = dg.network.data.nodeMap.get(newLink.source.key);
-    //             const targetNode = dg.network.data.nodeMap.get(newLink.target.key);
-    //             if (sourceNode && targetNode) {
-    //                 newLink.source = {
-    //                     ...sourceNode,
-    //                     links: [newLink],
-    //                 };
-    //                 newLink.target = {
-    //                     ...targetNode,
-    //                     links: [newLink],
-    //                 };
-    //                 if (newLink.intermediate) {
-    //                     const intermediateNode = dg.network.data.nodeMap.get(
-    //                         newLink.intermediate.key,
-    //                     );
-    //                     if (intermediateNode) {
-    //                         newLink.intermediate = intermediateNode;
-    //                     }
-    //                 }
-    //                 dg.network.data.linkMap.set(newLinkKey, newLink);
-    //             }
-    //         }
-    //     });
 };

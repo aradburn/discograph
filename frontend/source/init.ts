@@ -37,11 +37,11 @@ export const initWindow = (): void => {
     const svgCanvasDimensions: [number, number] = [
         svgContainerDimensions[0] *
             VIEWPORT_SIZE_MULTIPLIER *
-            SVG_SCALING_MULTIPLIER *
+            //             SVG_SCALING_MULTIPLIER *
             dpr,
         svgContainerDimensions[1] *
             VIEWPORT_SIZE_MULTIPLIER *
-            SVG_SCALING_MULTIPLIER *
+            //             SVG_SCALING_MULTIPLIER *
             dpr,
     ];
     console.log("svgContainerDimensions: ", svgContainerDimensions);

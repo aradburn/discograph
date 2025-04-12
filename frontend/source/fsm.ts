@@ -37,7 +37,7 @@ import { showMessage } from "./messages";
 import * as d3 from "d3";
 import $ from "jquery";
 
-interface FSMInstance {
+export interface FSMInstance {
     state: keyof FSMStates;
     handle(
         event: string,
@@ -69,7 +69,7 @@ interface FSMInstance {
     _showNetworkHandler?: (event: Event) => void;
 }
 
-interface FSMState {
+export interface FSMState {
     _onEnter?: (this: FSMInstance) => void;
     _onExit?: (this: FSMInstance) => void;
     "received-network"?: (
@@ -91,7 +91,7 @@ interface FSMState {
     handleError?: (this: FSMInstance, error: unknown) => void;
 }
 
-interface FSMStates {
+export interface FSMStates {
     "state-requesting-network": FSMState;
     "state-requesting-radial": FSMState;
     "state-requesting-random": FSMState;
@@ -100,7 +100,7 @@ interface FSMStates {
     uninitialized: FSMState;
 }
 
-interface FSMConfig extends FSMState {
+export interface FSMConfig extends FSMState {
     initialize?: (this: FSMInstance) => void;
     namespace?: string;
     initialState?: keyof FSMStates;
