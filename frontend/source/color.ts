@@ -1,5 +1,6 @@
 import type { SimNode, SimLink } from "./network/data";
 import { clamp } from "./utils";
+import { NodeType } from "./network/types";
 
 /**
  * Determines the color class for a node based on its type.
@@ -7,7 +8,7 @@ import { clamp } from "./utils";
  * @returns CSS class name for the node's color
  */
 export const getNodeColorClass = (d: SimNode): string => {
-    return d.type === "artist"
+    return d.type === NodeType.Artist
         ? getArtistNodeColorClass(d)
         : getLabelNodeColorClass(d);
 };

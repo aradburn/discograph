@@ -4,6 +4,7 @@ import type { SimNode } from "../data";
 import { getOuterRadius } from "../node";
 import type * as d3 from "d3";
 import type { Mock } from "vitest";
+import { NodeType } from "../types";
 
 // Mock the node module
 vi.mock("../node", () => ({
@@ -48,7 +49,7 @@ describe("network/halo", () => {
         mockNode = {
             key: "artist-123",
             name: "Test Artist",
-            type: "artist",
+            type: NodeType.Artist,
             size: 1,
             x: 0,
             y: 0,

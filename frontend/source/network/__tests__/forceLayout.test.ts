@@ -12,6 +12,7 @@ import {
 } from "../forceLayout";
 import { dg } from "../../dg";
 import type { SimNode, SimLink } from "../data";
+import { NodeType } from "../types";
 
 // Mock d3
 vi.mock("d3", () => ({
@@ -98,7 +99,7 @@ const createMockNode = (
 ): SimNode => ({
     key,
     name: `Test Node ${key}`,
-    type: "artist",
+    type: NodeType.Artist,
     size: 10,
     x: 0,
     y: 0,

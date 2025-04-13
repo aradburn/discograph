@@ -3,6 +3,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { type Mock } from "vitest";
 import type * as d3 from "d3";
 import { onNodeEnter, onNodeExit, onNodeUpdate } from "../../network/node";
+import { NodeType } from "../types";
 
 // Declare global types
 declare global {
@@ -128,7 +129,7 @@ let mockNodeEnterSelection: NodeEnterSelection;
 const mockArtistNode: SimNode = {
     key: "artist-test",
     name: "Test Artist",
-    type: "artist",
+    type: NodeType.Artist,
     size: 10,
     distance: 1,
     x: 0,
@@ -157,7 +158,7 @@ const mockLabelNode: SimNode = {
     ...mockArtistNode,
     key: "label-test",
     name: "Test Label",
-    type: "label",
+    type: NodeType.Label,
 };
 
 beforeEach(() => {
@@ -523,7 +524,8 @@ describe("Network Node Functions", () => {
                 filter: vi
                     .fn()
                     .mockImplementation((filterFn: (d: SimNode) => boolean) => {
-                        if (filterFn.toString().includes("artist")) {
+                        // Check if the filter is for artist nodes
+                        if (filterFn({ type: NodeType.Artist } as SimNode)) {
                             return mockArtistSelection;
                         }
                         return mockLabelSelection;

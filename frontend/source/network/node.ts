@@ -16,6 +16,7 @@ import { hideAllTooltips } from "./tooltips";
 import { SelectEntityEvent } from "./events";
 import { nodeTooltip } from "./tooltips";
 import type { SimNode } from "./data";
+import { NodeType } from "./types";
 
 // Configuration Constants
 /**
@@ -155,7 +156,7 @@ const onNodeEnterElementConstruction = (
 ): void => {
     // ARTISTS
     const artistEnter = nodeEnter.filter(function (d) {
-        return d.type === "artist";
+        return d.type === NodeType.Artist;
     });
     artistEnter
         .append("circle")
@@ -180,7 +181,7 @@ const onNodeEnterElementConstruction = (
 
     // LABELS
     const labelEnter = nodeEnter.filter(function (d) {
-        return d.type === "label";
+        return d.type === NodeType.Label;
     });
     labelEnter
         .append("rect")
@@ -262,7 +263,7 @@ export const onNodeUpdate = (
 ): NodeUpdateSelection => {
     // ARTISTS
     const artistUpdate = nodeUpdate.filter(function (d) {
-        return d.type === "artist";
+        return d.type === NodeType.Artist;
     });
     artistUpdate
         .select<SVGGElement>(".shadow")
@@ -288,7 +289,7 @@ export const onNodeUpdate = (
 
     // LABELS
     const labelUpdate = nodeUpdate.filter(function (d) {
-        return d.type === "label";
+        return d.type === NodeType.Label;
     });
     labelUpdate
         .select<SVGGElement>(".inner")

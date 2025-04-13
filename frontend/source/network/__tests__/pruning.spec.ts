@@ -7,6 +7,7 @@ import type {
     NetworkNode,
     NetworkLink,
 } from "../data";
+import { NodeType } from "../types";
 
 describe("pruneSimData", () => {
     let mockSimData: SimData;
@@ -17,7 +18,7 @@ describe("pruneSimData", () => {
         mockCenter = {
             key: "center",
             name: "Center Node",
-            type: "artist",
+            type: NodeType.Artist,
             size: 1,
             x: 0,
             y: 0,
@@ -47,7 +48,7 @@ describe("pruneSimData", () => {
         const node1: SimNode = {
             key: "1",
             name: "Node 1",
-            type: "artist",
+            type: NodeType.Artist,
             size: 1,
             x: 0,
             y: 0,
@@ -126,7 +127,7 @@ describe("pruneSimData", () => {
             const node: SimNode = {
                 key: i.toString(),
                 name: `Node ${i}`,
-                type: "artist",
+                type: NodeType.Artist,
                 size: 1,
                 x: 0,
                 y: 0,
@@ -205,7 +206,7 @@ describe("pruneSimData", () => {
             const node: SimNode = {
                 key: i.toString(),
                 name: `Node ${i}`,
-                type: "artist",
+                type: NodeType.Artist,
                 size: 1,
                 x: 0,
                 y: 0,
@@ -282,7 +283,7 @@ describe("pruneSimData", () => {
             const node: SimNode = {
                 key: index.toString(),
                 name: `Node ${index}`,
-                type: "artist",
+                type: NodeType.Artist,
                 size: 1,
                 x: 0,
                 y: 0,

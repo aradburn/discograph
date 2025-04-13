@@ -10,6 +10,7 @@ import {
 import { hideAllTooltips } from "../tooltips";
 import { dg } from "../../dg";
 import type { SimNode, SimLink } from "../data";
+import { NodeType } from "../types";
 
 // Mock dependencies
 vi.mock("../tooltips", () => ({
@@ -204,7 +205,7 @@ describe("Network Visualization Functions", () => {
             const centerNode: SimNode = {
                 key: "center",
                 name: "Center Node",
-                type: "artist",
+                type: NodeType.Artist,
                 size: 10,
                 x: 0,
                 y: 0,
@@ -233,7 +234,7 @@ describe("Network Visualization Functions", () => {
             dg.network.data.center = {
                 key: "center",
                 name: "Center Node",
-                type: "artist",
+                type: NodeType.Artist,
                 size: 10,
                 x: 0,
                 y: 0,
@@ -262,7 +263,7 @@ describe("Network Visualization Functions", () => {
             const centerNode: SimNode = {
                 key: "center",
                 name: "Center Node",
-                type: "artist",
+                type: NodeType.Artist,
                 size: 10,
                 x: 0,
                 y: 0,
@@ -291,7 +292,7 @@ describe("Network Visualization Functions", () => {
             dg.network.data.center = {
                 key: "center",
                 name: "Center Node",
-                type: "artist",
+                type: NodeType.Artist,
                 size: 10,
                 x: 0,
                 y: 0,

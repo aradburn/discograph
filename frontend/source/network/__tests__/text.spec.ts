@@ -11,6 +11,7 @@ import {
 } from "../text";
 import { dg } from "../../dg";
 import type { SimNode } from "../data";
+import { NodeType } from "../types";
 
 type D3AttrFunction = (d: SimNode) => string;
 
@@ -26,7 +27,7 @@ type MockD3Chainable = {
 const createMockNode = (overrides = {}): SimNode => ({
     key: "test-123",
     name: "Test Node",
-    type: "artist",
+    type: NodeType.Artist,
     size: 1,
     x: 0,
     y: 0,

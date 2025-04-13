@@ -7,6 +7,7 @@ import {
 } from "../tooltips";
 import type { SimNode, SimLink } from "../data";
 import { Tooltip } from "bootstrap";
+import { NodeType } from "../types";
 
 // Define type for mocked tooltip instance
 interface MockedTooltip {
@@ -28,7 +29,7 @@ vi.mock("bootstrap", () => ({
 const mockNode: SimNode = {
     key: "test-123",
     name: "Test Node",
-    type: "artist",
+    type: NodeType.Artist,
     size: 1,
     x: 0,
     y: 0,
