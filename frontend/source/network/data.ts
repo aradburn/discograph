@@ -1,6 +1,7 @@
 import { dg } from "../dg";
 import { getOuterRadius } from "./node";
 import type { APINetworkDataResponse } from "../api";
+import { NodeType } from "./types";
 
 export type NodeKey = string;
 export type LinkKey = string;
@@ -66,7 +67,7 @@ export interface SimData {
 export interface NetworkNode {
     key: NodeKey;
     name: string;
-    type: "artist" | "label";
+    type: NodeType;
     size: number;
     x: number;
     y: number;
@@ -130,7 +131,7 @@ export const processAPINetworkDataResponse = (
         const processedNode: NetworkNode = {
             key: node.key,
             name: node.name,
-            type: node.type === "artist" ? "artist" : "label",
+            type: node.type === "artist" ? NodeType.Artist : NodeType.Label,
             size: size,
             x: 0,
             y: 0,
@@ -280,7 +281,7 @@ export const convertNetworkDataToSimData = (
                 isIntermediate: true,
                 size: 0,
                 name: "",
-                type: "artist", // Default type
+                type: NodeType.Artist, // Default type
                 x: 0,
                 y: 0,
                 distance: 0,

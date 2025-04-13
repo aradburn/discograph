@@ -2,6 +2,7 @@ import type { NodeKey, LinkKey } from "./network/data";
 import type { NetworkCenter } from "./network/data";
 import type { RelationsData } from "./relations";
 import { getSelectedRoles } from "./roles";
+import type { NodeType } from "./network/types";
 
 interface APINetworkNode {
     cluster?: number;
@@ -12,7 +13,7 @@ interface APINetworkNode {
     missing?: number;
     name: string;
     size: number;
-    type: "label" | "artist";
+    type: NodeType | string; // Allow string for backwards compatibility with API
 }
 
 interface APINetworkLink {

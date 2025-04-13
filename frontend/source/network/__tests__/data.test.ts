@@ -8,6 +8,7 @@ import {
 } from "../data";
 import type { APINetworkDataResponse } from "../../api";
 import { dg } from "../../dg";
+import { NodeType } from "../types";
 
 // Mock data for testing
 const mockAPIResponse: APINetworkDataResponse = {
@@ -67,7 +68,7 @@ describe("Network Data Processing", () => {
             const node1 = result.nodeMap.get("node1");
             expect(node1).toBeDefined();
             expect(node1.name).toBe("Artist 1");
-            expect(node1.type).toBe("artist");
+            expect(node1.type).toBe(NodeType.Artist);
             expect(node1.size).toBe(10);
 
             // Check if links are processed correctly
@@ -117,7 +118,7 @@ describe("Network Data Processing", () => {
             const simNode = result.nodeMap.get("node1");
             expect(simNode).toBeDefined();
             expect(simNode.name).toBe("Artist 1");
-            expect(simNode.type).toBe("artist");
+            expect(simNode.type).toBe(NodeType.Artist);
             expect(simNode.isIntermediate).toBe(false);
 
             // Check if links are converted correctly with intermediate nodes
