@@ -3,7 +3,7 @@ import * as d3 from "d3";
 import { saveAs } from "file-saver";
 import * as svgModule from "../svg";
 import { initSvg, setSvgSize, setupSvgDefs, printSvg } from "../svg";
-import { dg } from "../dg";
+import { dg, getSelectedNodeKey, networkStore } from "../dg";
 import { showMessage, clearMessages } from "../messages";
 
 // Define types for d3 mocks
@@ -21,11 +21,6 @@ interface DGObject {
     dimensions: [number, number];
     svg_dimensions: [number, number];
     selectedNodeKey: string;
-    network: {
-        data: {
-            nodeMap: Map<string, { name: string }>;
-        };
-    };
 }
 
 // Define canvas mock types
@@ -75,18 +70,22 @@ vi.mock("../messages", () => ({
 }));
 
 // Mock dg global object
-vi.mock("../dg", () => ({
-    dg: {
-        dimensions: [800, 600],
-        svg_dimensions: [1000, 800],
-        selectedNodeKey: "test-node",
-        network: {
+vi.mock("../dg", () => {
+    const mockNodeMap = new Map([["test-node", { name: "Test Node" }]]);
+    return {
+        dg: {
+            dimensions: [800, 600],
+            svg_dimensions: [1000, 800],
+            selectedNodeKey: "test-node",
+        },
+        getSelectedNodeKey: vi.fn().mockImplementation(() => "test-node"),
+        networkStore: {
             data: {
-                nodeMap: new Map([["test-node", { name: "Test Node" }]]),
+                nodeMap: mockNodeMap,
             },
         },
-    } as DGObject,
-}));
+    };
+});
 
 describe("SVG Utilities", () => {
     let mockSelection: MockD3Selection;
@@ -401,30 +400,34 @@ describe("SVG Utilities", () => {
         });
 
         it("should throw error when selected node is not found", () => {
+            // Save original mocks
+            const originalGetSelectedNodeKey = vi
+                .mocked(getSelectedNodeKey)
+                .getMockImplementation();
+            const originalNodeMap = new Map(networkStore.data.nodeMap);
+
+            // Update mocks for this test
+            vi.mocked(getSelectedNodeKey).mockReturnValue("non-existent-node");
+            networkStore.data.nodeMap = new Map();
+
             // Create a mock saveBlob function like the one in the module
             const saveBlobFn = (): void => {
-                const entityKey = dg.selectedNodeKey;
-                const node = dg.network.data.nodeMap.get(entityKey);
+                const entityKey = getSelectedNodeKey();
+                const node = networkStore.data.nodeMap.get(entityKey);
                 if (!node) {
                     throw new Error("Selected node not found");
                 }
                 // Rest of function not needed for test
             };
 
-            // Temporarily modify dg to have an invalid selected node key
-            const originalSelectedNodeKey = (dg as DGObject).selectedNodeKey;
-            const originalNodeMap = (dg as DGObject).network.data.nodeMap;
-
-            // Make a completely new Map to avoid any reference issues
-            (dg as DGObject).selectedNodeKey = "non-existent-node";
-            (dg as DGObject).network.data.nodeMap = new Map();
-
             // Test directly on the function we recreated
             expect(() => saveBlobFn()).toThrow("Selected node not found");
 
             // Restore original values
-            (dg as DGObject).selectedNodeKey = originalSelectedNodeKey;
-            (dg as DGObject).network.data.nodeMap = originalNodeMap;
+            vi.mocked(getSelectedNodeKey).mockImplementation(
+                originalGetSelectedNodeKey,
+            );
+            networkStore.data.nodeMap = originalNodeMap;
         });
 
         it("should handle blob creation failure in svgString2Image", () => {

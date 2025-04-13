@@ -12,7 +12,6 @@ import type {
     SimLink,
 } from "./network/data";
 import type { Relations, RelationsArcData } from "./relations";
-import type { DiscographFsm } from "./fsm";
 
 /**
  * SVG layer containers for network visualization
@@ -63,14 +62,8 @@ export interface DiscographCore {
     dimensions: [number, number];
     /** SVG dimensions [width, height] */
     svg_dimensions: [number, number];
-    /** Network state and functionality */
-    network: Network;
     /** Currently selected node key */
     selectedNodeKey: NodeKey;
-    /** Relations state and functionality */
-    relations: Relations;
-    /** Finite state machine instance */
-    fsm: InstanceType<typeof DiscographFsm> | null;
     /** D3 arc generator for relations visualization */
     arc: d3.Arc<RelationsArcData, RelationsArcData>;
 }
@@ -85,56 +78,63 @@ export const dg: DiscographCore = {
     dpr: window.devicePixelRatio,
     dimensions: [0, 0],
     svg_dimensions: [0, 0],
-    network: {
-        dimensions: [0, 0],
-        forceLayout: null,
-        isUpdating: false,
-        isRunningLayout: false,
-        tick: 0,
-        newNodeCoords: [0, 0],
-        zoom: null,
-        data: {
-            center: {
-                x: 0,
-                y: 0,
-                type: "artist",
-                key: "",
-                name: "",
-                size: 0,
-                missing: 0,
-                hasMissing: false,
-                distance: 0,
-                radius: 0,
-                lastClickTime: 0,
-                lastTouchTime: 0,
-                links: [],
-                cluster: 0,
-                fixed: false,
-                isIntermediate: false,
-            },
-            nodeMap: new Map<NodeKey, SimNode>(),
-            linkMap: new Map<LinkKey, SimLink>(),
-            maxDistance: 0,
-        } as SimData,
-        layers: {
-            root: null,
-            halo: null,
-            text: null,
-            node: null,
-            link: null,
-        },
-    },
     selectedNodeKey: null,
-    relations: {
-        data: {
-            results: [],
-        },
-        byYear: new d3.InternMap(),
-        byRole: new d3.InternMap(),
-        layers: {
-            root: null,
-        },
-    },
-    fsm: null,
     arc: d3.arc<RelationsArcData, RelationsArcData>(),
+};
+
+export function getSelectedNodeKey(): NodeKey {
+    return dg.selectedNodeKey;
+}
+
+/** Network state and functionality */
+export const networkStore: Network = {
+    dimensions: [0, 0],
+    forceLayout: null,
+    isUpdating: false,
+    isRunningLayout: false,
+    tick: 0,
+    newNodeCoords: [0, 0],
+    zoom: null,
+    data: {
+        center: {
+            x: 0,
+            y: 0,
+            type: "artist",
+            key: "",
+            name: "",
+            size: 0,
+            missing: 0,
+            hasMissing: false,
+            distance: 0,
+            radius: 0,
+            lastClickTime: 0,
+            lastTouchTime: 0,
+            links: [],
+            cluster: 0,
+            fixed: false,
+            isIntermediate: false,
+        },
+        nodeMap: new Map<NodeKey, SimNode>(),
+        linkMap: new Map<LinkKey, SimLink>(),
+        maxDistance: 0,
+    } as SimData,
+    layers: {
+        root: null,
+        halo: null,
+        text: null,
+        node: null,
+        link: null,
+    },
+};
+
+/** Relations state and functionality */
+export const relationsStore: Relations = {
+    data: {
+        results: [],
+    },
+    byYear: new d3.InternMap(),
+    byRole: new d3.InternMap(),
+    layers: {
+        root: null,
+    },
 };

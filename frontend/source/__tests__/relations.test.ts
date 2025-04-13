@@ -11,7 +11,7 @@ import {
     type RelationsData,
     type RelationsArcData,
 } from "../relations";
-import { dg } from "../dg";
+import { dg, relationsStore } from "../dg";
 
 // Define types for d3 mocks
 type D3Selection = d3.Selection<SVGElement, unknown, null, undefined>;
@@ -196,26 +196,38 @@ vi.mock("d3", () => {
 });
 
 // Mock global dg object
-vi.mock("../dg", () => ({
-    dg: {
-        dimensions: [800, 600],
-        svg_dimensions: [1000, 800],
-        relations: {
-            data: { results: [] },
-            byYear: new Map(),
-            byRole: new Map(),
-            layers: {
-                root: null,
+vi.mock("../dg", () => {
+    const mockRelationsStore = {
+        data: { results: [] },
+        byYear: new Map(),
+        byRole: new Map(),
+        layers: {
+            root: null,
+        },
+    };
+
+    return {
+        dg: {
+            dimensions: [800, 600],
+            svg_dimensions: [1000, 800],
+            relations: {
+                data: { results: [] },
+                byYear: new Map(),
+                byRole: new Map(),
+                layers: {
+                    root: null,
+                },
+            },
+            arc: {
+                innerRadius: vi.fn().mockReturnThis(),
+                outerRadius: vi.fn().mockReturnThis(),
+                startAngle: vi.fn().mockReturnThis(),
+                endAngle: vi.fn().mockReturnThis(),
             },
         },
-        arc: {
-            innerRadius: vi.fn().mockReturnThis(),
-            outerRadius: vi.fn().mockReturnThis(),
-            startAngle: vi.fn().mockReturnThis(),
-            endAngle: vi.fn().mockReturnThis(),
-        },
-    },
-}));
+        relationsStore: mockRelationsStore,
+    };
+});
 
 describe("Relations Module", () => {
     let mockSelection: MockD3Selection;
@@ -233,11 +245,11 @@ describe("Relations Module", () => {
 
         // We don't need to manually configure d3.select anymore since we've mocked it in vi.mock
 
-        // Reset the dg.relations state
-        dg.relations.layers.root = null;
-        dg.relations.data = { results: [] };
-        dg.relations.byYear = new Map();
-        dg.relations.byRole = new Map();
+        // Reset the relationsStore state
+        relationsStore.layers.root = null;
+        relationsStore.data = { results: [] };
+        relationsStore.byYear = new Map();
+        relationsStore.byRole = new Map();
 
         // Spy on console.log to capture output
         consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -258,8 +270,8 @@ describe("Relations Module", () => {
             // Verify d3.select was called with the correct selector
             expect(d3.select).toHaveBeenCalledWith("#svg");
 
-            // Verify root layer was set in dg.relations
-            expect(dg.relations.layers.root).not.toBeNull();
+            // Verify root layer was set in relationsStore
+            expect(relationsStore.layers.root).not.toBeNull();
         });
     });
 
@@ -274,7 +286,7 @@ describe("Relations Module", () => {
             setRelationsData(sampleRelationsData);
 
             // Verify data was set
-            expect(dg.relations.data).toBe(sampleRelationsData);
+            expect(relationsStore.data).toBe(sampleRelationsData);
 
             // Verify d3.group was called with correct arguments
             expect(groupSpy).toHaveBeenCalledWith(
@@ -298,7 +310,7 @@ describe("Relations Module", () => {
 
             // Verify console.log was called
             expect(consoleSpy).toHaveBeenCalledWith(
-                "dg.relations.byRole: ",
+                "relationsStore.byRole: ",
                 expect.anything(),
             );
         });
@@ -307,7 +319,7 @@ describe("Relations Module", () => {
     describe("createRadialChart", () => {
         beforeEach(() => {
             // Setup necessary state
-            dg.relations.byRole = new Map([
+            relationsStore.byRole = new Map([
                 ["Producer", 2],
                 ["Engineer", 2],
                 ["Artist", 1],
@@ -352,7 +364,7 @@ describe("Relations Module", () => {
             // Setup root layer
             const mockRoot = { attr: vi.fn() };
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            dg.relations.layers.root = mockRoot as any;
+            relationsStore.layers.root = mockRoot as any;
 
             // Create a mock transform object
             const mockTransform = {

@@ -4,7 +4,7 @@
  * implemented using D3.js. It manages node dragging behavior and layout controls.
  */
 
-import { dg } from "../dg";
+import { networkStore } from "../dg";
 import { nodeTooltip } from "./tooltips";
 import { onTick } from "./tick";
 import { restartForceLayout, stopForceLayout } from "./forceLayout";
@@ -77,11 +77,15 @@ export const onDragEnd = (
  * Shows the running indicator and enables interaction with nodes and links
  */
 export const onNetworkStart = (): void => {
-    dg.network.isRunningLayout = true;
-    dg.network.tick = 0;
+    networkStore.isRunningLayout = true;
+    networkStore.tick = 0;
 
-    dg.network.layers.link?.selectAll(".link").classed("noninteractive", false);
-    dg.network.layers.node?.selectAll(".node").classed("noninteractive", false);
+    networkStore.layers.link
+        ?.selectAll(".link")
+        .classed("noninteractive", false);
+    networkStore.layers.node
+        ?.selectAll(".node")
+        .classed("noninteractive", false);
 };
 
 /**
@@ -92,9 +96,13 @@ export const onNetworkStart = (): void => {
 export const onNetworkEnd = (
     event: d3.Simulation<SimNode, undefined>,
 ): void => {
-    dg.network.layers.link?.selectAll(".link").classed("noninteractive", false);
-    dg.network.layers.node?.selectAll(".node").classed("noninteractive", false);
-    dg.network.isRunningLayout = false;
+    networkStore.layers.link
+        ?.selectAll(".link")
+        .classed("noninteractive", false);
+    networkStore.layers.node
+        ?.selectAll(".node")
+        .classed("noninteractive", false);
+    networkStore.isRunningLayout = false;
     onTick(event);
 };
 

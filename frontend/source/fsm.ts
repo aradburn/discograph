@@ -26,7 +26,7 @@ import {
 } from "./network/data";
 import { pruneSimData } from "./network/pruning";
 import type { RelationsData } from "./relations";
-import { dg } from "./dg";
+import { dg, networkStore } from "./dg";
 import type { APINetworkDataResponse } from "./api";
 import { fetchAPINetwork, fetchAPIRandom, fetchAPIRadial } from "./api";
 import { resetNetworkTransform } from "./network/init";
@@ -215,13 +215,13 @@ export const DiscographFsm = window.machina.Fsm.extend({
                 .attr("transform", transform);
 
             // Center the main node
-            if (dg.network.data.center) {
-                const centerNode = dg.network.data.nodeMap.get(
-                    dg.network.data.center.key,
+            if (networkStore.data.center) {
+                const centerNode = networkStore.data.nodeMap.get(
+                    networkStore.data.center.key,
                 );
                 if (centerNode) {
-                    centerNode.x = dg.network.newNodeCoords[0];
-                    centerNode.y = dg.network.newNodeCoords[1];
+                    centerNode.x = networkStore.newNodeCoords[0];
+                    centerNode.y = networkStore.newNodeCoords[1];
                 }
             }
 
@@ -629,13 +629,13 @@ export const DiscographFsm = window.machina.Fsm.extend({
 
     toggleNetwork: function (this: FSMInstance, status: boolean) {
         if (status) {
-            const root = dg.network.layers.root;
+            const root = networkStore.layers.root;
             if (root) {
                 root.style("transition", "opacity 250ms").style("opacity", 1);
             }
         } else {
             stopForceLayout();
-            const root = dg.network.layers.root;
+            const root = networkStore.layers.root;
             if (root) {
                 root.style("transition", "opacity 250ms").style(
                     "opacity",
@@ -709,13 +709,13 @@ export const DiscographFsm = window.machina.Fsm.extend({
         let linkOn: d3.Selection<SVGGElement, SimLink, SVGGElement, unknown>;
         let linkOff: d3.Selection<SVGGElement, SimLink, SVGGElement, unknown>;
 
-        const nodeLayer = dg.network.layers.node;
+        const nodeLayer = networkStore.layers.node;
         if (!nodeLayer) {
             console.log("Network node layer not found");
             return;
         }
 
-        const linkLayer = dg.network.layers.link;
+        const linkLayer = networkStore.layers.link;
         if (!linkLayer) {
             console.log("Network link layer not found");
             return;
@@ -757,7 +757,7 @@ export const DiscographFsm = window.machina.Fsm.extend({
                 (d: SimLink) => !linkKeys.includes(d.key),
             );
 
-            const node = dg.network.data.nodeMap.get(entityKey);
+            const node = networkStore.data.nodeMap.get(entityKey);
             if (!node) {
                 console.log("node not found");
                 return;
@@ -794,3 +794,9 @@ export const DiscographFsm = window.machina.Fsm.extend({
         }
     },
 }) as unknown as new () => FSMInstance;
+
+export var fsm: FSMInstance;
+
+export const initFSM = (): void => {
+    fsm = new DiscographFsm();
+};

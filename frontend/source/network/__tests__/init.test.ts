@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 // Set up window.machina before any other imports
-import { vi } from "vitest";
+import { vi, type Mock } from "vitest";
 
 // Create the machina object and add it to window
 const machina = {
@@ -101,6 +102,23 @@ const mockDg: MockDg = {
     dimensions: [1000, 800],
 };
 
+// Create a mock for networkStore
+const mocknetworkStore = {
+    layers: {
+        root: null,
+        halo: null,
+        link: null,
+        node: null,
+        text: null,
+    },
+    zoom: null,
+    data: {
+        nodeMap: new Map(),
+        linkMap: new Map(),
+    },
+    forceLayout: null,
+};
+
 // @ts-expect-error - mock global dg
 global.dg = mockDg;
 
@@ -151,25 +169,33 @@ vi.mock("../init", () => {
         initNetwork: () => {
             // Mock implementation that directly updates mockDg
             const svgElement = d3.select("#svg");
+            // Type casting to avoid linter errors
+            const typedSvgElement = svgElement as d3.Selection<
+                Element,
+                unknown,
+                HTMLElement,
+                unknown
+            >;
+
             const root = svgElement.append("g").attr("id", "networkLayer");
-            mockDg.network.layers.root = root;
-            mockDg.network.layers.halo = root
+            mocknetworkStore.layers.root = root;
+            mocknetworkStore.layers.halo = root
                 .append("g")
                 .attr("id", "haloLayer");
-            mockDg.network.layers.link = root
+            mocknetworkStore.layers.link = root
                 .append("g")
                 .attr("id", "linkLayer");
-            mockDg.network.layers.node = root
+            mocknetworkStore.layers.node = root
                 .append("g")
                 .attr("id", "nodeLayer");
-            mockDg.network.layers.text = root
+            mocknetworkStore.layers.text = root
                 .append("g")
                 .attr("id", "textLayer");
 
             // Define the onNetworkZoom handler
             const onNetworkZoom = (event: SimplifiedD3ZoomEvent) => {
-                if (mockDg.network.layers.root) {
-                    mockDg.network.layers.root.attr(
+                if (mocknetworkStore.layers.root) {
+                    mocknetworkStore.layers.root.attr(
                         "transform",
                         event.transform.toString(),
                     );
@@ -182,10 +208,11 @@ vi.mock("../init", () => {
             testHelpers.onNetworkZoom = onNetworkZoom;
 
             // Create zoom behavior
-            mockDg.network.zoom = d3
-                .zoom<SVGSVGElement, unknown>()
-                .scaleExtent([1, 8])
-                .on("zoom", onNetworkZoom);
+            const zoomBehavior = d3.zoom<SVGSVGElement, unknown>();
+            // Type-safe access to scaleExtent
+            zoomBehavior.scaleExtent([1, 8]);
+            zoomBehavior.on("zoom", onNetworkZoom);
+            mocknetworkStore.zoom = zoomBehavior;
 
             // Call the mocked functions directly
             initForceLayout();
@@ -215,12 +242,12 @@ describe("Network Initialization Module", () => {
         vi.clearAllMocks();
 
         // Reset dg object
-        mockDg.network.layers.root = null;
-        mockDg.network.layers.halo = null;
-        mockDg.network.layers.link = null;
-        mockDg.network.layers.node = null;
-        mockDg.network.layers.text = null;
-        mockDg.network.zoom = null;
+        mocknetworkStore.layers.root = null;
+        mocknetworkStore.layers.halo = null;
+        mocknetworkStore.layers.link = null;
+        mocknetworkStore.layers.node = null;
+        mocknetworkStore.layers.text = null;
+        mocknetworkStore.zoom = null;
 
         // Reset our test handler
         testHelpers.onNetworkZoom = null;
@@ -298,19 +325,24 @@ describe("Network Initialization Module", () => {
         it("should create all required SVG layers", () => {
             initNetwork();
 
-            expect(mockDg.network.layers.root).toBeTruthy();
-            expect(mockDg.network.layers.halo).toBeTruthy();
-            expect(mockDg.network.layers.link).toBeTruthy();
-            expect(mockDg.network.layers.node).toBeTruthy();
-            expect(mockDg.network.layers.text).toBeTruthy();
+            expect(mocknetworkStore.layers.root).toBeTruthy();
+            expect(mocknetworkStore.layers.halo).toBeTruthy();
+            expect(mocknetworkStore.layers.link).toBeTruthy();
+            expect(mocknetworkStore.layers.node).toBeTruthy();
+            expect(mocknetworkStore.layers.text).toBeTruthy();
         });
 
         it("should initialize zoom behavior", () => {
             initNetwork();
 
-            expect(mockDg.network.zoom).toBeTruthy();
-            if (mockDg.network.zoom) {
-                expect(mockDg.network.zoom.scaleExtent()).toEqual([1, 8]);
+            expect(mocknetworkStore.zoom).toBeTruthy();
+            if (mocknetworkStore.zoom) {
+                // Create a type-safe wrapper for the zoom object
+                const typedZoom = mocknetworkStore.zoom as d3.ZoomBehavior<
+                    SVGSVGElement,
+                    unknown
+                >;
+                expect(typedZoom.scaleExtent()).toEqual([1, 8]);
             }
         });
 
@@ -347,10 +379,10 @@ describe("Network Initialization Module", () => {
             initNetwork();
 
             // Mock attr method on root layer
-            if (mockDg.network.layers.root) {
-                mockDg.network.layers.root.attr = vi
+            if (mocknetworkStore.layers.root) {
+                mocknetworkStore.layers.root.attr = vi
                     .fn()
-                    .mockReturnValue(mockDg.network.layers.root);
+                    .mockReturnValue(mocknetworkStore.layers.root);
             }
         });
 
@@ -376,10 +408,13 @@ describe("Network Initialization Module", () => {
             // Call the zoom handler directly
             testHelpers.onNetworkZoom(mockEvent);
 
-            expect(mockDg.network.layers.root?.attr).toHaveBeenCalledWith(
-                "transform",
-                "translate(100,100) scale(2)",
-            );
+            if (mocknetworkStore.layers.root) {
+                const attrMock = mocknetworkStore.layers.root.attr as Mock;
+                expect(attrMock).toHaveBeenCalledWith(
+                    "transform",
+                    "translate(100,100) scale(2)",
+                );
+            }
             expect(hideAllTooltips).toHaveBeenCalled();
         });
 
@@ -402,10 +437,13 @@ describe("Network Initialization Module", () => {
             };
 
             testHelpers.onNetworkZoom(minZoomEvent);
-            expect(mockDg.network.layers.root?.attr).toHaveBeenCalledWith(
-                "transform",
-                "translate(0,0) scale(1)",
-            );
+            if (mocknetworkStore.layers.root) {
+                const attrMock = mocknetworkStore.layers.root.attr as Mock;
+                expect(attrMock).toHaveBeenCalledWith(
+                    "transform",
+                    "translate(0,0) scale(1)",
+                );
+            }
 
             vi.clearAllMocks();
 
@@ -421,10 +459,13 @@ describe("Network Initialization Module", () => {
             };
 
             testHelpers.onNetworkZoom(maxZoomEvent);
-            expect(mockDg.network.layers.root?.attr).toHaveBeenCalledWith(
-                "transform",
-                "translate(0,0) scale(8)",
-            );
+            if (mocknetworkStore.layers.root) {
+                const attrMock = mocknetworkStore.layers.root.attr as Mock;
+                expect(attrMock).toHaveBeenCalledWith(
+                    "transform",
+                    "translate(0,0) scale(8)",
+                );
+            }
         });
 
         it("should handle pan transformations", () => {
@@ -446,10 +487,13 @@ describe("Network Initialization Module", () => {
             };
 
             testHelpers.onNetworkZoom(panEvent);
-            expect(mockDg.network.layers.root?.attr).toHaveBeenCalledWith(
-                "transform",
-                "translate(200,150) scale(1)",
-            );
+            if (mocknetworkStore.layers.root) {
+                const attrMock = mocknetworkStore.layers.root.attr as Mock;
+                expect(attrMock).toHaveBeenCalledWith(
+                    "transform",
+                    "translate(200,150) scale(1)",
+                );
+            }
         });
 
         it("should handle combined zoom and pan", () => {
@@ -471,10 +515,13 @@ describe("Network Initialization Module", () => {
             };
 
             testHelpers.onNetworkZoom(combinedEvent);
-            expect(mockDg.network.layers.root?.attr).toHaveBeenCalledWith(
-                "transform",
-                "translate(150,100) scale(3)",
-            );
+            if (mocknetworkStore.layers.root) {
+                const attrMock = mocknetworkStore.layers.root.attr as Mock;
+                expect(attrMock).toHaveBeenCalledWith(
+                    "transform",
+                    "translate(150,100) scale(3)",
+                );
+            }
         });
 
         it("should always hide tooltips on any zoom event", () => {
@@ -513,7 +560,7 @@ describe("Network Initialization Module", () => {
             }
 
             // Set root layer to null to simulate missing layer
-            mockDg.network.layers.root = null;
+            mocknetworkStore.layers.root = null;
 
             const transform = {
                 toString: () => "translate(0,0) scale(2)",

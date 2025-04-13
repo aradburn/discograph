@@ -7,7 +7,7 @@ import {
     type SimData,
 } from "../data";
 import type { APINetworkDataResponse } from "../../api";
-import { dg } from "../../dg";
+import { dg, networkStore } from "../../dg";
 import { NodeType } from "../types";
 
 // Mock data for testing
@@ -159,10 +159,10 @@ describe("Network Data Processing", () => {
             updateGlobalData(simData);
 
             // Check if global data is updated
-            expect(dg.network.data.nodeMap).toBe(simData.nodeMap);
-            expect(dg.network.data.linkMap).toBe(simData.linkMap);
-            expect(dg.network.data.maxDistance).toBe(simData.maxDistance);
-            expect(dg.network.data.center).toBe(simData.center);
+            expect(networkStore.data.nodeMap).toBe(simData.nodeMap);
+            expect(networkStore.data.linkMap).toBe(simData.linkMap);
+            expect(networkStore.data.maxDistance).toBe(simData.maxDistance);
+            expect(networkStore.data.center).toBe(simData.center);
         });
     });
 });

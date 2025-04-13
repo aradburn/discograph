@@ -1,4 +1,4 @@
-import { dg } from "../dg";
+import { networkStore } from "../dg";
 import { getOuterRadius } from "./node";
 import type { APINetworkDataResponse } from "../api";
 import { NodeType } from "./types";
@@ -366,8 +366,8 @@ export const convertNetworkDataToSimData = (
 export const updateGlobalData = (simData: SimData): void => {
     //     console.log("updateGlobalData input:", simData);
 
-    dg.network.data.nodeMap = simData.nodeMap;
-    dg.network.data.linkMap = simData.linkMap;
-    dg.network.data.maxDistance = simData.maxDistance;
-    dg.network.data.center = simData.center;
+    networkStore.data.nodeMap = simData.nodeMap;
+    networkStore.data.linkMap = simData.linkMap;
+    networkStore.data.maxDistance = simData.maxDistance;
+    networkStore.data.center = simData.center;
 };

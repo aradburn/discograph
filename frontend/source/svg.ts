@@ -7,7 +7,7 @@
 
 import * as d3 from "d3";
 import { saveAs } from "file-saver";
-import { dg } from "./dg";
+import { dg, networkStore, getSelectedNodeKey } from "./dg";
 import { showMessage, clearMessages } from "./messages";
 
 interface GradientStop {
@@ -131,8 +131,8 @@ export const printSvg = (width: number, height: number): void => {
  * @param filesize - The size of the file
  */
 function saveBlob(dataBlob: Blob, _filesize: number): void {
-    const entityKey = dg.selectedNodeKey;
-    const node = dg.network.data.nodeMap.get(entityKey);
+    const entityKey = getSelectedNodeKey();
+    const node = networkStore.data.nodeMap.get(entityKey);
     if (!node) {
         throw new Error("Selected node not found");
     }

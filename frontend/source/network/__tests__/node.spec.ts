@@ -18,6 +18,15 @@ declare global {
             };
         };
     };
+    var networkStore: {
+        layers: {
+            root: Mock & { selectAll: Mock };
+            halo: Mock & { selectAll: Mock };
+            text: Mock & { selectAll: Mock };
+            node: Mock & { selectAll: Mock };
+            link: Mock & { selectAll: Mock };
+        };
+    };
 }
 
 // Mock dg module before imports
@@ -40,6 +49,17 @@ globalThis.dg = {
             node: createLayerMock(),
             link: createLayerMock(),
         },
+    },
+};
+
+// Initialize networkStore with the same layer mocks
+globalThis.networkStore = {
+    layers: {
+        root: createLayerMock(),
+        halo: createLayerMock(),
+        text: createLayerMock(),
+        node: createLayerMock(),
+        link: createLayerMock(),
     },
 };
 
@@ -227,8 +247,8 @@ beforeEach(() => {
         append: vi.fn().mockReturnValue(mockAppendedGroup),
     } as unknown as NodeEnterSelection;
 
-    // Set up global dg.network.layers mocks
-    globalThis.dg.network.layers.node.selectAll.mockReturnValue({
+    // Set up global networkStore.layers mocks
+    globalThis.networkStore.layers.node.selectAll.mockReturnValue({
         filter: vi.fn().mockReturnValue({
             raise: vi.fn(),
         }),
@@ -615,7 +635,7 @@ describe("Network Node Functions", () => {
         });
 
         it("should handle mouseover events with proper timing", () => {
-            // Mock the global dg.network.layers.node
+            // Mock the global networkStore.layers.node
             const mockRaise = vi.fn();
             const mockFilter = vi.fn().mockReturnValue({ raise: mockRaise });
             const mockSelectAll = vi

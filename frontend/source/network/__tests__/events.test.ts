@@ -11,7 +11,7 @@ import { NodeType } from "../types";
 import { nodeTooltip } from "../tooltips";
 import * as forceLayout from "../forceLayout";
 import * as tick from "../tick";
-import { dg } from "../../dg";
+import { dg, networkStore } from "../../dg";
 
 // Now import the functions under test
 import {
@@ -55,8 +55,8 @@ describe("Network Graph Event Handlers", () => {
     const onTickSpy = vi.spyOn(tick, "onTick").mockImplementation(() => {});
 
     // Mock network properties
-    const originalIsRunningLayout = dg.network.isRunningLayout;
-    const originalTick = dg.network.tick;
+    const originalIsRunningLayout = networkStore.isRunningLayout;
+    const originalTick = networkStore.tick;
 
     // Define types for mock return values
     type D3Selection = {
@@ -76,23 +76,23 @@ describe("Network Graph Event Handlers", () => {
         vi.clearAllMocks();
 
         // Mock the network properties
-        Object.defineProperty(dg.network, "isRunningLayout", {
+        Object.defineProperty(networkStore, "isRunningLayout", {
             get: vi.fn(() => false),
             set: vi.fn(),
             configurable: true,
         });
 
-        Object.defineProperty(dg.network, "tick", {
+        Object.defineProperty(networkStore, "tick", {
             get: vi.fn(() => 0),
             set: vi.fn(),
             configurable: true,
         });
 
         // Mock the selectAll methods
-        vi.spyOn(dg.network.layers.node, "selectAll").mockImplementation(
+        vi.spyOn(networkStore.layers.node, "selectAll").mockImplementation(
             mockNodeSelectAll,
         );
-        vi.spyOn(dg.network.layers.link, "selectAll").mockImplementation(
+        vi.spyOn(networkStore.layers.link, "selectAll").mockImplementation(
             mockLinkSelectAll,
         );
 
@@ -122,13 +122,13 @@ describe("Network Graph Event Handlers", () => {
 
     afterEach(() => {
         // Restore network properties
-        Object.defineProperty(dg.network, "isRunningLayout", {
+        Object.defineProperty(networkStore, "isRunningLayout", {
             value: originalIsRunningLayout,
             writable: true,
             configurable: true,
         });
 
-        Object.defineProperty(dg.network, "tick", {
+        Object.defineProperty(networkStore, "tick", {
             value: originalTick,
             writable: true,
             configurable: true,
@@ -213,13 +213,13 @@ describe("Network Graph Event Handlers", () => {
             const tickSetter = vi.fn();
 
             // Mock the setters specifically for this test
-            Object.defineProperty(dg.network, "isRunningLayout", {
+            Object.defineProperty(networkStore, "isRunningLayout", {
                 get: vi.fn(() => false),
                 set: isRunningLayoutSetter,
                 configurable: true,
             });
 
-            Object.defineProperty(dg.network, "tick", {
+            Object.defineProperty(networkStore, "tick", {
                 get: vi.fn(() => 0),
                 set: tickSetter,
                 configurable: true,
@@ -255,7 +255,7 @@ describe("Network Graph Event Handlers", () => {
             const isRunningLayoutSetter = vi.fn();
 
             // Mock the setter specifically for this test
-            Object.defineProperty(dg.network, "isRunningLayout", {
+            Object.defineProperty(networkStore, "isRunningLayout", {
                 get: vi.fn(() => true),
                 set: isRunningLayoutSetter,
                 configurable: true,
@@ -316,4 +316,47 @@ describe("Custom Events", () => {
             expect(event.bubbles).toBe(true);
         });
     });
+});
+
+// Define types for mock selections
+type D3Selection = {
+    classed: (className: string, value: boolean) => void;
+    selectAll: () => D3Selection;
+};
+
+// Create mock network store
+vi.mock("../../dg", () => {
+    const mockSelection = {
+        classed: vi.fn().mockReturnThis(),
+        selectAll: vi.fn().mockReturnThis(),
+    };
+
+    const createLayer = () => ({
+        selectAll: vi.fn().mockReturnValue(mockSelection),
+    });
+
+    const mockNetworkStore = {
+        isRunningLayout: false,
+        tick: 0,
+        data: {
+            nodeMap: new Map(),
+            linkMap: new Map(),
+        },
+        layers: {
+            root: createLayer(),
+            halo: createLayer(),
+            link: createLayer(),
+            node: createLayer(),
+            text: createLayer(),
+        },
+        forceLayout: null,
+    };
+
+    return {
+        dg: {
+            dimensions: [800, 600],
+            svg_dimensions: [1000, 800],
+        },
+        networkStore: mockNetworkStore,
+    };
 });

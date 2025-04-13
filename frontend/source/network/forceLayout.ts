@@ -13,7 +13,7 @@ import { onTextEnter, onTextUpdate, onTextExit } from "./text";
 import { onLinkEnter, onLinkUpdate, onLinkExit } from "./link";
 import { onTick } from "./tick";
 import { onNetworkEnd } from "./events";
-import { dg } from "../dg";
+import { dg, networkStore } from "../dg";
 import { clamp } from "../utils";
 
 /**
@@ -114,8 +114,10 @@ function calculateGravityStrength(d: SimNode): number {
 export const initForceLayout = (): void => {
     console.log("initForceLayout");
 
-    dg.network.forceLayout = d3
-        .forceSimulation<SimNode>(Array.from(dg.network.data.nodeMap.values()))
+    networkStore.forceLayout = d3
+        .forceSimulation<SimNode>(
+            Array.from(networkStore.data.nodeMap.values()),
+        )
         .force(
             "collide",
             d3
@@ -140,7 +142,7 @@ export const initForceLayout = (): void => {
         })
         .stop();
 
-    console.log("init dg.network.forceLayout: ", dg.network.forceLayout);
+    console.log("init networkStore.forceLayout: ", networkStore.forceLayout);
 };
 
 export const initForceSliders = (): void => {
@@ -154,21 +156,21 @@ export const initForceSliders = (): void => {
     }
 
     nodeSlider.oninput = function (this: HTMLInputElement) {
-        if (dg.network.forceLayout) {
+        if (networkStore.forceLayout) {
             setupChargeForce(parseInt(this.value));
             restartForceLayout(ALPHA / 10.0);
         }
     };
 
     linkSlider.oninput = function (this: HTMLInputElement) {
-        if (dg.network.forceLayout) {
+        if (networkStore.forceLayout) {
             setupLinkForce(parseInt(this.value));
             restartForceLayout(ALPHA / 5.0);
         }
     };
 
     gravSlider.oninput = function (this: HTMLInputElement) {
-        if (dg.network.forceLayout) {
+        if (networkStore.forceLayout) {
             setupGravityForce(parseInt(this.value));
             restartForceLayout(ALPHA / 10.0);
         }
@@ -178,7 +180,7 @@ export const initForceSliders = (): void => {
 const setupChargeForce = (nodeStrength: number): void => {
     nodeStrengthMultiplier = nodeStrength / 20.0 + 0.4;
     console.log("nodeStrengthMultiplier: ", nodeStrengthMultiplier);
-    dg.network.forceLayout.force(
+    networkStore.forceLayout.force(
         "charge",
         d3
             .forceManyBody<SimNode>()
@@ -191,12 +193,12 @@ const setupChargeForce = (nodeStrength: number): void => {
 const setupLinkForce = (linkStrength: number): void => {
     linkStrengthMultiplier = linkStrength / 20.0;
     console.log("linkStrengthMultiplier: ", linkStrengthMultiplier);
-    dg.network.forceLayout.force(
+    networkStore.forceLayout.force(
         "link",
         d3
             .forceLink<SimNode, SimLink>()
             .id((d) => d.key ?? "")
-            .links(Array.from(dg.network.data.linkMap.values()))
+            .links(Array.from(networkStore.data.linkMap.values()))
             .distance(calculateLinkDistance)
             .iterations(LINK_ITERATIONS),
     );
@@ -205,7 +207,7 @@ const setupLinkForce = (linkStrength: number): void => {
 const setupGravityForce = (gravityStrength: number): void => {
     gravStrengthMultiplier = gravityStrength / 10.0;
     console.log("gravStrengthMultiplier: ", gravStrengthMultiplier);
-    dg.network.forceLayout
+    networkStore.forceLayout
         .force(
             "x",
             d3
@@ -242,22 +244,22 @@ export const displayForceLayout = (): void => {
 
     const keyFunc = (d: SimNode | SimLink): string => d.key;
 
-    const nodeData = Array.from(dg.network.data.nodeMap.values()).filter(
+    const nodeData = Array.from(networkStore.data.nodeMap.values()).filter(
         (d) => !d.isIntermediate,
     );
 
-    const linkData = Array.from(dg.network.data.linkMap.values()).filter(
+    const linkData = Array.from(networkStore.data.linkMap.values()).filter(
         (d) => !d.isSpline,
     );
 
     // Debug nodes and links
-    //     const nodeData = Array.from(dg.network.data.nodeMap.values());
-    //     const linkData = Array.from(dg.network.data.linkMap.values());
+    //     const nodeData = Array.from(networkStore.data.nodeMap.values());
+    //     const linkData = Array.from(networkStore.data.linkMap.values());
 
     console.log("nodeData: ", nodeData);
     console.log("linkData: ", linkData);
 
-    dg.network.layers.halo
+    networkStore.layers.halo
         .selectAll<SVGGElement, SimNode>(".node")
         .data(nodeData, keyFunc)
         .join(
@@ -272,7 +274,7 @@ export const displayForceLayout = (): void => {
             },
         );
 
-    dg.network.layers.node
+    networkStore.layers.node
         .selectAll<SVGGElement, SimNode>(".node")
         .data(nodeData, keyFunc)
         .join(
@@ -287,7 +289,7 @@ export const displayForceLayout = (): void => {
             },
         );
 
-    dg.network.layers.text
+    networkStore.layers.text
         .selectAll<SVGGElement, SimNode>(".node")
         .data(nodeData, keyFunc)
         .join(
@@ -302,7 +304,7 @@ export const displayForceLayout = (): void => {
             },
         );
 
-    dg.network.layers.link
+    networkStore.layers.link
         .selectAll<SVGGElement, SimLink>(".link")
         .data(linkData, keyFunc)
         .join(
@@ -317,7 +319,7 @@ export const displayForceLayout = (): void => {
             },
         );
 
-    const clusterNodes = Array.from(dg.network.data.nodeMap.values()).filter(
+    const clusterNodes = Array.from(networkStore.data.nodeMap.values()).filter(
         (d) => d.cluster !== undefined,
     );
     const hullGroups = Array.from(
@@ -325,7 +327,7 @@ export const displayForceLayout = (): void => {
     );
     const hullData = hullGroups.filter((d) => d.length > 1);
 
-    dg.network.layers.halo
+    networkStore.layers.halo
         .selectAll<SVGGElement, SimNode[]>(".hull")
         .data(hullData)
         .join(
@@ -340,7 +342,7 @@ export const displayForceLayout = (): void => {
             },
         );
 
-    Array.from(dg.network.data.nodeMap.values()).forEach(
+    Array.from(networkStore.data.nodeMap.values()).forEach(
         (n) => (n.fixed = false),
     );
 };
@@ -354,7 +356,7 @@ export const startForceLayout = (nodes: SimNode[]): void => {
 
     // Restart simulation
     console.log("Updating forceLayout");
-    dg.network.forceLayout.nodes(nodes);
+    networkStore.forceLayout.nodes(nodes);
 };
 
 /**
@@ -362,8 +364,8 @@ export const startForceLayout = (nodes: SimNode[]): void => {
  * @param {number} alpha - The new alpha value for the simulation
  */
 export const restartForceLayout = (alpha: number): void => {
-    if (dg.network.forceLayout) {
-        dg.network.forceLayout.alpha(alpha).restart();
+    if (networkStore.forceLayout) {
+        networkStore.forceLayout.alpha(alpha).restart();
     } else {
         console.error("Force layout is not initialized");
     }
@@ -373,8 +375,8 @@ export const restartForceLayout = (alpha: number): void => {
  * Stops the force layout simulation
  */
 export const stopForceLayout = (): void => {
-    if (dg.network.forceLayout) {
-        dg.network.forceLayout.stop();
+    if (networkStore.forceLayout) {
+        networkStore.forceLayout.stop();
     }
 };
 
@@ -382,7 +384,7 @@ export const stopForceLayout = (): void => {
  * Force function to keep nodes within the SVG bounds
  */
 const bboxForce = (): void => {
-    dg.network.data.nodeMap.forEach((node) => {
+    networkStore.data.nodeMap.forEach((node) => {
         const padding = 2 * (node.radius ?? 0);
         const minX = padding;
         const maxX = dg.svg_dimensions[0] - padding;

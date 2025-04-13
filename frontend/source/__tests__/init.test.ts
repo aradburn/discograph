@@ -1,7 +1,7 @@
 import type { Mock } from "vitest";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { JSDOM } from "jsdom";
-import { dg } from "../dg";
+import { dg, networkStore } from "../dg";
 import type * as initModule from "../init";
 import {
     initWindow,
@@ -70,6 +70,7 @@ vi.mock("../fsm", () => ({
     DiscographFsm: vi.fn().mockImplementation(() => ({
         // Mock FSM methods if needed
     })),
+    initFSM: vi.fn(),
 }));
 
 vi.mock("../messages", () => ({
@@ -146,6 +147,7 @@ interface MockedLoading {
 
 interface MockedFsm {
     DiscographFsm: typeof fsm.DiscographFsm;
+    initFSM: typeof fsm.initFSM;
 }
 
 interface MockedForceLayout {
@@ -249,8 +251,7 @@ describe("Init Module", () => {
         dg.dpr = 1;
         dg.dimensions = [0, 0];
         dg.svg_dimensions = [0, 0];
-        dg.network.newNodeCoords = [0, 0];
-        dg.fsm = null;
+        networkStore.newNodeCoords = [0, 0];
 
         // Clear all mocks
         vi.clearAllMocks();
@@ -283,7 +284,7 @@ describe("Init Module", () => {
             initWindow();
 
             // Assert
-            expect(dg.network.newNodeCoords).toEqual([
+            expect(networkStore.newNodeCoords).toEqual([
                 dg.svg_dimensions[0] / 2,
                 dg.svg_dimensions[1] / 2,
             ]);
@@ -485,22 +486,22 @@ describe("Init Module", () => {
         });
 
         it("should initialize the FSM", () => {
-            // Mock DiscographFsm
-            const mockDiscographFsm = vi.fn();
-            const originalDiscographFsm = fsm.DiscographFsm;
+            // Mock initFSM
+            const mockInitFSM = vi.fn();
+            const originalInitFSM = fsm.initFSM;
 
             // Use proper typing for the fsm module
             const mockedFsm = fsm as MockedFsm;
-            mockedFsm.DiscographFsm = mockDiscographFsm;
+            mockedFsm.initFSM = mockInitFSM;
 
             // Act
             initApp();
 
             // Assert
-            expect(mockDiscographFsm).toHaveBeenCalled();
+            expect(mockInitFSM).toHaveBeenCalled();
 
             // Restore original
-            mockedFsm.DiscographFsm = originalDiscographFsm;
+            mockedFsm.initFSM = originalInitFSM;
         });
 
         it("should set opacity for UI elements", () => {

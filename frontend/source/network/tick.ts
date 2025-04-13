@@ -6,7 +6,7 @@
 
 import * as d3 from "d3";
 import { hideAllTooltips } from "./tooltips";
-import { dg } from "../dg";
+import { dg, networkStore } from "../dg";
 import type { SimNode, SimLink } from "./data";
 
 // Array of roles that should not be labeled in the visualization
@@ -115,14 +115,14 @@ const translate = (d: SimNode): string => `translate(${d.x},${d.y})`;
  * @param {d3.Simulation<SimNode, undefined>} e - The tick event object
  */
 export const onTick = (_e: d3.Simulation<SimNode, undefined>): void => {
-    //     console.log("Tick", dg.network.tick);
-    dg.network.tick += 1;
+    //     console.log("Tick", networkStore.tick);
+    networkStore.tick += 1;
     const k = 1.0; // Force multiplier
 
     // Center the main node if not fixed
-    if (dg.network.data.center) {
-        const centerNode = dg.network.data.nodeMap.get(
-            dg.network.data.center.key,
+    if (networkStore.data.center) {
+        const centerNode = networkStore.data.nodeMap.get(
+            networkStore.data.center.key,
         );
         if (centerNode && !centerNode.fixed) {
             const [svgWidth, svgHeight] = dg.svg_dimensions;
@@ -134,15 +134,15 @@ export const onTick = (_e: d3.Simulation<SimNode, undefined>): void => {
     }
 
     // Update positions of all visual elements
-    dg.network.layers.link
+    networkStore.layers.link
         ?.selectAll<SVGGElement, SimLink>(".link")
         ?.each(onTickLink);
-    dg.network.layers.halo?.selectAll(".node").attr("transform", translate);
-    dg.network.layers.node?.selectAll(".node").attr("transform", translate);
-    dg.network.layers.text?.selectAll(".node").attr("transform", translate);
+    networkStore.layers.halo?.selectAll(".node").attr("transform", translate);
+    networkStore.layers.node?.selectAll(".node").attr("transform", translate);
+    networkStore.layers.text?.selectAll(".node").attr("transform", translate);
 
     // Update hull (cluster outline) paths
-    dg.network.layers.halo
+    networkStore.layers.halo
         ?.selectAll(".hull")
         .select("path")
         .attr("d", function (d: SimNode[]) {

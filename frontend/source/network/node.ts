@@ -10,7 +10,7 @@ import { symbol, symbolCross, now } from "d3";
 
 import { debounce } from "../utils";
 import { getNodeColorClass } from "../color";
-import { dg } from "../dg";
+import { networkStore } from "../dg";
 import { onDragStart, onDragEnd, onDrag, RequestNetworkEvent } from "./events";
 import { hideAllTooltips } from "./tooltips";
 import { SelectEntityEvent } from "./events";
@@ -335,17 +335,17 @@ export const onNodeMouseOver = (event: MouseEvent, d: SimNode): void => {
 
     debounceHandler(this, d);
 
-    // Add a safety check to ensure dg.network.layers.node exists before calling selectAll
-    if (dg?.network?.layers?.node) {
-        dg.network.layers.node
+    // Add a safety check to ensure networkStore.layers.node exists before calling selectAll
+    if (networkStore.layers?.node) {
+        networkStore.layers.node
             .selectAll<SVGGElement, SimNode>(".node")
             .filter((n) => n.key === d.key)
             .raise();
     }
 
-    // Add a safety check to ensure dg.network.layers.text exists before calling selectAll
-    if (dg?.network?.layers?.text) {
-        dg.network.layers.text
+    // Add a safety check to ensure networkStore.layers.text exists before calling selectAll
+    if (networkStore.layers?.text) {
+        networkStore.layers.text
             .selectAll<SVGGElement, SimNode>(".node")
             .filter((n) => n.key === d.key)
             .raise();

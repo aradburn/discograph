@@ -8,7 +8,6 @@ import {
     unlabeledRoles,
 } from "../tick";
 import { hideAllTooltips } from "../tooltips";
-import { dg } from "../../dg";
 import type { SimNode, SimLink } from "../data";
 import { NodeType } from "../types";
 
@@ -16,6 +15,42 @@ import { NodeType } from "../types";
 vi.mock("../tooltips", () => ({
     hideAllTooltips: vi.fn(),
 }));
+
+// Mock dg module
+vi.mock("../../dg", () => {
+    const mockNetworkStore = {
+        tick: 0,
+        data: {
+            center: null,
+            nodeMap: new Map(),
+            linkMap: new Map(),
+            maxDistance: 0,
+        },
+        layers: {
+            root: null,
+            link: null,
+            halo: null,
+            node: null,
+            text: null,
+        },
+        dimensions: [800, 600],
+        forceLayout: null,
+        isUpdating: false,
+        isRunningLayout: false,
+        newNodeCoords: [0, 0],
+        zoom: null,
+    };
+
+    return {
+        dg: {
+            svg_dimensions: [800, 600],
+        },
+        networkStore: mockNetworkStore,
+    };
+});
+
+// Import after mocking
+import { dg, networkStore } from "../../dg";
 
 // Mock d3 functions we need
 vi.mock("d3", async (importOriginal) => {
@@ -125,55 +160,9 @@ describe("Network Visualization Functions", () => {
         const mockSimulation = {} as d3.Simulation<SimNode, undefined>;
 
         beforeEach(() => {
-            // Setup mock dg network state
-            dg.network = {
-                tick: 0,
-                data: {
-                    center: null,
-                    nodeMap: new Map<string, SimNode>(),
-                    linkMap: new Map(),
-                    maxDistance: 0,
-                },
-                layers: {
-                    root: d3.select(null) as d3.Selection<
-                        SVGGElement,
-                        unknown,
-                        HTMLElement,
-                        unknown
-                    >,
-                    link: d3.select(null) as d3.Selection<
-                        SVGGElement,
-                        unknown,
-                        HTMLElement,
-                        unknown
-                    >,
-                    halo: d3.select(null) as d3.Selection<
-                        SVGGElement,
-                        unknown,
-                        HTMLElement,
-                        unknown
-                    >,
-                    node: d3.select(null) as d3.Selection<
-                        SVGGElement,
-                        unknown,
-                        HTMLElement,
-                        unknown
-                    >,
-                    text: d3.select(null) as d3.Selection<
-                        SVGGElement,
-                        unknown,
-                        HTMLElement,
-                        unknown
-                    >,
-                },
-
-                dimensions: [800, 600],
-                forceLayout: {} as d3.Simulation<SimNode, SimLink>,
-                isUpdating: false,
-                isRunningLayout: false,
-                newNodeCoords: [0, 0],
-                zoom: null,
-            };
+            // Reset the mock values in each test
+            vi.mocked(networkStore.data.nodeMap).clear();
+            networkStore.tick = 0;
 
             // Mock d3.select to return an object with chainable methods
             (d3.select as ReturnType<typeof vi.fn>).mockReturnValue({
@@ -193,7 +182,7 @@ describe("Network Visualization Functions", () => {
 
         it("should increment the network tick counter", () => {
             onTick(mockSimulation);
-            expect(dg.network.tick).toBe(1);
+            expect(networkStore.tick).toBe(1);
         });
 
         it("should call hideAllTooltips", () => {
@@ -231,7 +220,7 @@ describe("Network Visualization Functions", () => {
                 selected: false,
             };
 
-            dg.network.data.center = {
+            networkStore.data.center = {
                 key: "center",
                 name: "Center Node",
                 type: NodeType.Artist,
@@ -249,7 +238,7 @@ describe("Network Visualization Functions", () => {
                 fixed: false,
                 isIntermediate: false,
             };
-            dg.network.data.nodeMap.set("center", centerNode);
+            networkStore.data.nodeMap.set("center", centerNode);
             dg.svg_dimensions = [800, 600];
 
             onTick(mockSimulation);
@@ -289,7 +278,7 @@ describe("Network Visualization Functions", () => {
                 selected: false,
             };
 
-            dg.network.data.center = {
+            networkStore.data.center = {
                 key: "center",
                 name: "Center Node",
                 type: NodeType.Artist,
@@ -307,7 +296,7 @@ describe("Network Visualization Functions", () => {
                 fixed: true,
                 isIntermediate: false,
             };
-            dg.network.data.nodeMap.set("center", centerNode);
+            networkStore.data.nodeMap.set("center", centerNode);
             dg.svg_dimensions = [800, 600];
 
             onTick(mockSimulation);

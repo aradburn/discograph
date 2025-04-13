@@ -5,7 +5,7 @@
  */
 
 import { initForceLayout, initForceSliders } from "./forceLayout";
-import { dg } from "../dg";
+import { dg, networkStore } from "../dg";
 import * as d3 from "d3";
 import { hideAllTooltips } from "./tooltips";
 import { SVG_SCALING_MULTIPLIER } from "../init";
@@ -29,13 +29,13 @@ type TransformFunction = (
 export const initNetwork = (): void => {
     const svgElement = d3.select("#svg");
     const root = svgElement.append("g").attr("id", "networkLayer");
-    dg.network.layers.root = root;
-    dg.network.layers.halo = root.append("g").attr("id", "haloLayer");
-    dg.network.layers.link = root.append("g").attr("id", "linkLayer");
-    dg.network.layers.node = root.append("g").attr("id", "nodeLayer");
-    dg.network.layers.text = root.append("g").attr("id", "textLayer");
+    networkStore.layers.root = root;
+    networkStore.layers.halo = root.append("g").attr("id", "haloLayer");
+    networkStore.layers.link = root.append("g").attr("id", "linkLayer");
+    networkStore.layers.node = root.append("g").attr("id", "nodeLayer");
+    networkStore.layers.text = root.append("g").attr("id", "textLayer");
 
-    dg.network.zoom = d3
+    networkStore.zoom = d3
         .zoom<SVGSVGElement, unknown>()
         .extent([
             [0, 0],
@@ -44,7 +44,7 @@ export const initNetwork = (): void => {
         .scaleExtent([1, 8])
         .on("zoom", onNetworkZoom);
 
-    svgElement.call(dg.network.zoom);
+    svgElement.call(networkStore.zoom);
 
     resetNetworkTransform();
 
@@ -91,8 +91,8 @@ export const resetNetworkTransform = (): void => {
             2.0,
     ]);
 
-    const transform = dg.network.zoom.transform.bind(
-        dg.network.zoom,
+    const transform = networkStore.zoom.transform.bind(
+        networkStore.zoom,
     ) as TransformFunction;
     svgElement
         .transition()
@@ -107,8 +107,8 @@ export const resetNetworkTransform = (): void => {
  * @param {d3.D3ZoomEvent<SVGSVGElement, unknown>} event - The zoom event object
  */
 const onNetworkZoom = (event: d3.D3ZoomEvent<SVGSVGElement, unknown>): void => {
-    if (dg.network.layers.root) {
-        dg.network.layers.root.attr("transform", event.transform.toString());
+    if (networkStore.layers.root) {
+        networkStore.layers.root.attr("transform", event.transform.toString());
     }
     hideAllTooltips();
 };

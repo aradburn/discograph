@@ -6,12 +6,12 @@ import { restartForceLayout, stopForceLayout } from "./network/forceLayout";
 import { initRoles } from "./roles";
 import { initSvg, printSvg } from "./svg";
 import { initTypeahead } from "./typeahead";
-import { dg } from "./dg";
-import { DiscographFsm } from "./fsm";
+import { dg, networkStore } from "./dg";
 import type { TreeConfig } from "./roles";
 import { debounce } from "./utils";
 import { showMessage, clearMessages } from "./messages";
 import { ResizeEvent } from "./network/events";
+import { initFSM } from "./fsm";
 
 declare global {
     interface Window {
@@ -52,11 +52,11 @@ export const initWindow = (): void => {
     dg.svg_dimensions = svgCanvasDimensions;
 
     // All nodes start at center of the screen
-    dg.network.newNodeCoords = [
+    networkStore.newNodeCoords = [
         dg.svg_dimensions[0] / 2,
         dg.svg_dimensions[1] / 2,
     ];
-    console.log("svg newNodeCoords: ", dg.network.newNodeCoords);
+    console.log("svg newNodeCoords: ", networkStore.newNodeCoords);
 
     // Handle window resize events
     const handleResize = debounce(() => {
@@ -161,8 +161,7 @@ export const initApp = (): void => {
     );
 
     // Initialize the Discograph Finite State Machine
-    dg.fsm = new DiscographFsm();
-    console.log("discograph initialized.");
+    initFSM();
 
     // Modals start off hidden to prevent them showing on startup before CSS gets loaded.
     const navTop = document.querySelector<HTMLDivElement>("#nav-top");
@@ -178,4 +177,6 @@ export const initApp = (): void => {
     if (sideMenuContent) {
         sideMenuContent.style.opacity = "1";
     }
+
+    console.log("discograph initialized.");
 };

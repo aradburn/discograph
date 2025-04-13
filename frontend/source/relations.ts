@@ -6,7 +6,7 @@
  */
 
 import * as d3 from "d3";
-import { dg } from "./dg";
+import { dg, relationsStore } from "./dg";
 
 /**
  * Data structure for individual relations
@@ -61,7 +61,7 @@ export interface RelationsArcData {
 export function initRelations(): void {
     const svgElement = d3.select("#svg");
     const root = svgElement.append("g").attr("id", "relationsLayer");
-    dg.relations.layers.root = root;
+    relationsStore.layers.root = root;
 
     // Zoom functionality commented out for now
     // relations.zoom = d3.zoom()
@@ -76,10 +76,10 @@ export function initRelations(): void {
  * @param {RelationsData} data - The relations data to set
  */
 export function setRelationsData(data: RelationsData): void {
-    dg.relations.data = data;
+    relationsStore.data = data;
 
     // Group data by year and category
-    dg.relations.byYear = d3.group(
+    relationsStore.byYear = d3.group(
         data.results,
         (d) => d.year,
         (d) => d.category,
@@ -87,12 +87,12 @@ export function setRelationsData(data: RelationsData): void {
 
     // Process role data
     const sortedByRole = d3.sort(data.results, (d) => d.role);
-    dg.relations.byRole = d3.rollup(
+    relationsStore.byRole = d3.rollup(
         sortedByRole,
         (d) => d.length,
         (d) => d.role,
     );
-    console.log("dg.relations.byRole: ", dg.relations.byRole);
+    console.log("relationsStore.byRole: ", relationsStore.byRole);
 }
 
 /**
@@ -116,7 +116,7 @@ export function createRadialChart(): void {
 
     const barHeight = Math.min(...dg.dimensions) / 3;
     console.log("createRadialChart() barHeight:", barHeight);
-    const data = dg.relations.byRole;
+    const data = relationsStore.byRole;
     console.log("createRadialChart() data: ", data);
 
     const extent = d3.extent(Array.from(data.values()));
@@ -158,7 +158,7 @@ export function createRadialChart(): void {
 
     console.log("createRadialChart() arc: ", arc);
 
-    const radialGroup = dg.relations.layers.root
+    const radialGroup = relationsStore.layers.root
         ?.append("g")
         .attr("class", "radial centered")
         .attr(
@@ -239,7 +239,7 @@ export function handleZoom({
 }: {
     transform: d3.ZoomTransform;
 }): void {
-    dg.relations.layers.root.attr("transform", transform.toString());
+    relationsStore.layers.root.attr("transform", transform.toString());
 }
 
 /**

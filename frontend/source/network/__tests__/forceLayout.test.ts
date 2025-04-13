@@ -10,7 +10,7 @@ import {
     stopForceLayout,
     ALPHA,
 } from "../forceLayout";
-import { dg } from "../../dg";
+import { dg, networkStore } from "../../dg";
 import type { SimNode, SimLink } from "../data";
 import { NodeType } from "../types";
 
@@ -49,48 +49,89 @@ vi.mock("d3", () => ({
 }));
 
 // Mock dg global object
-vi.mock("../../dg", () => ({
-    dg: {
-        network: {
-            data: {
-                nodeMap: new Map(),
-                linkMap: new Map(),
-            },
-            layers: {
-                halo: {
-                    selectAll: vi.fn(() => ({
-                        data: vi.fn(() => ({
-                            join: vi.fn(),
-                        })),
-                    })),
-                },
-                node: {
-                    selectAll: vi.fn(() => ({
-                        data: vi.fn(() => ({
-                            join: vi.fn(),
-                        })),
-                    })),
-                },
-                text: {
-                    selectAll: vi.fn(() => ({
-                        data: vi.fn(() => ({
-                            join: vi.fn(),
-                        })),
-                    })),
-                },
-                link: {
-                    selectAll: vi.fn(() => ({
-                        data: vi.fn(() => ({
-                            join: vi.fn(),
-                        })),
-                    })),
-                },
-            },
-            forceLayout: null,
+vi.mock("../../dg", () => {
+    const mockNetworkStore = {
+        data: {
+            nodeMap: new Map(),
+            linkMap: new Map(),
         },
-        svg_dimensions: [800, 600],
-    },
-}));
+        layers: {
+            halo: {
+                selectAll: vi.fn(() => ({
+                    data: vi.fn(() => ({
+                        join: vi.fn(),
+                    })),
+                })),
+            },
+            node: {
+                selectAll: vi.fn(() => ({
+                    data: vi.fn(() => ({
+                        join: vi.fn(),
+                    })),
+                })),
+            },
+            text: {
+                selectAll: vi.fn(() => ({
+                    data: vi.fn(() => ({
+                        join: vi.fn(),
+                    })),
+                })),
+            },
+            link: {
+                selectAll: vi.fn(() => ({
+                    data: vi.fn(() => ({
+                        join: vi.fn(),
+                    })),
+                })),
+            },
+        },
+        forceLayout: null,
+    };
+
+    return {
+        dg: {
+            network: {
+                data: {
+                    nodeMap: new Map(),
+                    linkMap: new Map(),
+                },
+                layers: {
+                    halo: {
+                        selectAll: vi.fn(() => ({
+                            data: vi.fn(() => ({
+                                join: vi.fn(),
+                            })),
+                        })),
+                    },
+                    node: {
+                        selectAll: vi.fn(() => ({
+                            data: vi.fn(() => ({
+                                join: vi.fn(),
+                            })),
+                        })),
+                    },
+                    text: {
+                        selectAll: vi.fn(() => ({
+                            data: vi.fn(() => ({
+                                join: vi.fn(),
+                            })),
+                        })),
+                    },
+                    link: {
+                        selectAll: vi.fn(() => ({
+                            data: vi.fn(() => ({
+                                join: vi.fn(),
+                            })),
+                        })),
+                    },
+                },
+                forceLayout: null,
+            },
+            svg_dimensions: [800, 600],
+        },
+        networkStore: mockNetworkStore,
+    };
+});
 
 // Create mock nodes and links for testing
 const createMockNode = (
@@ -160,7 +201,7 @@ describe("Force Layout Initialization", () => {
     it("should initialize force layout with correct configuration", () => {
         initForceLayout();
         expect(d3.forceSimulation).toHaveBeenCalled();
-        expect(dg.network.forceLayout).toBeDefined();
+        expect(networkStore.forceLayout).toBeDefined();
     });
 
     it("should set up all required forces", () => {
@@ -206,7 +247,7 @@ describe("Force Slider Controls", () => {
     });
 
     it("should handle slider input events", () => {
-        dg.network.forceLayout = d3.forceSimulation();
+        networkStore.forceLayout = d3.forceSimulation();
         initForceSliders();
 
         const nodeSlider = document.getElementById(
@@ -222,27 +263,27 @@ describe("Force Slider Controls", () => {
         // Simulate slider input events
         nodeSlider.value = "20";
         nodeSlider.dispatchEvent(new Event("input"));
-        expect(dg.network.forceLayout.force).toHaveBeenCalled();
-        expect(dg.network.forceLayout.alpha).toHaveBeenCalled();
-        expect(dg.network.forceLayout.restart).toHaveBeenCalled();
+        expect(networkStore.forceLayout.force).toHaveBeenCalled();
+        expect(networkStore.forceLayout.alpha).toHaveBeenCalled();
+        expect(networkStore.forceLayout.restart).toHaveBeenCalled();
 
         linkSlider.value = "30";
         linkSlider.dispatchEvent(new Event("input"));
-        expect(dg.network.forceLayout.force).toHaveBeenCalled();
+        expect(networkStore.forceLayout.force).toHaveBeenCalled();
 
         gravSlider.value = "15";
         gravSlider.dispatchEvent(new Event("input"));
-        expect(dg.network.forceLayout.force).toHaveBeenCalled();
+        expect(networkStore.forceLayout.force).toHaveBeenCalled();
     });
 });
 
 describe("Force Layout Display and Control", () => {
     it("should display force layout correctly", () => {
         displayForceLayout();
-        expect(dg.network.layers.halo.selectAll).toHaveBeenCalled();
-        expect(dg.network.layers.node.selectAll).toHaveBeenCalled();
-        expect(dg.network.layers.text.selectAll).toHaveBeenCalled();
-        expect(dg.network.layers.link.selectAll).toHaveBeenCalled();
+        expect(networkStore.layers.halo.selectAll).toHaveBeenCalled();
+        expect(networkStore.layers.node.selectAll).toHaveBeenCalled();
+        expect(networkStore.layers.text.selectAll).toHaveBeenCalled();
+        expect(networkStore.layers.link.selectAll).toHaveBeenCalled();
     });
 
     it("should start force layout with provided nodes", () => {
@@ -251,24 +292,24 @@ describe("Force Layout Display and Control", () => {
             createMockNode("2", { x: 100, y: 100 }),
         ];
         startForceLayout(mockNodes);
-        expect(dg.network.forceLayout.nodes).toHaveBeenCalledWith(mockNodes);
+        expect(networkStore.forceLayout.nodes).toHaveBeenCalledWith(mockNodes);
     });
 
     it("should restart force layout with new alpha value", () => {
-        dg.network.forceLayout = d3.forceSimulation();
+        networkStore.forceLayout = d3.forceSimulation();
         restartForceLayout(ALPHA);
-        expect(dg.network.forceLayout.alpha).toHaveBeenCalledWith(ALPHA);
-        expect(dg.network.forceLayout.restart).toHaveBeenCalled();
+        expect(networkStore.forceLayout.alpha).toHaveBeenCalledWith(ALPHA);
+        expect(networkStore.forceLayout.restart).toHaveBeenCalled();
     });
 
     it("should stop force layout", () => {
-        dg.network.forceLayout = d3.forceSimulation();
+        networkStore.forceLayout = d3.forceSimulation();
         stopForceLayout();
-        expect(dg.network.forceLayout.stop).toHaveBeenCalled();
+        expect(networkStore.forceLayout.stop).toHaveBeenCalled();
     });
 
     it("should handle force layout when not initialized", () => {
-        dg.network.forceLayout = null;
+        networkStore.forceLayout = null;
         const consoleSpy = vi.spyOn(console, "error");
         restartForceLayout(ALPHA);
         expect(consoleSpy).toHaveBeenCalledWith(
@@ -284,16 +325,22 @@ describe("Node and Link Processing", () => {
             createMockNode("2", { isIntermediate: true }),
             createMockNode("3"),
         ];
-        dg.network.data.nodeMap = new Map(
+        networkStore.data.nodeMap = new Map(
             mockNodes.map((node) => [node.key, node]),
         );
 
         displayForceLayout();
 
         // Verify that the layers were updated
-        expect(dg.network.layers.node.selectAll).toHaveBeenCalledWith(".node");
-        expect(dg.network.layers.halo.selectAll).toHaveBeenCalledWith(".node");
-        expect(dg.network.layers.text.selectAll).toHaveBeenCalledWith(".node");
+        expect(networkStore.layers.node.selectAll).toHaveBeenCalledWith(
+            ".node",
+        );
+        expect(networkStore.layers.halo.selectAll).toHaveBeenCalledWith(
+            ".node",
+        );
+        expect(networkStore.layers.text.selectAll).toHaveBeenCalledWith(
+            ".node",
+        );
     });
 
     it("should filter spline links from display", () => {
@@ -303,14 +350,16 @@ describe("Node and Link Processing", () => {
             createMockLink(node1, node2),
             createMockLink(node1, node2, { isSpline: true }),
         ];
-        dg.network.data.linkMap = new Map(
+        networkStore.data.linkMap = new Map(
             mockLinks.map((link) => [link.key, link]),
         );
 
         displayForceLayout();
 
         // Verify that the link layer was updated
-        expect(dg.network.layers.link.selectAll).toHaveBeenCalledWith(".link");
+        expect(networkStore.layers.link.selectAll).toHaveBeenCalledWith(
+            ".link",
+        );
     });
 });
 
@@ -325,7 +374,7 @@ describe("Error Handling", () => {
     });
 
     it("should handle force layout operations when not initialized", () => {
-        dg.network.forceLayout = null;
+        networkStore.forceLayout = null;
         const consoleSpy = vi.spyOn(console, "error");
 
         stopForceLayout();
