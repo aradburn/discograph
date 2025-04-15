@@ -13,14 +13,16 @@ from discograph.config import (
     DISCOGS_LABELS_TYPE,
     DISCOGS_MASTERS_TYPE,
     ROOT_DIR,
-    PostgresTestConfiguration,
+    PostgresOfflineTestConfiguration,
     DATA_DIR,
 )
-from discograph.library.database.database_helper import DatabaseHelper
-from discograph.library.loader.loader_target import LoaderTarget
-from discograph.library.relation_grapher import RelationGrapher
+from discograph.offline.loader.loader_target import LoaderTarget
+from discograph.offline.offline_database_manager import OfflineDatabaseManager
+from discograph.runtime.data_access_layer.relation_grapher import RelationGrapher
 from discograph.utils import get_discogs_dump_dates, get_discogs_url
-from tests.integration.library.database.repository_test_case import RepositoryTestCase
+from tests.integration.offline.database.offline_repository_test_case import (
+    OfflineRepositoryTestCase,
+)
 
 log = logging.getLogger("tests.integration." + __name__)
 
@@ -90,7 +92,7 @@ class TestLoaderTaskForDate(luigi.WrapperTask):
 
     def requires(self):
         yield TestDiscogsDownloaderTaskForDate(dump_date=self.dump_date)
-        stages = DatabaseHelper.db_helper.get_load_table_stages(
+        stages = OfflineDatabaseManager.offline_database_helper.get_load_table_stages(
             DATA_DIR, self.dump_date.strftime("%Y%m%d"), is_bulk_inserts=False
         )
         for stage in range(0, len(stages)):
@@ -134,7 +136,7 @@ class TestLoaderTaskForDateAndStage(luigi.Task):
         log.debug(
             f"Run TestLoaderTaskForDateAndStage tasks for stage: {self.stage} date: {self.dump_date}"
         )
-        stages = DatabaseHelper.db_helper.get_load_table_stages(
+        stages = OfflineDatabaseManager.offline_database_helper.get_load_table_stages(
             DATA_DIR, self.dump_date.strftime("%Y%m%d"), is_bulk_inserts=False
         )
         log.debug(f"Run stage: {self.stage} of {len(stages)}")
@@ -194,12 +196,12 @@ class TestLoaderSetupTask(luigi.Task):
         yield TestLoaderTask(start_date=self.start_date, end_date=self.end_date)
 
 
-class TestTaskRunner(RepositoryTestCase):
+class TestTaskRunner(OfflineRepositoryTestCase):
 
     @classmethod
     def setUpClass(cls):
-        RepositoryTestCase._config = PostgresTestConfiguration()
-        RepositoryTestCase.relation_grapher = RelationGrapher
+        OfflineRepositoryTestCase._offline_config = PostgresOfflineTestConfiguration()
+        OfflineRepositoryTestCase.relation_grapher = RelationGrapher
         super().setUpClass()
 
     def test_run_tasks(self):

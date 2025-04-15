@@ -1,10 +1,10 @@
 from discograph.config import TEST_DATA_DIR
-from discograph.library.domain.entity import Entity
-from discograph.library.domain.release import Release
 from discograph.library.fields.entity_type import EntityType
-from discograph.library.loader.loader_entity import LoaderEntity
-from discograph.library.loader.loader_release import LoaderRelease
-from discograph.library.loader.loader_utils import LoaderUtils
+from discograph.offline.domain.entity import Entity
+from discograph.offline.domain.release import Release
+from discograph.offline.loader.loader_utils import LoaderUtils
+from discograph.offline.loader.parser_entity import ParserEntity
+from discograph.offline.loader.parser_release import ParserRelease
 
 
 def get_test_entity_by_id(entity_id: int, entity_type: EntityType) -> Entity:
@@ -14,7 +14,7 @@ def get_test_entity_by_id(entity_id: int, entity_type: EntityType) -> Entity:
 
     while True:
         element = next(iterator)
-        entity = LoaderEntity().from_element(element)
+        entity = ParserEntity().from_element(element)
         if entity.entity_id == entity_id:
             break
     return entity
@@ -25,7 +25,7 @@ def get_test_release_by_id(release_id: int) -> Release:
 
     while True:
         element = next(iterator)
-        release = LoaderRelease().from_element(element)
+        release = ParserRelease().from_element(element)
         if release.release_id == release_id:
             break
     return release

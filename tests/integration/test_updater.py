@@ -1,15 +1,15 @@
 from discograph import utils
 from discograph.exceptions import NotFoundError
-from discograph.library.database.database_helper import DatabaseHelper
-from discograph.library.database.entity_repository import EntityRepository
-from discograph.library.database.relation_release_year_repository import (
+from discograph.library.fields.entity_id import to_entity_internal_id
+from discograph.library.fields.entity_type import EntityType
+from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
+from discograph.offline.database.entity_repository import EntityRepository
+from discograph.offline.database.relation_release_year_repository import (
     RelationReleaseYearRepository,
 )
-from discograph.library.database.relation_repository import RelationRepository
-from discograph.library.database.release_repository import ReleaseRepository
-from discograph.library.database.transaction import transaction
-from discograph.library.domain.entity import Entity
-from discograph.library.fields.entity_type import EntityType
+from discograph.offline.database.relation_repository import RelationRepository
+from discograph.offline.database.release_repository import ReleaseRepository
+from discograph.offline.database.offline_transaction import offline_transaction
 from tests.integration.updater_test_case import UpdaterTestCase
 
 
@@ -20,7 +20,7 @@ class TestUpdater(UpdaterTestCase):
         entity_type = EntityType.ARTIST
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
@@ -29,7 +29,7 @@ class TestUpdater(UpdaterTestCase):
 
         # THEN
         expected_entity = {
-            "entities": {"groups": {}},
+            "entities": {},
             "entity_id": 20702,
             "entity_type": "EntityType.ARTIST",
             "entity_metadata": {
@@ -71,7 +71,7 @@ class TestUpdater(UpdaterTestCase):
         entity_type = EntityType.ARTIST
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
@@ -131,7 +131,7 @@ class TestUpdater(UpdaterTestCase):
         entity_type = EntityType.ARTIST
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
@@ -140,7 +140,7 @@ class TestUpdater(UpdaterTestCase):
 
         # THEN
         expected_entity = {
-            "entities": {"aliases": {}, "groups": {"Test Group": None}},
+            "entities": {"groups": {"Test Group": None}},
             "entity_id": 9999999,
             "entity_metadata": {
                 "name_variations": ["Test Test", "DJ TEST"],
@@ -162,7 +162,7 @@ class TestUpdater(UpdaterTestCase):
         entity_type = EntityType.ARTIST
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             try:
                 entity = entity_repository.get_by_entity_id_and_entity_type(
@@ -180,7 +180,7 @@ class TestUpdater(UpdaterTestCase):
         entity_type = EntityType.LABEL
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
@@ -216,7 +216,7 @@ class TestUpdater(UpdaterTestCase):
         entity_type = EntityType.LABEL
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
@@ -248,7 +248,7 @@ class TestUpdater(UpdaterTestCase):
         entity_type = EntityType.LABEL
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             entity = entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
@@ -277,7 +277,7 @@ class TestUpdater(UpdaterTestCase):
         entity_type = EntityType.LABEL
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             entity_repository = EntityRepository()
             try:
                 entity = entity_repository.get_by_entity_id_and_entity_type(
@@ -294,7 +294,7 @@ class TestUpdater(UpdaterTestCase):
         release_id = 157
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
             actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
@@ -368,7 +368,7 @@ class TestUpdater(UpdaterTestCase):
         release_id = 635
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
             actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
@@ -461,7 +461,7 @@ class TestUpdater(UpdaterTestCase):
         release_id = 99999999
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             release_repository = ReleaseRepository()
             release = release_repository.get(release_id)
             actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
@@ -542,7 +542,7 @@ class TestUpdater(UpdaterTestCase):
         release_id = 61930
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             release_repository = ReleaseRepository()
             try:
                 release = release_repository.get(release_id)
@@ -560,8 +560,8 @@ class TestUpdater(UpdaterTestCase):
         entity_two_type = EntityType.ARTIST
         role = "Producer"
 
-        id_1 = Entity.to_entity_internal_id(entity_one_id, entity_one_type)
-        id_2 = Entity.to_entity_internal_id(entity_two_id, entity_two_type)
+        id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
+        id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
         key = dict(
             subject=id_1,
             role=role,
@@ -569,10 +569,10 @@ class TestUpdater(UpdaterTestCase):
         )
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -600,8 +600,8 @@ class TestUpdater(UpdaterTestCase):
         entity_two_type = EntityType.LABEL
         role = "Released On"
 
-        id_1 = Entity.to_entity_internal_id(entity_one_id, entity_one_type)
-        id_2 = Entity.to_entity_internal_id(entity_two_id, entity_two_type)
+        id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
+        id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
         key = dict(
             subject=id_1,
             role=role,
@@ -609,10 +609,10 @@ class TestUpdater(UpdaterTestCase):
         )
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -640,8 +640,8 @@ class TestUpdater(UpdaterTestCase):
         entity_two_type = EntityType.ARTIST
         role = "Producer"
 
-        id_1 = Entity.to_entity_internal_id(entity_one_id, entity_one_type)
-        id_2 = Entity.to_entity_internal_id(entity_two_id, entity_two_type)
+        id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
+        id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
         key = dict(
             subject=id_1,
             role=role,
@@ -649,10 +649,10 @@ class TestUpdater(UpdaterTestCase):
         )
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -680,8 +680,8 @@ class TestUpdater(UpdaterTestCase):
         entity_two_type = EntityType.ARTIST
         role = "Design"
 
-        id_1 = Entity.to_entity_internal_id(entity_one_id, entity_one_type)
-        id_2 = Entity.to_entity_internal_id(entity_two_id, entity_two_type)
+        id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
+        id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
         key = dict(
             subject=id_1,
             role=role,
@@ -689,10 +689,10 @@ class TestUpdater(UpdaterTestCase):
         )
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -721,10 +721,10 @@ class TestUpdater(UpdaterTestCase):
         )
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -826,10 +826,10 @@ class TestUpdater(UpdaterTestCase):
         )
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -863,10 +863,10 @@ class TestUpdater(UpdaterTestCase):
         )
 
         # WHEN
-        with transaction():
+        with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = DatabaseHelper.get_relation_by_key(
+            relation = OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,

@@ -1,13 +1,12 @@
 import unittest
 
 from discograph.config import (
-    SqliteTestConfiguration,
+    SqliteOfflineTestConfiguration,
     SqliteDevelopmentConfiguration,
     PostgresDevelopmentConfiguration,
 )
 from discograph.library.cache.cache_manager import CacheManager
-
-from discograph.logging_config import setup_logging, shutdown_logging
+from discograph.logging_config import setup_logging
 
 
 class TestCache(unittest.TestCase):
@@ -15,12 +14,12 @@ class TestCache(unittest.TestCase):
     def setUpClass(cls):
         setup_logging(is_testing=True)
 
-    @classmethod
-    def tearDownClass(cls):
-        shutdown_logging()
+    # @classmethod
+    # def tearDownClass(cls):
+    #     shutdown_logging()
 
     def test_01(self):
-        CacheManager.setup_cache(vars(SqliteTestConfiguration))
+        CacheManager.setup_cache(SqliteOfflineTestConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -31,7 +30,7 @@ class TestCache(unittest.TestCase):
 
     def test_02(self):
         cache_key = "test_key"
-        CacheManager.setup_cache(vars(SqliteTestConfiguration))
+        CacheManager.setup_cache(SqliteOfflineTestConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -49,7 +48,7 @@ class TestCache(unittest.TestCase):
 
     def test_03(self):
         cache_key = "test_key"
-        CacheManager.setup_cache(vars(SqliteTestConfiguration))
+        CacheManager.setup_cache(SqliteOfflineTestConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -71,7 +70,7 @@ class TestCache(unittest.TestCase):
         assert actual == expected
 
     def test_04(self):
-        CacheManager.setup_cache(vars(SqliteDevelopmentConfiguration))
+        CacheManager.setup_cache(SqliteDevelopmentConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -82,7 +81,7 @@ class TestCache(unittest.TestCase):
 
     def test_05(self):
         cache_key = "test_key"
-        CacheManager.setup_cache(vars(SqliteDevelopmentConfiguration))
+        CacheManager.setup_cache(SqliteDevelopmentConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -100,7 +99,7 @@ class TestCache(unittest.TestCase):
 
     def test_06(self):
         cache_key = "test_key"
-        CacheManager.setup_cache(vars(SqliteDevelopmentConfiguration))
+        CacheManager.setup_cache(SqliteDevelopmentConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -122,7 +121,7 @@ class TestCache(unittest.TestCase):
         assert actual == expected
 
     def test_postgres_01(self):
-        CacheManager.setup_cache(vars(PostgresDevelopmentConfiguration))
+        CacheManager.setup_cache(PostgresDevelopmentConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -133,7 +132,7 @@ class TestCache(unittest.TestCase):
 
     def test_postgres_02(self):
         cache_key = "test_key"
-        CacheManager.setup_cache(vars(PostgresDevelopmentConfiguration))
+        CacheManager.setup_cache(PostgresDevelopmentConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -151,7 +150,7 @@ class TestCache(unittest.TestCase):
 
     def test_postgres_03(self):
         cache_key = "test_key"
-        CacheManager.setup_cache(vars(PostgresDevelopmentConfiguration))
+        CacheManager.setup_cache(PostgresDevelopmentConfiguration())
 
         cache = CacheManager.get_cache()
 

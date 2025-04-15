@@ -1,13 +1,13 @@
-# Discograph2
+# Discograph
 
 Interactive visualization of the Discogs Database
 
 ## What is this?
 
-Discograph2 visualizes the relationships between
+Discograph visualizes the relationships between
 musicians, bands and labels.
 
-All of Discograph2's data is derived from the [Discogs](http://www.discogs.com)
+All of Discograph's data is derived from the [Discogs](http://www.discogs.com)
 discography database: nearly 9 million artists, 2 million labels, and 17 million
 releases creating a network of over 100 million different relationships.
 

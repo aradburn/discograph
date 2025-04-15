@@ -13,13 +13,14 @@ from collections.abc import Mapping
 from datetime import datetime, date
 from functools import wraps
 from random import random
-from typing import List, Any
+from typing import List, Any, Sequence, Iterator, TypeVar
 
 import requests
 from dateutil.relativedelta import relativedelta
 from toolz import count
 from unidecode import unidecode
 
+from discograph.app.ui import UI_DEFAULT_ROLES
 from discograph.config import (
     DISCOGS_BASE_URL,
     DISCOGS_PATH,
@@ -33,6 +34,7 @@ STRIP_PATTERN = re.compile(r"\(\d+\)|not on label|self[ -]released|[()&\".,]")
 # STRIP_PATTERN = re.compile(r"(\(\d+\)|[^(\w\s)]+)")
 # REMOVE_PUNCTUATION = re.compile(r"[^\w\s]")
 WORD_PATTERN = re.compile(r"\s+")
+T = TypeVar("T")
 
 
 class SkipFilter:
@@ -69,8 +71,8 @@ class SkipFilter:
         raise ValueError
 
 
-def parse_request_args(args):
-    from discograph.library.data_access_layer.role_data_access import RoleDataAccess
+def parse_request_args(args) -> tuple[list[str], int | tuple[int, int]] | None:
+    from discograph.library.cache.role_cache import RoleCache
 
     year = None
     roles = set()
@@ -89,26 +91,23 @@ def parse_request_args(args):
             value = args.getlist(key)
             for role in value:
                 log.debug(f"Requested role: {role}")
-                if role in RoleDataAccess.role_category_to_role_name_lookup.keys():
+                if role in RoleCache.role_category_to_role_name_lookup.keys():
                     log.debug(f"Requested role found: {role}")
-                    for role_entry in RoleDataAccess.role_category_to_role_name_lookup[
-                        role
-                    ]:
+                    for role_entry in RoleCache.role_category_to_role_name_lookup[role]:
                         log.debug(f"Requested role_entry: {role_entry}")
-                        if (
-                            role_entry
-                            in RoleDataAccess.role_name_to_role_id_lookup.keys()
-                        ):
+                        if role_entry in RoleCache.role_name_to_role_id_lookup.keys():
                             roles.add(role_entry)
-                elif role in RoleDataAccess.role_name_to_role_id_lookup.keys():
+                elif role in RoleCache.role_name_to_role_id_lookup.keys():
                     roles.add(role)
 
+    if len(roles) == 0:
+        roles = UI_DEFAULT_ROLES
     roles = list(sorted(roles))
     log.debug(f"Requested roles: {roles}")
     return roles, year
 
 
-def batched(iterable, n) -> list[Any]:
+def batched(iterable: Sequence[T], n) -> Iterator[List[T]]:
     # batched('ABCDEFG', 3) → ABC DEF G
     if n < 1:
         raise ValueError("n must be at least one")
@@ -129,7 +128,7 @@ def batched(iterable, n) -> list[Any]:
 #         yield itertools.chain([peek], slice_iter)
 
 
-def split_list(num_chunks: int, seq) -> list[Any]:
+def split_list(num_chunks: int, seq: Sequence[T]) -> Iterator[T]:
     num_items = count(seq)
     # print(f"num_items: {num_items}")
     num_chunks = min(num_items, num_chunks)
@@ -190,7 +189,7 @@ def normalize_dict(obj: Any, skip_keys=None) -> str:
         def as_dict(self):
             return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
-        from discograph.library.database.base_table import Base
+        from discograph.offline.database.base_table import Base
 
         if isinstance(o, Base):
             return list_public_attributes(preprocessor.filter(as_dict(o)))

@@ -1,8 +1,0 @@
-discogs_*
-*.dump
-*sqlite*
-*.gz
-*.xml
-*.csv
-*.sql
-*.crdownload

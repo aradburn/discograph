@@ -6,7 +6,7 @@ from flask_caching import BaseCache, SimpleCache
 from flask_caching.backends.rediscache import RedisCache
 from flask_caching.backends.filesystemcache import FileSystemCache
 
-from discograph.config import CacheType
+from discograph.config import CacheType, Configuration
 
 log = logging.getLogger(__name__)
 
@@ -16,10 +16,36 @@ __all__ = [
 
 
 class CacheManager:
+    """
+    Manages the application's cache system.
+
+    This class provides a centralized way to configure, access, and clear the cache.
+    It supports different cache types such as memory, filesystem, and Redis.
+
+    Attributes:
+        cache (BaseCache | None): The active cache instance. It can be None if the cache is not yet initialized.
+    """
+
     cache: BaseCache | None = None
 
     @classmethod
-    def setup_cache(cls, config) -> None:
+    def setup_cache(cls, config: Configuration) -> None:
+        """
+        Initializes the cache based on the provided configuration.
+
+        The cache type is determined by the 'CACHE_TYPE' key in the config dictionary.
+        Supported cache types are:
+            - CacheType.MEMORY: Uses a SimpleCache for in-memory caching.
+            - CacheType.FILESYSTEM: Uses a FileSystemCache for file-based caching.
+            - CacheType.REDIS: Uses a RedisCache for caching in a Redis server.
+
+        Args:
+            config (Configuration): A Configuration dictionary containing the application's configuration.
+                           The 'CACHE_TYPE' key is used to determine the cache type.
+
+        Raises:
+            ValueError: If an invalid 'CACHE_TYPE' is provided in the configuration.
+        """
         cls.cache = None
 
         # Based on configuration, use a different cache setup.
@@ -65,6 +91,12 @@ class CacheManager:
 
     @classmethod
     def shutdown_cache(cls) -> None:
+        """
+        Clears and shuts down the cache.
+
+        This method clears the cache and sets the cache attribute to None,
+        releasing any resources held by the cache.
+        """
         if cls.cache is not None:
             cls.cache.clear()
         cls.cache = None
@@ -72,9 +104,18 @@ class CacheManager:
 
     @classmethod
     def get_cache(cls) -> BaseCache:
+        """
+        Returns the current cache instance.
+
+        Returns:
+            BaseCache: The current cache instance.
+        """
         return cls.cache
 
     @classmethod
     def clear(cls) -> None:
+        """
+        Clears all data from the cache.
+        """
         log.debug("Clearing cache")
         cls.cache.clear()

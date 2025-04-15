@@ -1,7 +1,7 @@
 import unittest
 from xml.etree import ElementTree
 
-from discograph.library.role_entry import RoleEntry
+from discograph.runtime.data_access_layer.role_entry import RoleEntry
 
 
 class TestRoleEntry(unittest.TestCase):

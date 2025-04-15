@@ -1,5 +1,5 @@
 """
-This module defines the Domain Objects.
+This module defines the common base for all Domain Objects.
 """
 
 import json
@@ -19,8 +19,18 @@ from discograph.library.fields.entity_type import EntityType
 
 
 def to_camelcase(string: str) -> str:
-    """The alias generator for PublicDomainObject."""
+    """
+    Converts a string from snake_case to camelCase.
 
+    This function splits the input string by underscores and capitalizes each word
+    except the first one, then joins the words together.
+
+    Args:
+        string (str): The input string in snake_case.
+
+    Returns:
+        str: The converted string in camelCase.
+    """
     resp = "".join(
         word.capitalize() if index else word
         for index, word in enumerate(string.split("_"))
@@ -34,6 +44,22 @@ _json_encoders: dict[Any, Callable[[Any], Any]] = {
 
 
 class InternalDomainObject(BaseModel):
+    """
+    Base class for internal domain objects.
+
+    These objects are used internally within the application and have specific
+    configuration settings for validation and data handling.
+
+    Attributes:
+        model_config (ConfigDict): Configuration settings for the Pydantic model.
+            - extra: "ignore" to ignore extra fields during validation.
+            - use_enum_values: False to use enum values directly.
+            - validate_assignment: True to validate field assignments.
+            - arbitrary_types_allowed: False to disallow arbitrary types.
+            - from_attributes: True to enable creating models from attributes.
+            - json_encoders: A dictionary of JSON encoders for specific types.
+    """
+
     model_config = ConfigDict(
         extra="ignore",
         use_enum_values=False,
@@ -44,6 +70,12 @@ class InternalDomainObject(BaseModel):
     )
 
     def __repr__(self) -> str:
+        """
+        Returns a normalized dictionary representation of the model.
+
+        Returns:
+            str: A string representation of the normalized dictionary.
+        """
         return utils.normalize_dict(self.model_dump())
 
 
@@ -51,6 +83,24 @@ _InternalDomainObject = TypeVar("_InternalDomainObject", bound=InternalDomainObj
 
 
 class PublicDomainObject(BaseModel):
+    """
+    Base class for public domain objects.
+
+    These objects are exposed to the outside world and have specific
+    configuration settings for alias generation and data handling.
+
+    Attributes:
+        model_config (ConfigDict): Configuration settings for the Pydantic model.
+            - extra: "ignore" to ignore extra fields during validation.
+            - use_enum_values: False to use enum values directly.
+            - validate_assignment: True to validate field assignments.
+            - arbitrary_types_allowed: True to allow arbitrary types.
+            - from_attributes: True to enable creating models from attributes.
+            - json_encoders: A dictionary of JSON encoders for specific types.
+            - loc_by_alias: True to locate fields by alias.
+            - alias_generator: The function to generate aliases for field names.
+    """
+
     model_config = ConfigDict(
         extra="ignore",
         use_enum_values=False,
@@ -63,11 +113,17 @@ class PublicDomainObject(BaseModel):
     )
 
     def flat_dict(self, by_alias=True):
-        """This method might be useful if the data should be passed
-        only with primitives that are allowed by JSON format.
-        The regular .model_dump() does not return the ISO datetime format
-        but the .model_dump_json() - does.
-        This method is just a combination of them both.
+        """
+        Returns a flattened dictionary representation of the model.
+
+        This method converts the model to a dictionary that contains only primitive
+        data types that are allowed by JSON format.
+
+        Args:
+            by_alias (bool): Whether to use aliases for field names.
+
+        Returns:
+            dict: A flattened dictionary representation of the model.
         """
         return json.loads(self.model_dump_json(by_alias=by_alias))
 

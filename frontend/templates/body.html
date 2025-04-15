@@ -1,0 +1,46 @@
+<div class="container-fluid h-100 d-flex flex-column">
+    {% include "modal-help.html" %}
+
+    <div class="row">
+        {% include "nav-top.html" %}
+    </div>
+
+    <div class="row flex-grow-1" style="min-height: 0;">
+        <!--        <div class="row flex-grow-1 flex-shrink-1 d-flex flex-column flex-sm-row flex-xl-row">-->
+        <div id="side-menu"
+             class="h-100
+                        col-12 col-sm-2 col-xl-1
+                        p-2
+                        text-light bg-secondary-subtle">
+            {% include "nav-side.html" %}
+        </div>
+        <div id="svg-panel"
+             class="h-100
+                        col-12 col-sm-10 col-xl-11
+                        px-0
+                        d-flex
+                        flex-column
+                        flex-grow-1 flex-shrink-1
+                        h-sm-100">
+            {% include "svg.html" %}
+        </div>
+        <!--        </div>-->
+    </div>
+
+    <div id="offcanvasRoles"
+         class="offcanvas offcanvas-start" tabindex="-1"
+         data-bs-scroll="true" data-bs-backdrop="false"
+         aria-labelledby="offcanvasRolesLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="offcanvasRolesLabel">Roles</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div>
+                Select Roles:
+            </div>
+            <div id="jstree_div" class="w-75 h-75"></div>
+        </div>
+    </div>
+
+</div>
