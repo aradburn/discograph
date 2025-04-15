@@ -3,6 +3,8 @@
  * This file handles the initialization and management of role selection using vanilla JavaScript
  */
 
+import { SVG_IDS, TREE } from "./constants";
+
 /**
  * Interface for tree node state
  */
@@ -71,7 +73,7 @@ class TreeComponent {
 
         // Create tree structure
         const treeRoot = document.createElement("ul");
-        treeRoot.className = "tree-root";
+        treeRoot.className = TREE.CLASS_NAMES.ROOT;
 
         // Add nodes from config
         if (this.config?.core?.data) {
@@ -81,32 +83,32 @@ class TreeComponent {
         this.container.appendChild(treeRoot);
 
         // Add styles if not already present
-        if (!document.getElementById("tree-styles")) {
+        if (!document.getElementById(SVG_IDS.TREE_STYLES)) {
             const styles = document.createElement("style");
-            styles.id = "tree-styles";
+            styles.id = SVG_IDS.TREE_STYLES;
             styles.textContent = `
-                .tree-root {
+                .${TREE.CLASS_NAMES.ROOT} {
                     list-style: none;
-                    padding-left: 20px;
+                    padding-left: ${TREE.PADDING_LEFT}px;
                 }
-                .tree-node {
-                    margin: 5px 0;
+                .${TREE.CLASS_NAMES.NODE} {
+                    margin: ${TREE.MARGIN}px 0;
                 }
-                .tree-content {
+                .${TREE.CLASS_NAMES.CONTENT} {
                     display: flex;
                     align-items: center;
-                    gap: 5px;
+                    gap: ${TREE.MARGIN}px;
                 }
-                .tree-checkbox {
+                .${TREE.CLASS_NAMES.CHECKBOX} {
                     margin: 0;
                 }
-                .tree-icon {
-                    width: 16px;
-                    height: 16px;
+                .${TREE.CLASS_NAMES.ICON} {
+                    width: ${TREE.ICON_SIZE}px;
+                    height: ${TREE.ICON_SIZE}px;
                 }
-                .tree-children {
+                .${TREE.CLASS_NAMES.CHILDREN} {
                     list-style: none;
-                    padding-left: 20px;
+                    padding-left: ${TREE.PADDING_LEFT}px;
                 }
             `;
             document.head.appendChild(styles);
@@ -119,17 +121,17 @@ class TreeComponent {
     ): void {
         nodes.forEach((node) => {
             const li = document.createElement("li");
-            li.className = "tree-node";
+            li.className = TREE.CLASS_NAMES.NODE;
             li.dataset.id = String(node.id);
 
             const content = document.createElement("div");
-            content.className = "tree-content";
+            content.className = TREE.CLASS_NAMES.CONTENT;
 
             // Add checkbox if enabled in config
             if (this.config.plugins?.includes("checkbox")) {
                 const checkbox = document.createElement("input");
                 checkbox.type = "checkbox";
-                checkbox.className = "tree-checkbox";
+                checkbox.className = TREE.CLASS_NAMES.CHECKBOX;
                 checkbox.checked = node.state?.selected || false;
                 checkbox.addEventListener("change", () =>
                     this.handleNodeSelection(node.id, checkbox.checked),
@@ -140,14 +142,14 @@ class TreeComponent {
             // Add icon if present
             if (node.icon) {
                 const icon = document.createElement("span");
-                icon.className = "tree-icon";
+                icon.className = TREE.CLASS_NAMES.ICON;
                 icon.textContent = node.icon;
                 content.appendChild(icon);
             }
 
             // Add text
             const text = document.createElement("span");
-            text.className = "tree-text";
+            text.className = TREE.CLASS_NAMES.TEXT;
             text.textContent = node.text;
             content.appendChild(text);
 
@@ -157,7 +159,7 @@ class TreeComponent {
             const childNodes = nodes.filter((n) => n.parent === node.id);
             if (childNodes.length > 0) {
                 const childrenContainer = document.createElement("ul");
-                childrenContainer.className = "tree-children";
+                childrenContainer.className = TREE.CLASS_NAMES.CHILDREN;
                 this.buildTreeNodes(childrenContainer, childNodes);
                 li.appendChild(childrenContainer);
             }

@@ -4,12 +4,12 @@
  * implemented using D3.js. It manages node dragging behavior and layout controls.
  */
 
-import { networkStore } from "../dg";
 import { nodeTooltip } from "./tooltips";
 import { onTick } from "./tick";
 import { restartForceLayout, stopForceLayout } from "./forceLayout";
 import type * as d3 from "d3";
 import type { SimNode } from "./data";
+import { networkManager } from "../core";
 
 interface D3DragEventWithSource<GElement extends Element, Datum, Subject>
     extends d3.D3DragEvent<GElement, Datum, Subject> {
@@ -77,13 +77,13 @@ export const onDragEnd = (
  * Shows the running indicator and enables interaction with nodes and links
  */
 export const onNetworkStart = (): void => {
-    networkStore.isRunningLayout = true;
-    networkStore.tick = 0;
+    networkManager.isRunningLayout = true;
+    networkManager.tick = 0;
 
-    networkStore.layers.link
+    networkManager.layers.link
         ?.selectAll(".link")
         .classed("noninteractive", false);
-    networkStore.layers.node
+    networkManager.layers.node
         ?.selectAll(".node")
         .classed("noninteractive", false);
 };
@@ -96,13 +96,13 @@ export const onNetworkStart = (): void => {
 export const onNetworkEnd = (
     event: d3.Simulation<SimNode, undefined>,
 ): void => {
-    networkStore.layers.link
+    networkManager.layers.link
         ?.selectAll(".link")
         .classed("noninteractive", false);
-    networkStore.layers.node
+    networkManager.layers.node
         ?.selectAll(".node")
         .classed("noninteractive", false);
-    networkStore.isRunningLayout = false;
+    networkManager.isRunningLayout = false;
     onTick(event);
 };
 
@@ -164,13 +164,14 @@ export class SelectEntityEvent extends CustomEvent<SelectEntityEventDetail> {
  * Custom event for resizing the network window
  * @extends CustomEvent
  */
-export class ResizeEvent extends Event {
+export class ResizeEvent extends CustomEvent<Record<string, never>> {
     /**
      * Creates a new ResizeEvent
      */
     constructor() {
         super("discograph:resize", {
             bubbles: true,
+            detail: {},
         });
     }
 }

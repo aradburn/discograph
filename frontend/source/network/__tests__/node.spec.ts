@@ -3,7 +3,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { type Mock } from "vitest";
 import type * as d3 from "d3";
 import { onNodeEnter, onNodeExit, onNodeUpdate } from "../../network/node";
-import { NodeType } from "../types";
+import { NodeType } from "../data";
 
 // Declare global types
 declare global {

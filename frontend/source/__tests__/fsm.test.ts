@@ -1,5 +1,18 @@
-import { vi } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import type { FSMInstance, FSMConfig } from "../fsm";
+
+/**
+ * NOTE: This test file fully mocks the DiscographFsm implementation which causes
+ * 0% code coverage for fsm.ts. This is because:
+ *
+ * 1. The FSM implementation depends on window.machina which isn't available in the test environment
+ * 2. We mock it before importing DiscographFsm, effectively replacing the real implementation
+ *
+ * To improve coverage, a different approach would be needed:
+ * - Create a facade or wrapper for window.machina that can be injected
+ * - Refactor fsm.ts to accept window.machina as a parameter for better testability
+ * - Implement window.machina more faithfully in the test environment
+ */
 
 // Mock window.machina before importing FSM
 const mockMachina = {
@@ -58,7 +71,6 @@ document.getElementById = vi.fn((id: string) => {
 
 // Import FSM and test utilities after mocks are set up
 import { DiscographFsm } from "../fsm";
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 describe("FSM", () => {
     let fsm: FSMInstance;

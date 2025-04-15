@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { getNodeColorClass, getLinkColorClass } from "../color";
 import type { SimNode, SimLink } from "../network/data";
-import { NodeType } from "../network/types";
+import { NodeType } from "../network/data";
 
 // Minimal mock types for testing purposes
 type MockSimNode = Pick<SimNode, "type" | "distance">;

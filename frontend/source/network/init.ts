@@ -5,10 +5,10 @@
  */
 
 import { initForceLayout, initForceSliders } from "./forceLayout";
-import { dg, networkStore } from "../dg";
+import { discographManager, networkManager } from "../core";
 import * as d3 from "d3";
 import { hideAllTooltips } from "./tooltips";
-import { SVG_SCALING_MULTIPLIER } from "../init";
+import { SVG, DOM_IDS } from "../constants";
 
 type TransformFunction = (
     selection:
@@ -26,25 +26,29 @@ type TransformFunction = (
  * - node: For the actual nodes
  * - text: For node labels
  */
-export const initNetwork = (): void => {
-    const svgElement = d3.select("#svg");
-    const root = svgElement.append("g").attr("id", "networkLayer");
-    networkStore.layers.root = root;
-    networkStore.layers.halo = root.append("g").attr("id", "haloLayer");
-    networkStore.layers.link = root.append("g").attr("id", "linkLayer");
-    networkStore.layers.node = root.append("g").attr("id", "nodeLayer");
-    networkStore.layers.text = root.append("g").attr("id", "textLayer");
+export const initNetwork = (svgSelector: string): void => {
+    const svgElement = d3.select(svgSelector);
 
-    networkStore.zoom = d3
+    const root = svgElement.append("g").attr("id", "networkLayer");
+    networkManager.layers.root = root;
+    networkManager.layers.halo = root.append("g").attr("id", "haloLayer");
+    networkManager.layers.link = root.append("g").attr("id", "linkLayer");
+    networkManager.layers.node = root.append("g").attr("id", "nodeLayer");
+    networkManager.layers.text = root.append("g").attr("id", "textLayer");
+
+    const w = discographManager.svgDimensions[0];
+    const h = discographManager.svgDimensions[1];
+
+    networkManager.zoom = d3
         .zoom<SVGSVGElement, unknown>()
         .extent([
             [0, 0],
-            [dg.svg_dimensions[0], dg.svg_dimensions[1]],
+            [w, h],
         ])
         .scaleExtent([1, 8])
-        .on("zoom", onNetworkZoom);
+        .on("zoom", handleZoom);
 
-    svgElement.call(networkStore.zoom);
+    svgElement.call(networkManager.zoom);
 
     resetNetworkTransform();
 
@@ -60,18 +64,22 @@ export const initNetwork = (): void => {
 export const resetNetworkTransform = (): void => {
     const scale =
         Math.min(
-            dg.svg_dimensions[0] / dg.dimensions[0],
-            dg.svg_dimensions[1] / dg.dimensions[1],
-        ) * SVG_SCALING_MULTIPLIER;
+            discographManager.svgDimensions[0] /
+                discographManager.dimensions[0],
+            discographManager.svgDimensions[1] /
+                discographManager.dimensions[1],
+        ) * SVG.SCALING_MULTIPLIER;
     console.log("scale: ", scale);
 
-    const svgElement = d3.select("#svg");
+    const svgElement = d3.select(DOM_IDS.SVG_ID);
     const initialTransform = d3.zoomIdentity
         .scale(scale)
         .translate(
-            (dg.dimensions[0] / SVG_SCALING_MULTIPLIER - dg.svg_dimensions[0]) /
+            (discographManager.dimensions[0] / SVG.SCALING_MULTIPLIER -
+                discographManager.svgDimensions[0]) /
                 2.0,
-            (dg.dimensions[1] / SVG_SCALING_MULTIPLIER - dg.svg_dimensions[1]) /
+            (discographManager.dimensions[1] / SVG.SCALING_MULTIPLIER -
+                discographManager.svgDimensions[1]) /
                 2.0,
         );
 
@@ -81,23 +89,35 @@ export const resetNetworkTransform = (): void => {
         return;
     }
     const currentTransform = d3.zoomTransform(svgNode);
-    //     const x = dg.svg_dimensions[0] / VIEWPORT_SIZE_MULTIPLIER;
-    //     const y = dg.svg_dimensions[1] / VIEWPORT_SIZE_MULTIPLIER;
+    //     const x = discographManager.svg_dimensions[0] / VIEWPORT_SIZE_MULTIPLIER;
+    //     const y = discographManager.svg_dimensions[1] / VIEWPORT_SIZE_MULTIPLIER;
     //     const invertedPoint = currentTransform.invert([x, y]);
     const invertedPoint = currentTransform.invert([
-        -(dg.dimensions[0] / SVG_SCALING_MULTIPLIER - dg.svg_dimensions[0]) /
-            2.0,
-        -(dg.dimensions[1] / SVG_SCALING_MULTIPLIER - dg.svg_dimensions[1]) /
-            2.0,
+        -(
+            discographManager.dimensions[0] / SVG.SCALING_MULTIPLIER -
+            discographManager.svgDimensions[0]
+        ) / 2.0,
+        -(
+            discographManager.dimensions[1] / SVG.SCALING_MULTIPLIER -
+            discographManager.svgDimensions[1]
+        ) / 2.0,
     ]);
 
-    const transform = networkStore.zoom.transform.bind(
-        networkStore.zoom,
+    const transform = networkManager.zoom.transform.bind(
+        networkManager.zoom,
     ) as TransformFunction;
     svgElement
         .transition()
         .duration(750)
         .call(transform, initialTransform, invertedPoint);
+
+    // Initialize where new nodes will be placed
+    const svgCenter: [number, number] = [
+        discographManager.svgDimensions[0] / 2,
+        discographManager.svgDimensions[1] / 2,
+    ];
+    console.log("svg newNodeCoords: ", svgCenter);
+    networkManager.newNodeCoords = svgCenter;
 };
 
 /**
@@ -106,9 +126,12 @@ export const resetNetworkTransform = (): void => {
  *
  * @param {d3.D3ZoomEvent<SVGSVGElement, unknown>} event - The zoom event object
  */
-const onNetworkZoom = (event: d3.D3ZoomEvent<SVGSVGElement, unknown>): void => {
-    if (networkStore.layers.root) {
-        networkStore.layers.root.attr("transform", event.transform.toString());
+const handleZoom = (event: d3.D3ZoomEvent<SVGElement, unknown>): void => {
+    if (networkManager.layers.root) {
+        networkManager.layers.root.attr(
+            "transform",
+            event.transform.toString(),
+        );
     }
     hideAllTooltips();
 };

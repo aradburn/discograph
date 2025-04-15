@@ -5,13 +5,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { SimNode, SimLink } from "../data";
 import type * as d3 from "d3";
-import { NodeType } from "../types";
+import { NodeType } from "../data";
 
 // Import modules directly - we'll mock their functions with spyOn
 import { nodeTooltip } from "../tooltips";
 import * as forceLayout from "../forceLayout";
 import * as tick from "../tick";
-import { dg, networkStore } from "../../dg";
+import { discographManager, networkManager } from "../../core";
 
 // Now import the functions under test
 import {
@@ -55,8 +55,8 @@ describe("Network Graph Event Handlers", () => {
     const onTickSpy = vi.spyOn(tick, "onTick").mockImplementation(() => {});
 
     // Mock network properties
-    const originalIsRunningLayout = networkStore.isRunningLayout;
-    const originalTick = networkStore.tick;
+    const originalIsRunningLayout = networkManager.isRunningLayout;
+    const originalTick = networkManager.tick;
 
     // Define types for mock return values
     type D3Selection = {
@@ -75,35 +75,83 @@ describe("Network Graph Event Handlers", () => {
         // Reset all mocks
         vi.clearAllMocks();
 
-        // Mock the network properties
-        Object.defineProperty(networkStore, "isRunningLayout", {
+        // Setup mock selectAll methods
+        const mockNodeSelectFunc = vi
+            .fn()
+            .mockReturnValue({ classed: vi.fn() });
+        const mockLinkSelectFunc = vi
+            .fn()
+            .mockReturnValue({ classed: vi.fn() });
+
+        // Mock network layer methods if they exist
+        if (networkManager.layers.node) {
+            networkManager.layers.node.selectAll = mockNodeSelectAll;
+        } else {
+            // Ensure the node layer exists with type assertion
+            networkManager.layers.node = {
+                selectAll: mockNodeSelectAll,
+            } as unknown as d3.Selection<
+                SVGGElement,
+                unknown,
+                HTMLElement,
+                unknown
+            >;
+        }
+
+        if (networkManager.layers.link) {
+            networkManager.layers.link.selectAll = mockLinkSelectAll;
+        } else {
+            // Ensure the link layer exists with type assertion
+            networkManager.layers.link = {
+                selectAll: mockLinkSelectAll,
+            } as unknown as d3.Selection<
+                SVGGElement,
+                unknown,
+                HTMLElement,
+                unknown
+            >;
+        }
+
+        // Mock network properties with Object.defineProperty
+        Object.defineProperty(networkManager, "isRunningLayout", {
             get: vi.fn(() => false),
             set: vi.fn(),
             configurable: true,
         });
 
-        Object.defineProperty(networkStore, "tick", {
+        Object.defineProperty(networkManager, "tick", {
             get: vi.fn(() => 0),
             set: vi.fn(),
             configurable: true,
         });
 
-        // Mock the selectAll methods
-        vi.spyOn(networkStore.layers.node, "selectAll").mockImplementation(
-            mockNodeSelectAll,
-        );
-        vi.spyOn(networkStore.layers.link, "selectAll").mockImplementation(
-            mockLinkSelectAll,
-        );
-
         // Setup test data
         mockNode = {
+            key: "test-node",
+            name: "Test Node",
+            type: NodeType.Artist,
+            size: 10,
             x: 100,
             y: 100,
             fx: null,
             fy: null,
             dragx: 0,
             dragy: 0,
+            vx: 0,
+            vy: 0,
+            index: 0,
+            isIntermediate: false,
+            cluster: 0,
+            fixed: false,
+            missing: 0,
+            hasMissing: false,
+            links: [],
+            highlighted: false,
+            selected: false,
+            lastClickTime: 0,
+            lastTouchTime: 0,
+            distance: 0,
+            radius: 0,
         } as SimNode;
 
         mockEvent = {
@@ -122,13 +170,13 @@ describe("Network Graph Event Handlers", () => {
 
     afterEach(() => {
         // Restore network properties
-        Object.defineProperty(networkStore, "isRunningLayout", {
+        Object.defineProperty(networkManager, "isRunningLayout", {
             value: originalIsRunningLayout,
             writable: true,
             configurable: true,
         });
 
-        Object.defineProperty(networkStore, "tick", {
+        Object.defineProperty(networkManager, "tick", {
             value: originalTick,
             writable: true,
             configurable: true,
@@ -213,13 +261,13 @@ describe("Network Graph Event Handlers", () => {
             const tickSetter = vi.fn();
 
             // Mock the setters specifically for this test
-            Object.defineProperty(networkStore, "isRunningLayout", {
+            Object.defineProperty(networkManager, "isRunningLayout", {
                 get: vi.fn(() => false),
                 set: isRunningLayoutSetter,
                 configurable: true,
             });
 
-            Object.defineProperty(networkStore, "tick", {
+            Object.defineProperty(networkManager, "tick", {
                 get: vi.fn(() => 0),
                 set: tickSetter,
                 configurable: true,
@@ -255,7 +303,7 @@ describe("Network Graph Event Handlers", () => {
             const isRunningLayoutSetter = vi.fn();
 
             // Mock the setter specifically for this test
-            Object.defineProperty(networkStore, "isRunningLayout", {
+            Object.defineProperty(networkManager, "isRunningLayout", {
                 get: vi.fn(() => true),
                 set: isRunningLayoutSetter,
                 configurable: true,

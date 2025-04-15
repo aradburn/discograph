@@ -7,7 +7,7 @@
 import type * as d3 from "d3";
 import { getOuterRadius } from "./node";
 import { getNodeColorClass } from "../color";
-import { dg } from "../dg";
+import { discographManager } from "../core";
 import type { SimNode } from "./data";
 
 type TextEnterSelection = d3.Selection<
@@ -45,7 +45,7 @@ export const getNodeText = (d: SimNode): string => {
     if (name.length > 50) {
         name = `${name.slice(0, 50)}...`;
     }
-    if (dg.debug) {
+    if (discographManager.debug) {
         name = `${name}${getNodeDebug(d)}`;
     }
     return name;

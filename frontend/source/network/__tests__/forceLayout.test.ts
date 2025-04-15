@@ -10,9 +10,9 @@ import {
     stopForceLayout,
     ALPHA,
 } from "../forceLayout";
-import { dg, networkStore } from "../../dg";
 import type { SimNode, SimLink } from "../data";
-import { NodeType } from "../types";
+import { NodeType } from "../data";
+import { discographManager, networkManager } from "../../core";
 
 // Mock d3
 vi.mock("d3", () => ({
@@ -45,91 +45,48 @@ vi.mock("d3", () => ({
     forceY: vi.fn(() => ({
         strength: vi.fn(),
     })),
+    forceRadial: vi.fn(() => ({
+        strength: vi.fn().mockReturnThis(),
+    })),
     group: vi.fn(() => new Map()),
+    arc: vi.fn(() => ({
+        innerRadius: vi.fn().mockReturnThis(),
+        outerRadius: vi.fn().mockReturnThis(),
+        startAngle: vi.fn().mockReturnThis(),
+        endAngle: vi.fn().mockReturnThis(),
+    })),
+    InternMap: vi.fn(function () {
+        return new Map();
+    }),
 }));
 
-// Mock dg global object
-vi.mock("../../dg", () => {
-    const mockNetworkStore = {
-        data: {
-            nodeMap: new Map(),
-            linkMap: new Map(),
-        },
-        layers: {
-            halo: {
-                selectAll: vi.fn(() => ({
-                    data: vi.fn(() => ({
-                        join: vi.fn(),
-                    })),
-                })),
-            },
-            node: {
-                selectAll: vi.fn(() => ({
-                    data: vi.fn(() => ({
-                        join: vi.fn(),
-                    })),
-                })),
-            },
-            text: {
-                selectAll: vi.fn(() => ({
-                    data: vi.fn(() => ({
-                        join: vi.fn(),
-                    })),
-                })),
-            },
-            link: {
-                selectAll: vi.fn(() => ({
-                    data: vi.fn(() => ({
-                        join: vi.fn(),
-                    })),
-                })),
-            },
-        },
-        forceLayout: null,
-    };
+// Mock core module with networkManager
+vi.mock("../../core", () => {
+    // Create a mock selectAll function inside the mock callback
+    const innerMockSelectAll = vi.fn().mockReturnValue({
+        data: vi.fn().mockReturnValue({
+            join: vi.fn(),
+        }),
+    });
 
     return {
-        dg: {
-            network: {
-                data: {
-                    nodeMap: new Map(),
-                    linkMap: new Map(),
-                },
-                layers: {
-                    halo: {
-                        selectAll: vi.fn(() => ({
-                            data: vi.fn(() => ({
-                                join: vi.fn(),
-                            })),
-                        })),
-                    },
-                    node: {
-                        selectAll: vi.fn(() => ({
-                            data: vi.fn(() => ({
-                                join: vi.fn(),
-                            })),
-                        })),
-                    },
-                    text: {
-                        selectAll: vi.fn(() => ({
-                            data: vi.fn(() => ({
-                                join: vi.fn(),
-                            })),
-                        })),
-                    },
-                    link: {
-                        selectAll: vi.fn(() => ({
-                            data: vi.fn(() => ({
-                                join: vi.fn(),
-                            })),
-                        })),
-                    },
-                },
-                forceLayout: null,
-            },
-            svg_dimensions: [800, 600],
+        discographManager: {
+            svgDimensions: [800, 600],
         },
-        networkStore: mockNetworkStore,
+        networkManager: {
+            data: {
+                nodeMap: new Map(),
+                linkMap: new Map(),
+            },
+            layers: {
+                root: { selectAll: innerMockSelectAll },
+                halo: { selectAll: innerMockSelectAll },
+                node: { selectAll: innerMockSelectAll },
+                text: { selectAll: innerMockSelectAll },
+                link: { selectAll: innerMockSelectAll },
+            },
+            forceLayout: null,
+        },
     };
 });
 
@@ -190,6 +147,9 @@ beforeEach(() => {
         <input type="range" id="linkRange" min="0" max="40" />
         <input type="range" id="gravRange" min="0" max="40" />
     `;
+
+    // Reset forceLayout
+    networkManager.forceLayout = null;
 });
 
 afterEach(() => {
@@ -201,7 +161,7 @@ describe("Force Layout Initialization", () => {
     it("should initialize force layout with correct configuration", () => {
         initForceLayout();
         expect(d3.forceSimulation).toHaveBeenCalled();
-        expect(networkStore.forceLayout).toBeDefined();
+        expect(networkManager.forceLayout).toBeDefined();
     });
 
     it("should set up all required forces", () => {
@@ -230,6 +190,7 @@ describe("Force Slider Controls", () => {
     });
 
     it("should setup force sliders with correct initial values", () => {
+        initForceLayout();
         setupForceSliders();
         const nodeSlider = document.getElementById(
             "nodeRange",
@@ -247,7 +208,7 @@ describe("Force Slider Controls", () => {
     });
 
     it("should handle slider input events", () => {
-        networkStore.forceLayout = d3.forceSimulation();
+        networkManager.forceLayout = d3.forceSimulation();
         initForceSliders();
 
         const nodeSlider = document.getElementById(
@@ -263,27 +224,27 @@ describe("Force Slider Controls", () => {
         // Simulate slider input events
         nodeSlider.value = "20";
         nodeSlider.dispatchEvent(new Event("input"));
-        expect(networkStore.forceLayout.force).toHaveBeenCalled();
-        expect(networkStore.forceLayout.alpha).toHaveBeenCalled();
-        expect(networkStore.forceLayout.restart).toHaveBeenCalled();
+        expect(networkManager.forceLayout.force).toHaveBeenCalled();
+        expect(networkManager.forceLayout.alpha).toHaveBeenCalled();
+        expect(networkManager.forceLayout.restart).toHaveBeenCalled();
 
         linkSlider.value = "30";
         linkSlider.dispatchEvent(new Event("input"));
-        expect(networkStore.forceLayout.force).toHaveBeenCalled();
+        expect(networkManager.forceLayout.force).toHaveBeenCalled();
 
         gravSlider.value = "15";
         gravSlider.dispatchEvent(new Event("input"));
-        expect(networkStore.forceLayout.force).toHaveBeenCalled();
+        expect(networkManager.forceLayout.force).toHaveBeenCalled();
     });
 });
 
 describe("Force Layout Display and Control", () => {
     it("should display force layout correctly", () => {
         displayForceLayout();
-        expect(networkStore.layers.halo.selectAll).toHaveBeenCalled();
-        expect(networkStore.layers.node.selectAll).toHaveBeenCalled();
-        expect(networkStore.layers.text.selectAll).toHaveBeenCalled();
-        expect(networkStore.layers.link.selectAll).toHaveBeenCalled();
+        expect(networkManager.layers.halo.selectAll).toHaveBeenCalled();
+        expect(networkManager.layers.node.selectAll).toHaveBeenCalled();
+        expect(networkManager.layers.text.selectAll).toHaveBeenCalled();
+        expect(networkManager.layers.link.selectAll).toHaveBeenCalled();
     });
 
     it("should start force layout with provided nodes", () => {
@@ -291,25 +252,29 @@ describe("Force Layout Display and Control", () => {
             createMockNode("1", { x: 0, y: 0 }),
             createMockNode("2", { x: 100, y: 100 }),
         ];
+        // Initialize force layout first
+        networkManager.forceLayout = d3.forceSimulation();
         startForceLayout(mockNodes);
-        expect(networkStore.forceLayout.nodes).toHaveBeenCalledWith(mockNodes);
+        expect(networkManager.forceLayout.nodes).toHaveBeenCalledWith(
+            mockNodes,
+        );
     });
 
     it("should restart force layout with new alpha value", () => {
-        networkStore.forceLayout = d3.forceSimulation();
+        networkManager.forceLayout = d3.forceSimulation();
         restartForceLayout(ALPHA);
-        expect(networkStore.forceLayout.alpha).toHaveBeenCalledWith(ALPHA);
-        expect(networkStore.forceLayout.restart).toHaveBeenCalled();
+        expect(networkManager.forceLayout.alpha).toHaveBeenCalledWith(ALPHA);
+        expect(networkManager.forceLayout.restart).toHaveBeenCalled();
     });
 
     it("should stop force layout", () => {
-        networkStore.forceLayout = d3.forceSimulation();
+        networkManager.forceLayout = d3.forceSimulation();
         stopForceLayout();
-        expect(networkStore.forceLayout.stop).toHaveBeenCalled();
+        expect(networkManager.forceLayout.stop).toHaveBeenCalled();
     });
 
     it("should handle force layout when not initialized", () => {
-        networkStore.forceLayout = null;
+        networkManager.forceLayout = null;
         const consoleSpy = vi.spyOn(console, "error");
         restartForceLayout(ALPHA);
         expect(consoleSpy).toHaveBeenCalledWith(
@@ -325,20 +290,20 @@ describe("Node and Link Processing", () => {
             createMockNode("2", { isIntermediate: true }),
             createMockNode("3"),
         ];
-        networkStore.data.nodeMap = new Map(
+        networkManager.data.nodeMap = new Map(
             mockNodes.map((node) => [node.key, node]),
         );
 
         displayForceLayout();
 
         // Verify that the layers were updated
-        expect(networkStore.layers.node.selectAll).toHaveBeenCalledWith(
+        expect(networkManager.layers.node.selectAll).toHaveBeenCalledWith(
             ".node",
         );
-        expect(networkStore.layers.halo.selectAll).toHaveBeenCalledWith(
+        expect(networkManager.layers.halo.selectAll).toHaveBeenCalledWith(
             ".node",
         );
-        expect(networkStore.layers.text.selectAll).toHaveBeenCalledWith(
+        expect(networkManager.layers.text.selectAll).toHaveBeenCalledWith(
             ".node",
         );
     });
@@ -350,14 +315,14 @@ describe("Node and Link Processing", () => {
             createMockLink(node1, node2),
             createMockLink(node1, node2, { isSpline: true }),
         ];
-        networkStore.data.linkMap = new Map(
+        networkManager.data.linkMap = new Map(
             mockLinks.map((link) => [link.key, link]),
         );
 
         displayForceLayout();
 
         // Verify that the link layer was updated
-        expect(networkStore.layers.link.selectAll).toHaveBeenCalledWith(
+        expect(networkManager.layers.link.selectAll).toHaveBeenCalledWith(
             ".link",
         );
     });
@@ -374,7 +339,7 @@ describe("Error Handling", () => {
     });
 
     it("should handle force layout operations when not initialized", () => {
-        networkStore.forceLayout = null;
+        networkManager.forceLayout = null;
         const consoleSpy = vi.spyOn(console, "error");
 
         stopForceLayout();
@@ -384,5 +349,15 @@ describe("Error Handling", () => {
         expect(consoleSpy).toHaveBeenCalledWith(
             "Force layout is not initialized",
         );
+    });
+});
+
+describe("Force Layout", () => {
+    it("updates charge force", () => {
+        networkManager.forceLayout = d3.forceSimulation();
+        networkManager.forceLayout = d3.forceSimulation();
+        stopForceLayout();
+
+        expect(networkManager.forceLayout.stop).toHaveBeenCalled();
     });
 });

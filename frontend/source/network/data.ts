@@ -1,7 +1,14 @@
-import { networkStore } from "../dg";
+import { networkManager } from "../core";
 import { getOuterRadius } from "./node";
 import type { APINetworkDataResponse } from "../api";
-import { NodeType } from "./types";
+
+/**
+ * Enum for node types in the network graph
+ */
+export enum NodeType {
+    Artist = "artist",
+    Label = "label",
+}
 
 export type NodeKey = string;
 export type LinkKey = string;
@@ -366,8 +373,14 @@ export const convertNetworkDataToSimData = (
 export const updateGlobalData = (simData: SimData): void => {
     //     console.log("updateGlobalData input:", simData);
 
-    networkStore.data.nodeMap = simData.nodeMap;
-    networkStore.data.linkMap = simData.linkMap;
-    networkStore.data.maxDistance = simData.maxDistance;
-    networkStore.data.center = simData.center;
+    networkManager.data.nodeMap = simData.nodeMap;
+    networkManager.data.linkMap = simData.linkMap;
+    networkManager.data.maxDistance = simData.maxDistance;
+    networkManager.data.center = simData.center;
+};
+
+export const setupSimData = (networkData: NetworkData): SimData => {
+    const simData = convertNetworkDataToSimData(networkData);
+    updateGlobalData(simData);
+    return simData;
 };

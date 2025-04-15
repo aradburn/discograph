@@ -10,13 +10,13 @@ import { symbol, symbolCross, now } from "d3";
 
 import { debounce } from "../utils";
 import { getNodeColorClass } from "../color";
-import { networkStore } from "../dg";
+import { networkManager } from "../core";
 import { onDragStart, onDragEnd, onDrag, RequestNetworkEvent } from "./events";
 import { hideAllTooltips } from "./tooltips";
 import { SelectEntityEvent } from "./events";
 import { nodeTooltip } from "./tooltips";
 import type { SimNode } from "./data";
-import { NodeType } from "./types";
+import { NodeType } from "./data";
 
 // Configuration Constants
 /**
@@ -336,16 +336,16 @@ export const onNodeMouseOver = (event: MouseEvent, d: SimNode): void => {
     debounceHandler(this, d);
 
     // Add a safety check to ensure networkStore.layers.node exists before calling selectAll
-    if (networkStore.layers?.node) {
-        networkStore.layers.node
+    if (networkManager.layers?.node) {
+        networkManager.layers.node
             .selectAll<SVGGElement, SimNode>(".node")
             .filter((n) => n.key === d.key)
             .raise();
     }
 
     // Add a safety check to ensure networkStore.layers.text exists before calling selectAll
-    if (networkStore.layers?.text) {
-        networkStore.layers.text
+    if (networkManager.layers?.text) {
+        networkManager.layers.text
             .selectAll<SVGGElement, SimNode>(".node")
             .filter((n) => n.key === d.key)
             .raise();
@@ -399,4 +399,20 @@ export const onNodeTouchStart = (event: TouchEvent, d: SimNode): void => {
         window.dispatchEvent(new RequestNetworkEvent(d.key, true));
     }
     event.stopPropagation();
+};
+
+export const updateSelectedNodes = (selectedKeys: Array<string>): void => {
+    // Add a safety check to ensure networkManager.layers.node exists before calling selectAll
+    if (networkManager.layers?.node) {
+        networkManager.layers.node
+            .selectAll<SVGGElement, SimNode>(".node")
+            .classed("selected", (d) => selectedKeys.includes(d.key));
+    }
+
+    // Add a safety check to ensure networkManager.layers.text exists before calling selectAll
+    if (networkManager.layers?.text) {
+        networkManager.layers.text
+            .selectAll<SVGGElement, SimNode>(".node")
+            .classed("selected", (d) => selectedKeys.includes(d.key));
+    }
 };

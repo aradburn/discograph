@@ -1,16 +1,18 @@
 /**
- * DiscographFsm - A Finite State Machine implementation for the Discograph application
- * Built on machina.js FSM framework to manage application state and transitions
- * Handles network visualization, radial view transitions, and entity selection
+ * @fileoverview Finite State Machine for Discograph
+ * This module defines the state machine that controls the application flow
+ * and transitions between different states like loading, viewing, and error states.
  */
 
-import { loading } from "./loading";
+import * as d3 from "d3";
+import $ from "jquery";
+import { discographManager, networkManager } from "./core";
 import {
-    startForceLayout,
     restartForceLayout,
     stopForceLayout,
     displayForceLayout,
     setupForceSliders,
+    startForceLayout,
 } from "./network/forceLayout";
 import { debounce } from "./utils";
 import type {
@@ -26,7 +28,6 @@ import {
 } from "./network/data";
 import { pruneSimData } from "./network/pruning";
 import type { RelationsData } from "./relations";
-import { dg, networkStore } from "./dg";
 import type { APINetworkDataResponse } from "./api";
 import { fetchAPINetwork, fetchAPIRandom, fetchAPIRadial } from "./api";
 import { resetNetworkTransform } from "./network/init";
@@ -34,11 +35,19 @@ import { ALPHA } from "./network/forceLayout";
 import type { SimNode, SimLink } from "./network/data";
 import { RequestNetworkEvent, SelectEntityEvent } from "./network/events";
 import { showMessage } from "./messages";
-import * as d3 from "d3";
-import $ from "jquery";
+import { loading } from "./loading";
+import { FSM, INIT } from "./constants";
+
+export type FSMStateType =
+    | "state-viewing-network"
+    | "state-requesting-network"
+    | "state-requesting-radial"
+    | "state-requesting-random"
+    | "state-viewing-radial"
+    | "uninitialized";
 
 export interface FSMInstance {
-    state: keyof FSMStates;
+    state: FSMStateType;
     handle(
         event: string,
         data: NetworkData | RelationsData | NetworkCenter | NodeKey | null,
@@ -48,7 +57,7 @@ export interface FSMInstance {
     handleError(error: unknown): void;
     showNetwork(data: NetworkData, pushHistory: boolean): void;
     showRadial(data?: RelationsData): void;
-    transition(state: keyof FSMStates): void;
+    transition(state: FSMStateType): void;
     requestNetwork(entityKey: NodeKey, pushHistory: boolean): void;
     requestRandom(): void;
     requestRadial(entityKey: NodeKey): void;
@@ -92,10 +101,10 @@ export interface FSMState {
 }
 
 export interface FSMStates {
+    "state-viewing-network": FSMState;
     "state-requesting-network": FSMState;
     "state-requesting-radial": FSMState;
     "state-requesting-random": FSMState;
-    "state-viewing-network": FSMState;
     "state-viewing-radial": FSMState;
     uninitialized: FSMState;
 }
@@ -103,7 +112,7 @@ export interface FSMStates {
 export interface FSMConfig extends FSMState {
     initialize?: (this: FSMInstance) => void;
     namespace?: string;
-    initialState?: keyof FSMStates;
+    initialState?: FSMStateType;
     states?: FSMStates;
     handleError?: (this: FSMInstance, error: unknown) => void;
     loadInlineData?: (this: FSMInstance) => void;
@@ -137,7 +146,7 @@ export interface FSMConfig extends FSMState {
         pushHistory: boolean,
         fixed: boolean,
     ) => void;
-    transition?: (this: FSMInstance, state: keyof FSMStates) => void;
+    transition?: (this: FSMInstance, state: FSMStateType) => void;
 }
 
 declare global {
@@ -161,32 +170,29 @@ export const DiscographFsm = window.machina.Fsm.extend({
      */
     initialize: function (this: FSMInstance) {
         // Event handlers
-        window.addEventListener(
-            "discograph:request-network",
-            (event: Event) => {
-                if (event instanceof RequestNetworkEvent && event.detail) {
-                    const { entityKey, pushHistory } = event.detail;
-                    this.requestNetwork(entityKey, pushHistory);
-                }
-            },
-        );
+        window.addEventListener(FSM.EVENTS.REQUEST_NETWORK, (event: Event) => {
+            if (event instanceof RequestNetworkEvent && event.detail) {
+                const { entityKey, pushHistory } = event.detail;
+                this.requestNetwork(entityKey, pushHistory);
+            }
+        });
 
-        window.addEventListener("discograph:request-random", () => {
+        window.addEventListener(FSM.EVENTS.REQUEST_RANDOM, () => {
             this.requestRandom();
         });
 
-        window.addEventListener("discograph:select-entity", (event: Event) => {
+        window.addEventListener(FSM.EVENTS.SELECT_ENTITY, (event: Event) => {
             if (event instanceof SelectEntityEvent && event.detail) {
                 const { entityKey, fixed } = event.detail;
                 this.selectEntity(entityKey, fixed);
             }
         });
 
-        window.addEventListener("discograph:show-network", () => {
+        window.addEventListener(FSM.EVENTS.SHOW_NETWORK, () => {
             this.showNetwork(null, false);
         });
 
-        window.addEventListener("discograph:show-radial", () => {
+        window.addEventListener(FSM.EVENTS.SHOW_RADIAL, () => {
             this.showRadial();
         });
 
@@ -199,29 +205,24 @@ export const DiscographFsm = window.machina.Fsm.extend({
         };
 
         // Handle window resize events with debounce
-        // ### TODO move into init
         const handleResize = debounce(() => {
             console.log("handleResize fsm");
-            //             window.location.reload();
-            //             resetSvgSize();
-            //             initWindow();
-            //             setSvgSize();
 
             // Center the loading visualization
-            const transform = `translate(${dg.svg_dimensions[0] / 2},${dg.svg_dimensions[1] / 2})`;
+            const transform = `translate(${discographManager.svgDimensions[0] / 2},${discographManager.svgDimensions[1] / 2})`;
             d3.selectAll(".centered")
                 .transition()
-                .duration(250)
+                .duration(INIT.DEBOUNCE_DELAY)
                 .attr("transform", transform);
 
             // Center the main node
-            if (networkStore.data.center) {
-                const centerNode = networkStore.data.nodeMap.get(
-                    networkStore.data.center.key,
+            if (networkManager.data.center) {
+                const centerNode = networkManager.data.nodeMap.get(
+                    networkManager.data.center.key,
                 );
                 if (centerNode) {
-                    centerNode.x = networkStore.newNodeCoords[0];
-                    centerNode.y = networkStore.newNodeCoords[1];
+                    centerNode.x = networkManager.newNodeCoords[0];
+                    centerNode.y = networkManager.newNodeCoords[1];
                 }
             }
 
@@ -230,9 +231,9 @@ export const DiscographFsm = window.machina.Fsm.extend({
                 console.log("restartForceLayout fsm");
                 restartForceLayout(ALPHA);
             }
-        }, 250);
+        }, INIT.DEBOUNCE_DELAY);
 
-        window.addEventListener("discograph:resize", handleResize);
+        window.addEventListener(FSM.EVENTS.RESIZE, handleResize);
 
         // Handle SVG mousedown events
         const svgDocument = document.getElementById("svg");
@@ -264,7 +265,7 @@ export const DiscographFsm = window.machina.Fsm.extend({
     },
 
     namespace: "discograph",
-    initialState: "uninitialized" as const,
+    initialState: "uninitialized",
 
     states: {
         "state-viewing-network": {
@@ -517,7 +518,7 @@ export const DiscographFsm = window.machina.Fsm.extend({
     },
 
     requestRadial: function (this: FSMInstance, entityKey: string) {
-        this.transition("state-requesting-radial" as keyof FSMStates);
+        this.transition("state-requesting-radial");
 
         fetchAPIRadial(entityKey)
             .then((relationsData: RelationsData) => {
@@ -596,46 +597,27 @@ export const DiscographFsm = window.machina.Fsm.extend({
         this.handle("show-radial", undefined, false, false);
     },
 
-    toggleFilter: function (this: FSMInstance, status: boolean) {
-        const treeContainer = document.getElementById("jstree_div");
-        if (!treeContainer) {
-            console.warn("Tree container not found in DOM");
-            return;
-        }
+    toggleFilter: function (this: FSMInstance, show: boolean) {
+        console.log("toggleFilter", show);
 
-        treeContainer.style.pointerEvents = status ? "auto" : "none";
-        treeContainer.style.opacity = status ? "1" : "0.5";
-
-        if (!status) {
-            treeContainer.setAttribute("aria-disabled", "true");
-            treeContainer
-                .querySelectorAll('input[type="checkbox"]')
-                .forEach((checkbox) => {
-                    if (checkbox instanceof HTMLInputElement) {
-                        checkbox.disabled = true;
-                    }
-                });
+        if (show === true) {
+            d3.select("#filter-container").classed("hidden", false);
+            const transform = `translate(${discographManager.svgDimensions[0] / 2},${discographManager.svgDimensions[1] / 2})`;
+            d3.select("#filter-container").attr("transform", transform);
         } else {
-            treeContainer.removeAttribute("aria-disabled");
-            treeContainer
-                .querySelectorAll('input[type="checkbox"]')
-                .forEach((checkbox) => {
-                    if (checkbox instanceof HTMLInputElement) {
-                        checkbox.disabled = false;
-                    }
-                });
+            d3.select("#filter-container").classed("hidden", true);
         }
     },
 
     toggleNetwork: function (this: FSMInstance, status: boolean) {
         if (status) {
-            const root = networkStore.layers.root;
+            const root = networkManager.layers.root;
             if (root) {
                 root.style("transition", "opacity 250ms").style("opacity", 1);
             }
         } else {
             stopForceLayout();
-            const root = networkStore.layers.root;
+            const root = networkManager.layers.root;
             if (root) {
                 root.style("transition", "opacity 250ms").style(
                     "opacity",
@@ -703,19 +685,19 @@ export const DiscographFsm = window.machina.Fsm.extend({
         fixed: boolean,
     ) {
         console.log("selectEntity", entityKey, fixed);
-        dg.selectedNodeKey = entityKey;
+        discographManager.selectedNodeKey = entityKey;
         let nodeOn: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown>;
         let nodeOff: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown>;
         let linkOn: d3.Selection<SVGGElement, SimLink, SVGGElement, unknown>;
         let linkOff: d3.Selection<SVGGElement, SimLink, SVGGElement, unknown>;
 
-        const nodeLayer = networkStore.layers.node;
+        const nodeLayer = networkManager.layers.node;
         if (!nodeLayer) {
             console.log("Network node layer not found");
             return;
         }
 
-        const linkLayer = networkStore.layers.link;
+        const linkLayer = networkManager.layers.link;
         if (!linkLayer) {
             console.log("Network link layer not found");
             return;
@@ -757,7 +739,7 @@ export const DiscographFsm = window.machina.Fsm.extend({
                 (d: SimLink) => !linkKeys.includes(d.key),
             );
 
-            const node = networkStore.data.nodeMap.get(entityKey);
+            const node = networkManager.data.nodeMap.get(entityKey);
             if (!node) {
                 console.log("node not found");
                 return;

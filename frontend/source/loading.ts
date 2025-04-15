@@ -6,6 +6,7 @@
  */
 
 import * as d3 from "d3";
+import { DOM_IDS, SVG_IDS, LOADING, TIMING, HTML_IDS } from "./constants";
 
 /**
  * Interface for arc data used in the loading animation
@@ -44,7 +45,7 @@ export class Loading {
 
     constructor() {
         this.arc = d3.arc<this, ArcData>();
-        this.barHeight = 200;
+        this.barHeight = LOADING.BAR_HEIGHT;
         this.layer = null;
         this.selection = null;
     }
@@ -55,9 +56,9 @@ export class Loading {
      */
     init(svgDimensions: [number, number]): void {
         const layer = d3
-            .select("#svg")
+            .select(DOM_IDS.SVG_ID)
             .append("g")
-            .attr("id", "loadingLayer")
+            .attr("id", SVG_IDS.LOADING_LAYER)
             .attr("class", "centered")
             .attr(
                 "transform",
@@ -71,7 +72,7 @@ export class Loading {
             .innerRadius((d) => d.innerRadius || 0)
             .outerRadius((d) => d.outerRadius || 0);
 
-        this.barHeight = 200;
+        this.barHeight = LOADING.BAR_HEIGHT;
         this.layer = layer;
         this.selection = layer.selectAll<SVGPathElement, ArcData>("path");
     }
@@ -81,11 +82,10 @@ export class Loading {
      * @returns {[ArcData[], [number, number]]} [data, extent] - Array containing arc data objects and their value extents
      */
     makeArray(): [ArcData[], [number, number]] {
-        const count = 10;
         const values: number[] = [];
         const data: ArcData[] = [];
 
-        for (let i = 0; i < count; i++) {
+        for (let i = 0; i < LOADING.ARC_COUNT; i++) {
             const pair = [Math.random(), Math.random()].sort();
             values.push(pair[0], pair[1]);
 
@@ -93,7 +93,7 @@ export class Loading {
                 active: true,
                 startAngle: 2 * Math.PI * Math.random(),
                 endAngle: 2 * Math.PI * Math.random(),
-                rotationRate: Math.random() * 10,
+                rotationRate: Math.random() * LOADING.MAX_ROTATION_RATE,
                 targetInnerRadius: pair[0],
                 targetOuterRadius: pair[1],
             });
@@ -109,7 +109,9 @@ export class Loading {
         const [data, extent] = status
             ? this.makeArray()
             : [[], [0, 0] as [number, number]];
-        const pageLoadingElement = document.getElementById("page-loading");
+        const pageLoadingElement = document.getElementById(
+            HTML_IDS.PAGE_LOADING,
+        );
         if (pageLoadingElement) {
             pageLoadingElement.style.display = status ? "block" : "none";
         }
@@ -130,7 +132,10 @@ export class Loading {
         const barScale = d3
             .scaleLinear()
             .domain(extent)
-            .range([this.barHeight / 4, this.barHeight]);
+            .range([
+                this.barHeight * LOADING.BAR_HEIGHT_MIN_SCALE,
+                this.barHeight,
+            ]);
 
         const dataSelection = this.layer
             .selectAll<SVGPathElement, ArcData>("path")
@@ -183,8 +188,11 @@ export class Loading {
     ): void {
         selection
             .transition()
-            .duration(1000)
-            .delay((_, i) => (selection.size() - i) * 100)
+            .duration(TIMING.ANIMATION_DURATION)
+            .delay(
+                (_, i) =>
+                    (selection.size() - i) * TIMING.ANIMATION_DELAY_MULTIPLIER,
+            )
             .attrTween("d", (d) => {
                 const inner = d3.interpolate(
                     d.innerRadius || 0,
@@ -211,8 +219,11 @@ export class Loading {
     ): void {
         selection
             .transition()
-            .duration(1000)
-            .delay((_, i) => (selection.size() - i) * 100)
+            .duration(TIMING.ANIMATION_DURATION)
+            .delay(
+                (_, i) =>
+                    (selection.size() - i) * TIMING.ANIMATION_DELAY_MULTIPLIER,
+            )
             .attrTween("d", (d) => {
                 const inner = d3.interpolate(d.innerRadius || 0, 0);
                 const outer = d3.interpolate(d.outerRadius || 0, 0);

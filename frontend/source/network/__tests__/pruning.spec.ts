@@ -7,7 +7,7 @@ import type {
     NetworkNode,
     NetworkLink,
 } from "../data";
-import { NodeType } from "../types";
+import { NodeType } from "../data";
 
 describe("pruneSimData", () => {
     let mockSimData: SimData;

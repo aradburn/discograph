@@ -6,7 +6,7 @@
 
 import * as d3 from "d3";
 import { hideAllTooltips } from "./tooltips";
-import { dg, networkStore } from "../dg";
+import { discographManager, networkManager } from "../core";
 import type { SimNode, SimLink } from "./data";
 
 // Array of roles that should not be labeled in the visualization
@@ -115,17 +115,17 @@ const translate = (d: SimNode): string => `translate(${d.x},${d.y})`;
  * @param {d3.Simulation<SimNode, undefined>} e - The tick event object
  */
 export const onTick = (_e: d3.Simulation<SimNode, undefined>): void => {
-    //     console.log("Tick", networkStore.tick);
-    networkStore.tick += 1;
+    //     console.log("Tick", networkManager.tick);
+    networkManager.tick += 1;
     const k = 1.0; // Force multiplier
 
     // Center the main node if not fixed
-    if (networkStore.data.center) {
-        const centerNode = networkStore.data.nodeMap.get(
-            networkStore.data.center.key,
+    if (networkManager.data.center) {
+        const centerNode = networkManager.data.nodeMap.get(
+            networkManager.data.center.key,
         );
         if (centerNode && !centerNode.fixed) {
-            const [svgWidth, svgHeight] = dg.svg_dimensions;
+            const [svgWidth, svgHeight] = discographManager.svgDimensions;
             const dx = (svgWidth / 2 - centerNode.x) * k;
             const dy = (svgHeight / 2 - centerNode.y) * k;
             centerNode.x += dx;
@@ -134,15 +134,15 @@ export const onTick = (_e: d3.Simulation<SimNode, undefined>): void => {
     }
 
     // Update positions of all visual elements
-    networkStore.layers.link
+    networkManager.layers.link
         ?.selectAll<SVGGElement, SimLink>(".link")
         ?.each(onTickLink);
-    networkStore.layers.halo?.selectAll(".node").attr("transform", translate);
-    networkStore.layers.node?.selectAll(".node").attr("transform", translate);
-    networkStore.layers.text?.selectAll(".node").attr("transform", translate);
+    networkManager.layers.halo?.selectAll(".node").attr("transform", translate);
+    networkManager.layers.node?.selectAll(".node").attr("transform", translate);
+    networkManager.layers.text?.selectAll(".node").attr("transform", translate);
 
     // Update hull (cluster outline) paths
-    networkStore.layers.halo
+    networkManager.layers.halo
         ?.selectAll(".hull")
         .select("path")
         .attr("d", function (d: SimNode[]) {

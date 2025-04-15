@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import * as d3 from "d3";
+import type * as d3 from "d3";
 import {
     calculateSplineInner,
     generateSpline,
@@ -9,16 +9,17 @@ import {
 } from "../tick";
 import { hideAllTooltips } from "../tooltips";
 import type { SimNode, SimLink } from "../data";
-import { NodeType } from "../types";
+import { NodeType } from "../data";
+import { discographManager, networkManager } from "../../core";
 
 // Mock dependencies
 vi.mock("../tooltips", () => ({
     hideAllTooltips: vi.fn(),
 }));
 
-// Mock dg module
-vi.mock("../../dg", () => {
-    const mockNetworkStore = {
+// Mock core managers
+vi.mock("../../core", () => {
+    const mockNetworkManager = {
         tick: 0,
         data: {
             center: null,
@@ -42,15 +43,12 @@ vi.mock("../../dg", () => {
     };
 
     return {
-        dg: {
-            svg_dimensions: [800, 600],
+        discographManager: {
+            svgDimensions: [800, 600],
         },
-        networkStore: mockNetworkStore,
+        networkManager: mockNetworkManager,
     };
 });
-
-// Import after mocking
-import { dg, networkStore } from "../../dg";
 
 // Mock d3 functions we need
 vi.mock("d3", async (importOriginal) => {
@@ -157,23 +155,22 @@ describe("Network Visualization Functions", () => {
     });
 
     describe("onTick", () => {
-        const mockSimulation = {} as d3.Simulation<SimNode, undefined>;
+        let mockSimulation: d3.Simulation<SimNode, undefined>;
+        const testNodes: SimNode[] = [];
 
         beforeEach(() => {
-            // Reset the mock values in each test
-            vi.mocked(networkStore.data.nodeMap).clear();
-            networkStore.tick = 0;
+            mockSimulation = {
+                alpha: () => 0.5,
+                alphaTarget: vi.fn(),
+                stop: vi.fn(),
+                restart: vi.fn(),
+                nodes: () => testNodes,
+                force: vi.fn().mockReturnThis(),
+                on: vi.fn(),
+            } as unknown as d3.Simulation<SimNode, undefined>;
 
-            // Mock d3.select to return an object with chainable methods
-            (d3.select as ReturnType<typeof vi.fn>).mockReturnValue({
-                selectAll: () => ({
-                    attr: () => ({}),
-                    each: () => ({}),
-                    select: () => ({
-                        attr: () => ({}),
-                    }),
-                }),
-            });
+            // Reset network manager state
+            networkManager.tick = 0;
         });
 
         afterEach(() => {
@@ -182,7 +179,7 @@ describe("Network Visualization Functions", () => {
 
         it("should increment the network tick counter", () => {
             onTick(mockSimulation);
-            expect(networkStore.tick).toBe(1);
+            expect(networkManager.tick).toBe(1);
         });
 
         it("should call hideAllTooltips", () => {
@@ -208,7 +205,6 @@ describe("Network Visualization Functions", () => {
                 cluster: 0,
                 fixed: false,
                 isIntermediate: false,
-                // Additional SimulationProps
                 dragx: 0,
                 dragy: 0,
                 fx: null,
@@ -220,7 +216,7 @@ describe("Network Visualization Functions", () => {
                 selected: false,
             };
 
-            networkStore.data.center = {
+            networkManager.data.center = {
                 key: "center",
                 name: "Center Node",
                 type: NodeType.Artist,
@@ -238,8 +234,8 @@ describe("Network Visualization Functions", () => {
                 fixed: false,
                 isIntermediate: false,
             };
-            networkStore.data.nodeMap.set("center", centerNode);
-            dg.svg_dimensions = [800, 600];
+            networkManager.data.nodeMap.set("center", centerNode);
+            discographManager.svgDimensions = [800, 600];
 
             onTick(mockSimulation);
 
@@ -266,7 +262,6 @@ describe("Network Visualization Functions", () => {
                 cluster: 0,
                 fixed: true,
                 isIntermediate: false,
-                // Additional SimulationProps
                 dragx: 0,
                 dragy: 0,
                 fx: null,
@@ -278,7 +273,7 @@ describe("Network Visualization Functions", () => {
                 selected: false,
             };
 
-            networkStore.data.center = {
+            networkManager.data.center = {
                 key: "center",
                 name: "Center Node",
                 type: NodeType.Artist,
@@ -296,8 +291,8 @@ describe("Network Visualization Functions", () => {
                 fixed: true,
                 isIntermediate: false,
             };
-            networkStore.data.nodeMap.set("center", centerNode);
-            dg.svg_dimensions = [800, 600];
+            networkManager.data.nodeMap.set("center", centerNode);
+            discographManager.svgDimensions = [800, 600];
 
             onTick(mockSimulation);
 

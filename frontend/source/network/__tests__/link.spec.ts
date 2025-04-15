@@ -11,7 +11,7 @@ import {
 import type * as d3 from "d3";
 import { onLinkEnter, onLinkExit, onLinkUpdate } from "../link";
 import type { SimLink } from "../data";
-import { NodeType } from "../types";
+import { NodeType } from "../data";
 
 // Mock dependencies
 vi.mock("../tooltips", () => ({

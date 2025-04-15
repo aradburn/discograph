@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Selection, BaseType } from "d3";
+import { DOM_IDS } from "../constants";
 
 // Define mock types that match the Loading class's expected types
 type D3Selection = Selection<BaseType, unknown, null, undefined>;
@@ -149,7 +150,7 @@ describe("Loading", () => {
             const dimensions: [number, number] = [800, 600];
             loading.init(dimensions);
 
-            expect(d3.select).toHaveBeenCalledWith("#svg");
+            expect(d3.select).toHaveBeenCalledWith(DOM_IDS.SVG_ID);
             // Check if d3.arc was called
             expect(d3.arc).toHaveBeenCalled();
         });

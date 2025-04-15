@@ -2,7 +2,8 @@ import type { NodeKey, LinkKey } from "./network/data";
 import type { NetworkCenter } from "./network/data";
 import type { RelationsData } from "./relations";
 import { getSelectedRoles } from "./roles";
-import type { NodeType } from "./network/types";
+import type { NodeType } from "./network/data";
+import { API } from "./constants";
 
 interface APINetworkNode {
     cluster?: number;
@@ -34,7 +35,7 @@ export interface APINetworkDataResponse {
 
 const getNetworkURL = (entityKey: NodeKey): string => {
     const [entityType, entityId] = entityKey.split("-");
-    let url = `/api/${entityType}/network/${entityId}`;
+    let url = API.ENDPOINTS.NETWORK(entityType, entityId);
     const roles = getSelectedRoles() || [];
     if (roles.length) {
         url += `?${new URLSearchParams({ roles: roles.join(",") }).toString()}`;
@@ -43,7 +44,7 @@ const getNetworkURL = (entityKey: NodeKey): string => {
 };
 
 const getRandomURL = (): string => {
-    let url = `/api/random?r=${Math.floor(Math.random() * 1000000)}`;
+    let url = `${API.ENDPOINTS.RANDOM}?r=${Math.floor(Math.random() * API.RANDOM_MAX)}`;
     const roles = getSelectedRoles() || [];
     if (roles.length) {
         url += `&${new URLSearchParams({ roles: roles.join(",") }).toString()}`;
@@ -53,7 +54,7 @@ const getRandomURL = (): string => {
 
 const getRadialURL = (entityKey: NodeKey): string => {
     const [entityType, entityId] = entityKey.split("-");
-    return `/api/${entityType}/relations/${entityId}`;
+    return API.ENDPOINTS.RELATIONS(entityType, entityId);
 };
 
 export const fetchAPINetwork = async (

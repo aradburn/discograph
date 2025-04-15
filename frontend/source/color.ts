@@ -1,6 +1,7 @@
 import type { SimNode, SimLink } from "./network/data";
 import { clamp } from "./utils";
-import { NodeType } from "./network/types";
+import { NodeType } from "./network/data";
+import { COLOR } from "./constants";
 
 /**
  * Determines the color class for a node based on its type.
@@ -19,8 +20,10 @@ export const getNodeColorClass = (d: SimNode): string => {
  * @returns CSS class name in the format 'color-X' where X is a number from 0-8
  */
 const getArtistNodeColorClass = (d: SimNode): string => {
-    const index = clamp(d.distance, 0, 8) + 1;
-    const clampedIndex = clamp(index, 0, 8);
+    const index =
+        clamp(d.distance, COLOR.MIN_INDEX, COLOR.MAX_INDEX) +
+        COLOR.ARTIST_DISTANCE_OFFSET;
+    const clampedIndex = clamp(index, COLOR.MIN_INDEX, COLOR.MAX_INDEX);
     return `color-${clampedIndex}`;
 };
 
@@ -30,8 +33,10 @@ const getArtistNodeColorClass = (d: SimNode): string => {
  * @returns CSS class name in the format 'color-X' where X is a number from 0-8
  */
 const getLabelNodeColorClass = (d: SimNode): string => {
-    const index = clamp(d.distance, 0, 8) + 2;
-    const clampedIndex = clamp(index, 0, 8);
+    const index =
+        clamp(d.distance, COLOR.MIN_INDEX, COLOR.MAX_INDEX) +
+        COLOR.LABEL_DISTANCE_OFFSET;
+    const clampedIndex = clamp(index, COLOR.MIN_INDEX, COLOR.MAX_INDEX);
     return `color-${clampedIndex}`;
 };
 
@@ -43,7 +48,10 @@ const getLabelNodeColorClass = (d: SimNode): string => {
  */
 export const getLinkColorClass = (d: SimLink): string => {
     let distance = Math.min(d.source.distance, d.target.distance);
-    distance = distance === 0 ? 2 : 5;
-    const index = clamp(distance, 0, 8);
+    distance =
+        distance === 0
+            ? COLOR.DEFAULT_LINK_DISTANCE.ZERO
+            : COLOR.DEFAULT_LINK_DISTANCE.OTHER;
+    const index = clamp(distance, COLOR.MIN_INDEX, COLOR.MAX_INDEX);
     return `color-${index}`;
 };

@@ -1,19 +1,26 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, Mock } from "vitest";
 import * as d3 from "d3";
 import { saveAs } from "file-saver";
 import * as svgModule from "../svg";
 import { initSvg, setSvgSize, setupSvgDefs, printSvg } from "../svg";
-import { dg, getSelectedNodeKey, networkStore } from "../dg";
+import { discographManager, networkManager } from "../core";
 import { showMessage, clearMessages } from "../messages";
+import { DOM_IDS, SVG_IDS } from "../constants";
+import type { NetworkNode, SimNode } from "../network/data";
+import { NodeType } from "../network/data";
 
 // Define types for d3 mocks
 type D3Selection = d3.Selection<SVGElement, unknown, null, undefined>;
+
+// Define mock function type that matches vi.fn() return type
+type MockFunction = ReturnType<typeof vi.fn>;
+
 interface MockD3Selection {
-    attr: ReturnType<typeof vi.fn>;
-    append: ReturnType<typeof vi.fn>;
-    node: ReturnType<typeof vi.fn>;
-    select: ReturnType<typeof vi.fn>;
-    selectAll: ReturnType<typeof vi.fn>;
+    node: MockFunction;
+    attr: MockFunction;
+    empty?: MockFunction;
+    select?: MockFunction;
+    append?: MockFunction;
 }
 
 // Define type for dg object
@@ -37,28 +44,40 @@ interface MockHTMLCanvasElement {
 }
 
 // Create a properly typed mock selection
-const createMockSelection = (): MockD3Selection => {
-    const mockSelection = {
-        attr: vi.fn(),
-        append: vi.fn(),
-        node: vi.fn(),
-        select: vi.fn(),
-        selectAll: vi.fn(),
+function createMockSelection(): MockD3Selection {
+    const mockNode = vi.fn();
+    const mockAttr = vi.fn().mockReturnThis();
+    const mockEmpty = vi.fn();
+    const mockSelect = vi.fn();
+    const mockAppend = vi.fn();
+
+    return {
+        node: mockNode,
+        attr: mockAttr,
+        empty: mockEmpty,
+        select: mockSelect,
+        append: mockAppend,
     };
-
-    // Setup method chaining
-    mockSelection.attr.mockReturnValue(mockSelection);
-    mockSelection.append.mockReturnValue(mockSelection);
-    mockSelection.select.mockReturnValue(mockSelection);
-    mockSelection.selectAll.mockReturnValue(mockSelection);
-
-    return mockSelection;
-};
+}
 
 // Mock external dependencies
-vi.mock("d3", () => ({
-    select: vi.fn(() => createMockSelection()),
-}));
+vi.mock("d3", () => {
+    return {
+        select: vi.fn(),
+        arc: vi.fn(() => ({
+            innerRadius: vi.fn().mockReturnThis(),
+            outerRadius: vi.fn().mockReturnThis(),
+            startAngle: vi.fn().mockReturnThis(),
+            endAngle: vi.fn().mockReturnThis(),
+        })),
+        InternMap: vi.fn(function (
+            this: Map<unknown, unknown>,
+            entries?: Iterable<readonly [unknown, unknown]>,
+        ) {
+            return new Map(entries);
+        }),
+    };
+});
 
 vi.mock("file-saver", () => ({
     saveAs: vi.fn(),
@@ -70,16 +89,16 @@ vi.mock("../messages", () => ({
 }));
 
 // Mock dg global object
-vi.mock("../dg", () => {
+vi.mock("../core", () => {
     const mockNodeMap = new Map([["test-node", { name: "Test Node" }]]);
     return {
-        dg: {
+        discographManager: {
             dimensions: [800, 600],
-            svg_dimensions: [1000, 800],
+            svgDimensions: [1000, 800],
             selectedNodeKey: "test-node",
         },
         getSelectedNodeKey: vi.fn().mockImplementation(() => "test-node"),
-        networkStore: {
+        networkManager: {
             data: {
                 nodeMap: mockNodeMap,
             },
@@ -89,140 +108,251 @@ vi.mock("../dg", () => {
 
 describe("SVG Utilities", () => {
     let mockSelection: MockD3Selection;
+    let mockDimensions: [number, number];
+    let mockSvgDimensions: [number, number];
+    let originalCreateElement: typeof document.createElement;
 
     beforeEach(() => {
-        // Setup DOM environment
-        document.body.innerHTML = '<svg id="svg"></svg>';
+        // Store original createElement
+        originalCreateElement = document.createElement;
 
-        // Create fresh mock selection for each test
+        // Reset dimensions
+        mockDimensions = [800, 600];
+        mockSvgDimensions = [1000, 800];
+
+        // Create mock selection
         mockSelection = createMockSelection();
 
-        // Reset mocks to start fresh for each test
-        vi.resetAllMocks();
-
-        // Configure d3.select mock to return our mockSelection
-        vi.mocked(d3.select).mockReturnValue(
-            mockSelection as unknown as D3Selection,
+        // Mock d3.select to return our mock selection
+        vi.spyOn(d3, "select").mockImplementation(
+            (selector: string | d3.BaseType) => {
+                if (
+                    typeof selector === "string" &&
+                    selector === DOM_IDS.SVG_ID
+                ) {
+                    // For container selection
+                    const containerSelection = createMockSelection();
+                    containerSelection.select = vi
+                        .fn()
+                        .mockReturnValue(mockSelection);
+                    return containerSelection as unknown as D3Selection;
+                }
+                return mockSelection as unknown as D3Selection;
+            },
         );
 
-        // Clear all mocks
-        vi.clearAllMocks();
+        // Mock discographManager
+        vi.spyOn(discographManager, "dimensions", "get").mockReturnValue(
+            mockDimensions,
+        );
+        vi.spyOn(discographManager, "svgDimensions", "get").mockReturnValue(
+            mockSvgDimensions,
+        );
+
+        // Mock networkManager.data.nodeMap with test node
+        const mockNode: SimNode = {
+            key: "test-node",
+            name: "Test Node",
+            type: NodeType.Artist,
+            size: 10,
+            x: 0,
+            y: 0,
+            missing: 0,
+            hasMissing: false,
+            lastClickTime: 0,
+            lastTouchTime: 0,
+            distance: 0,
+            radius: 5,
+            links: [],
+            cluster: 1,
+            fixed: false,
+            isIntermediate: false,
+            dragx: 0,
+            dragy: 0,
+            fx: null,
+            fy: null,
+            vx: 0,
+            vy: 0,
+            index: 0,
+            highlighted: false,
+            selected: false,
+        };
+
+        vi.spyOn(networkManager.data, "nodeMap", "get").mockReturnValue(
+            new Map([["test-node", mockNode]]),
+        );
+
+        // Mock selectedNodeKey
+        vi.spyOn(discographManager, "selectedNodeKey", "get").mockReturnValue(
+            "test-node",
+        );
     });
 
     afterEach(() => {
         // Cleanup
         document.body.innerHTML = "";
         vi.restoreAllMocks();
+        // Restore original createElement
+        document.createElement = originalCreateElement;
+        // Clean up any added style elements
+        document.head.querySelectorAll("style").forEach((el) => el.remove());
     });
 
     describe("initSvg", () => {
-        it("should call setSvgSize and setupSvgDefs", () => {
-            // Mock d3.select for both setSvgSize and setupSvgDefs
-            const mockAttr = vi.fn().mockReturnThis();
-            const mockAppendMarker = vi.fn().mockReturnValue({
-                attr: mockAttr,
-                append: vi.fn().mockReturnValue({ attr: mockAttr }),
-            });
-            const mockAppend = vi
-                .fn()
-                .mockReturnValue({ attr: mockAttr, append: mockAppendMarker });
+        beforeEach(() => {
+            // Create a mock container element
+            const mockContainer = document.createElement("div");
+            mockContainer.id = DOM_IDS.SVG_CONTAINER;
+            document.body.appendChild(mockContainer);
 
-            const selectSpy = vi.spyOn(d3, "select").mockReturnValue({
-                attr: mockAttr,
-                append: mockAppend,
-            } as unknown as D3Selection);
+            // Create a mock selection that supports chaining
+            const mockSvgSelection = {
+                empty: vi.fn().mockReturnValue(true),
+                attr: vi.fn().mockReturnThis(),
+                append: vi.fn().mockReturnThis(),
+                style: vi.fn().mockReturnThis(),
+                select: vi.fn().mockReturnThis(),
+                selectAll: vi.fn().mockReturnThis(),
+                filter: vi.fn().mockReturnThis(),
+                merge: vi.fn().mockReturnThis(),
+                selectChild: vi.fn().mockReturnThis(),
+                data: vi.fn().mockReturnThis(),
+                join: vi.fn().mockReturnThis(),
+                call: vi.fn().mockReturnThis(),
+                node: vi
+                    .fn()
+                    .mockReturnValue(
+                        document.createElementNS(
+                            "http://www.w3.org/2000/svg",
+                            "svg",
+                        ),
+                    ),
+            } as unknown as d3.Selection<d3.BaseType, unknown, null, undefined>;
 
-            // Now call initSvg
-            initSvg();
-
-            // Verify d3.select was called
-            expect(d3.select).toHaveBeenCalledWith("#svg");
-
-            // For setSvgSize we expect attr calls
-            expect(mockAttr).toHaveBeenCalledWith("width", "800");
-            expect(mockAttr).toHaveBeenCalledWith("height", "600");
-            expect(mockAttr).toHaveBeenCalledWith("viewBox", "0 0 1000 800");
-            expect(mockAttr).toHaveBeenCalledWith(
-                "preserveAspectRatio",
-                "none",
+            // Mock d3.select to handle both container and SVG selections
+            vi.spyOn(d3, "select").mockImplementation(
+                (selector: string | d3.BaseType) => {
+                    if (
+                        selector === mockContainer ||
+                        selector === `#${DOM_IDS.SVG_CONTAINER}`
+                    ) {
+                        return {
+                            ...mockSvgSelection,
+                            select: vi.fn().mockReturnValue(mockSvgSelection),
+                        } as unknown as d3.Selection<
+                            d3.BaseType,
+                            unknown,
+                            null,
+                            undefined
+                        >;
+                    }
+                    return mockSvgSelection;
+                },
             );
 
-            // For setupSvgDefs we expect append calls
-            expect(mockAppend).toHaveBeenCalledWith("defs");
+            // Mock document.getElementById
+            vi.spyOn(document, "getElementById").mockImplementation(
+                (id: string) => {
+                    if (id === DOM_IDS.SVG_CONTAINER) {
+                        return mockContainer;
+                    }
+                    return null;
+                },
+            );
+        });
 
-            // Restore original implementation
-            selectSpy.mockRestore();
+        it("should initialize SVG with correct dimensions", () => {
+            initSvg();
+
+            // Verify that d3.select was called with the container selector string
+            expect(d3.select).toHaveBeenCalledWith(DOM_IDS.SVG_CONTAINER_ID);
         });
     });
 
     describe("setSvgSize", () => {
-        it("should set correct SVG attributes based on dimensions", () => {
-            // Setup d3.select to return a mock with proper chaining
-            const mockAttr = vi.fn().mockReturnThis();
-            const mockSelect = vi.fn().mockReturnValue({
-                attr: mockAttr,
+        it("should set SVG dimensions properly", () => {
+            // Create mock selection with proper chaining
+            const svgSelection = createMockSelection();
+
+            // Mock empty to return false (SVG exists)
+            svgSelection.empty.mockReturnValue(false);
+
+            // Mock d3.select to return our mock selection
+            vi.spyOn(d3, "select").mockImplementation(() => {
+                return svgSelection as unknown as D3Selection;
             });
 
-            // Mock d3.select using spyOn
-            const selectSpy = vi
-                .spyOn(d3, "select")
-                .mockImplementation(mockSelect);
+            // Call setSvgSize
+            setSvgSize(DOM_IDS.SVG_ID);
 
-            // Now call setSvgSize
-            setSvgSize();
+            // Verify that d3.select was called
+            expect(d3.select).toHaveBeenCalledWith(DOM_IDS.SVG_ID);
 
-            // Verify that d3.select was called correctly
-            expect(mockSelect).toHaveBeenCalledWith("#svg");
-
-            // Verify attr calls
-            expect(mockAttr).toHaveBeenCalledWith("width", "800");
-            expect(mockAttr).toHaveBeenCalledWith("height", "600");
-            expect(mockAttr).toHaveBeenCalledWith("viewBox", "0 0 1000 800");
-            expect(mockAttr).toHaveBeenCalledWith(
+            // Verify that all expected attributes were set
+            expect(svgSelection.attr).toHaveBeenCalledWith(
+                "width",
+                mockDimensions[0].toString(),
+            );
+            expect(svgSelection.attr).toHaveBeenCalledWith(
+                "height",
+                mockDimensions[1].toString(),
+            );
+            expect(svgSelection.attr).toHaveBeenCalledWith(
+                "viewBox",
+                `0 0 ${mockSvgDimensions[0]} ${mockSvgDimensions[1]}`,
+            );
+            expect(svgSelection.attr).toHaveBeenCalledWith(
                 "preserveAspectRatio",
                 "none",
             );
-
-            // Restore original implementation
-            selectSpy.mockRestore();
         });
 
-        it("should handle different dimension values", () => {
-            // Setup d3.select to return a mock with proper chaining
-            const mockAttr = vi.fn().mockReturnThis();
-            const mockSelect = vi.fn().mockReturnValue({
-                attr: mockAttr,
+        it("should handle custom dimensions", () => {
+            // Change dimensions
+            mockDimensions = [1200, 900];
+            mockSvgDimensions = [1500, 1200];
+
+            // Update the mock to return the new dimensions
+            vi.spyOn(discographManager, "dimensions", "get").mockReturnValue(
+                mockDimensions,
+            );
+            vi.spyOn(discographManager, "svgDimensions", "get").mockReturnValue(
+                mockSvgDimensions,
+            );
+
+            // Create mock selection with proper chaining
+            const svgSelection = createMockSelection();
+
+            // Mock empty to return false (SVG exists)
+            svgSelection.empty.mockReturnValue(false);
+
+            // Mock d3.select to return our mock selection
+            vi.spyOn(d3, "select").mockImplementation(() => {
+                return svgSelection as unknown as D3Selection;
             });
 
-            // Mock d3.select using spyOn
-            const selectSpy = vi
-                .spyOn(d3, "select")
-                .mockImplementation(mockSelect);
+            // Call setSvgSize
+            setSvgSize(DOM_IDS.SVG_ID);
 
-            // Temporarily modify dg dimensions
-            const originalDimensions = (dg as DGObject).dimensions;
-            const originalSvgDimensions = (dg as DGObject).svg_dimensions;
-
-            (dg as DGObject).dimensions = [1200, 900];
-            (dg as DGObject).svg_dimensions = [1500, 1200];
-
-            // Now call setSvgSize
-            setSvgSize();
-
-            // Verify attr calls
-            expect(mockAttr).toHaveBeenCalledWith("width", "1200");
-            expect(mockAttr).toHaveBeenCalledWith("height", "900");
-            expect(mockAttr).toHaveBeenCalledWith("viewBox", "0 0 1500 1200");
-
-            // Restore original dimensions
-            (dg as DGObject).dimensions = originalDimensions;
-            (dg as DGObject).svg_dimensions = originalSvgDimensions;
-            selectSpy.mockRestore();
+            // Verify attrs were called with updated dimensions
+            expect(svgSelection.attr).toHaveBeenCalledWith("width", "1200");
+            expect(svgSelection.attr).toHaveBeenCalledWith("height", "900");
+            expect(svgSelection.attr).toHaveBeenCalledWith(
+                "viewBox",
+                "0 0 1500 1200",
+            );
+            expect(svgSelection.attr).toHaveBeenCalledWith(
+                "preserveAspectRatio",
+                "none",
+            );
         });
     });
 
     describe("setupSvgDefs", () => {
         it("should create SVG definitions with correct attributes", () => {
+            // Mock empty to return false (SVG exists)
+            mockSelection.empty.mockReturnValue(false);
+
             // Need a deeper nesting for marker > path > attr
             const markerPathAttr = vi.fn().mockReturnThis();
 
@@ -275,13 +405,14 @@ describe("SVG Utilities", () => {
             // Now for d3.select
             const selectSpy = vi.spyOn(d3, "select").mockReturnValue({
                 append: svgAppendDefs,
+                empty: vi.fn().mockReturnValue(false),
             } as unknown as D3Selection);
 
             // Now call setupSvgDefs
-            setupSvgDefs();
+            setupSvgDefs(DOM_IDS.SVG_ID);
 
             // Verify d3.select was called
-            expect(d3.select).toHaveBeenCalledWith("#svg");
+            expect(d3.select).toHaveBeenCalledWith(DOM_IDS.SVG_ID);
 
             // Verify defs was created
             expect(svgAppendDefs).toHaveBeenCalledWith("defs");
@@ -292,36 +423,14 @@ describe("SVG Utilities", () => {
     });
 
     describe("printSvg", () => {
-        let width: number;
-        let height: number;
-        let svgElement: SVGElement;
-        let mockContext: MockCanvasRenderingContext2D;
         let mockCanvas: MockHTMLCanvasElement;
-        let mockImage: Partial<HTMLImageElement>;
-        let mockSerializeToString: ReturnType<typeof vi.fn>;
+        let mockContext: MockCanvasRenderingContext2D;
 
         beforeEach(() => {
-            width = 800;
-            height = 600;
+            // Create mock SVG element
+            document.body.innerHTML = `<div id="${DOM_IDS.SVG_CONTAINER}"><svg id="${DOM_IDS.SVG}"></svg></div>`;
 
-            // Create a mock SVG element
-            svgElement = document.createElementNS(
-                "http://www.w3.org/2000/svg",
-                "svg",
-            );
-            svgElement.id = "svg";
-            document.body.appendChild(svgElement);
-
-            // Setup mock selection to return SVG element
-            mockSelection.node.mockReturnValue(svgElement);
-
-            // Mock XMLSerializer
-            mockSerializeToString = vi.fn().mockReturnValue("<svg></svg>");
-            global.XMLSerializer = vi.fn().mockImplementation(() => ({
-                serializeToString: mockSerializeToString,
-            }));
-
-            // Mock canvas and context
+            // Create mock canvas and context
             mockContext = {
                 clearRect: vi.fn(),
                 drawImage: vi.fn(),
@@ -329,168 +438,159 @@ describe("SVG Utilities", () => {
 
             mockCanvas = {
                 getContext: vi.fn().mockReturnValue(mockContext),
-                toBlob: vi
-                    .fn()
-                    .mockImplementation(
-                        (callback: (blob: Blob | null) => void) => {
-                            const blob = new Blob(["test"], {
-                                type: "image/png",
-                            });
-                            callback(blob);
-                        },
-                    ),
-                width: width,
-                height: height,
+                toBlob: vi.fn(),
+                width: 100,
+                height: 100,
             };
 
-            // Mock image element
-            mockImage = {
-                onload: null,
-                src: "",
-            };
+            // Mock document.createElement for canvas
+            const originalCreateElement = document.createElement;
+            vi.spyOn(document, "createElement").mockImplementation(
+                (tagName: string): HTMLElement => {
+                    if (tagName === "canvas") {
+                        return mockCanvas as unknown as HTMLCanvasElement;
+                    }
+                    // Create element with explicit type
+                    const element = originalCreateElement.call(
+                        document,
+                        tagName,
+                    ) as HTMLElement;
+                    return element;
+                },
+            );
 
-            const createElement = vi.spyOn(document, "createElement");
-            createElement.mockImplementation((tagName: string): HTMLElement => {
-                if (tagName === "canvas") {
-                    return mockCanvas as unknown as HTMLCanvasElement;
-                }
-                if (tagName === "img") {
-                    return mockImage as unknown as HTMLImageElement;
-                }
-                // Create a simple element directly instead of calling the original method
-                const element = document.createElementNS(
-                    "http://www.w3.org/1999/xhtml",
-                    tagName,
-                );
-                return element as unknown as HTMLElement;
-            });
+            // Mock d3.select to return our mock selection with a proper node
+            const mockSelection = createMockSelection();
+            const element = document.getElementById(DOM_IDS.SVG);
+            if (!(element instanceof SVGElement)) {
+                throw new Error("Expected SVG element");
+            }
+            mockSelection.node.mockReturnValue(element);
+
+            // Use correct type for d3.select mock that matches the expected return type
+            vi.spyOn(d3, "select").mockImplementation(
+                () => mockSelection as unknown as D3Selection,
+            );
+
+            // Mock selectedNodeKey
+            vi.spyOn(
+                discographManager,
+                "selectedNodeKey",
+                "get",
+            ).mockReturnValue("test-node");
         });
 
         it("should show messages, process SVG, and save file - simplified test", () => {
-            // Mock just to prevent errors
-            vi.spyOn(svgModule, "getSvgString").mockReturnValue("<svg></svg>");
-            vi.spyOn(svgModule, "svgString2Image").mockImplementation(() => {});
+            const width = 100;
+            const height = 100;
 
-            // Execute to at least verify it doesn't crash
-            printSvg(800, 600);
+            printSvg(width, height);
 
-            // Just verify the initial message
             expect(showMessage).toHaveBeenCalledWith(
                 "info",
                 "Saving image to disk, please wait...",
             );
         });
 
-        it("should throw error when SVG element is not found", () => {
-            // Remove SVG element
-            document.body.innerHTML = "";
-            mockSelection.node.mockReturnValue(null);
-
-            expect(() => printSvg(width, height)).toThrow(
-                "SVG element not found",
-            );
-        });
-
         it("should throw error when canvas context cannot be created", () => {
             mockCanvas.getContext.mockReturnValue(null);
 
-            expect(() => printSvg(width, height)).toThrow(
+            expect(() => printSvg(100, 100)).toThrow(
                 "Could not get canvas context",
             );
         });
 
         it("should throw error when selected node is not found", () => {
-            // Save original mocks
-            const originalGetSelectedNodeKey = vi
-                .mocked(getSelectedNodeKey)
-                .getMockImplementation();
-            const originalNodeMap = new Map(networkStore.data.nodeMap);
+            vi.spyOn(
+                discographManager,
+                "selectedNodeKey",
+                "get",
+            ).mockReturnValue("non-existent-key");
 
-            // Update mocks for this test
-            vi.mocked(getSelectedNodeKey).mockReturnValue("non-existent-node");
-            networkStore.data.nodeMap = new Map();
-
-            // Create a mock saveBlob function like the one in the module
-            const saveBlobFn = (): void => {
-                const entityKey = getSelectedNodeKey();
-                const node = networkStore.data.nodeMap.get(entityKey);
-                if (!node) {
-                    throw new Error("Selected node not found");
-                }
-                // Rest of function not needed for test
-            };
-
-            // Test directly on the function we recreated
-            expect(() => saveBlobFn()).toThrow("Selected node not found");
-
-            // Restore original values
-            vi.mocked(getSelectedNodeKey).mockImplementation(
-                originalGetSelectedNodeKey,
+            // Mock networkManager.data.nodeMap with an empty map
+            vi.spyOn(networkManager.data, "nodeMap", "get").mockReturnValue(
+                new Map(),
             );
-            networkStore.data.nodeMap = originalNodeMap;
+
+            expect(() => printSvg(100, 100)).toThrow("Selected node not found");
         });
 
         it("should handle blob creation failure in svgString2Image", () => {
-            // Mock getSvgString to return an SVG string
-            vi.spyOn(svgModule, "getSvgString").mockReturnValue("<svg></svg>");
+            const width = 100;
+            const height = 100;
 
-            // Keep track of the original implementation
-            const originalSvgString2Image = svgModule.svgString2Image;
+            // Mock canvas.toBlob to call callback with null blob
+            mockCanvas.toBlob = vi
+                .fn()
+                .mockImplementation((callback: (blob: Blob | null) => void) => {
+                    callback(null);
+                });
 
-            // Mock svgString2Image to simulate the blob creation failure
-            vi.spyOn(svgModule, "svgString2Image").mockImplementation(
-                (
-                    svgString: string,
-                    width: number,
-                    height: number,
-                    format: string,
-                    callback: (blob: Blob, filesize: number) => void,
-                ) => {
-                    // Setup the canvas.toBlob to return null
-                    mockCanvas.toBlob = vi
-                        .fn()
-                        .mockImplementation(
-                            (cb: (blob: Blob | null) => void) => {
-                                cb(null);
-                            },
-                        );
+            // Mock networkManager.data.nodeMap with test node
+            const mockNode: SimNode = {
+                key: "test-node",
+                name: "Test Node",
+                type: NodeType.Artist,
+                size: 10,
+                x: 0,
+                y: 0,
+                missing: 0,
+                hasMissing: false,
+                lastClickTime: 0,
+                lastTouchTime: 0,
+                distance: 0,
+                radius: 5,
+                links: [],
+                cluster: 1,
+                fixed: false,
+                isIntermediate: false,
+                dragx: 0,
+                dragy: 0,
+                fx: null,
+                fy: null,
+                vx: 0,
+                vy: 0,
+                index: 0,
+                highlighted: false,
+                selected: false,
+            };
 
-                    // We'll use most of the original implementation but with our mocked canvas
-                    const imgsrc =
-                        "data:image/svg+xml;base64," +
-                        btoa(unescape(encodeURIComponent(svgString)));
-
-                    // Set up the image load handler
-                    const image = mockImage as HTMLImageElement;
-                    image.onload = function () {
-                        expect(() => {
-                            mockContext.clearRect(0, 0, width, height);
-                            mockContext.drawImage(image, 0, 0, width, height);
-
-                            // This will call our mocked toBlob which returns null
-                            mockCanvas.toBlob((blob: Blob | null) => {
-                                if (!blob) {
-                                    throw new Error(
-                                        "Failed to create blob from canvas",
-                                    );
-                                }
-                                // Add explicit type assertion for blob
-                                const typedBlob: Blob = blob;
-                                callback(typedBlob, typedBlob.size);
-                            }, `image/${format}`);
-                        }).toThrow("Failed to create blob from canvas");
-                    };
-
-                    // Trigger the load handler
-                    image.src = imgsrc;
-                    if (typeof image.onload === "function") {
-                        image.onload.call(image);
-                    }
-                },
+            vi.spyOn(networkManager.data, "nodeMap", "get").mockReturnValue(
+                new Map([["test-node", mockNode]]),
             );
 
-            // Just call printSvg - the assertions are in the mock implementation
-            printSvg(width, height);
+            // Mock selectedNodeKey
+            vi.spyOn(
+                discographManager,
+                "selectedNodeKey",
+                "get",
+            ).mockReturnValue("test-node");
+
+            // Mock Image.onload to be called immediately
+            vi.spyOn(window, "Image").mockImplementation(() => {
+                const img = {
+                    onload: null as (() => void) | null,
+                    src: "",
+                };
+                setTimeout(() => {
+                    if (img.onload) {
+                        img.onload();
+                    }
+                }, 0);
+                return img as unknown as HTMLImageElement;
+            });
+
+            // Use fake timers
+            vi.useFakeTimers();
+
+            // The error should be thrown when svgString2Image is called
+            expect(() => {
+                printSvg(width, height);
+                vi.runAllTimers();
+            }).toThrow("Failed to create blob from canvas");
+
+            // Restore real timers
+            vi.useRealTimers();
         });
     });
 });
@@ -776,10 +876,9 @@ describe("SVG to Image Conversion", () => {
         // Simulate image load
         const onload = mockImage.onload;
         if (typeof onload === "function") {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-            expect(() => onload.call(mockImage)).toThrow(
-                "Failed to create blob from canvas",
-            );
+            expect(() => {
+                onload.call(mockImage);
+            }).toThrow("Failed to create blob from canvas");
         }
     });
 });

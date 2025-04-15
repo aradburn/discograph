@@ -9,6 +9,7 @@ import Bloodhound from "corejs-typeahead/dist/bloodhound.js";
 import "corejs-typeahead/dist/typeahead.jquery.js";
 import "./css/typeahead-bootstrap.css";
 import jQuery from "jquery";
+import { TYPEAHEAD, TIMING } from "./constants";
 
 interface JQuery<T = HTMLElement> {
     typeahead(options: TypeaheadOptions, dataset: DatasetOptions): JQuery<T>;
@@ -85,15 +86,15 @@ export const initTypeahead = (): void => {
         datumTokenizer: bloodhoundConstructor.tokenizers.whitespace,
         queryTokenizer: bloodhoundConstructor.tokenizers.whitespace,
         remote: {
-            url: "/api/search/%QUERY",
-            wildcard: "%QUERY",
+            url: TYPEAHEAD.API_ENDPOINT,
+            wildcard: TYPEAHEAD.QUERY_WILDCARD,
             filter: (response) => response.results,
             rateLimitBy: "debounce",
-            rateLimitWait: 1000, // Debounce API calls by 1 second
+            rateLimitWait: TIMING.TYPEAHEAD_DEBOUNCE,
         },
     });
 
-    const inputElement = document.getElementById("typeahead");
+    const inputElement = document.getElementById(TYPEAHEAD.ELEMENT_ID);
 
     if (!inputElement) {
         console.log("Error - Typeahead missing input element");
@@ -105,12 +106,12 @@ export const initTypeahead = (): void => {
         {
             hint: false,
             highlight: true,
-            minLength: 4, // Minimum characters before search begins
+            minLength: TYPEAHEAD.MIN_QUERY_LENGTH,
         },
         {
             name: "results",
             display: "name",
-            limit: 1000,
+            limit: TYPEAHEAD.MAX_RESULTS,
             source: typeaheadBloodhound,
             templates: {
                 suggestion: (data: SearchResult) => `
@@ -166,7 +167,7 @@ export const initTypeahead = (): void => {
     );
 
     // Initialize clear button functionality
-    const clearButton = document.querySelector("#search .clear");
+    const clearButton = document.querySelector(TYPEAHEAD.CLEAR_BUTTON_SELECTOR);
     if (clearButton) {
         clearButton.addEventListener("click", () => {
             ($(inputElement) as unknown as JQuery).typeahead("val", "");
@@ -183,7 +184,7 @@ export const initTypeahead = (): void => {
 const navigateTypeahead = (): void => {
     console.log("navigateTypeahead");
 
-    const inputElement = document.getElementById("typeahead");
+    const inputElement = document.getElementById(TYPEAHEAD.ELEMENT_ID);
     if (!inputElement) return;
 
     const datum = $(inputElement).data("selectedKey") as string | null;

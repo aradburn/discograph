@@ -6,22 +6,19 @@ import { restartForceLayout, stopForceLayout } from "./network/forceLayout";
 import { initRoles } from "./roles";
 import { initSvg, printSvg } from "./svg";
 import { initTypeahead } from "./typeahead";
-import { dg, networkStore } from "./dg";
+import { discographManager } from "./core";
 import type { TreeConfig } from "./roles";
 import { debounce } from "./utils";
 import { showMessage, clearMessages } from "./messages";
 import { ResizeEvent } from "./network/events";
 import { initFSM } from "./fsm";
+import { SVG, DOM_IDS, INIT, FSM } from "./constants";
 
 declare global {
     interface Window {
         dgRoles: TreeConfig;
     }
 }
-
-// Constants for viewport and SVG scaling
-export const VIEWPORT_SIZE_MULTIPLIER = 3.0;
-export const SVG_SCALING_MULTIPLIER = 0.8;
 
 /**
  * Initializes window dimensions and event handlers
@@ -30,33 +27,20 @@ export const initWindow = (): void => {
     const dpr = window.devicePixelRatio || 1;
     console.log("window devicePixelRatio: ", dpr);
 
-    const svgContainer = document.getElementById("svg-container-fluid");
+    const svgContainer = document.getElementById(DOM_IDS.SVG_CONTAINER);
     const width = svgContainer.clientWidth;
     const height = svgContainer.clientHeight;
     const svgContainerDimensions: [number, number] = [width, height];
     const svgCanvasDimensions: [number, number] = [
-        svgContainerDimensions[0] *
-            VIEWPORT_SIZE_MULTIPLIER *
-            //             SVG_SCALING_MULTIPLIER *
-            dpr,
-        svgContainerDimensions[1] *
-            VIEWPORT_SIZE_MULTIPLIER *
-            //             SVG_SCALING_MULTIPLIER *
-            dpr,
+        svgContainerDimensions[0] * SVG.VIEWPORT_SIZE_MULTIPLIER * dpr,
+        svgContainerDimensions[1] * SVG.VIEWPORT_SIZE_MULTIPLIER * dpr,
     ];
     console.log("svgContainerDimensions: ", svgContainerDimensions);
     console.log("svgCanvasDimensions: ", svgCanvasDimensions);
 
-    dg.dpr = dpr;
-    dg.dimensions = svgContainerDimensions;
-    dg.svg_dimensions = svgCanvasDimensions;
-
-    // All nodes start at center of the screen
-    networkStore.newNodeCoords = [
-        dg.svg_dimensions[0] / 2,
-        dg.svg_dimensions[1] / 2,
-    ];
-    console.log("svg newNodeCoords: ", networkStore.newNodeCoords);
+    discographManager.dpr = dpr;
+    discographManager.dimensions = svgContainerDimensions;
+    discographManager.svgDimensions = svgCanvasDimensions;
 
     // Handle window resize events
     const handleResize = debounce(() => {
@@ -74,9 +58,9 @@ export const initWindow = (): void => {
                       : "Unknown error";
             console.error("Error during window resize:", errorMessage);
             showMessage("Error during window resize: " + errorMessage, "error");
-            clearMessages(5000); // Clear error message after 5 seconds
+            clearMessages(INIT.MESSAGE_CLEAR_DELAY);
         }
-    }, 250);
+    }, INIT.DEBOUNCE_DELAY);
 
     window.addEventListener("resize", handleResize);
 };
@@ -89,7 +73,7 @@ export const initApp = (): void => {
     // Initialize all required components
     initWindow();
     initSvg();
-    initNetwork();
+    initNetwork(DOM_IDS.SVG_ID);
     initRelations();
     if (window.dgRoles) {
         initRoles(window.dgRoles);
@@ -97,18 +81,20 @@ export const initApp = (): void => {
     initTypeahead();
 
     const svgDimensions: [number, number] = [
-        dg.svg_dimensions[0],
-        dg.svg_dimensions[1],
+        discographManager.svgDimensions[0],
+        discographManager.svgDimensions[1],
     ];
     loading.init(svgDimensions);
 
     // Random request button handler
-    const requestRandomButton = document.querySelector("#request-random");
+    const requestRandomButton = document.querySelector(
+        `#${DOM_IDS.REQUEST_RANDOM}`,
+    );
     const handleRandomRequest = (event: Event): void => {
         event.preventDefault();
         if (requestRandomButton) {
             requestRandomButton.dispatchEvent(
-                new CustomEvent("discograph:request-random", { bubbles: true }),
+                new CustomEvent(FSM.EVENTS.REQUEST_RANDOM, { bubbles: true }),
             );
         }
     };
@@ -118,17 +104,19 @@ export const initApp = (): void => {
     }
 
     // Layout control button handlers
-    const startLayoutButton = document.querySelector("#start-layout");
+    const startLayoutButton = document.querySelector(
+        `#${DOM_IDS.START_LAYOUT}`,
+    );
     const handleStartLayout = (event: Event): void => {
         event.preventDefault();
-        restartForceLayout(0.1); // Default alpha value
+        restartForceLayout(INIT.DEFAULT_ALPHA);
     };
     if (startLayoutButton) {
         startLayoutButton.addEventListener("click", handleStartLayout);
         startLayoutButton.addEventListener("touchstart", handleStartLayout);
     }
 
-    const stopLayoutButton = document.querySelector("#stop-layout");
+    const stopLayoutButton = document.querySelector(`#${DOM_IDS.STOP_LAYOUT}`);
     const handleStopLayout = (event: Event): void => {
         event.preventDefault();
         stopForceLayout();
@@ -139,10 +127,13 @@ export const initApp = (): void => {
     }
 
     // Print button handler
-    const printButton = document.querySelector("#print");
+    const printButton = document.querySelector(`#${DOM_IDS.PRINT}`);
     const handlePrint = (event: Event): void => {
         event.preventDefault();
-        printSvg(dg.svg_dimensions[0], dg.svg_dimensions[1]);
+        printSvg(
+            discographManager.svgDimensions[0],
+            discographManager.svgDimensions[1],
+        );
     };
     if (printButton) {
         printButton.addEventListener("click", handlePrint);
@@ -156,7 +147,7 @@ export const initApp = (): void => {
     [...tooltipTriggerList].map(
         (tooltipTriggerEl) =>
             new Tooltip(tooltipTriggerEl, {
-                trigger: "hover",
+                trigger: INIT.TOOLTIP_TRIGGER,
             }),
     );
 
@@ -164,16 +155,21 @@ export const initApp = (): void => {
     initFSM();
 
     // Modals start off hidden to prevent them showing on startup before CSS gets loaded.
-    const navTop = document.querySelector<HTMLDivElement>("#nav-top");
+    const navTop = document.querySelector<HTMLDivElement>(
+        `#${DOM_IDS.NAV_TOP}`,
+    );
     if (navTop) {
         navTop.style.opacity = "1";
     }
-    const modalHelp = document.querySelector<HTMLDivElement>("#modal-help");
+    const modalHelp = document.querySelector<HTMLDivElement>(
+        `#${DOM_IDS.MODAL_HELP}`,
+    );
     if (modalHelp) {
         modalHelp.style.opacity = "1";
     }
-    const sideMenuContent =
-        document.querySelector<HTMLDivElement>("#side-menu-content");
+    const sideMenuContent = document.querySelector<HTMLDivElement>(
+        `#${DOM_IDS.SIDE_MENU_CONTENT}`,
+    );
     if (sideMenuContent) {
         sideMenuContent.style.opacity = "1";
     }

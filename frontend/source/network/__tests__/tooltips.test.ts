@@ -7,7 +7,7 @@ import {
 } from "../tooltips";
 import type { SimNode, SimLink } from "../data";
 import { Tooltip } from "bootstrap";
-import { NodeType } from "../types";
+import { NodeType } from "../data";
 
 // Define type for mocked tooltip instance
 interface MockedTooltip {

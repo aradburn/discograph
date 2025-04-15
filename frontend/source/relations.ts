@@ -6,7 +6,8 @@
  */
 
 import * as d3 from "d3";
-import { dg, relationsStore } from "./dg";
+import { discographManager, relationsManager } from "./core";
+import { DOM_IDS, SVG_IDS, RELATIONS, TIMING } from "./constants";
 
 /**
  * Data structure for individual relations
@@ -59,14 +60,14 @@ export interface RelationsArcData {
  * Creates a root group element for all relation-based visualizations
  */
 export function initRelations(): void {
-    const svgElement = d3.select("#svg");
-    const root = svgElement.append("g").attr("id", "relationsLayer");
-    relationsStore.layers.root = root;
+    const svgElement = d3.select(DOM_IDS.SVG_ID);
+    const root = svgElement.append("g").attr("id", SVG_IDS.RELATIONS_LAYER);
+    relationsManager.setRootLayer(root);
 
     // Zoom functionality commented out for now
     // relations.zoom = d3.zoom()
-    //     .extent([[0, 0], [dg.svg_dimensions[0], dg.svg_dimensions[1]]])
-    //     .scaleExtent([1, 8])
+    //     .extent([[0, 0], [discographManager.svgDimensions[0], discographManager.svgDimensions[1]]])
+    //     .scaleExtent([RELATIONS.ZOOM.MIN_SCALE, RELATIONS.ZOOM.MAX_SCALE])
     //     .on("zoom", handleZoom);
     // svgElement.call(relations.zoom)
 }
@@ -76,23 +77,8 @@ export function initRelations(): void {
  * @param {RelationsData} data - The relations data to set
  */
 export function setRelationsData(data: RelationsData): void {
-    relationsStore.data = data;
-
-    // Group data by year and category
-    relationsStore.byYear = d3.group(
-        data.results,
-        (d) => d.year,
-        (d) => d.category,
-    );
-
-    // Process role data
-    const sortedByRole = d3.sort(data.results, (d) => d.role);
-    relationsStore.byRole = d3.rollup(
-        sortedByRole,
-        (d) => d.length,
-        (d) => d.role,
-    );
-    console.log("relationsStore.byRole: ", relationsStore.byRole);
+    relationsManager.setData(data);
+    console.log("relationsManager.byRole: ", relationsManager.byRole);
 }
 
 /**
@@ -114,9 +100,11 @@ export function createRadialChart(): void {
         return angle < 0.5 ? "start" : "end";
     };
 
-    const barHeight = Math.min(...dg.dimensions) / 3;
+    const barHeight =
+        Math.min(...discographManager.dimensions) /
+        RELATIONS.DIMENSIONS.DIVISOR;
     console.log("createRadialChart() barHeight:", barHeight);
-    const data = relationsStore.byRole;
+    const data = relationsManager.byRole;
     console.log("createRadialChart() data: ", data);
 
     const extent = d3.extent(Array.from(data.values()));
@@ -125,21 +113,21 @@ export function createRadialChart(): void {
     const barScale = d3
         .scaleSqrt()
         .domain(extent as [number, number])
-        .range([barHeight / 4, barHeight])
-        .exponent(0.25);
+        .range([barHeight * RELATIONS.SCALE.MIN_MULTIPLIER, barHeight])
+        .exponent(RELATIONS.SCALE.EXPONENT);
     const numBars = data.size;
 
     const transform = (d: RelationsArcData, i: number): string => {
         console.log("d: ", d);
         console.log("i: ", i);
-        const hypotenuse = barScale(d.count) + 5;
+        const hypotenuse = barScale(d.count) + RELATIONS.DIMENSIONS.TEXT_OFFSET;
         const angle = (i + 0.5) / numBars;
-        let degrees = angle * 360;
-        if (180 <= degrees) {
-            degrees -= 180;
+        let degrees = angle * RELATIONS.ANGLES.FULL_CIRCLE;
+        if (RELATIONS.ANGLES.HALF_CIRCLE <= degrees) {
+            degrees -= RELATIONS.ANGLES.HALF_CIRCLE;
         }
-        degrees -= 90;
-        const radians = angle * 2 * Math.PI;
+        degrees += RELATIONS.ANGLES.START_DEGREES;
+        const radians = angle * RELATIONS.ANGLES.TWO_PI;
         const x = Math.sin(radians) * hypotenuse;
         const y = -Math.cos(radians) * hypotenuse;
         return [`rotate(${degrees},${x},${y})`, `translate(${x},${y})`].join(
@@ -151,27 +139,27 @@ export function createRadialChart(): void {
 
     const arc = d3
         .arc<RelationsArcData>()
-        .startAngle((_d, i) => (i * 2 * Math.PI) / numBars)
-        .endAngle((_d, i) => ((i + 1) * 2 * Math.PI) / numBars)
+        .startAngle((_d, i) => (i * RELATIONS.ANGLES.TWO_PI) / numBars)
+        .endAngle((_d, i) => ((i + 1) * RELATIONS.ANGLES.TWO_PI) / numBars)
         .innerRadius(0)
         .outerRadius((d) => d.outerRadius);
 
     console.log("createRadialChart() arc: ", arc);
 
-    const radialGroup = relationsStore.layers.root
+    const radialGroup = relationsManager.layers.root
         ?.append("g")
         .attr("class", "radial centered")
         .attr(
             "transform",
-            `translate(${dg.dimensions[0] / 2},${dg.dimensions[1] / 2})`,
+            `translate(${discographManager.dimensions[0] / 2},${discographManager.dimensions[1] / 2})`,
         );
 
     const arcData = Array.from(data.entries()).map(([role, count], index) => ({
         role,
         count,
         outerRadius: 0,
-        startAngle: (index * 2 * Math.PI) / data.size,
-        endAngle: ((index + 1) * 2 * Math.PI) / data.size,
+        startAngle: (index * RELATIONS.ANGLES.TWO_PI) / data.size,
+        endAngle: ((index + 1) * RELATIONS.ANGLES.TWO_PI) / data.size,
         innerRadius: 0,
     }));
 
@@ -187,7 +175,7 @@ export function createRadialChart(): void {
 
     console.log("createRadialChart() segments: ", segments);
 
-    const arcs = segments
+    segments
         .append("path")
         .attr("class", "arc")
         .attr("d", arc)
@@ -196,8 +184,10 @@ export function createRadialChart(): void {
         })
         .transition()
         .ease(d3.easeElastic)
-        .duration(500)
-        .delay((d, i) => (numBars - i) * 25)
+        .duration(TIMING.RADIAL_TRANSITION.DURATION)
+        .delay(
+            (d, i) => (numBars - i) * TIMING.RADIAL_TRANSITION.DELAY_MULTIPLIER,
+        )
         .attrTween("d", function (d) {
             console.log("attrTween d: ", d);
             const outer = d3.interpolate(0, barScale(d.count));
@@ -207,8 +197,6 @@ export function createRadialChart(): void {
                 return arc(d);
             };
         });
-
-    console.log("createRadialChart() arcs: ", arcs);
 
     segments
         .append("text")
@@ -239,7 +227,7 @@ export function handleZoom({
 }: {
     transform: d3.ZoomTransform;
 }): void {
-    relationsStore.layers.root.attr("transform", transform.toString());
+    relationsManager.layers.root.attr("transform", transform.toString());
 }
 
 /**

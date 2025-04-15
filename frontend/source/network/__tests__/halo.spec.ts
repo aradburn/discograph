@@ -4,7 +4,7 @@ import type { SimNode } from "../data";
 import { getOuterRadius } from "../node";
 import type * as d3 from "d3";
 import type { Mock } from "vitest";
-import { NodeType } from "../types";
+import { NodeType } from "../data";
 
 // Mock the node module
 vi.mock("../node", () => ({

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 // Set up window.machina before any other imports
 import { vi, type Mock } from "vitest";
+import { DOM_IDS } from "../../constants";
 
 // Create the machina object and add it to window
 const machina = {
@@ -119,8 +120,13 @@ const mocknetworkStore = {
     forceLayout: null,
 };
 
-// @ts-expect-error - mock global dg
-global.dg = mockDg;
+// Mock the networkStore module
+vi.mock("../../dg", () => {
+    return {
+        dg: mockDg,
+        networkStore: mocknetworkStore,
+    };
+});
 
 // Define types for our mocked modules
 type MockedTooltips = {
@@ -168,7 +174,7 @@ vi.mock("../init", () => {
     return {
         initNetwork: () => {
             // Mock implementation that directly updates mockDg
-            const svgElement = d3.select("#svg");
+            const svgElement = d3.select(DOM_IDS.SVG_ID);
             // Type casting to avoid linter errors
             const typedSvgElement = svgElement as d3.Selection<
                 Element,
@@ -228,7 +234,7 @@ vi.mock("../init", () => {
 // Now import the rest of the dependencies
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { initNetwork, resetNetworkTransform } from "../init";
-import { SVG_SCALING_MULTIPLIER } from "../../init";
+import { SVG } from "../../constants";
 
 describe("Network Initialization Module", () => {
     let svgElement: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>;
@@ -236,7 +242,7 @@ describe("Network Initialization Module", () => {
     beforeEach(() => {
         // Create a fresh SVG element for each test
         document.body.innerHTML = '<svg id="svg"></svg>';
-        svgElement = d3.select("#svg");
+        svgElement = d3.select(DOM_IDS.SVG_ID);
 
         // Reset all mocks
         vi.clearAllMocks();
@@ -323,7 +329,7 @@ describe("Network Initialization Module", () => {
 
     describe("initNetwork", () => {
         it("should create all required SVG layers", () => {
-            initNetwork();
+            initNetwork("#svg-container-fluid");
 
             expect(mocknetworkStore.layers.root).toBeTruthy();
             expect(mocknetworkStore.layers.halo).toBeTruthy();
@@ -333,7 +339,7 @@ describe("Network Initialization Module", () => {
         });
 
         it("should initialize zoom behavior", () => {
-            initNetwork();
+            initNetwork("#svg-container-fluid");
 
             expect(mocknetworkStore.zoom).toBeTruthy();
             if (mocknetworkStore.zoom) {
@@ -347,7 +353,7 @@ describe("Network Initialization Module", () => {
         });
 
         it("should call initForceLayout and initForceSliders", () => {
-            initNetwork();
+            initNetwork("#svg-container-fluid");
 
             expect(initForceLayout).toHaveBeenCalledTimes(1);
             expect(initForceSliders).toHaveBeenCalledTimes(1);
@@ -357,7 +363,7 @@ describe("Network Initialization Module", () => {
     describe("resetNetworkTransform", () => {
         beforeEach(() => {
             // Initialize network before testing resetNetworkTransform
-            initNetwork();
+            initNetwork("#svg-container-fluid");
         });
 
         it("should handle missing SVG node gracefully", () => {
@@ -376,7 +382,7 @@ describe("Network Initialization Module", () => {
     // Test zoom event handling directly with the onNetworkZoom handler
     describe("zoom behavior", () => {
         beforeEach(() => {
-            initNetwork();
+            initNetwork("#svg-container-fluid");
 
             // Mock attr method on root layer
             if (mocknetworkStore.layers.root) {

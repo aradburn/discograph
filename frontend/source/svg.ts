@@ -7,14 +7,16 @@
 
 import * as d3 from "d3";
 import { saveAs } from "file-saver";
-import { dg, networkStore, getSelectedNodeKey } from "./dg";
+import { discographManager, networkManager } from "./core/index";
 import { showMessage, clearMessages } from "./messages";
-
-interface GradientStop {
-    offset: string;
-    color: string;
-    opacity: string;
-}
+import {
+    MARKER,
+    SVG_IDS,
+    DOM_IDS,
+    GRADIENT,
+    TIMING,
+    EXPORT,
+} from "./constants";
 
 /**
  * Initializes the SVG element with basic setup
@@ -22,27 +24,61 @@ interface GradientStop {
  * - Creates SVG definitions (markers, gradients)
  */
 export const initSvg = (): void => {
+    const svgContainer = document.getElementById(DOM_IDS.SVG_CONTAINER);
+    if (!svgContainer) {
+        console.error("SVG container not found");
+        return;
+    }
+
+    // Get the SVG element
+    const svgElement = document.getElementById(DOM_IDS.SVG_ID);
+    if (svgElement) {
+        console.debug("SVG element already exists");
+        return;
+    }
+
+    const svgSelection = d3.select(DOM_IDS.SVG_CONTAINER_ID);
+
+    // Create the SVG canvas
+    svgSelection.append("svg").attr("id", DOM_IDS.SVG);
+
     // Setup window dimensions on SVG element
-    setSvgSize();
+    setSvgSize(DOM_IDS.SVG_ID);
 
     // Setup SVG common definitions
-    setupSvgDefs();
+    setupSvgDefs(DOM_IDS.SVG_ID);
 };
 
 /**
  * Sets the size and viewport attributes of the main SVG element
- * Uses global dg.dimensions and dg.svg_dimensions for sizing
+ * Uses global discographManager.dimensions and discographManager.svgDimensions for sizing
  */
-export const setSvgSize = (): void => {
-    const [width, height] = dg.dimensions;
-    const [svgWidth, svgHeight] = dg.svg_dimensions;
+export const setSvgSize = (svgSelector: string): void => {
+    try {
+        const [width, height] = discographManager.dimensions;
+        const [svgWidth, svgHeight] = discographManager.svgDimensions;
 
-    // Setup window dimensions on SVG element
-    d3.select("#svg")
-        .attr("width", String(width))
-        .attr("height", String(height))
-        .attr("viewBox", `0 0 ${svgWidth} ${svgHeight}`)
-        .attr("preserveAspectRatio", "none");
+        // Get the SVG element
+        const svgSelection = d3.select(svgSelector);
+
+        // Check if we have a valid selection before setting attributes
+        if (svgSelection.empty()) {
+            console.warn("SVG element or attr function not found");
+            return;
+        }
+
+        console.log("Set SVG dim: ", width, height);
+        console.log("Set SVG size: ", svgWidth, svgHeight);
+
+        // Setup window dimensions on SVG element
+        svgSelection
+            .attr("width", String(width))
+            .attr("height", String(height))
+            .attr("viewBox", `0 0 ${svgWidth} ${svgHeight}`)
+            .attr("preserveAspectRatio", "none");
+    } catch (err) {
+        console.error("Error setting SVG size:", err);
+    }
 };
 
 /**
@@ -51,61 +87,67 @@ export const setSvgSize = (): void => {
  * - Aggregate marker for relationship indicators
  * - Radial gradient for visual effects
  */
-export const setupSvgDefs = (): void => {
-    const defs = d3.select("#svg").append("defs");
+export const setupSvgDefs = (svgSelector: string): void => {
+    try {
+        // Get the SVG element
+        const svgSelection = d3.select(svgSelector);
 
-    // ARROWHEAD
-    defs.append("marker")
-        .attr("id", "arrowhead")
-        .attr("viewBox", "-5 -5 10 10")
-        .attr("refX", 4)
-        .attr("refY", 0)
-        .attr("markerWidth", 5)
-        .attr("markerHeight", 5)
-        .attr("markerUnits", "strokeWidth")
-        .attr("orient", "auto")
-        .append("path")
-        .attr("d", "M 0,0 m -5,-5 L 5,0 L -5,5 L -2.5,0 L -5,-5 Z")
-        .attr("stroke-linecap", "round")
-        .attr("stroke-linejoin", "round");
+        // Check if we have a valid selection before setting attributes
+        if (svgSelection.empty()) {
+            console.warn("SVG element or append function not found");
+            return;
+        }
 
-    // AGGREGATE
-    defs.append("marker")
-        .attr("id", "aggregate")
-        .attr("viewBox", "-5 -5 10 10")
-        .attr("refX", 5)
-        .attr("refY", 0)
-        .attr("markerWidth", 5)
-        .attr("markerHeight", 5)
-        .attr("markerUnits", "strokeWidth")
-        .attr("orient", "auto")
-        .append("path")
-        .attr("d", "M 0,0 m 5,0 L 0,-3 L -5,0 L 0,3 L 5,0 Z")
-        .attr("fill", "#fff")
-        .attr("stroke", "#000")
-        .attr("stroke-linecap", "round")
-        .attr("stroke-linejoin", "round")
-        .attr("stroke-width", 1.5);
+        const defs = svgSelection.append("defs");
 
-    // RADIAL GRADIENT
-    const gradient = defs
-        .append("radialGradient")
-        .attr("id", "radial-gradient");
+        // ARROWHEAD
+        defs.append("marker")
+            .attr("id", SVG_IDS.ARROWHEAD)
+            .attr("viewBox", MARKER.VIEWBOX)
+            .attr("refX", MARKER.ARROWHEAD_REFX)
+            .attr("refY", MARKER.REFY)
+            .attr("markerWidth", MARKER.WIDTH)
+            .attr("markerHeight", MARKER.HEIGHT)
+            .attr("markerUnits", "strokeWidth")
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M 0,0 m -5,-5 L 5,0 L -5,5 L -2.5,0 L -5,-5 Z")
+            .attr("stroke-linecap", "round")
+            .attr("stroke-linejoin", "round");
 
-    const gradientStops: GradientStop[] = [
-        { offset: "0%", color: "#333", opacity: "1.0" },
-        { offset: "50%", color: "#333", opacity: "0.333" },
-        { offset: "75%", color: "#333", opacity: "0.111" },
-        { offset: "100%", color: "#333", opacity: "0.0" },
-    ];
+        // AGGREGATE
+        defs.append("marker")
+            .attr("id", SVG_IDS.AGGREGATE)
+            .attr("viewBox", MARKER.VIEWBOX)
+            .attr("refX", MARKER.AGGREGATE_REFX)
+            .attr("refY", MARKER.REFY)
+            .attr("markerWidth", MARKER.WIDTH)
+            .attr("markerHeight", MARKER.HEIGHT)
+            .attr("markerUnits", "strokeWidth")
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M 0,0 m 5,0 L 0,-3 L -5,0 L 0,3 L 5,0 Z")
+            .attr("fill", "#fff")
+            .attr("stroke", "#000")
+            .attr("stroke-linecap", "round")
+            .attr("stroke-linejoin", "round")
+            .attr("stroke-width", MARKER.STROKE_WIDTH);
 
-    gradientStops.forEach(({ offset, color, opacity }) => {
-        gradient
-            .append("stop")
-            .attr("offset", offset)
-            .attr("stop-color", color)
-            .attr("stop-opacity", opacity);
-    });
+        // RADIAL GRADIENT
+        const gradient = defs
+            .append("radialGradient")
+            .attr("id", SVG_IDS.RADIAL_GRADIENT);
+
+        GRADIENT.STOPS.forEach(({ offset, opacity }) => {
+            gradient
+                .append("stop")
+                .attr("offset", offset)
+                .attr("stop-color", GRADIENT.COLOR)
+                .attr("stop-opacity", opacity);
+        });
+    } catch (err) {
+        console.error("Error setting up SVG definitions:", err);
+    }
 };
 
 /**
@@ -115,14 +157,40 @@ export const setupSvgDefs = (): void => {
  */
 export const printSvg = (width: number, height: number): void => {
     showMessage("info", "Saving image to disk, please wait...");
-    const svgNode = d3.select("#svg").node() as SVGElement | null;
+    const svgNode = d3.select(DOM_IDS.SVG_ID).node() as SVGElement | null;
 
     if (!svgNode) {
         throw new Error("SVG element not found");
     }
 
+    // Get the SVG string
     const svgString = getSvgString(svgNode);
-    svgString2Image(svgString, 2 * width, 2 * height, "png", saveBlob);
+
+    // Check if selected node exists
+    const selectedNodeKey = discographManager.selectedNodeKey;
+    if (selectedNodeKey && !networkManager.data.nodeMap.has(selectedNodeKey)) {
+        throw new Error("Selected node not found");
+    }
+
+    try {
+        svgString2Image(
+            svgString,
+            EXPORT.SCALE_FACTOR * width,
+            EXPORT.SCALE_FACTOR * height,
+            "png",
+            (blob: Blob | null, filesize: number) => {
+                if (!blob) {
+                    throw new Error("Failed to create image blob");
+                }
+                saveBlob(blob, filesize);
+            },
+        );
+    } catch (error) {
+        if (error instanceof Error) {
+            throw error;
+        }
+        throw new Error("Failed to create image blob");
+    }
 };
 
 /**
@@ -131,8 +199,8 @@ export const printSvg = (width: number, height: number): void => {
  * @param filesize - The size of the file
  */
 function saveBlob(dataBlob: Blob, _filesize: number): void {
-    const entityKey = getSelectedNodeKey();
-    const node = networkStore.data.nodeMap.get(entityKey);
+    const entityKey = discographManager.selectedNodeKey;
+    const node = entityKey ? networkManager.data.nodeMap.get(entityKey) : null;
     if (!node) {
         throw new Error("Selected node not found");
     }
@@ -140,9 +208,9 @@ function saveBlob(dataBlob: Blob, _filesize: number): void {
     const filename = `Discograph - ${node.name}.png`;
     saveAs(dataBlob, filename);
 
-    clearMessages(10);
+    clearMessages(TIMING.QUICK_MESSAGE_CLEAR);
     showMessage("success", "Saving image complete");
-    clearMessages(10000);
+    clearMessages(TIMING.LONG_MESSAGE_CLEAR);
 }
 
 /**

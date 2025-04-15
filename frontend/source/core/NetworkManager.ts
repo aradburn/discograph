@@ -1,0 +1,368 @@
+import * as d3 from "d3";
+import type {
+    NodeKey,
+    LinkKey,
+    SimData,
+    SimNode,
+    SimLink,
+    NetworkData,
+} from "../network/data";
+import { convertNetworkDataToSimData } from "../network/data";
+import { RequestNetworkEvent } from "../network/events";
+
+/**
+ * SVG layer containers for network visualization
+ */
+interface NetworkLayers {
+    root: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null;
+    halo: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null;
+    text: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null;
+    node: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null;
+    link: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null;
+}
+
+/**
+ * NetworkManager configuration options
+ */
+export interface NetworkManagerConfig {
+    /** Initial network data */
+    initialData?: SimData;
+    /** Skip event listener setup (mainly for testing) */
+    skipEventSetup?: boolean;
+}
+
+/**
+ * Manages the network visualization and state
+ */
+export class NetworkManager {
+    /** Force layout simulation */
+    private _forceLayout: d3.Simulation<SimNode, SimLink>;
+    /** Flag indicating if the network is currently being updated */
+    private _isUpdating: boolean;
+    /** Flag indicating if the force layout is currently running */
+    private _isRunningLayout: boolean;
+    /** Counter for animation/simulation ticks */
+    private _tick: number;
+    /** Coordinates [x, y] for placing new nodes */
+    private _newNodeCoords: [number, number];
+    /** Zoom behavior */
+    private _zoom: d3.ZoomBehavior<SVGGElement, unknown> | null;
+    /** Core data storage for the network */
+    private _data: SimData;
+    /** SVG layer containers for different visual elements */
+    private _layers: NetworkLayers;
+    /** Bound event handler for request network events */
+    private _boundRequestNetworkHandler: (this: Window, ev: Event) => void;
+    /** Skip event setup flag (for testing) */
+    private _skipEventSetup: boolean;
+    /** Currently selected node key */
+    private _selectedNodeKey: NodeKey | undefined;
+
+    /**
+     * Creates a new NetworkManager instance
+     * @param {NetworkManagerConfig} config - Configuration options
+     */
+    constructor(config: NetworkManagerConfig = {}) {
+        this._forceLayout = null;
+        this._isUpdating = false;
+        this._isRunningLayout = false;
+        this._tick = 0;
+        this._newNodeCoords = [0, 0];
+        this._zoom = null;
+        this._data = config.initialData || this._createEmptyData();
+        this._layers = {
+            root: null,
+            halo: null,
+            text: null,
+            node: null,
+            link: null,
+        };
+        this._skipEventSetup = config.skipEventSetup || false;
+        this._selectedNodeKey = undefined;
+
+        // Bind event handlers to this instance
+        this._boundRequestNetworkHandler = this._handleRequestNetwork.bind(
+            this,
+        ) as (this: Window, ev: Event) => void;
+
+        // Set up event listeners
+        if (!this._skipEventSetup) {
+            this._setupEventListeners();
+        }
+    }
+
+    /**
+     * Gets the force layout simulation
+     * @returns {d3.Simulation<SimNode, SimLink>} The force layout
+     */
+    get forceLayout(): d3.Simulation<SimNode, SimLink> {
+        return this._forceLayout;
+    }
+
+    /**
+     * Sets the force layout simulation
+     * @param {d3.Simulation<SimNode, SimLink>} layout - The new force layout
+     */
+    set forceLayout(layout: d3.Simulation<SimNode, SimLink>) {
+        this._forceLayout = layout;
+    }
+
+    /**
+     * Gets whether the network is updating
+     * @returns {boolean} Whether the network is updating
+     */
+    get isUpdating(): boolean {
+        return this._isUpdating;
+    }
+
+    /**
+     * Sets whether the network is updating
+     * @param {boolean} value - The new updating state
+     */
+    set isUpdating(value: boolean) {
+        this._isUpdating = value;
+    }
+
+    /**
+     * Gets whether the force layout is running
+     * @returns {boolean} Whether the force layout is running
+     */
+    get isRunningLayout(): boolean {
+        return this._isRunningLayout;
+    }
+
+    /**
+     * Sets whether the force layout is running
+     * @param {boolean} value - The new running state
+     */
+    set isRunningLayout(value: boolean) {
+        this._isRunningLayout = value;
+    }
+
+    /**
+     * Gets the current tick count
+     * @returns {number} The tick count
+     */
+    get tick(): number {
+        return this._tick;
+    }
+
+    /**
+     * Sets the current tick count
+     * @param {number} value - The new tick count
+     */
+    set tick(value: number) {
+        this._tick = value;
+    }
+
+    /**
+     * Gets the coordinates for placing new nodes
+     * @returns {[number, number]} The coordinates [x, y]
+     */
+    get newNodeCoords(): [number, number] {
+        return this._newNodeCoords;
+    }
+
+    /**
+     * Sets the coordinates for placing new nodes
+     * @param {[number, number]} coords - The new coordinates [x, y]
+     */
+    set newNodeCoords(coords: [number, number]) {
+        this._newNodeCoords = coords;
+    }
+
+    /**
+     * Gets the zoom behavior
+     * @returns {d3.ZoomBehavior<SVGGElement, unknown> | null} The zoom behavior
+     */
+    get zoom(): d3.ZoomBehavior<SVGGElement, unknown> | null {
+        return this._zoom;
+    }
+
+    /**
+     * Sets the zoom behavior
+     * @param {d3.ZoomBehavior<SVGGElement, unknown> | null} zoom - The new zoom behavior
+     */
+    set zoom(zoom: d3.ZoomBehavior<SVGGElement, unknown> | null) {
+        this._zoom = zoom;
+    }
+
+    /**
+     * Gets the network data
+     * @returns {SimData} The network data
+     */
+    get data(): SimData {
+        return this._data;
+    }
+
+    /**
+     * Sets the network data
+     * @param {SimData} data - The new network data
+     */
+    set data(data: SimData) {
+        this._data = data;
+    }
+
+    /**
+     * Gets the network layers
+     * @returns {NetworkLayers} The network layers
+     */
+    get layers(): NetworkLayers {
+        return this._layers;
+    }
+
+    /**
+     * Gets the currently selected node key
+     * @returns {NodeKey | undefined} The selected node key, or undefined if no node is selected
+     */
+    get selectedNodeKey(): NodeKey | undefined {
+        return this._selectedNodeKey;
+    }
+
+    /**
+     * Sets the currently selected node key
+     * @param {NodeKey | undefined} key - The new selected node key
+     */
+    set selectedNodeKey(key: NodeKey | undefined) {
+        this._selectedNodeKey = key;
+    }
+
+    /**
+     * Sets up a new network visualization
+     * @param {NetworkData} networkData - The network data to visualize
+     */
+    setupNetwork(networkData: NetworkData): void {
+        this._data = convertNetworkDataToSimData(networkData);
+        this._isUpdating = false;
+
+        // Initialize or update force layout with new data
+        this._setupForceLayout();
+    }
+
+    /**
+     * Initializes or updates the force layout simulation
+     */
+    private _setupForceLayout(): void {
+        // This would contain the force layout initialization code
+        // Placeholder for the actual implementation
+        if (this._forceLayout) {
+            this._forceLayout.stop();
+        }
+
+        // Create a new force simulation
+        this._forceLayout = d3
+            .forceSimulation<SimNode, SimLink>()
+            .nodes(Array.from(this._data.nodeMap.values()));
+
+        // Additional force layout configuration would go here
+    }
+
+    /**
+     * Updates the network visualization
+     */
+    updateVisualization(): void {
+        if (!this._layers.root) {
+            console.warn("Cannot update visualization: layers not initialized");
+            return;
+        }
+
+        // This would update the network visualization based on the current data
+        // Placeholder for the actual implementation
+    }
+
+    /**
+     * Sets up event listeners for network-related events
+     */
+    private _setupEventListeners(): void {
+        try {
+            // Adding a try-catch to handle tests where RequestNetworkEvent might not be properly mocked
+            const eventName =
+                RequestNetworkEvent && RequestNetworkEvent.EVENT_NAME
+                    ? RequestNetworkEvent.EVENT_NAME
+                    : "discograph:request-network";
+
+            window.addEventListener(
+                eventName,
+                this._boundRequestNetworkHandler,
+            );
+        } catch (error) {
+            console.warn("Failed to set up network event listeners:", error);
+        }
+    }
+
+    /**
+     * Handles the request network event
+     * @param {RequestNetworkEvent} event - The request network event
+     */
+    private _handleRequestNetwork(event: RequestNetworkEvent): void {
+        // This would handle a request to load and display a network
+        console.log(
+            `Request to load network for entity: ${event.detail.entityKey}`,
+        );
+        // Actual implementation would fetch data and call setupNetwork
+    }
+
+    /**
+     * Creates empty network data
+     * @returns {SimData} Empty network data
+     */
+    private _createEmptyData(): SimData {
+        const emptyCenter = {
+            x: 0,
+            y: 0,
+            type: "artist",
+            key: "",
+            name: "",
+            size: 0,
+            missing: 0,
+            hasMissing: false,
+            distance: 0,
+            radius: 0,
+            lastClickTime: 0,
+            lastTouchTime: 0,
+            links: [],
+            cluster: 0,
+            fixed: false,
+            isIntermediate: false,
+        };
+
+        return {
+            center: emptyCenter,
+            nodeMap: new Map<NodeKey, SimNode>(),
+            linkMap: new Map<LinkKey, SimLink>(),
+            maxDistance: 0,
+        } as SimData;
+    }
+
+    /**
+     * Cleans up resources used by the network manager
+     */
+    dispose(): void {
+        try {
+            // Remove event listeners (also with error handling for tests)
+            const eventName =
+                RequestNetworkEvent && RequestNetworkEvent.EVENT_NAME
+                    ? RequestNetworkEvent.EVENT_NAME
+                    : "discograph:request-network";
+
+            window.removeEventListener(
+                eventName,
+                this._boundRequestNetworkHandler,
+            );
+        } catch (error) {
+            console.warn("Failed to clean up network event listeners:", error);
+        }
+
+        // Stop force layout
+        if (this._forceLayout) {
+            this._forceLayout.stop();
+        }
+
+        // Clear data
+        this._data.nodeMap.clear();
+        this._data.linkMap.clear();
+    }
+}
+
+// Create the singleton instance
+export const networkManager = new NetworkManager();
