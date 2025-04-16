@@ -1,20 +1,18 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
-// Set up window.machina before any other imports
+// Import Vitest first
 import { vi, type Mock } from "vitest";
 import { DOM_IDS } from "../../constants";
 
 // Import types from FSM module early to avoid circular references
-import type { FSMInstance, FSMStateType } from "../../fsm";
+import type { FSMInstance } from "../../fsm";
 import type { APINetworkDataResponse } from "../../api";
 
-// Declare the machina type to fix TypeScript errors
+// Define a concrete FSM state type for testing
+type MockFSMStateType = "uninitialized" | "error" | "loaded" | "loading";
+
+// Declare needed global types
 declare global {
     interface Window {
-        machina: {
-            Fsm: {
-                extend: Mock;
-            };
-        };
         dgNetwork?: APINetworkDataResponse;
         addEventListener: typeof globalThis.addEventListener;
         dispatchEvent: typeof globalThis.dispatchEvent;
@@ -23,23 +21,9 @@ declare global {
     }
 }
 
-// Create the machina object and add it to window
-const machina = {
-    Fsm: {
-        extend: vi.fn().mockImplementation((config) => {
-            return class MockFsm {
-                constructor() {
-                    return mockFsmInstance;
-                }
-            };
-        }),
-    },
-};
-
-// Make machina available in the global scope
+// Set up window with needed properties
 Object.defineProperty(global, "window", {
     value: {
-        machina,
         addEventListener: vi.fn(),
         dispatchEvent: vi.fn(),
         history: {
@@ -57,8 +41,29 @@ import { hideAllTooltips } from "../tooltips";
 import { initForceLayout, initForceSliders } from "../forceLayout";
 
 // Create mock FSM instance
-const mockFsmInstance: FSMInstance = {
-    state: "uninitialized" as FSMStateType,
+// Define a type that only includes the properties we're mocking
+type MockFSM = {
+    state: MockFSMStateType;
+    handle: ReturnType<typeof vi.fn>;
+    handleError: ReturnType<typeof vi.fn>;
+    showNetwork: ReturnType<typeof vi.fn>;
+    showRadial: ReturnType<typeof vi.fn>;
+    transition: ReturnType<typeof vi.fn>;
+    requestNetwork: ReturnType<typeof vi.fn>;
+    requestRandom: ReturnType<typeof vi.fn>;
+    requestRadial: ReturnType<typeof vi.fn>;
+    selectEntity: ReturnType<typeof vi.fn>;
+    loadInlineData: ReturnType<typeof vi.fn>;
+    toggleRadial: ReturnType<typeof vi.fn>;
+    toggleNetwork: ReturnType<typeof vi.fn>;
+    toggleLoading: ReturnType<typeof vi.fn>;
+    toggleFilter: ReturnType<typeof vi.fn>;
+    pushState: ReturnType<typeof vi.fn>;
+    on: ReturnType<typeof vi.fn>;
+};
+
+const mockFsmInstance: MockFSM = {
+    state: "uninitialized",
     handle: vi.fn(),
     handleError: vi.fn(),
     showNetwork: vi.fn(),
@@ -79,9 +84,15 @@ const mockFsmInstance: FSMInstance = {
 
 // Mock the FSM module
 vi.mock("../../fsm", () => {
+    // Mock DiscographFSM class
+    const MockDiscographFSM = vi.fn().mockImplementation(() => {
+        return mockFsmInstance;
+    });
+
     return {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        DiscographFsm: machina.Fsm.extend({}),
+        DiscographFSM: MockDiscographFSM,
+        fsm: mockFsmInstance,
+        initFSM: vi.fn(),
     };
 });
 
@@ -285,20 +296,13 @@ describe("Network Initialization Module", () => {
     });
 
     describe("FSM Setup", () => {
-        it("should have properly initialized machina.Fsm mock globally", () => {
-            expect(window.machina).toBeDefined();
-            expect(window.machina.Fsm).toBeDefined();
-            expect(window.machina.Fsm.extend).toBeDefined();
-            expect(vi.isMockFunction(window.machina.Fsm.extend)).toBe(true);
+        it("should have properly mocked FSM implementation", () => {
+            // Verify the FSM is mocked correctly
+            expect(mockFsmInstance).toBeDefined();
+            expect(mockFsmInstance.state).toBe("uninitialized");
         });
 
-        it("should create FSM instance with all required methods from global mock", () => {
-            // Just call the extend method to verify it's called
-            window.machina.Fsm.extend({});
-
-            // No need to call new MockFsm() or any unsafe cast
-            // Just use mockFsmInstance directly since we know that's what the mock returns
-
+        it("should create FSM instance with all required methods", () => {
             // Verify instance has all required methods
             const requiredMethods = [
                 "handle",
@@ -319,31 +323,10 @@ describe("Network Initialization Module", () => {
                 "on",
             ];
 
-            expect(mockFsmInstance.state).toBe("uninitialized");
-
             requiredMethods.forEach((method) => {
                 expect(mockFsmInstance[method]).toBeDefined();
                 expect(vi.isMockFunction(mockFsmInstance[method])).toBe(true);
             });
-        });
-
-        it("should properly handle FSM extend method calls", () => {
-            const mockConfig = {
-                initialState: "test",
-                states: {
-                    test: {
-                        _onEnter: vi.fn(),
-                    },
-                },
-            };
-
-            // Just call extend to verify it's called with the right config
-            window.machina.Fsm.extend(mockConfig);
-            expect(window.machina.Fsm.extend).toHaveBeenCalledWith(mockConfig);
-
-            // No need to instantiate or cast - we're testing if extend was called correctly
-            expect(mockFsmInstance).toBeDefined();
-            expect(mockFsmInstance.state).toBe("uninitialized");
         });
     });
 
