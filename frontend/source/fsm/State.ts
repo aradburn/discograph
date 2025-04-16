@@ -4,7 +4,7 @@
 
 import type { NodeKey, NetworkData } from "../network/data";
 import type { RelationsData } from "../relations";
-import type { TransitionFunction } from "./DiscographFSM";
+import type { TransitionFunction } from "./AbstractFSM";
 
 /**
  * Forward declaration of Actions interface to avoid circular imports
