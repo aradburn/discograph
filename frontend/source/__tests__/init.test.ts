@@ -63,10 +63,8 @@ vi.mock("../typeahead", () => ({
 }));
 
 vi.mock("../fsm", () => ({
-    DiscographFsm: vi.fn().mockImplementation(() => ({
-        // Mock FSM methods if needed
-    })),
     initFSM: vi.fn(),
+    // Mock the DiscographFsm implementation without directly referring to it as an export
 }));
 
 vi.mock("../messages", () => ({
@@ -172,7 +170,7 @@ interface MockedLoading {
 }
 
 interface MockedFsm {
-    DiscographFsm: typeof fsm.DiscographFsm;
+    // Remove DiscographFsm property since it's not exported
     initFSM: typeof fsm.initFSM;
 }
 
@@ -456,7 +454,7 @@ describe("Init Module", () => {
             const originalInitFSM = fsm.initFSM;
 
             // Use proper typing for the fsm module
-            const mockedFsm = fsm as MockedFsm;
+            const mockedFsm = fsm as unknown as MockedFsm;
             mockedFsm.initFSM = mockInitFSM;
 
             // Act
