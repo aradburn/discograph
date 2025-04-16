@@ -37,50 +37,16 @@ import { RequestingRandomState } from "./states/RequestingRandomState";
 import { ViewingRadialState } from "./states/ViewingRadialState";
 import { UninitializedState } from "./states/UninitializedState";
 import { debounce } from "../utils";
-import type { FSMStateType } from "./types";
-
-/**
- * Type for event data that can be passed to handlers
- */
-export type EventData =
-    | NetworkData
-    | RelationsData
-    | NetworkCenter
-    | NodeKey
-    | null;
-
-/**
- * Type for the transition function passed to states
- */
-export type TransitionFunction = (state: FSMStateType) => void;
+import {
+    AbstractFSM,
+    type EventData,
+    type TransitionFunction,
+} from "./AbstractFSM";
 
 /**
  * Implementation of the FSM using the state pattern
  */
-export class DiscographFSM implements Actions {
-    /**
-     * The current state of the FSM
-     */
-    private _state: State;
-
-    /**
-     * Map of all available states
-     */
-    private _states: Map<FSMStateType, State>;
-
-    /**
-     * The current state type
-     */
-    private _currentStateType: FSMStateType;
-
-    /**
-     * Event handlers for FSM events
-     */
-    private _eventHandlers: Map<
-        string,
-        Set<(event: string, data: EventData) => void>
-    >;
-
+export class DiscographFSM extends AbstractFSM implements Actions {
     /**
      * Handler for showNetwork event
      */
@@ -90,11 +56,10 @@ export class DiscographFSM implements Actions {
      * Create a new FSM instance
      */
     constructor() {
+        super("uninitialized");
+
         this._states = new Map();
         this._eventHandlers = new Map();
-
-        // Initialize with the uninitialized state
-        this._currentStateType = "uninitialized";
 
         // Register all states
         this.registerState("uninitialized", new UninitializedState());
@@ -113,51 +78,94 @@ export class DiscographFSM implements Actions {
         );
         this.registerState("state-viewing-radial", new ViewingRadialState());
 
-        this._state = this.getOrCreateState("uninitialized");
-
         // Initialize the FSM
         this.initialize();
     }
 
     /**
-     * Get the current state type
+     * Handle an event with optional data
      */
-    get state(): FSMStateType {
-        return this._currentStateType;
-    }
+    handle(
+        event: string,
+        data: NetworkData | RelationsData | NetworkCenter | NodeKey | null,
+        pushHistory: boolean,
+        fixed: boolean,
+    ): void {
+        console.log(
+            `Handling event ${event} in state ${this._currentStateType}`,
+            data,
+        );
 
-    /**
-     * Register a state with the FSM
-     */
-    private registerState(stateType: FSMStateType, state: State): void {
-        this._states.set(stateType, state);
-    }
+        const context: StateContext = {
+            actions: this,
+            transition: this.transition.bind(this) as TransitionFunction,
+        };
 
-    /**
-     * Get a state by type, creating a default one if it doesn't exist
-     */
-    private getOrCreateState(stateType: FSMStateType): State {
-        const state = this._states.get(stateType);
-        if (!state) {
-            console.warn(
-                `State ${stateType} not found, using uninitialized state as fallback`,
-            );
-            // Fall back to uninitialized state if requested state isn't registered
-            const fallbackState = this._states.get("uninitialized");
-            if (!fallbackState) {
-                throw new Error(
-                    "Uninitialized state not found, FSM is in an invalid state",
+        // Map events to state methods
+        switch (event) {
+            case "received-network":
+                this._state.receivedNetwork?.(
+                    context,
+                    data as NetworkData,
+                    pushHistory,
                 );
-            }
-            return fallbackState;
+                break;
+            case "received-radial":
+                this._state.receivedRadial?.(context, data as RelationsData);
+                break;
+            case "received-random":
+                this._state.receivedRandom?.(context, data as NetworkCenter);
+                break;
+            case "request-network":
+                this._state.requestNetwork?.(context, data as NodeKey);
+                break;
+            case "request-random":
+                this._state.requestRandom?.(context);
+                break;
+            case "show-network":
+                this._state.showNetwork?.(context);
+                break;
+            case "show-radial":
+                this._state.showRadial?.(context);
+                break;
+            case "select-entity":
+                this._state.selectEntity?.(context, data as NodeKey, fixed);
+                break;
+            case "errored":
+                this._state.handleError?.(context, data);
+                break;
+            default:
+                console.warn(`Unhandled event: ${event}`);
         }
-        return state;
+
+        // Emit the event
+        this.emit(event, data as EventData);
+    }
+
+    /**
+     * Create the fallback state for the FSM
+     */
+    protected createFallbackState(): State {
+        return new UninitializedState();
+    }
+
+    /**
+     * Get the fallback state for the FSM
+     */
+    protected getFallbackState(): State {
+        const fallbackState = this._states.get("uninitialized");
+        if (!fallbackState) {
+            throw new Error(
+                "Uninitialized state not found, FSM is in an invalid state",
+            );
+        }
+        return fallbackState;
     }
 
     /**
      * Initialize the FSM with event listeners
      */
-    private initialize(): void {
+    protected initialize(): void {
         // Event handlers
         window.addEventListener(FSM.EVENTS.REQUEST_NETWORK, (event: Event) => {
             if (event instanceof RequestNetworkEvent && event.detail) {
@@ -239,121 +247,6 @@ export class DiscographFSM implements Actions {
         // Initialize application state
         this.loadInlineData();
         this.toggleRadial(false);
-    }
-
-    /**
-     * Transition to a new state
-     */
-    transition(newStateType: FSMStateType): void {
-        console.log(
-            `Transitioning from ${this._currentStateType} to ${newStateType}`,
-        );
-
-        const context: StateContext = {
-            actions: this,
-            transition: this.transition.bind(this) as TransitionFunction,
-        };
-
-        // Exit the current state
-        this._state.onExit(context);
-
-        // Update state
-        this._currentStateType = newStateType;
-        this._state = this.getOrCreateState(newStateType);
-
-        // Enter the new state
-        this._state.onEnter(context);
-
-        // Emit state change event
-        this.emit("*", this._currentStateType);
-    }
-
-    /**
-     * Handle an event with optional data
-     */
-    handle(
-        event: string,
-        data: NetworkData | RelationsData | NetworkCenter | NodeKey | null,
-        pushHistory: boolean,
-        fixed: boolean,
-    ): void {
-        console.log(
-            `Handling event ${event} in state ${this._currentStateType}`,
-            data,
-        );
-
-        const context: StateContext = {
-            actions: this,
-            transition: this.transition.bind(this) as TransitionFunction,
-        };
-
-        // Map events to state methods
-        switch (event) {
-            case "received-network":
-                this._state.receivedNetwork?.(
-                    context,
-                    data as NetworkData,
-                    pushHistory,
-                );
-                break;
-            case "received-radial":
-                this._state.receivedRadial?.(context, data as RelationsData);
-                break;
-            case "received-random":
-                this._state.receivedRandom?.(context, data as NetworkCenter);
-                break;
-            case "request-network":
-                this._state.requestNetwork?.(context, data as NodeKey);
-                break;
-            case "request-random":
-                this._state.requestRandom?.(context);
-                break;
-            case "show-network":
-                this._state.showNetwork?.(context);
-                break;
-            case "show-radial":
-                this._state.showRadial?.(context);
-                break;
-            case "select-entity":
-                this._state.selectEntity?.(context, data as NodeKey, fixed);
-                break;
-            case "errored":
-                this._state.handleError?.(context, data);
-                break;
-            default:
-                console.warn(`Unhandled event: ${event}`);
-        }
-
-        // Emit the event
-        this.emit(event, data);
-    }
-
-    /**
-     * Register an event handler
-     */
-    on(event: string, handler: (event: string, data: EventData) => void): void {
-        if (!this._eventHandlers.has(event)) {
-            this._eventHandlers.set(event, new Set());
-        }
-
-        this._eventHandlers.get(event)?.add(handler);
-    }
-
-    /**
-     * Emit an event to registered handlers
-     */
-    private emit(event: string, data: EventData): void {
-        // Call handlers for the specific event
-        this._eventHandlers.get(event)?.forEach((handler) => {
-            handler(event, data);
-        });
-
-        // Call handlers for the wildcard event
-        if (event !== "*") {
-            this._eventHandlers.get("*")?.forEach((handler) => {
-                handler(event, data);
-            });
-        }
     }
 
     //
