@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ViewingRadialState } from "../ViewingRadialState";
 import type { StateContext, Actions } from "../../State";
 import type { NodeKey } from "../../../network/data";
-import type { TransitionFunction } from "../../DiscographFSM";
+import type { TransitionFunction } from "../../AbstractFSM";
 
 describe("ViewingRadialState", () => {
     let viewingRadialState: ViewingRadialState;

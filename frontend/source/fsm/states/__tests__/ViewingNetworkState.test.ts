@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ViewingNetworkState } from "../ViewingNetworkState";
 import type { StateContext, Actions } from "../../State";
 import type { NodeKey } from "../../../network/data";
-import type { TransitionFunction } from "../../DiscographFSM";
+import type { TransitionFunction } from "../../AbstractFSM";
 
 describe("ViewingNetworkState", () => {
     let viewingNetworkState: ViewingNetworkState;

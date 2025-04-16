@@ -7,7 +7,7 @@ import type {
     NetworkNode,
     NetworkLink,
 } from "../../../network/data";
-import type { TransitionFunction } from "../../DiscographFSM";
+import type { TransitionFunction } from "../../AbstractFSM";
 
 describe("UninitializedState", () => {
     let state: UninitializedState;

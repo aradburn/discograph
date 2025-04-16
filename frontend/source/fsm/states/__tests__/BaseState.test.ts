@@ -4,7 +4,7 @@ import type { StateContext, Actions } from "../../State";
 import { NodeType } from "../../../network/data";
 import type { NodeKey, NetworkData } from "../../../network/data";
 import type { RelationsData } from "../../../relations";
-import type { TransitionFunction } from "../../DiscographFSM";
+import type { TransitionFunction } from "../../AbstractFSM";
 
 // Create a concrete implementation of BaseState for testing
 class TestState extends BaseState {

@@ -8,7 +8,7 @@ import type {
     NetworkCenter,
 } from "../../../network/data";
 import type { RelationsData } from "../../../relations";
-import type { TransitionFunction } from "../../DiscographFSM";
+import type { TransitionFunction } from "../../AbstractFSM";
 
 describe("RequestingNetworkState", () => {
     let state: RequestingNetworkState;
