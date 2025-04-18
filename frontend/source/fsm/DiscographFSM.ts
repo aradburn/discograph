@@ -42,6 +42,14 @@ import {
     type EventData,
     type TransitionFunction,
 } from "./AbstractFSM";
+import type { APINetworkDataResponse } from "../api";
+
+// Extend the Window interface to include the dgNetwork property
+declare global {
+    interface Window {
+        dgNetwork?: APINetworkDataResponse;
+    }
+}
 
 /**
  * Implementation of the FSM using the state pattern
