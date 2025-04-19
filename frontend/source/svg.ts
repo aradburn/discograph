@@ -374,7 +374,7 @@ export const svgString2Image = (
     canvas.height = height;
 
     const image = new Image();
-    image.onload = function () {
+    image.onload = function (): void {
         context.clearRect(0, 0, width, height);
         context.drawImage(image, 0, 0, width, height);
 

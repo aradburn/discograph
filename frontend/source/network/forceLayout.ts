@@ -142,21 +142,21 @@ export const initForceSliders = (): void => {
         return;
     }
 
-    nodeSlider.oninput = function (this: HTMLInputElement) {
+    nodeSlider.oninput = function (this: HTMLInputElement): void {
         if (networkManager.forceLayout) {
             setupChargeForce(parseInt(this.value));
             restartForceLayout(FORCE.SIMULATION.ALPHA / 10.0);
         }
     };
 
-    linkSlider.oninput = function (this: HTMLInputElement) {
+    linkSlider.oninput = function (this: HTMLInputElement): void {
         if (networkManager.forceLayout) {
             setupLinkForce(parseInt(this.value));
             restartForceLayout(FORCE.SIMULATION.ALPHA / 5.0);
         }
     };
 
-    gravSlider.oninput = function (this: HTMLInputElement) {
+    gravSlider.oninput = function (this: HTMLInputElement): void {
         if (networkManager.forceLayout) {
             setupGravityForce(parseInt(this.value));
             restartForceLayout(FORCE.SIMULATION.ALPHA / 10.0);

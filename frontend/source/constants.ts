@@ -173,10 +173,10 @@ export const INIT = {
 // API Constants
 export const API = {
     ENDPOINTS: {
-        NETWORK: (entityType: string, entityId: string) =>
+        NETWORK: (entityType: string, entityId: string): string =>
             `/api/${entityType}/network/${entityId}`,
         RANDOM: `/api/random`,
-        RELATIONS: (entityType: string, entityId: string) =>
+        RELATIONS: (entityType: string, entityId: string): string =>
             `/api/${entityType}/relations/${entityId}`,
     },
     RANDOM_MAX: 1000000,

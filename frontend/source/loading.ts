@@ -193,7 +193,7 @@ export class Loading {
                 (_, i) =>
                     (selection.size() - i) * TIMING.ANIMATION_DELAY_MULTIPLIER,
             )
-            .attrTween("d", (d) => {
+            .attrTween("d", (d): ((t: number) => string) => {
                 const inner = d3.interpolate(
                     d.innerRadius || 0,
                     barScale(d.targetInnerRadius),
@@ -202,7 +202,7 @@ export class Loading {
                     d.outerRadius || 0,
                     barScale(d.targetOuterRadius),
                 );
-                return (t) => {
+                return (t: number): string => {
                     d.innerRadius = inner(t);
                     d.outerRadius = outer(t);
                     return this.arc(d);
@@ -221,13 +221,13 @@ export class Loading {
             .transition()
             .duration(TIMING.ANIMATION_DURATION)
             .delay(
-                (_, i) =>
+                (_, i): number =>
                     (selection.size() - i) * TIMING.ANIMATION_DELAY_MULTIPLIER,
             )
             .attrTween("d", (d) => {
                 const inner = d3.interpolate(d.innerRadius || 0, 0);
                 const outer = d3.interpolate(d.outerRadius || 0, 0);
-                return (t) => {
+                return (t): string => {
                     d.innerRadius = inner(t);
                     d.outerRadius = outer(t);
                     return this.arc(d);

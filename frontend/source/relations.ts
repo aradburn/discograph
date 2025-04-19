@@ -191,7 +191,7 @@ export function createRadialChart(): void {
         .attrTween("d", function (d) {
             console.log("attrTween d: ", d);
             const outer = d3.interpolate(0, barScale(d.count));
-            return function (t) {
+            return function (t): string {
                 console.log("attrTween t: ", t);
                 d.outerRadius = outer(t);
                 return arc(d);

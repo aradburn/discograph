@@ -202,7 +202,7 @@ export class DiscographFSM extends AbstractFSM implements Actions {
         });
 
         // Handle browser history navigation
-        window.onpopstate = (event: PopStateEvent) => {
+        window.onpopstate = (event: PopStateEvent): void => {
             const state = event?.state as { key: string } | null;
             if (state?.key) {
                 window.dispatchEvent(new RequestNetworkEvent(state.key, false));
@@ -500,9 +500,9 @@ export class DiscographFSM extends AbstractFSM implements Actions {
                 );
             }
 
-            this._showNetworkHandler = (event: Event) => {
+            this._showNetworkHandler = (e: Event): void => {
                 this.handle("show-network", null, false, false);
-                event.preventDefault();
+                e.preventDefault();
             };
 
             entityRelations.addEventListener("click", this._showNetworkHandler);
@@ -514,9 +514,9 @@ export class DiscographFSM extends AbstractFSM implements Actions {
                 );
             }
 
-            this._showNetworkHandler = (event: Event) => {
+            this._showNetworkHandler = (e: Event): void => {
                 this.handle("show-radial", null, false, false);
-                event.preventDefault();
+                e.preventDefault();
             };
 
             entityRelations.addEventListener("click", this._showNetworkHandler);

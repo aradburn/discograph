@@ -25,7 +25,7 @@ export const showMessage = (
  * @param delay - Optional delay in milliseconds before clearing messages
  */
 export const clearMessages = (delay: number = 0): void => {
-    const clear = () => {
+    const clear = (): void => {
         const container = document.querySelector(`#${MESSAGE.CONTAINER_ID}`);
         if (container) {
             container.innerHTML = "";
