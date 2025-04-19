@@ -88,6 +88,7 @@ export const initTypeahead = (): void => {
         remote: {
             url: TYPEAHEAD.API_ENDPOINT,
             wildcard: TYPEAHEAD.QUERY_WILDCARD,
+            // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
             filter: (response) => response.results,
             rateLimitBy: "debounce",
             rateLimitWait: TIMING.TYPEAHEAD_DEBOUNCE,

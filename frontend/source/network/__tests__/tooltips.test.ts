@@ -179,7 +179,6 @@ describe("Exported tooltip instances", () => {
             expect.objectContaining({
                 placement: "top",
                 customClass: "d3-link-tooltip",
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 title: expect.stringContaining("Source Node"),
             }),
         );

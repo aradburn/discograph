@@ -39,7 +39,11 @@ export default defineConfig({
         ],
         coverage: {
             provider: "istanbul",
-            exclude: ["**/js/vendor/**"],
+            include: [
+                // Code in source directories
+                "source/**/*.ts",
+            ],
+            exclude: ["public/js/vendor/**", "node_modules/**"],
         },
     },
     css: {

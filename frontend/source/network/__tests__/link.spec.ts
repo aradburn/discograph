@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 import {
     describe,
     it,
@@ -283,12 +282,10 @@ describe("Network Link Functions", () => {
 
             // Get the mouseover handler without using .find() to avoid unbound method warning
             // Just iterate through the calls manually
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
             let mouseoverHandler: Function | undefined;
             const mockCalls = (mockAppendedGroup.on as Mock).mock.calls;
             for (let i = 0; i < mockCalls.length; i++) {
                 if (mockCalls[i][0] === "mouseover") {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
                     mouseoverHandler = mockCalls[i][1] as Function;
                     break;
                 }
@@ -297,11 +294,9 @@ describe("Network Link Functions", () => {
             expect(typeof mouseoverHandler).toBe("function");
 
             // Same approach for mouseout
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
             let mouseoutHandler: Function | undefined;
             for (let i = 0; i < mockCalls.length; i++) {
                 if (mockCalls[i][0] === "mouseout") {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
                     mouseoutHandler = mockCalls[i][1] as Function;
                     break;
                 }

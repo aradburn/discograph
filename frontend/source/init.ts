@@ -11,7 +11,7 @@ import type { TreeConfig } from "./roles";
 import { debounce } from "./utils";
 import { showMessage, clearMessages } from "./messages";
 import { ResizeEvent } from "./network/events";
-import { initFSM } from "./fsm";
+import { initFSM } from "./fsm/index";
 import { SVG, DOM_IDS, INIT, FSM } from "./constants";
 
 declare global {

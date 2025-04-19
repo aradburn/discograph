@@ -63,10 +63,8 @@ vi.mock("../typeahead", () => ({
 }));
 
 vi.mock("../fsm", () => ({
-    DiscographFsm: vi.fn().mockImplementation(() => ({
-        // Mock FSM methods if needed
-    })),
     initFSM: vi.fn(),
+    // Mock the DiscographFsm implementation without directly referring to it as an export
 }));
 
 vi.mock("../messages", () => ({
@@ -172,7 +170,7 @@ interface MockedLoading {
 }
 
 interface MockedFsm {
-    DiscographFsm: typeof fsm.DiscographFsm;
+    // Remove DiscographFsm property since it's not exported
     initFSM: typeof fsm.initFSM;
 }
 
@@ -232,7 +230,6 @@ describe("Init Module", () => {
             });
 
         // Create a new DOM instance
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
         dom = new JSDOM(`
             <!DOCTYPE html>
             <html>
@@ -251,7 +248,6 @@ describe("Init Module", () => {
         `);
 
         // Set up global window with required properties
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         global.window = Object.assign(dom.window, {
             devicePixelRatio: 2,
             dgRoles: {
@@ -262,7 +258,6 @@ describe("Init Module", () => {
             addEventListener: vi.fn(),
         }) as unknown as Window & typeof globalThis;
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         global.document = dom.window.document;
 
         // Override document.getElementById to return elements with proper dimensions
@@ -456,7 +451,7 @@ describe("Init Module", () => {
             const originalInitFSM = fsm.initFSM;
 
             // Use proper typing for the fsm module
-            const mockedFsm = fsm as MockedFsm;
+            const mockedFsm = fsm as unknown as MockedFsm;
             mockedFsm.initFSM = mockInitFSM;
 
             // Act
