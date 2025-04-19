@@ -1,6 +1,12 @@
-/* eslint-disable @typescript-eslint/unbound-method */
-import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-import { type Mock } from "vitest";
+import {
+    describe,
+    it,
+    expect,
+    vi,
+    beforeEach,
+    afterEach,
+    type Mock,
+} from "vitest";
 import type * as d3 from "d3";
 import { onNodeEnter, onNodeExit, onNodeUpdate } from "../../network/node";
 import { NodeType } from "../data";

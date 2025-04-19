@@ -284,12 +284,10 @@ describe("Network Graph Event Handlers", () => {
 
             expect(mockLinkSelectAll).toHaveBeenCalledWith(".link");
             expect(mockNodeSelectAll).toHaveBeenCalledWith(".node");
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             expect(mockLinkSelectAll().classed).toHaveBeenCalledWith(
                 "noninteractive",
                 false,
             );
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             expect(mockNodeSelectAll().classed).toHaveBeenCalledWith(
                 "noninteractive",
                 false,
@@ -314,12 +312,10 @@ describe("Network Graph Event Handlers", () => {
             expect(isRunningLayoutSetter).toHaveBeenCalledWith(false);
             expect(mockLinkSelectAll).toHaveBeenCalledWith(".link");
             expect(mockNodeSelectAll).toHaveBeenCalledWith(".node");
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             expect(mockLinkSelectAll().classed).toHaveBeenCalledWith(
                 "noninteractive",
                 false,
             );
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             expect(mockNodeSelectAll().classed).toHaveBeenCalledWith(
                 "noninteractive",
                 false,
