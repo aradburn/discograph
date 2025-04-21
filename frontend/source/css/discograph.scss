@@ -39,7 +39,7 @@ body {
     --bs-tooltip-color: $dg-tooltip-color;
 }
 
-#nav-top {
+.navbar {
     background-image: linear-gradient(
         #{$dg-secondary-color}55 0%,
         #46735ebb 100%
@@ -48,7 +48,7 @@ body {
     /*    background-image: linear-gradient(#ddd, #ccc 60%);*/
 }
 
-#side-menu {
+.sidebar {
     background-color: $dg-background-color !important;
     /* background-color: #1C575A !important;*/
 }

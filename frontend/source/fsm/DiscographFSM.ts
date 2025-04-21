@@ -599,7 +599,7 @@ export class DiscographFSM extends AbstractFSM implements Actions {
             entityDetails.classed("hidden", false);
             entityDetails.style("display", "block");
 
-            d3.select("#navbar-title").text(node.name);
+            d3.selectAll(".navbar-title span").text(node.name);
 
             nodeOn.raise();
             nodeOn.classed("selected", true);
