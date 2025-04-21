@@ -49,8 +49,8 @@ The migration will follow these steps:
 -   [x] Create basic HelpModal component skeleton
 -   [x] Complete Header component with all functionality
 -   [x] Complete Sidebar component with all functionality
--   [ ] Complete HelpModal with all content
--   [ ] Create remaining modal components
+-   [x] Complete HelpModal with all content
+-   [x] Create remaining modal components
 -   [x] Create React components for typeahead search
 -   [ ] Create React components for visualization controls
 
@@ -77,14 +77,16 @@ The migration will follow these steps:
 
 ## Current Status
 
-Initial React infrastructure has been set up with basic component skeletons. The React app can be toggled on/off for testing using a button added to the UI. This allows parallel development where we can gradually migrate components to React while keeping the existing app functional.
+React infrastructure has been set up with fully functional components for the main UI elements. The application has React-based Header, Sidebar, and Modal components (Help, Welcome, and Who modals). Typeahead search functionality has been implemented using React. The React app can be toggled on/off for testing, allowing parallel development as we gradually migrate more components.
 
 ### Components Created
 
 -   App.tsx - Main container component with layout structure
--   Layout/Header.tsx - Basic header component based on nav-top.html
--   Layout/Sidebar.tsx - Basic sidebar component based on nav-side.html
--   Modals/HelpModal.tsx - Basic help modal component
+-   Layout/Header.tsx - Header component based on nav-top.html
+-   Layout/Sidebar.tsx - Sidebar component based on nav-side.html
+-   Modals/HelpModal.tsx - Help modal component with full content
+-   Modals/WelcomeModal.tsx - Welcome modal component for first-time visitors
+-   Modals/WhoModal.tsx - "Who made this" modal component
 -   Visualization/NetworkView.tsx - Basic wrapper for D3.js visualization
 -   Search/SearchInput.tsx - Search input with typeahead functionality
 -   Search/SearchResult.tsx - Component for rendering search results
@@ -92,7 +94,7 @@ Initial React infrastructure has been set up with basic component skeletons. The
 
 ### Next Steps
 
-1. Enhance existing components to include all functionality from the original templates
-2. Create the remaining modal components based on existing templates
-3. Begin integrating actual D3.js visualization code with the React wrapper
-4. Implement more comprehensive state management for the application
+1. Create React components for visualization controls
+2. Better integrate D3.js visualization code with the React wrapper
+3. Implement more comprehensive state management for the application
+4. Continue replacing jQuery event handlers with React equivalents

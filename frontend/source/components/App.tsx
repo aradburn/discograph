@@ -1,11 +1,11 @@
 /** @jsxImportSource react */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Button } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 import { Header } from "./Layout/Header.tsx";
 import { Sidebar } from "./Layout/Sidebar";
-import { HelpModal } from "./Modals/HelpModal";
+import { HelpModal, WelcomeModal, WhoModal } from "./Modals";
 import { NetworkView } from "./Visualization/NetworkView";
 
 /**
@@ -14,6 +14,21 @@ import { NetworkView } from "./Visualization/NetworkView";
  */
 const App: React.FC = (): React.ReactElement => {
     const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
+    const [showWelcomeModal, setShowWelcomeModal] = useState<boolean>(false);
+    const [showWhoModal, setShowWhoModal] = useState<boolean>(false);
+    const [isReturnVisitor, setIsReturnVisitor] = useState<boolean>(false);
+
+    // Check if this is a return visitor
+    useEffect(() => {
+        const hasVisitedBefore = localStorage.getItem("hasVisitedBefore");
+        if (!hasVisitedBefore) {
+            // First time visitor - show welcome modal
+            setShowWelcomeModal(true);
+            localStorage.setItem("hasVisitedBefore", "true");
+        } else {
+            setIsReturnVisitor(true);
+        }
+    }, []);
 
     const handleShowHelp = (): void => {
         setShowHelpModal(true);
@@ -23,10 +38,26 @@ const App: React.FC = (): React.ReactElement => {
         setShowHelpModal(false);
     };
 
+    const handleShowWelcome = (): void => {
+        setShowWelcomeModal(true);
+    };
+
+    const handleHideWelcome = (): void => {
+        setShowWelcomeModal(false);
+    };
+
+    const handleShowWho = (): void => {
+        setShowWhoModal(true);
+    };
+
+    const handleHideWho = (): void => {
+        setShowWhoModal(false);
+    };
+
     return (
         <Container fluid className="h-100 d-flex flex-column">
             <Row>
-                <Header onShowHelp={handleShowHelp} />
+                <Header onShowHelp={handleShowHelp} onShowWho={handleShowWho} />
             </Row>
 
             <Row className="flex-grow-1" style={{ minHeight: 0 }}>
@@ -46,9 +77,26 @@ const App: React.FC = (): React.ReactElement => {
                                 This is a React-based UI that will gradually
                                 replace the existing jQuery-based UI.
                             </p>
-                            <Button variant="primary" onClick={handleShowHelp}>
-                                Open Help Modal
-                            </Button>
+                            <div className="d-flex gap-2">
+                                <Button
+                                    variant="primary"
+                                    onClick={handleShowHelp}
+                                >
+                                    Open Help Modal
+                                </Button>
+                                <Button
+                                    variant="info"
+                                    onClick={handleShowWelcome}
+                                >
+                                    Open Welcome Modal
+                                </Button>
+                                <Button
+                                    variant="secondary"
+                                    onClick={handleShowWho}
+                                >
+                                    Open Who Modal
+                                </Button>
+                            </div>
                         </div>
                         <div
                             className="flex-grow-1"
@@ -61,6 +109,12 @@ const App: React.FC = (): React.ReactElement => {
             </Row>
 
             <HelpModal show={showHelpModal} onHide={handleHideHelp} />
+            <WelcomeModal
+                show={showWelcomeModal}
+                onHide={handleHideWelcome}
+                isReturnVisitor={isReturnVisitor}
+            />
+            <WhoModal show={showWhoModal} onHide={handleHideWho} />
         </Container>
     );
 };

@@ -6,13 +6,14 @@ import { SearchInput } from "../Search";
 
 interface HeaderProps {
     onShowHelp?: () => void;
+    onShowWho?: () => void;
 }
 
 /**
  * Header component that will replace the top navigation.
  * This component matches the structure of the original nav-top.html template.
  */
-export const Header: React.FC<HeaderProps> = ({ onShowHelp }) => {
+export const Header: React.FC<HeaderProps> = ({ onShowHelp, onShowWho }) => {
     const handleRandom = (): void => {
         // Placeholder for random artist functionality
         console.log("Random artist requested");
@@ -27,6 +28,7 @@ export const Header: React.FC<HeaderProps> = ({ onShowHelp }) => {
                     <div
                         className="d-flex flex-row navbar-brand px-0 py-0"
                         role="button"
+                        onClick={onShowWho}
                     >
                         <span className="text-body px-2 py-0">
                             <i

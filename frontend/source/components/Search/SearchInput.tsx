@@ -174,7 +174,6 @@ const SearchInput: React.FC<SearchInputProps> = ({
                 </div>
             </Form>
 
-
             <Overlay
                 show={showResults}
                 target={inputRef.current}
