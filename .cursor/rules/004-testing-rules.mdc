@@ -1,6 +1,6 @@
 ---
 description: Enforce general coding rules for tests to prevent common errors.
-globs:
+globs: 
 alwaysApply: true
 ---
 
@@ -18,3 +18,4 @@ alwaysApply: true
 - Fix any type errors in the code and tests, use **npm run type-check**
 - There is a frontend directory where package.json and the test files are located. Run the tests from there.
 - Fix failing tests one by one, use sequential thinking.
+- Do not run a development server, do not use **npm run dev**
