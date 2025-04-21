@@ -3,3 +3,4 @@
  */
 
 export { default as NetworkView } from "./NetworkView";
+export { default as NetworkControls } from "./NetworkControls";
