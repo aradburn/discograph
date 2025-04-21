@@ -1,32 +1,59 @@
 /** @jsxImportSource react */
-import React, { useState } from "react";
+import React from "react";
 import { Form } from "react-bootstrap";
+import { useNetwork } from "../../contexts/NetworkContext";
+import { FORCE } from "../../constants";
+import { printSvg } from "../../svg";
+import { discographManager } from "../../core";
 
 /**
  * Sidebar component that will replace the side navigation.
  * This component matches the structure of the original nav-side.html template.
  */
 export const Sidebar: React.FC = () => {
-    const [nodeStrength, setNodeStrength] = useState<number>(30);
-    const [linkStrength, setLinkStrength] = useState<number>(30);
-    const [gravityStrength, setGravityStrength] = useState<number>(30);
+    const {
+        state,
+        dispatch,
+        setupChargeForce,
+        setupLinkForce,
+        setupGravityForce,
+        restartForceLayout,
+    } = useNetwork();
 
     const handleNodeStrengthChange = (
         e: React.ChangeEvent<HTMLInputElement>,
     ): void => {
-        setNodeStrength(parseInt(e.target.value, 10));
+        const value = parseInt(e.target.value, 10);
+        dispatch({ type: "SET_NODE_STRENGTH", value });
+
+        // Update the node strength in the force layout
+        setupChargeForce(value);
+        // Restart the force layout with a reduced alpha
+        restartForceLayout(FORCE.SIMULATION.ALPHA / 10.0);
     };
 
     const handleLinkStrengthChange = (
         e: React.ChangeEvent<HTMLInputElement>,
     ): void => {
-        setLinkStrength(parseInt(e.target.value, 10));
+        const value = parseInt(e.target.value, 10);
+        dispatch({ type: "SET_LINK_STRENGTH", value });
+
+        // Update the link strength in the force layout
+        setupLinkForce(value);
+        // Restart the force layout with a reduced alpha
+        restartForceLayout(FORCE.SIMULATION.ALPHA / 5.0);
     };
 
     const handleGravityStrengthChange = (
         e: React.ChangeEvent<HTMLInputElement>,
     ): void => {
-        setGravityStrength(parseInt(e.target.value, 10));
+        const value = parseInt(e.target.value, 10);
+        dispatch({ type: "SET_GRAVITY_STRENGTH", value });
+
+        // Update the gravity strength in the force layout
+        setupGravityForce(value);
+        // Restart the force layout with a reduced alpha
+        restartForceLayout(FORCE.SIMULATION.ALPHA / 10.0);
     };
 
     const handleShowDetails = (): void => {
@@ -40,18 +67,22 @@ export const Sidebar: React.FC = () => {
     };
 
     const handlePrint = (): void => {
-        console.log("Print requested");
-        // TODO: Implement print functionality
+        printSvg(
+            discographManager.svgDimensions[0],
+            discographManager.svgDimensions[1],
+        );
     };
 
     const handleStartLayout = (): void => {
-        console.log("Start layout");
-        // TODO: Implement start layout functionality
+        if (!state.isSimulationRunning) {
+            dispatch({ type: "START_SIMULATION" });
+        }
     };
 
     const handleStopLayout = (): void => {
-        console.log("Stop layout");
-        // TODO: Implement stop layout functionality
+        if (state.isSimulationRunning) {
+            dispatch({ type: "STOP_SIMULATION" });
+        }
     };
 
     return (
@@ -90,24 +121,30 @@ export const Sidebar: React.FC = () => {
             <Form.Label htmlFor="nodeRange">Node Strength</Form.Label>
             <Form.Range
                 id="nodeRange"
-                value={nodeStrength}
+                value={state.nodeStrength}
                 onChange={handleNodeStrengthChange}
+                min={0}
+                max={100}
             />
 
             {/* Link strength slider */}
             <Form.Label htmlFor="linkRange">Link Strength</Form.Label>
             <Form.Range
                 id="linkRange"
-                value={linkStrength}
+                value={state.linkStrength}
                 onChange={handleLinkStrengthChange}
+                min={0}
+                max={100}
             />
 
             {/* Gravity strength slider */}
             <Form.Label htmlFor="gravRange">Gravity Strength</Form.Label>
             <Form.Range
                 id="gravRange"
-                value={gravityStrength}
+                value={state.gravityStrength}
                 onChange={handleGravityStrengthChange}
+                min={0}
+                max={100}
             />
 
             {/* Start layout button */}
@@ -115,6 +152,7 @@ export const Sidebar: React.FC = () => {
                 className="navbar-text px-sm-0 px-2 justify-content-end"
                 role="button"
                 onClick={handleStartLayout}
+                style={{ opacity: state.isSimulationRunning ? 0.5 : 1 }}
             >
                 <i className="fs-5 bi-lightning"></i>
                 <span className="ms-1 d-none d-sm-inline">LAYOUT</span>
@@ -125,6 +163,7 @@ export const Sidebar: React.FC = () => {
                 className="navbar-text px-sm-0 px-2 justify-content-end"
                 role="button"
                 onClick={handleStopLayout}
+                style={{ opacity: state.isSimulationRunning ? 1 : 0.5 }}
             >
                 <i className="fs-5 bi-sign-stop"></i>
                 <span className="ms-1 d-none d-sm-inline">LAYOUT</span>

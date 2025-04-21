@@ -479,7 +479,21 @@ export class DiscographFSM extends AbstractFSM implements Actions {
      * Toggle loading indicator
      */
     toggleLoading(status: boolean): void {
-        loading.toggle(status);
+        // Check if the React app is mounted using the existence of the LoadingContext
+        const reactAppMounted =
+            document.getElementById("react-app-root")?.dataset.mounted ===
+            "true";
+
+        if (reactAppMounted) {
+            // Create and dispatch custom LoadingToggleEvent for React components to listen to
+            const loadingEvent = new CustomEvent("loading:toggle", {
+                detail: { status },
+            });
+            window.dispatchEvent(loadingEvent);
+        } else {
+            // Use the original loading implementation as fallback
+            loading.toggle(status);
+        }
     }
 
     /**

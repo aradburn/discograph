@@ -3,6 +3,7 @@
 import React from "react";
 import { Navbar, Container } from "react-bootstrap";
 import { SearchInput } from "../Search";
+import { FSM } from "../../constants";
 
 interface HeaderProps {
     onShowHelp?: () => void;
@@ -14,10 +15,13 @@ interface HeaderProps {
  * This component matches the structure of the original nav-top.html template.
  */
 export const Header: React.FC<HeaderProps> = ({ onShowHelp, onShowWho }) => {
-    const handleRandom = (): void => {
-        // Placeholder for random artist functionality
-        console.log("Random artist requested");
-        // TODO: Implement random artist functionality
+    const handleRandom = (e: React.MouseEvent<HTMLDivElement>): void => {
+        e.preventDefault();
+        // Dispatch the REQUEST_RANDOM event to trigger the FSM transition
+        const event = new CustomEvent(FSM.EVENTS.REQUEST_RANDOM, {
+            bubbles: true,
+        });
+        document.dispatchEvent(event);
     };
 
     return (

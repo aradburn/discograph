@@ -12,6 +12,7 @@ export const initReactApp = (): void => {
 
     // Create a container for the React app if it doesn't exist
     let reactContainer = document.getElementById("react-app-container");
+    let reactRoot = document.getElementById("react-app-root");
 
     if (!reactContainer) {
         reactContainer = document.createElement("div");
@@ -26,8 +27,17 @@ export const initReactApp = (): void => {
         //         reactContainer.style.padding = "10px";
         //         reactContainer.style.borderRadius = "0 0 0 10px";
         //         reactContainer.style.boxShadow = "0 0 10px rgba(0, 0, 0, 0.2)";
-        reactContainer.style.display = "none"; // Hidden initially, can be toggled for testing
+        reactContainer.style.display = "block"; // Show React app by default
         document.body.appendChild(reactContainer);
+    }
+
+    if (!reactRoot) {
+        // Create a marker element to indicate React is mounted
+        reactRoot = document.createElement("div");
+        reactRoot.id = "react-app-root";
+        reactRoot.style.display = "none";
+        reactRoot.dataset.mounted = "true";
+        document.body.appendChild(reactRoot);
     }
 
     console.log("React container created");

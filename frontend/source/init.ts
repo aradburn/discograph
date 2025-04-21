@@ -5,7 +5,6 @@ import { initNetwork, resetNetworkTransform } from "./network/init";
 import { restartForceLayout, stopForceLayout } from "./network/forceLayout";
 import { initRoles } from "./roles";
 import { initSvg, printSvg } from "./svg";
-import { initTypeahead } from "./typeahead";
 import { discographManager } from "./core";
 import type { TreeConfig } from "./roles";
 import { debounce } from "./utils";
@@ -28,6 +27,15 @@ export const initWindow = (): void => {
     console.log("window devicePixelRatio: ", dpr);
 
     const svgContainer = document.getElementById(DOM_IDS.SVG_CONTAINER);
+
+    // Add null check to prevent errors when the SVG container doesn't exist
+    if (!svgContainer) {
+        console.error(
+            `SVG container element with ID "${DOM_IDS.SVG_CONTAINER}" not found. Skipping window initialization.`,
+        );
+        return;
+    }
+
     const width = svgContainer.clientWidth;
     const height = svgContainer.clientHeight;
     const svgContainerDimensions: [number, number] = [width, height];
@@ -78,7 +86,6 @@ export const initApp = (): void => {
     if (window.dgRoles) {
         initRoles(window.dgRoles);
     }
-    initTypeahead();
 
     const svgDimensions: [number, number] = [
         discographManager.svgDimensions[0],

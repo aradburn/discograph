@@ -7,7 +7,10 @@ import { Header } from "./Layout/Header.tsx";
 import { Sidebar } from "./Layout/Sidebar";
 import { HelpModal, WelcomeModal, WhoModal } from "./Modals";
 import { NetworkView } from "./Visualization/NetworkView";
+import { LoadingAnimation } from "./Visualization";
 import { NetworkProvider } from "../contexts/NetworkContext";
+import { WindowProvider } from "../contexts/WindowContext";
+import { LoadingProvider } from "../contexts/LoadingContext";
 
 /**
  * Main App component that serves as the container for the React application.
@@ -52,38 +55,46 @@ const App: React.FC = (): React.ReactElement => {
     };
 
     return (
-        <NetworkProvider>
-            <Container fluid className="h-100 d-flex flex-column">
-                <Row>
-                    <Header
-                        onShowHelp={handleShowHelp}
-                        onShowWho={handleShowWho}
-                    />
-                </Row>
+        <WindowProvider>
+            <NetworkProvider>
+                <LoadingProvider>
+                    <Container fluid className="h-100 d-flex flex-column">
+                        <Row>
+                            <Header
+                                onShowHelp={handleShowHelp}
+                                onShowWho={handleShowWho}
+                            />
+                        </Row>
 
-                <Row className="flex-grow-1" style={{ minHeight: 0 }}>
-                    <Col xs={12} sm={2} xl={1} className="h-100 p-0">
-                        <Sidebar />
-                    </Col>
-                    <Col
-                        xs={12}
-                        sm={10}
-                        xl={11}
-                        className="h-100 px-0 d-flex flex-column flex-grow-1 flex-shrink-1"
-                    >
-                        <NetworkView />
-                    </Col>
-                </Row>
+                        <Row className="flex-grow-1" style={{ minHeight: 0 }}>
+                            <Col xs={12} sm={2} xl={1} className="h-100 p-0">
+                                <Sidebar />
+                            </Col>
+                            <Col
+                                xs={12}
+                                sm={10}
+                                xl={11}
+                                className="h-100 px-0 d-flex flex-column flex-grow-1 flex-shrink-1"
+                            >
+                                <NetworkView />
+                                <LoadingAnimation />
+                            </Col>
+                        </Row>
 
-                <HelpModal show={showHelpModal} onHide={handleHideHelp} />
-                <WhoModal show={showWhoModal} onHide={handleHideWho} />
-                <WelcomeModal
-                    show={showWelcomeModal}
-                    onHide={handleHideWelcome}
-                    isReturnVisitor={isReturnVisitor}
-                />
-            </Container>
-        </NetworkProvider>
+                        <HelpModal
+                            show={showHelpModal}
+                            onHide={handleHideHelp}
+                        />
+                        <WhoModal show={showWhoModal} onHide={handleHideWho} />
+                        <WelcomeModal
+                            show={showWelcomeModal}
+                            onHide={handleHideWelcome}
+                            isReturnVisitor={isReturnVisitor}
+                        />
+                    </Container>
+                </LoadingProvider>
+            </NetworkProvider>
+        </WindowProvider>
     );
 };
 

@@ -31,30 +31,6 @@ import { initApp } from "./init";
 
 // Initialize the application when the DOM is loaded
 document.addEventListener("DOMContentLoaded", (): void => {
-    // Initialize the original app
-    initApp();
-
-    // Initialize React app using dynamic import
-    import("./components/index.tsx")
-        .then((module) => {
-            if (typeof module.initReactApp === "function") {
-                try {
-                    module.initReactApp();
-                    console.log("React app initialized successfully");
-                } catch (error) {
-                    console.error("Error initializing React app:", error);
-                }
-            } else {
-                console.error(
-                    "initReactApp function not found in module:",
-                    module,
-                );
-            }
-        })
-        .catch((error) => {
-            console.error("Failed to load React initialization module:", error);
-        });
-
     // Add a toggle button for the React container (for development)
     const toggleButton = document.createElement("button");
     toggleButton.textContent = "Toggle React UI";
@@ -70,4 +46,31 @@ document.addEventListener("DOMContentLoaded", (): void => {
         }
     };
     document.body.appendChild(toggleButton);
+
+    // Initialize React app using dynamic import
+    import("./components/index.tsx")
+        .then((module) => {
+            if (typeof module.initReactApp === "function") {
+                try {
+                    module.initReactApp();
+                    console.log("React app initialized successfully");
+
+                    // Wait a brief moment for React to render before initializing the original app
+                    setTimeout(() => {
+                        // Initialize the original app after React app is ready
+                        initApp();
+                    }, 100);
+                } catch (error) {
+                    console.error("Error initializing React app:", error);
+                }
+            } else {
+                console.error(
+                    "initReactApp function not found in module:",
+                    module,
+                );
+            }
+        })
+        .catch((error) => {
+            console.error("Failed to load React initialization module:", error);
+        });
 });
