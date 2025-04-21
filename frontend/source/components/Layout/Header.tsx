@@ -45,7 +45,7 @@ export const Header: React.FC<HeaderProps> = ({ onShowHelp, onShowWho }) => {
                             DISCOGRAPH
                         </h3>
                         <h6 className="text-body mb-0 collapse navbar-collapse">
-                            &nbsp;v2
+                            &nbsp;v2 React
                         </h6>
                     </div>
                 </div>

@@ -59,8 +59,8 @@ document.addEventListener("DOMContentLoaded", (): void => {
     const toggleButton = document.createElement("button");
     toggleButton.textContent = "Toggle React UI";
     toggleButton.style.position = "fixed";
-    toggleButton.style.bottom = "10px";
-    toggleButton.style.right = "10px";
+    toggleButton.style.top = "10px";
+    toggleButton.style.left = "10px";
     toggleButton.style.zIndex = "2000";
     toggleButton.onclick = (): void => {
         const container = document.getElementById("react-app-container");

@@ -1,6 +1,6 @@
 /** @jsxImportSource react */
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Button } from "react-bootstrap";
+import { Container, Row, Col } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 import { Header } from "./Layout/Header.tsx";
@@ -39,10 +39,6 @@ const App: React.FC = (): React.ReactElement => {
         setShowHelpModal(false);
     };
 
-    const handleShowWelcome = (): void => {
-        setShowWelcomeModal(true);
-    };
-
     const handleHideWelcome = (): void => {
         setShowWelcomeModal(false);
     };
@@ -75,30 +71,17 @@ const App: React.FC = (): React.ReactElement => {
                         xl={11}
                         className="h-100 px-0 d-flex flex-column flex-grow-1 flex-shrink-1"
                     >
-                        <div className="h-100 d-flex flex-column">
-                            <div className="p-3 bg-light">
-
-
-                            </div>
-                            <div
-                                className="flex-grow-1"
-                                style={{ overflow: "hidden" }}
-                            >
-                                <NetworkView
-                                    height="100%"
-                                    showControls={true}
-                                />
-                            </div>
-                        </div>
+                        <NetworkView />
                     </Col>
                 </Row>
 
                 <HelpModal show={showHelpModal} onHide={handleHideHelp} />
                 <WhoModal show={showWhoModal} onHide={handleHideWho} />
-                <WelcomeModal show={showWelcomeModal}
-                                  onHide={handleHideWelcome}
-                                    isReturnVisitor={isReturnVisitor}
-                                />
+                <WelcomeModal
+                    show={showWelcomeModal}
+                    onHide={handleHideWelcome}
+                    isReturnVisitor={isReturnVisitor}
+                />
             </Container>
         </NetworkProvider>
     );
