@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -13,7 +14,9 @@ export default defineConfig({
             "~bootstrap": path.resolve(__dirname, "./node_modules/bootstrap"),
             //      "bootstrap-icons/": path.resolve(__dirname, "./node_modules/bootstrap-icons/font"),
         },
+        extensions: [".js", ".jsx", ".ts", ".tsx", ".json"],
     },
+    plugins: [react()],
     build: {
         target: "es2020",
         assetsDir: "assets",
@@ -61,5 +64,15 @@ export default defineConfig({
     },
     optimizeDeps: {
         include: ["jquery", "corejs-typeahead"],
+    },
+    server: {
+        cors: true, // Allow all origins
+        headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods":
+                "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+            "Access-Control-Allow-Headers":
+                "X-Requested-With, content-type, Authorization",
+        },
     },
 });

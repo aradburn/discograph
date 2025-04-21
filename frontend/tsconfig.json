@@ -3,14 +3,17 @@
         "target": "ES2020",
         "useDefineForClassFields": true,
         "module": "ESNext",
-        "lib": ["ES2020", "DOM", "DOM.Iterable"],
+        "lib": [
+            "ES2020",
+            "DOM",
+            "DOM.Iterable"
+        ],
         "skipLibCheck": true,
         "moduleResolution": "bundler",
         "allowImportingTsExtensions": true,
         "resolveJsonModule": true,
         "isolatedModules": true,
         "noEmit": true,
-        "strict": false,
         "noUnusedLocals": false,
         "noUnusedParameters": false,
         "noFallthroughCasesInSwitch": true,
@@ -18,8 +21,17 @@
         "checkJs": false,
         "baseUrl": ".",
         "paths": {
-            "@/*": ["source/*"]
-        }
+            "@/*": [
+                "source/*"
+            ]
+        },
+        "jsx": "react-jsx",
+        "jsxImportSource": "react",
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        // Allow default imports from modules with no default export
+        "strict": false
+        // Enable all strict type checking options
     },
     "include": [
         "source/**/*.ts",
@@ -30,5 +42,8 @@
         "tests/**/*",
         "vite.config.ts"
     ],
-    "exclude": ["node_modules", "dist"]
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
 }
