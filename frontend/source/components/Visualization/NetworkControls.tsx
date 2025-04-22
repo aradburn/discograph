@@ -1,5 +1,5 @@
 /** @jsxImportSource react */
-import React from "react";
+import React, { useCallback, memo } from "react";
 import { Form, Button } from "react-bootstrap";
 import { FORCE } from "../../constants";
 import { useNetwork } from "../../contexts/NetworkContext";
@@ -12,7 +12,7 @@ interface NetworkControlsProps {
  * NetworkControls component that provides controls for the D3.js force layout visualization.
  * This component uses the NetworkContext to interact with the D3.js force layout.
  */
-export const NetworkControls: React.FC<NetworkControlsProps> = ({
+const NetworkControls: React.FC<NetworkControlsProps> = ({
     className = "",
 }) => {
     const {
@@ -24,53 +24,57 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
         restartForceLayout,
     } = useNetwork();
 
-    const handleNodeStrengthChange = (
-        e: React.ChangeEvent<HTMLInputElement>,
-    ): void => {
-        const value = parseInt(e.target.value, 10);
-        dispatch({ type: "SET_NODE_STRENGTH", value });
+    // Memoize event handlers to prevent unnecessary re-renders
+    const handleNodeStrengthChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>): void => {
+            const value = parseInt(e.target.value, 10);
+            dispatch({ type: "SET_NODE_STRENGTH", value });
 
-        // Update the node strength in the force layout
-        setupChargeForce(value);
-        // Restart the force layout with a reduced alpha
-        restartForceLayout(FORCE.SIMULATION.ALPHA / 10.0);
-    };
+            // Update the node strength in the force layout
+            setupChargeForce(value);
+            // Restart the force layout with a reduced alpha
+            restartForceLayout(FORCE.SIMULATION.ALPHA / 10.0);
+        },
+        [dispatch, setupChargeForce, restartForceLayout],
+    );
 
-    const handleLinkStrengthChange = (
-        e: React.ChangeEvent<HTMLInputElement>,
-    ): void => {
-        const value = parseInt(e.target.value, 10);
-        dispatch({ type: "SET_LINK_STRENGTH", value });
+    const handleLinkStrengthChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>): void => {
+            const value = parseInt(e.target.value, 10);
+            dispatch({ type: "SET_LINK_STRENGTH", value });
 
-        // Update the link strength in the force layout
-        setupLinkForce(value);
-        // Restart the force layout with a reduced alpha
-        restartForceLayout(FORCE.SIMULATION.ALPHA / 5.0);
-    };
+            // Update the link strength in the force layout
+            setupLinkForce(value);
+            // Restart the force layout with a reduced alpha
+            restartForceLayout(FORCE.SIMULATION.ALPHA / 5.0);
+        },
+        [dispatch, setupLinkForce, restartForceLayout],
+    );
 
-    const handleGravityStrengthChange = (
-        e: React.ChangeEvent<HTMLInputElement>,
-    ): void => {
-        const value = parseInt(e.target.value, 10);
-        dispatch({ type: "SET_GRAVITY_STRENGTH", value });
+    const handleGravityStrengthChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>): void => {
+            const value = parseInt(e.target.value, 10);
+            dispatch({ type: "SET_GRAVITY_STRENGTH", value });
 
-        // Update the gravity strength in the force layout
-        setupGravityForce(value);
-        // Restart the force layout with a reduced alpha
-        restartForceLayout(FORCE.SIMULATION.ALPHA / 10.0);
-    };
+            // Update the gravity strength in the force layout
+            setupGravityForce(value);
+            // Restart the force layout with a reduced alpha
+            restartForceLayout(FORCE.SIMULATION.ALPHA / 10.0);
+        },
+        [dispatch, setupGravityForce, restartForceLayout],
+    );
 
-    const handleStartLayout = (): void => {
+    const handleStartLayout = useCallback((): void => {
         if (!state.isSimulationRunning) {
             dispatch({ type: "START_SIMULATION" });
         }
-    };
+    }, [state.isSimulationRunning, dispatch]);
 
-    const handleStopLayout = (): void => {
+    const handleStopLayout = useCallback((): void => {
         if (state.isSimulationRunning) {
             dispatch({ type: "STOP_SIMULATION" });
         }
-    };
+    }, [state.isSimulationRunning, dispatch]);
 
     return (
         <div className={`network-controls ${className}`}>
@@ -126,4 +130,8 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
     );
 };
 
-export default NetworkControls;
+// Wrap with memo to prevent unnecessary re-renders
+export default memo(NetworkControls);
+
+// Also export the non-memoized version for cases where that might be needed
+export { NetworkControls };

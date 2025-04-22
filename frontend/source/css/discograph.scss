@@ -472,6 +472,7 @@ a {
     display: flex;
     flex-direction: column;
     gap: 0rem;
+    z-index: 1001;
 
     span {
         opacity: 1;
@@ -498,6 +499,7 @@ a {
     display: flex;
     flex-direction: column;
     gap: 0rem;
+    z-index: 1001;
 
     div {
         padding: 0px 4px;

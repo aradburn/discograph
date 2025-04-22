@@ -43,7 +43,7 @@ export class TooltipManager<T extends SimNode | SimLink> {
      * @param element - The DOM element to attach the tooltip to
      */
     show(data: T, element: Element): void {
-        this.hide(); // Clean up any existing tooltip
+        hideAllTooltips(); // Clean up any existing tooltip
 
         // Initialize new tooltip
         this.element = element;

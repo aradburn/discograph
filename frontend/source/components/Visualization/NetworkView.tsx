@@ -1,5 +1,5 @@
 /** @jsxImportSource react */
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, memo } from "react";
 import { initNetwork } from "../../network/init";
 import { initSvg } from "../../svg";
 import { networkManager } from "../../core";
@@ -11,7 +11,7 @@ import { DOM_IDS } from "../../constants";
  * This component initializes and integrates with the existing D3.js visualization.
  * It uses NetworkContext to manage the visualization state.
  */
-export const NetworkView: React.FC = () => {
+const NetworkView: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const { dispatch } = useNetwork();
     const initializedRef = useRef<boolean>(false);
@@ -70,4 +70,8 @@ export const NetworkView: React.FC = () => {
     );
 };
 
-export default NetworkView;
+// Wrap with memo to prevent unnecessary re-renders as this component rarely changes
+export default memo(NetworkView);
+
+// Also export the non-memoized version for cases where that might be needed
+export { NetworkView };
