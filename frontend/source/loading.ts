@@ -110,7 +110,7 @@ export class Loading {
             ? this.makeArray()
             : [[], [0, 0] as [number, number]];
         const pageLoadingElement = document.getElementById(
-            HTML_IDS.PAGE_LOADING,
+            SVG_IDS.LOADING_LAYER,
         );
         if (pageLoadingElement) {
             pageLoadingElement.style.display = status ? "block" : "none";

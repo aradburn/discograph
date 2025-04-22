@@ -18,9 +18,8 @@ export const SVG_IDS = {
     ARROWHEAD: "arrowhead",
     AGGREGATE: "aggregate",
     RADIAL_GRADIENT: "radial-gradient",
-    LOADING_LAYER: "loadingLayer",
-    RELATIONS_LAYER: "relationsLayer",
-    TREE_STYLES: "tree-styles",
+    LOADING_LAYER: "loading-layer",
+    RELATIONS_LAYER: "relations-layer",
 };
 
 // Constants for viewport and SVG scaling
@@ -99,16 +98,12 @@ export const TYPEAHEAD = {
     CLEAR_BUTTON_SELECTOR: "#search .clear",
 };
 
-// HTML Element Constants
-export const HTML_IDS = {
-    PAGE_LOADING: "page-loading",
-};
-
 // Tree Component Constants
 export const TREE = {
     PADDING_LEFT: 20,
     MARGIN: 5,
     ICON_SIZE: 16,
+    TREE_STYLES: "tree-styles",
     CLASS_NAMES: {
         ROOT: "tree-root",
         NODE: "tree-node",

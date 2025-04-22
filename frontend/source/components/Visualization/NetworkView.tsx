@@ -1,8 +1,10 @@
 /** @jsxImportSource react */
 import React, { useRef, useEffect } from "react";
 import { initNetwork } from "../../network/init";
+import { initSvg } from "../../svg";
 import { networkManager } from "../../core";
 import { useNetwork } from "../../contexts/NetworkContext";
+import { DOM_IDS } from "../../constants";
 
 /**
  * NetworkView component that serves as a wrapper for the D3.js visualization.
@@ -10,14 +12,13 @@ import { useNetwork } from "../../contexts/NetworkContext";
  * It uses NetworkContext to manage the visualization state.
  */
 export const NetworkView: React.FC = () => {
-    const svgRef = useRef<SVGSVGElement>(null);
-    const networkContainerId = "react-network-container";
-    const initializedRef = useRef<boolean>(false);
+    const containerRef = useRef<HTMLDivElement>(null);
     const { dispatch } = useNetwork();
+    const initializedRef = useRef<boolean>(false);
 
     useEffect(() => {
         // Initialize the D3.js visualization when the component mounts
-        if (svgRef.current && !initializedRef.current) {
+        if (containerRef.current && !initializedRef.current) {
             console.log("Initializing D3.js network visualization");
 
             // Clear any existing network elements first
@@ -25,8 +26,15 @@ export const NetworkView: React.FC = () => {
                 networkManager.layers.root.remove();
             }
 
+            // Make sure the SVG container has its required id for backward compatibility
+            if (containerRef.current.id !== DOM_IDS.SVG_CONTAINER) {
+                containerRef.current.id = DOM_IDS.SVG_CONTAINER;
+            }
+
+            initSvg();
+
             // Initialize the network with our SVG element
-            initNetwork(`#${networkContainerId}`);
+            initNetwork(`${DOM_IDS.SVG_ID}`);
 
             // Mark the network as initialized
             initializedRef.current = true;
@@ -55,7 +63,8 @@ export const NetworkView: React.FC = () => {
 
     return (
         <main
-            id="svg-container-fluid"
+            ref={containerRef}
+            id={DOM_IDS.SVG_CONTAINER}
             className="h-100 container-fluid flex-grow-1 flex-shrink-1 px-0"
         ></main>
     );

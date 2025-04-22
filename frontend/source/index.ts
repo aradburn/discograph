@@ -6,19 +6,20 @@
  */
 
 import "~bootstrap/dist/css/bootstrap.min.css";
-import "jquery";
-import jQuery from "jquery";
+// Remove jQuery imports since we're now using React
+// import "jquery";
+// import jQuery from "jquery";
 
-// Declare jQuery globals
-declare global {
-    interface Window {
-        $: typeof jQuery;
-        jQuery: typeof jQuery;
-    }
-}
+// Remove jQuery global declarations since we're phasing out jQuery
+// declare global {
+//     interface Window {
+//         $: typeof jQuery;
+//         jQuery: typeof jQuery;
+//     }
+// }
 
-// Inject jQuery into the global scope
-Object.assign(window, { $: jQuery, jQuery });
+// jQuery is no longer needed in global scope as we're using React components
+// Object.assign(window, { $: jQuery, jQuery });
 
 // Import our custom CSS
 import "./css/discograph.scss";
@@ -31,21 +32,21 @@ import { initApp } from "./init";
 
 // Initialize the application when the DOM is loaded
 document.addEventListener("DOMContentLoaded", (): void => {
-    // Add a toggle button for the React container (for development)
-    const toggleButton = document.createElement("button");
-    toggleButton.textContent = "Toggle React UI";
-    toggleButton.style.position = "fixed";
-    toggleButton.style.top = "10px";
-    toggleButton.style.left = "10px";
-    toggleButton.style.zIndex = "2000";
-    toggleButton.onclick = (): void => {
-        const container = document.getElementById("react-app-container");
-        if (container) {
-            container.style.display =
-                container.style.display === "none" ? "block" : "none";
-        }
-    };
-    document.body.appendChild(toggleButton);
+    // Remove toggle button as we're now fully using React
+    // const toggleButton = document.createElement("button");
+    // toggleButton.textContent = "Toggle React UI";
+    // toggleButton.style.position = "fixed";
+    // toggleButton.style.top = "10px";
+    // toggleButton.style.left = "10px";
+    // toggleButton.style.zIndex = "2000";
+    // toggleButton.onclick = (): void => {
+    //     const container = document.getElementById("react-app-container");
+    //     if (container) {
+    //         container.style.display =
+    //             container.style.display === "none" ? "block" : "none";
+    //     }
+    // };
+    // document.body.appendChild(toggleButton);
 
     // Initialize React app using dynamic import
     import("./components/index.tsx")
@@ -55,11 +56,9 @@ document.addEventListener("DOMContentLoaded", (): void => {
                     module.initReactApp();
                     console.log("React app initialized successfully");
 
-                    // Wait a brief moment for React to render before initializing the original app
-                    setTimeout(() => {
-                        // Initialize the original app after React app is ready
-                        initApp();
-                    }, 100);
+                    // Initialize the original app after React app is ready
+                    // to ensure compatibility during transition
+                    initApp();
                 } catch (error) {
                     console.error("Error initializing React app:", error);
                 }

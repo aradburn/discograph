@@ -39,7 +39,7 @@ export const pruneSimData = (simData: SimData): SimData => {
     //     prune(simData, 2, 10);
     //     prune(simData, 2, 100);
     //     prune(simData, 2, 100000);
-    for (var maxDist of [3, 2]) {
+    for (var maxDist of [3, 2, 1]) {
         for (var minLinks of [1, 2, 3, 4, 5, 10, 100, 1000000]) {
             simData = prune(simData, maxDist, minLinks);
         }

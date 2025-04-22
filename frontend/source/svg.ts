@@ -10,6 +10,7 @@ import { saveAs } from "file-saver";
 import { discographManager, networkManager } from "./core/index";
 import { showMessage, clearMessages } from "./messages";
 import {
+    SVG,
     MARKER,
     SVG_IDS,
     DOM_IDS,
@@ -31,7 +32,7 @@ export const initSvg = (): void => {
     }
 
     // Get the SVG element
-    const svgElement = document.getElementById(DOM_IDS.SVG_ID);
+    const svgElement = document.getElementById(DOM_IDS.SVG);
     if (svgElement) {
         console.debug("SVG element already exists");
         return;
@@ -40,6 +41,15 @@ export const initSvg = (): void => {
     const svgSelection = d3.select(DOM_IDS.SVG_CONTAINER_ID);
 
     // Create the SVG canvas
+    // Create the SVG element if it doesn't exist yet
+    //                 if (!document.getElementById(DOM_IDS.SVG)) {
+    //                     const svg = document.createElementNS(
+    //                         "http://www.w3.org/2000/svg",
+    //                         "svg",
+    //                     );
+    //                     svg.id = DOM_IDS.SVG;
+    //                     containerRef.current.appendChild(svg);
+    //                 }
     svgSelection.append("svg").attr("id", DOM_IDS.SVG);
 
     // Setup window dimensions on SVG element
@@ -55,7 +65,34 @@ export const initSvg = (): void => {
  */
 export const setSvgSize = (svgSelector: string): void => {
     try {
-        const [width, height] = discographManager.dimensions;
+        const dpr = window.devicePixelRatio || 1;
+        console.log("window devicePixelRatio: ", dpr);
+
+        const svgContainer = document.getElementById(DOM_IDS.SVG_CONTAINER);
+
+        // Add null check to prevent errors when the SVG container doesn't exist
+        if (!svgContainer) {
+            console.error(
+                `SVG container element with ID "${DOM_IDS.SVG_CONTAINER}" not found. Skipping window initialization.`,
+            );
+            return;
+        }
+
+        const width = svgContainer.clientWidth;
+        const height = svgContainer.clientHeight;
+        const svgContainerDimensions: [number, number] = [width, height];
+        const svgCanvasDimensions: [number, number] = [
+            svgContainerDimensions[0] * SVG.VIEWPORT_SIZE_MULTIPLIER * dpr,
+            svgContainerDimensions[1] * SVG.VIEWPORT_SIZE_MULTIPLIER * dpr,
+        ];
+        console.log("svgContainerDimensions: ", svgContainerDimensions);
+        console.log("svgCanvasDimensions: ", svgCanvasDimensions);
+
+        discographManager.dpr = dpr;
+        discographManager.dimensions = svgContainerDimensions;
+        discographManager.svgDimensions = svgCanvasDimensions;
+
+        //         const [width, height] = discographManager.dimensions;
         const [svgWidth, svgHeight] = discographManager.svgDimensions;
 
         // Get the SVG element

@@ -5,7 +5,6 @@ import { debounce } from "../utils";
 import { INIT, SVG } from "../constants";
 import { discographManager } from "../core";
 import { ResizeEvent } from "../network/events";
-import { initSvg } from "../svg";
 import { resetNetworkTransform } from "../network/init";
 
 // Define the state interface
@@ -84,7 +83,7 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
             setState(calculateDimensions());
 
             // Reset SVG and network visualization
-            initSvg();
+            //             initSvg();
             resetNetworkTransform();
 
             // Dispatch resize event

@@ -83,7 +83,7 @@ class TreeComponent {
         this.container.appendChild(treeRoot);
 
         // Add styles if not already present
-        if (!document.getElementById(SVG_IDS.TREE_STYLES)) {
+        if (!document.getElementById(TREE.TREE_STYLES)) {
             const styles = document.createElement("style");
             styles.id = SVG_IDS.TREE_STYLES;
             styles.textContent = `

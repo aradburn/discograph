@@ -1,7 +1,7 @@
 /* @jsxImportSource react */
 
 import React from "react";
-import { Navbar, Container } from "react-bootstrap";
+import { Navbar, Container, OverlayTrigger, Tooltip } from "react-bootstrap";
 import { SearchInput } from "../Search";
 import { FSM } from "../../constants";
 
@@ -40,14 +40,18 @@ export const Header: React.FC<HeaderProps> = ({ onShowHelp, onShowWho }) => {
                                 style={{ fontSize: "2rem" }}
                             ></i>
                         </span>
-                        <h3
-                            className="text-body flex-grow-0 px-1 py-0 mb-0 collapse navbar-collapse"
-                            title="Discograph"
-                            data-bs-toggle="tooltip"
-                            data-placement="bottom"
+                        <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                                <Tooltip id="tooltip-discograph">
+                                    Discograph
+                                </Tooltip>
+                            }
                         >
-                            DISCOGRAPH
-                        </h3>
+                            <h3 className="text-body flex-grow-0 px-1 py-0 mb-0 collapse navbar-collapse">
+                                DISCOGRAPH
+                            </h3>
+                        </OverlayTrigger>
                         <h6 className="text-body mb-0 collapse navbar-collapse">
                             &nbsp;v2 React
                         </h6>
@@ -69,32 +73,44 @@ export const Header: React.FC<HeaderProps> = ({ onShowHelp, onShowWho }) => {
 
                 {/* Random button section */}
                 <div className="navbar-text navbar-right px-2 py-0 fs-5 d-flex justify-content-center col-lg-1 col-md-1 col-sm-1 col-1 order-3 order-md-4">
-                    <div
-                        className="d-flex flex-row"
-                        title="Choose a random artist"
-                        role="button"
-                        onClick={handleRandom}
+                    <OverlayTrigger
+                        placement="bottom"
+                        overlay={
+                            <Tooltip id="tooltip-random">
+                                Choose a random artist
+                            </Tooltip>
+                        }
                     >
-                        <i className="bi bi-shuffle px-1 py-0"></i>
-                        <div className="collapse navbar-collapse px-1 py-0">
-                            RANDOM
+                        <div
+                            className="d-flex flex-row"
+                            role="button"
+                            onClick={handleRandom}
+                        >
+                            <i className="bi bi-shuffle px-1 py-0"></i>
+                            <div className="collapse navbar-collapse px-1 py-0">
+                                RANDOM
+                            </div>
                         </div>
-                    </div>
+                    </OverlayTrigger>
                 </div>
 
                 {/* Help button section */}
                 <div className="navbar-text navbar-right px-2 py-0 fs-5 d-flex justify-content-center col-lg-1 col-md-1 col-sm-1 col-1 order-5 order-md-5">
-                    <div
-                        className="d-flex flex-row"
-                        title="Help"
-                        role="button"
-                        onClick={onShowHelp}
+                    <OverlayTrigger
+                        placement="bottom"
+                        overlay={<Tooltip id="tooltip-help">Help</Tooltip>}
                     >
-                        <i className="bi bi-question-circle px-1 py-0"></i>
-                        <div className="collapse navbar-collapse px-1 py-0">
-                            HELP
+                        <div
+                            className="d-flex flex-row"
+                            role="button"
+                            onClick={onShowHelp}
+                        >
+                            <i className="bi bi-question-circle px-1 py-0"></i>
+                            <div className="collapse navbar-collapse px-1 py-0">
+                                HELP
+                            </div>
                         </div>
-                    </div>
+                    </OverlayTrigger>
                 </div>
             </Container>
         </Navbar>

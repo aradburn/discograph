@@ -2,7 +2,8 @@
 import { useRef, useEffect } from "react";
 import * as d3 from "d3";
 import { useLoading } from "../../contexts/LoadingContext";
-import { LOADING, TIMING, SVG_IDS } from "../../constants";
+import { LOADING, TIMING, SVG_IDS, DOM_IDS } from "../../constants";
+import { discographManager } from "../../core";
 
 /**
  * Interface for arc data used in the loading animation
@@ -35,11 +36,10 @@ const LoadingAnimation = (): null => {
 
     // Initialize the loading animation
     useEffect(() => {
-        const svgElement = d3.select("#svg");
+        const svgElement = d3.select(DOM_IDS.SVG_ID);
         if (!svgElement.empty() && !initializedRef.current) {
-            const svgWidth = +svgElement.attr("width");
-            const svgHeight = +svgElement.attr("height");
-
+            const svgWidth = discographManager.svgDimensions[0];
+            const svgHeight = discographManager.svgDimensions[1];
             const layer = svgElement
                 .append("g")
                 .attr("id", SVG_IDS.LOADING_LAYER)
