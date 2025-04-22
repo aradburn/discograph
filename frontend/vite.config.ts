@@ -63,7 +63,7 @@ export default defineConfig({
         },
     },
     optimizeDeps: {
-        include: ["jquery", "corejs-typeahead"],
+        include: [],
     },
     server: {
         cors: true, // Allow all origins

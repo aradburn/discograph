@@ -62,10 +62,6 @@ vi.mock("../svg", () => ({
     printSvg: vi.fn(),
 }));
 
-vi.mock("../typeahead", () => ({
-    initTypeahead: vi.fn(),
-}));
-
 vi.mock("../fsm", () => ({
     initFSM: vi.fn(),
     // Mock the DiscographFsm implementation without directly referring to it as an export
@@ -96,7 +92,6 @@ import * as roles from "../roles";
 import * as forceLayout from "../network/forceLayout";
 import * as fsm from "../fsm";
 import * as relations from "../relations";
-import * as typeahead from "../typeahead";
 import { useLoading } from "../contexts/LoadingContext";
 
 // Create a simple event stub that mimics just enough of DOM events
@@ -138,10 +133,6 @@ interface MockedRelations {
 
 interface MockedRoles {
     initRoles: typeof roles.initRoles;
-}
-
-interface MockedTypeahead {
-    initTypeahead: typeof typeahead.initTypeahead;
 }
 
 interface MockedFsm {
@@ -309,7 +300,6 @@ describe("Init Module", () => {
             const spyInitNetwork = vi.spyOn(networkInit, "initNetwork");
             const spyInitRelations = vi.spyOn(relations, "initRelations");
             const spyInitRoles = vi.spyOn(roles, "initRoles");
-            const spyInitTypeahead = vi.spyOn(typeahead, "initTypeahead");
             const mockLoading = useLoading as Mock;
             const spyInitFSM = vi.spyOn(fsm, "initFSM");
 
