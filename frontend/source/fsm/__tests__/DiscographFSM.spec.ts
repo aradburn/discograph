@@ -10,9 +10,9 @@ import type {
 import type { RelationsData } from "../../relations";
 import type { APINetworkDataResponse } from "../../api";
 import { showMessage } from "../../messages";
-import { loading } from "../../loading";
 import { fetchAPINetwork, fetchAPIRandom, fetchAPIRadial } from "../../api";
 import type { State } from "../State";
+import { AbstractFSM } from "../AbstractFSM";
 import type { AbstractFSM as _AbstractFSM } from "../AbstractFSM";
 
 // Create a type for private methods we need to spy on
@@ -38,12 +38,12 @@ vi.mock("d3", () => {
                     links: [{ key: "link1" }],
                 }),
             }),
-            text: vi.fn(),
+            text: vi.fn().mockReturnThis(),
         }),
         selectAll: vi.fn().mockReturnValue({
             transition: vi.fn().mockReturnThis(),
             duration: vi.fn().mockReturnThis(),
-            attr: vi.fn(),
+            attr: vi.fn().mockReturnThis(),
             classed: vi.fn().mockReturnThis(),
             filter: vi.fn().mockReturnThis(),
             raise: vi.fn().mockReturnThis(),
@@ -52,6 +52,8 @@ vi.mock("d3", () => {
             datum: vi.fn().mockReturnValue({
                 links: [{ key: "link1" }],
             }),
+            text: vi.fn().mockReturnThis(),
+            style: vi.fn().mockReturnThis(),
         }),
     };
 });
@@ -203,12 +205,6 @@ vi.mock("../../messages", () => ({
     showMessage: vi.fn(),
 }));
 
-vi.mock("../../loading", () => ({
-    loading: {
-        toggle: vi.fn(),
-    },
-}));
-
 vi.mock("../../utils", () => ({
     debounce: vi.fn().mockImplementation((fn) => fn as unknown),
 }));
@@ -221,6 +217,7 @@ type DocumentMock = {
     };
     title: string;
     querySelector: ReturnType<typeof vi.fn>;
+    createElement: ReturnType<typeof vi.fn>;
 };
 
 // Define the WindowMock type to avoid 'global' reference issues
@@ -243,6 +240,12 @@ const documentMock: DocumentMock = {
                 addEventListener: vi.fn(),
                 removeEventListener: vi.fn(),
             };
+        } else if (id === "react-app-root") {
+            return {
+                dataset: {
+                    mounted: "true",
+                },
+            };
         }
         return null;
     }),
@@ -252,6 +255,13 @@ const documentMock: DocumentMock = {
     title: "Discograph2",
     querySelector: vi.fn().mockReturnValue({
         value: "all",
+    }),
+    createElement: vi.fn().mockReturnValue({
+        id: "",
+        dataset: {},
+        style: {},
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
     }),
 };
 
@@ -339,12 +349,17 @@ describe("DiscographFSM", () => {
         });
 
         it("should emit events", () => {
-            const emitSpy = vi.spyOn(
-                fsm as unknown as DiscographFSMPrivate,
-                "emit",
-            );
+            // Create a mock event handler
+            const mockHandler = vi.fn();
+
+            // Register the mock handler for the request-network event
+            fsm.on("request-network", mockHandler);
+
+            // Call handle with test parameters
             fsm.handle("request-network", "artist-123", false, false);
-            expect(emitSpy).toHaveBeenCalledWith(
+
+            // Verify the handler was called with the correct event name and data
+            expect(mockHandler).toHaveBeenCalledWith(
                 "request-network",
                 "artist-123",
             );
@@ -563,16 +578,19 @@ describe("DiscographFSM", () => {
         });
 
         describe("toggleLoading", () => {
-            it("should delegate to loading.toggle", () => {
-                // Using spyOn instead of direct reference to avoid unbound method warning
-                const toggleSpy = vi.spyOn(loading, "toggle");
+            it("should dispatch a loading:toggle custom event", () => {
+                // Mock event dispatcher
+                const dispatchEventSpy = vi.spyOn(window, "dispatchEvent");
 
+                // Call the method - a react app is already mocked in document.getElementById
                 fsm.toggleLoading(true);
 
-                expect(toggleSpy).toHaveBeenCalledWith(true);
-
-                // Restore the original implementation
-                toggleSpy.mockRestore();
+                expect(dispatchEventSpy).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        type: "loading:toggle",
+                        detail: { status: true },
+                    }),
+                );
             });
         });
 

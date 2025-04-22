@@ -112,13 +112,15 @@ We have now completely migrated the typeahead search functionality from jQuery t
 3. Verified that the React SearchInput component is properly integrated with the application flow
 4. Ensured that the React implementation correctly dispatches the necessary events
 
-We have begun the process of removing jQuery dependencies:
+We have continued the process of removing jQuery dependencies:
 
 1. Removed the jQuery import and initialization from index.ts, making the React app the primary interface
 2. Removed the toggle button that was used during development to switch between the jQuery and React interfaces
 3. Migrated the Random request button handler from init.ts to the React Header component, verifying that the React implementation correctly dispatches the necessary events
 4. Removed duplicated event handlers from init.ts for layout control buttons (start/stop) and print button, as these have been fully migrated to React components in the Sidebar
 5. Migrated Bootstrap tooltips in the Header component from using data-bs-toggle attributes to using React Bootstrap's OverlayTrigger and Tooltip components
+6. Removed tooltip initialization code in init.ts for non-React elements, as all tooltips have been migrated to React Bootstrap components
+7. Removed legacy opacity settings for DOM elements in init.ts (nav-top, modal-help, side-menu-content), as these UI elements are now fully implemented in React components
 
 We have also fixed a critical issue with the SVG container initialization:
 
@@ -148,9 +150,9 @@ These changes mark important steps toward fully migrating the application to Rea
 
 ### Next Steps
 
-1. Continue removing jQuery dependencies by migrating event handlers in init.ts to React components
-2. Optimize component rendering and performance, particularly for the D3.js visualization
-3. Implement code splitting for better loading performance
-4. Remove redundant HTML templates once React components are fully functional
-5. Complete the migration of DOM manipulations to React state updates
+1. Continue removing jQuery dependencies by migrating any remaining functionality in init.ts and other files to React components
+2. Remove the remaining HTML templates once React components fully replace them
+3. Optimize component rendering and performance, particularly for the D3.js visualization
+4. Clean up the application initialization flow to be more React-centric
+5. Implement code splitting for better loading performance
 6. Update the build system to optimize the React application

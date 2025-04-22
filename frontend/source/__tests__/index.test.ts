@@ -1,14 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import jQuery from "jquery";
 
 // Mock CSS imports
 vi.mock("~bootstrap/dist/css/bootstrap.min.css", () => ({}));
 vi.mock("../css/discograph.scss", () => ({}));
-
-// Mock jQuery
-vi.mock("jquery", () => ({
-    default: vi.fn(),
-}));
 
 // Mock bootstrap
 vi.mock("bootstrap", () => ({
@@ -23,13 +17,12 @@ vi.mock("../init", () => ({
 // Import initApp after mocking
 import { initApp } from "../init";
 
-// Declare jQuery globals for tests
-declare global {
-    interface Window {
-        $: typeof jQuery;
-        jQuery: typeof jQuery;
-    }
-}
+// Mock for React app initialization
+vi.mock("../components/index.tsx", () => ({
+    initReactApp: vi.fn(),
+}));
+
+import { initReactApp } from "../components/index.tsx";
 
 describe("index.ts", () => {
     // Save original methods
@@ -38,10 +31,6 @@ describe("index.ts", () => {
     beforeEach(() => {
         // Clear all mocks
         vi.clearAllMocks();
-
-        // Reset the window object
-        delete window.$;
-        delete window.jQuery;
 
         // Mock document.addEventListener before importing the module
         vi.spyOn(document, "addEventListener").mockImplementation(vi.fn());
@@ -54,27 +43,7 @@ describe("index.ts", () => {
         vi.resetModules();
     });
 
-    it("should inject jQuery into global scope", async () => {
-        // Import the index module
-        await import("../index");
-
-        // Check that jQuery was added to window
-        expect(window.$).toBe(jQuery);
-        expect(window.jQuery).toBe(jQuery);
-    });
-
-    it("should add DOMContentLoaded event listener", async () => {
-        // Import the index module
-        await import("../index");
-
-        // Verify document.addEventListener was called
-        expect(document.addEventListener).toHaveBeenCalledWith(
-            "DOMContentLoaded",
-            initApp,
-        );
-    });
-
-    it("should initialize app when DOM content is loaded", async () => {
+    it("should initialize React app when DOM content is loaded", async () => {
         // Import the index module
         await import("../index");
 
@@ -97,7 +66,13 @@ describe("index.ts", () => {
                 domContentLoadedCallback.handleEvent(mockEvent);
             }
 
-            // Verify initApp was called
+            // Allow async import to resolve (using a zero-timeout)
+            await new Promise((resolve) => setTimeout(resolve, 0));
+
+            // Verify initReactApp was called
+            expect(initReactApp).toHaveBeenCalled();
+
+            // Verify that initApp is called after React initialization
             expect(initApp).toHaveBeenCalled();
         } else {
             // This assertion will fail if the event listener was not set up

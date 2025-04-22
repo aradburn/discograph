@@ -26,7 +26,6 @@ import { ALPHA } from "../network/forceLayout";
 import type { SimNode, SimLink } from "../network/data";
 import { RequestNetworkEvent, SelectEntityEvent } from "../network/events";
 import { showMessage } from "../messages";
-import { loading } from "../loading";
 import { FSM, INIT } from "../constants";
 import type { Actions } from "./actions/Actions";
 import type { State, StateContext } from "./State";
@@ -490,9 +489,6 @@ export class DiscographFSM extends AbstractFSM implements Actions {
                 detail: { status },
             });
             window.dispatchEvent(loadingEvent);
-        } else {
-            // Use the original loading implementation as fallback
-            loading.toggle(status);
         }
     }
 

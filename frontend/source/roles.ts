@@ -3,7 +3,7 @@
  * This file handles the initialization and management of role selection using vanilla JavaScript
  */
 
-import { SVG_IDS, TREE } from "./constants";
+import { TREE } from "./constants";
 
 /**
  * Interface for tree node state
@@ -85,7 +85,7 @@ class TreeComponent {
         // Add styles if not already present
         if (!document.getElementById(TREE.TREE_STYLES)) {
             const styles = document.createElement("style");
-            styles.id = SVG_IDS.TREE_STYLES;
+            styles.id = TREE.TREE_STYLES;
             styles.textContent = `
                 .${TREE.CLASS_NAMES.ROOT} {
                     list-style: none;
