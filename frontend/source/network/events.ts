@@ -77,6 +77,7 @@ export const onDragEnd = (
  * Shows the running indicator and enables interaction with nodes and links
  */
 export const onNetworkStart = (): void => {
+    // console.log("onNetworkStart()");
     networkManager.isRunningLayout = true;
     networkManager.tick = 0;
 
@@ -96,6 +97,7 @@ export const onNetworkStart = (): void => {
 export const onNetworkEnd = (
     event: d3.Simulation<SimNode, undefined>,
 ): void => {
+    console.log("onNetworkEnd()");
     networkManager.layers.link
         ?.selectAll(".link")
         .classed("noninteractive", false);

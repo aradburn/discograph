@@ -6,6 +6,8 @@ import {
     getHullVertices,
     onTick,
     unlabeledRoles,
+    TICK_THROTTLE,
+    HULL_THROTTLE,
 } from "../tick";
 import { hideAllTooltips } from "../tooltips";
 import type { SimNode, SimLink } from "../data";
@@ -36,7 +38,6 @@ vi.mock("../../core", () => {
         },
         dimensions: [800, 600],
         forceLayout: null,
-        isUpdating: false,
         isRunningLayout: false,
         newNodeCoords: [0, 0],
         zoom: null,
@@ -53,17 +54,28 @@ vi.mock("../../core", () => {
 // Mock d3 functions we need
 vi.mock("d3", async (importOriginal) => {
     const originalModule = await importOriginal();
+
+    const mockAttr = vi.fn().mockReturnThis();
+    const mockEach = vi.fn().mockReturnThis();
+    const mockSelectInner = vi.fn().mockReturnValue({
+        attr: mockAttr,
+    });
+
+    const mockSelectAll = vi.fn().mockReturnValue({
+        attr: mockAttr,
+        each: mockEach,
+        select: mockSelectInner,
+    });
+
+    const mockSelect = vi.fn().mockReturnValue({
+        selectAll: mockSelectAll,
+        attr: mockAttr,
+        each: mockEach,
+    });
+
     return {
         ...(originalModule as object),
-        select: vi.fn().mockReturnValue({
-            selectAll: vi.fn().mockReturnValue({
-                attr: vi.fn().mockReturnValue({}),
-                each: vi.fn().mockReturnValue({}),
-                select: vi.fn().mockReturnValue({
-                    attr: vi.fn().mockReturnValue({}),
-                }),
-            }),
-        }) as unknown as typeof d3.select,
+        select: mockSelect as unknown as typeof d3.select,
         polygonHull: vi
             .fn()
             .mockImplementation((points: Array<[number, number]>) => {
@@ -158,6 +170,13 @@ describe("Network Visualization Functions", () => {
         let mockSimulation: d3.Simulation<SimNode, undefined>;
         const testNodes: SimNode[] = [];
 
+        // Create mock functions for each layer selection
+        const mockEach = vi.fn();
+        const mockAttr = vi.fn();
+        const mockSelectPath = vi.fn().mockReturnValue({
+            attr: mockAttr,
+        });
+
         beforeEach(() => {
             mockSimulation = {
                 alpha: () => 0.5,
@@ -171,6 +190,44 @@ describe("Network Visualization Functions", () => {
 
             // Reset network manager state
             networkManager.tick = 0;
+
+            // Create link layer mock with chainable methods
+            networkManager.layers.link = {
+                selectAll: vi.fn().mockReturnValue({
+                    each: mockEach,
+                }),
+            } as any;
+
+            // Create halo layer mock with chainable methods
+            networkManager.layers.halo = {
+                selectAll: vi.fn().mockImplementation((selector) => {
+                    if (selector === ".hull") {
+                        return {
+                            select: mockSelectPath,
+                        };
+                    }
+                    return {
+                        attr: mockAttr,
+                    };
+                }),
+            } as any;
+
+            // Create node layer mock with chainable methods
+            networkManager.layers.node = {
+                selectAll: vi.fn().mockReturnValue({
+                    attr: mockAttr,
+                }),
+            } as any;
+
+            // Create text layer mock with chainable methods
+            networkManager.layers.text = {
+                selectAll: vi.fn().mockReturnValue({
+                    attr: mockAttr,
+                }),
+            } as any;
+
+            // Clear any previous mock calls
+            vi.clearAllMocks();
         });
 
         afterEach(() => {
@@ -182,9 +239,50 @@ describe("Network Visualization Functions", () => {
             expect(networkManager.tick).toBe(1);
         });
 
-        it("should call hideAllTooltips", () => {
+        it("should call hideAllTooltips when update is needed", () => {
+            // Set tick to ensure DOM update
+            networkManager.tick = TICK_THROTTLE - 1;
+
             onTick(mockSimulation);
             expect(hideAllTooltips).toHaveBeenCalled();
+        });
+
+        it("should only update DOM elements on throttled ticks", () => {
+            // Set tick to just before a throttled tick
+            networkManager.tick = TICK_THROTTLE - 1;
+
+            onTick(mockSimulation);
+            expect(networkManager.tick).toBe(TICK_THROTTLE);
+            expect(networkManager.layers.link.selectAll).toHaveBeenCalledWith(
+                ".link",
+            );
+            expect(networkManager.layers.halo.selectAll).toHaveBeenCalledWith(
+                ".node",
+            );
+            expect(hideAllTooltips).toHaveBeenCalled();
+
+            // Reset mocks
+            vi.clearAllMocks();
+
+            // Set tick to non-throttled position
+            networkManager.tick = TICK_THROTTLE + 1;
+
+            onTick(mockSimulation);
+            expect(networkManager.tick).toBe(TICK_THROTTLE + 2);
+            expect(networkManager.layers.link.selectAll).not.toHaveBeenCalled();
+            expect(hideAllTooltips).not.toHaveBeenCalled();
+        });
+
+        it("should only update hulls on their specific throttle", () => {
+            // Set tick to just before a hull throttled tick
+            networkManager.tick = HULL_THROTTLE - 1;
+
+            onTick(mockSimulation);
+            expect(networkManager.tick).toBe(HULL_THROTTLE);
+            expect(networkManager.layers.halo.selectAll).toHaveBeenCalledWith(
+                ".hull",
+            );
+            expect(mockSelectPath).toHaveBeenCalledWith("path");
         });
 
         it("should center the main node if it exists and is not fixed", () => {
@@ -235,7 +333,9 @@ describe("Network Visualization Functions", () => {
                 isIntermediate: false,
             };
             networkManager.data.nodeMap.set("center", centerNode);
-            discographManager.svgDimensions = [800, 600];
+
+            // Set tick to throttled value to ensure processing
+            networkManager.tick = TICK_THROTTLE - 1;
 
             onTick(mockSimulation);
 
@@ -292,7 +392,9 @@ describe("Network Visualization Functions", () => {
                 isIntermediate: false,
             };
             networkManager.data.nodeMap.set("center", centerNode);
-            discographManager.svgDimensions = [800, 600];
+
+            // Set tick to throttled value to ensure processing
+            networkManager.tick = TICK_THROTTLE - 1;
 
             onTick(mockSimulation);
 

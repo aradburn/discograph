@@ -38,7 +38,7 @@ const NetworkView: React.FC = () => {
 
             // Mark the network as initialized
             initializedRef.current = true;
-            dispatch({ type: "SET_INITIALIZED", value: true });
+            // dispatch({ type: "SET_INITIALIZED", value: true });
         }
 
         // Cleanup function to handle component unmount
@@ -47,7 +47,6 @@ const NetworkView: React.FC = () => {
             // Stop the force simulation if it's running
             if (networkManager.forceLayout) {
                 networkManager.forceLayout.stop();
-                dispatch({ type: "STOP_SIMULATION" });
             }
 
             // Remove the visualization layers
@@ -57,7 +56,7 @@ const NetworkView: React.FC = () => {
 
             // Mark the network as uninitialized
             initializedRef.current = false;
-            dispatch({ type: "SET_INITIALIZED", value: false });
+            // dispatch({ type: "SET_INITIALIZED", value: false });
         };
     }, [dispatch]);
 

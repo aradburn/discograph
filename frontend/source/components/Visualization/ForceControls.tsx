@@ -1,18 +1,24 @@
 /** @jsxImportSource react */
-import React, { useCallback, memo } from "react";
-import { Form, Button } from "react-bootstrap";
+import React, { useCallback } from "react";
+import { Form } from "react-bootstrap";
 import { FORCE } from "../../constants";
 import { useNetwork } from "../../contexts/NetworkContext";
+import {
+    restartForceLayout,
+    startForceLayout,
+    stopForceLayout,
+} from "../../network/forceLayout";
+import { networkManager } from "../../core";
 
-interface NetworkControlsProps {
+interface ForceControlsProps {
     className?: string;
 }
 
 /**
- * NetworkControls component that provides controls for the D3.js force layout visualization.
- * This component uses the NetworkContext to interact with the D3.js force layout.
+ * Component for force layout controls (sliders).
+ * Used in Sidebar.
  */
-const NetworkControls: React.FC<NetworkControlsProps> = ({
+export const ForceControls: React.FC<ForceControlsProps> = ({
     className = "",
 }) => {
     const {
@@ -21,7 +27,6 @@ const NetworkControls: React.FC<NetworkControlsProps> = ({
         setupChargeForce,
         setupLinkForce,
         setupGravityForce,
-        restartForceLayout,
     } = useNetwork();
 
     // Memoize event handlers to prevent unnecessary re-renders
@@ -35,7 +40,7 @@ const NetworkControls: React.FC<NetworkControlsProps> = ({
             // Restart the force layout with a reduced alpha
             restartForceLayout(FORCE.SIMULATION.ALPHA / 10.0);
         },
-        [dispatch, setupChargeForce, restartForceLayout],
+        [dispatch, setupChargeForce],
     );
 
     const handleLinkStrengthChange = useCallback(
@@ -48,7 +53,7 @@ const NetworkControls: React.FC<NetworkControlsProps> = ({
             // Restart the force layout with a reduced alpha
             restartForceLayout(FORCE.SIMULATION.ALPHA / 5.0);
         },
-        [dispatch, setupLinkForce, restartForceLayout],
+        [dispatch, setupLinkForce],
     );
 
     const handleGravityStrengthChange = useCallback(
@@ -61,27 +66,27 @@ const NetworkControls: React.FC<NetworkControlsProps> = ({
             // Restart the force layout with a reduced alpha
             restartForceLayout(FORCE.SIMULATION.ALPHA / 10.0);
         },
-        [dispatch, setupGravityForce, restartForceLayout],
+        [dispatch, setupGravityForce],
     );
 
+    // Create new handlers to directly use startForceLayout and stopForceLayout
     const handleStartLayout = useCallback((): void => {
-        if (!state.isSimulationRunning) {
-            dispatch({ type: "START_SIMULATION" });
-        }
-    }, [state.isSimulationRunning, dispatch]);
+        // Get nodes from networkManager instead of state
+        const nodes = Array.from(networkManager.data.nodeMap.values());
+        startForceLayout(nodes);
+        restartForceLayout(FORCE.SIMULATION.ALPHA / 10.0);
+    }, []);
 
     const handleStopLayout = useCallback((): void => {
-        if (state.isSimulationRunning) {
-            dispatch({ type: "STOP_SIMULATION" });
-        }
-    }, [state.isSimulationRunning, dispatch]);
+        stopForceLayout();
+    }, []);
 
     return (
-        <div className={`network-controls ${className}`}>
+        <div className={`force-controls ${className}`}>
             {/* Node strength slider */}
-            <Form.Label htmlFor="nodeRangeReact">Node Strength</Form.Label>
+            <Form.Label htmlFor="nodeRange">Node Strength</Form.Label>
             <Form.Range
-                id="nodeRangeReact"
+                id="nodeRange"
                 value={state.nodeStrength}
                 onChange={handleNodeStrengthChange}
                 min={0}
@@ -89,9 +94,9 @@ const NetworkControls: React.FC<NetworkControlsProps> = ({
             />
 
             {/* Link strength slider */}
-            <Form.Label htmlFor="linkRangeReact">Link Strength</Form.Label>
+            <Form.Label htmlFor="linkRange">Link Strength</Form.Label>
             <Form.Range
-                id="linkRangeReact"
+                id="linkRange"
                 value={state.linkStrength}
                 onChange={handleLinkStrengthChange}
                 min={0}
@@ -99,39 +104,37 @@ const NetworkControls: React.FC<NetworkControlsProps> = ({
             />
 
             {/* Gravity strength slider */}
-            <Form.Label htmlFor="gravRangeReact">Gravity Strength</Form.Label>
+            <Form.Label htmlFor="gravRange">Gravity Strength</Form.Label>
             <Form.Range
-                id="gravRangeReact"
+                id="gravRange"
                 value={state.gravityStrength}
                 onChange={handleGravityStrengthChange}
                 min={0}
                 max={100}
             />
 
-            <div className="d-flex justify-content-between mt-3">
-                <Button
-                    variant="primary"
+            {/* Layout buttons */}
+            <div className="d-flex flex-column w-100">
+                <div
+                    className="navbar-text px-sm-0 px-2 justify-content-end"
+                    role="button"
                     onClick={handleStartLayout}
-                    disabled={state.isSimulationRunning}
                 >
-                    <i className="bi bi-lightning"></i>{" "}
-                    <span className="d-none d-sm-inline">Start Layout</span>
-                </Button>
-                <Button
-                    variant="secondary"
+                    <i className="fs-5 bi-lightning"></i>
+                    <span className="ms-1 d-none d-sm-inline">LAYOUT</span>
+                </div>
+
+                <div
+                    className="navbar-text px-sm-0 px-2 justify-content-end"
+                    role="button"
                     onClick={handleStopLayout}
-                    disabled={!state.isSimulationRunning}
                 >
-                    <i className="bi bi-sign-stop"></i>{" "}
-                    <span className="d-none d-sm-inline">Stop Layout</span>
-                </Button>
+                    <i className="fs-5 bi-sign-stop"></i>
+                    <span className="ms-1 d-none d-sm-inline">LAYOUT</span>
+                </div>
             </div>
         </div>
     );
 };
 
-// Wrap with memo to prevent unnecessary re-renders
-export default memo(NetworkControls);
-
-// Also export the non-memoized version for cases where that might be needed
-export { NetworkControls };
+export default ForceControls;

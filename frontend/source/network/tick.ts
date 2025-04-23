@@ -12,6 +12,10 @@ import type { SimNode, SimLink } from "./data";
 // Array of roles that should not be labeled in the visualization
 export const unlabeledRoles = ["Alias", "Member Of", "Sublabel Of"];
 
+// Performance optimization constants
+export const TICK_THROTTLE = 3; // Only process every Nth tick
+export const HULL_THROTTLE = 6; // Update hulls less frequently than other elements
+
 /**
  * Calculates spline intersection points for curved edges
  * @param {number} sX - Source X coordinate
@@ -59,10 +63,12 @@ export const generateSpline = (d: SimLink): string => {
 
 /**
  * Calculates vertices for hull (outline) around node clusters
+ * Optimized to use fewer points per node for better performance
  * @param {SimNode[]} nodes - Array of nodes in the cluster
  * @returns {[number, number][]} - Array of vertex coordinates for hull calculation
  */
 export const getHullVertices = (nodes: SimNode[]): [number, number][] => {
+    // Use only 4 points per node instead of creating more
     return nodes.flatMap((d) => {
         const radius = d.radius / 3;
         return [
@@ -85,20 +91,22 @@ const onTickLink = function (this: Element, d: SimLink, _i: number): void {
     const path = group.select("path");
     path.attr("d", generateSpline(d));
 
-    const { x: x1, y: y1 } = d.source;
-    const { x: x2, y: y2 } = d.target;
-    const pathNode = path.node();
-    const node = pathNode instanceof SVGPathElement ? pathNode : null;
+    // Only update text labels if they exist and the link has a significant length
+    const textLabels = group.selectAll("text");
+    if (!textLabels.empty()) {
+        const { x: x1, y: y1 } = d.source;
+        const { x: x2, y: y2 } = d.target;
+        const pathNode = path.node();
+        const node = pathNode instanceof SVGPathElement ? pathNode : null;
 
-    if (node && node.getTotalLength() > 0) {
-        const point = node.getPointAtLength(node.getTotalLength() / 2);
-        const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
-        group
-            .selectAll("text")
-            .attr(
+        if (node && node.getTotalLength() > 0) {
+            const point = node.getPointAtLength(node.getTotalLength() / 2);
+            const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+            textLabels.attr(
                 "transform",
                 `rotate(${angle} ${point.x} ${point.y}) translate(${point.x},${point.y})`,
             );
+        }
     }
 };
 
@@ -112,11 +120,21 @@ const translate = (d: SimNode): string => `translate(${d.x},${d.y})`;
 /**
  * Main tick function for force simulation
  * Updates positions of all visual elements (nodes, links, hulls) each tick
+ * Optimized to reduce update frequency with throttling
  * @param {d3.Simulation<SimNode, undefined>} e - The tick event object
  */
 export const onTick = (_e: d3.Simulation<SimNode, undefined>): void => {
-    //     console.log("Tick", networkManager.tick);
     networkManager.tick += 1;
+
+    // Throttle updates to reduce CPU usage
+    // Still process every tick for physics but only update the DOM periodically
+    const shouldUpdateDOM = networkManager.tick % TICK_THROTTLE === 0;
+    const shouldUpdateHulls = networkManager.tick % HULL_THROTTLE === 0;
+
+    if (!shouldUpdateDOM && !shouldUpdateHulls) {
+        return;
+    }
+
     const k = 1.0; // Force multiplier
 
     // Center the main node if not fixed
@@ -133,22 +151,34 @@ export const onTick = (_e: d3.Simulation<SimNode, undefined>): void => {
         }
     }
 
-    // Update positions of all visual elements
-    networkManager.layers.link
-        ?.selectAll<SVGGElement, SimLink>(".link")
-        ?.each(onTickLink);
-    networkManager.layers.halo?.selectAll(".node").attr("transform", translate);
-    networkManager.layers.node?.selectAll(".node").attr("transform", translate);
-    networkManager.layers.text?.selectAll(".node").attr("transform", translate);
+    if (shouldUpdateDOM) {
+        // Update positions of links
+        networkManager.layers.link
+            ?.selectAll<SVGGElement, SimLink>(".link")
+            ?.each(onTickLink);
 
-    // Update hull (cluster outline) paths
-    networkManager.layers.halo
-        ?.selectAll(".hull")
-        .select("path")
-        .attr("d", function (d: SimNode[]) {
-            const vertices = d3.polygonHull(getHullVertices(d));
-            return vertices ? "M" + vertices.join("L") + "Z" : "";
-        });
+        // Update positions of nodes - without movement optimization
+        networkManager.layers.halo
+            ?.selectAll(".node")
+            .attr("transform", translate);
+        networkManager.layers.node
+            ?.selectAll(".node")
+            .attr("transform", translate);
+        networkManager.layers.text
+            ?.selectAll(".node")
+            .attr("transform", translate);
 
-    hideAllTooltips();
+        hideAllTooltips();
+    }
+
+    // Update hull (cluster outline) paths - less frequently for better performance
+    if (shouldUpdateHulls) {
+        networkManager.layers.halo
+            ?.selectAll(".hull")
+            .select("path")
+            .attr("d", function (d: SimNode[]) {
+                const vertices = d3.polygonHull(getHullVertices(d));
+                return vertices ? "M" + vertices.join("L") + "Z" : "";
+            });
+    }
 };

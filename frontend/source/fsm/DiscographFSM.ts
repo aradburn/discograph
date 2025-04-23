@@ -9,7 +9,6 @@ import {
     restartForceLayout,
     stopForceLayout,
     displayForceLayout,
-    setupForceSliders,
     startForceLayout,
 } from "../network/forceLayout";
 import type { NodeKey, NetworkCenter, NetworkData } from "../network/data";
@@ -22,7 +21,7 @@ import { pruneSimData } from "../network/pruning";
 import type { RelationsData } from "../relations";
 import { fetchAPINetwork, fetchAPIRandom, fetchAPIRadial } from "../api";
 import { resetNetworkTransform } from "../network/init";
-import { ALPHA } from "../network/forceLayout";
+import { FORCE } from "../constants";
 import type { SimNode, SimLink } from "../network/data";
 import { RequestNetworkEvent, SelectEntityEvent } from "../network/events";
 import { showMessage } from "../messages";
@@ -233,7 +232,7 @@ export class DiscographFSM extends AbstractFSM implements Actions {
             // Restart force layout if in network view
             if (this.state === "state-viewing-network") {
                 console.log("restartForceLayout fsm");
-                restartForceLayout(ALPHA);
+                restartForceLayout(FORCE.SIMULATION.ALPHA);
             }
         }, INIT.DEBOUNCE_DELAY);
 
@@ -423,9 +422,7 @@ export class DiscographFSM extends AbstractFSM implements Actions {
 
         displayForceLayout();
 
-        setupForceSliders();
-
-        restartForceLayout(ALPHA);
+        restartForceLayout(FORCE.SIMULATION.ALPHA);
 
         this.handle("select-entity", networkData.center.key, false, false);
     }

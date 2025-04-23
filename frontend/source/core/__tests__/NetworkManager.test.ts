@@ -67,7 +67,6 @@ describe("NetworkManager Basic Tests", () => {
                 skipEventSetup: true, // Skip event setup to avoid DOM issues
             });
 
-            expect(manager.isUpdating).toBe(false);
             expect(manager.isRunningLayout).toBe(false);
             expect(manager.tick).toBe(0);
             expect(manager.newNodeCoords).toEqual([0, 0]);
@@ -133,12 +132,6 @@ describe("NetworkManager Basic Tests", () => {
 
         beforeEach(() => {
             manager = new NetworkManager({ skipEventSetup: true });
-        });
-
-        it("should get and set isUpdating", () => {
-            expect(manager.isUpdating).toBe(false);
-            manager.isUpdating = true;
-            expect(manager.isUpdating).toBe(true);
         });
 
         it("should get and set isRunningLayout", () => {

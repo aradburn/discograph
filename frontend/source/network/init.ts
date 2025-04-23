@@ -4,7 +4,7 @@
  * Creates a hierarchical structure of SVG groups for different visualization elements.
  */
 
-import { initForceLayout, initForceSliders } from "./forceLayout";
+import { initForceLayout } from "./forceLayout";
 import { discographManager, networkManager } from "../core";
 import * as d3 from "d3";
 import { hideAllTooltips } from "./tooltips";
@@ -53,7 +53,6 @@ export const initNetwork = (svgSelector: string): void => {
     resetNetworkTransform();
 
     initForceLayout();
-    initForceSliders();
 };
 
 /**

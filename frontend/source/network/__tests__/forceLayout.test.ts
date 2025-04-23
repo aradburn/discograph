@@ -2,17 +2,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as d3 from "d3";
 import {
     initForceLayout,
-    initForceSliders,
-    setupForceSliders,
     displayForceLayout,
     startForceLayout,
     restartForceLayout,
     stopForceLayout,
-    ALPHA,
 } from "../forceLayout";
 import type { SimNode, SimLink } from "../data";
 import { NodeType } from "../data";
 import { discographManager, networkManager } from "../../core";
+import { FORCE } from "../../constants";
 
 // Mock d3
 vi.mock("d3", () => ({
@@ -142,19 +140,12 @@ const createMockLink = (
 
 // Mock DOM elements
 beforeEach(() => {
-    document.body.innerHTML = `
-        <input type="range" id="nodeRange" min="0" max="40" />
-        <input type="range" id="linkRange" min="0" max="40" />
-        <input type="range" id="gravRange" min="0" max="40" />
-    `;
-
     // Reset forceLayout
     networkManager.forceLayout = null;
 });
 
 afterEach(() => {
     vi.clearAllMocks();
-    document.body.innerHTML = "";
 });
 
 describe("Force Layout Initialization", () => {
@@ -167,74 +158,10 @@ describe("Force Layout Initialization", () => {
     it("should set up all required forces", () => {
         initForceLayout();
         expect(d3.forceCollide).toHaveBeenCalled();
-        expect(d3.forceManyBody).toHaveBeenCalled();
-    });
-});
-
-describe("Force Slider Controls", () => {
-    it("should initialize force sliders", () => {
-        initForceSliders();
-        const nodeSlider = document.getElementById(
-            "nodeRange",
-        ) as HTMLInputElement;
-        const linkSlider = document.getElementById(
-            "linkRange",
-        ) as HTMLInputElement;
-        const gravSlider = document.getElementById(
-            "gravRange",
-        ) as HTMLInputElement;
-
-        expect(nodeSlider.oninput).toBeDefined();
-        expect(linkSlider.oninput).toBeDefined();
-        expect(gravSlider.oninput).toBeDefined();
-    });
-
-    it("should setup force sliders with correct initial values", () => {
-        initForceLayout();
-        setupForceSliders();
-        const nodeSlider = document.getElementById(
-            "nodeRange",
-        ) as HTMLInputElement;
-        const linkSlider = document.getElementById(
-            "linkRange",
-        ) as HTMLInputElement;
-        const gravSlider = document.getElementById(
-            "gravRange",
-        ) as HTMLInputElement;
-
-        expect(nodeSlider.value).toBe("12");
-        expect(linkSlider.value).toBe("40");
-        expect(gravSlider.value).toBe("10");
-    });
-
-    it("should handle slider input events", () => {
-        networkManager.forceLayout = d3.forceSimulation();
-        initForceSliders();
-
-        const nodeSlider = document.getElementById(
-            "nodeRange",
-        ) as HTMLInputElement;
-        const linkSlider = document.getElementById(
-            "linkRange",
-        ) as HTMLInputElement;
-        const gravSlider = document.getElementById(
-            "gravRange",
-        ) as HTMLInputElement;
-
-        // Simulate slider input events
-        nodeSlider.value = "20";
-        nodeSlider.dispatchEvent(new Event("input"));
-        expect(networkManager.forceLayout.force).toHaveBeenCalled();
-        expect(networkManager.forceLayout.alpha).toHaveBeenCalled();
-        expect(networkManager.forceLayout.restart).toHaveBeenCalled();
-
-        linkSlider.value = "30";
-        linkSlider.dispatchEvent(new Event("input"));
-        expect(networkManager.forceLayout.force).toHaveBeenCalled();
-
-        gravSlider.value = "15";
-        gravSlider.dispatchEvent(new Event("input"));
-        expect(networkManager.forceLayout.force).toHaveBeenCalled();
+        expect(networkManager.forceLayout.force).toHaveBeenCalledWith(
+            "bbox",
+            expect.any(Function),
+        );
     });
 });
 
@@ -262,8 +189,10 @@ describe("Force Layout Display and Control", () => {
 
     it("should restart force layout with new alpha value", () => {
         networkManager.forceLayout = d3.forceSimulation();
-        restartForceLayout(ALPHA);
-        expect(networkManager.forceLayout.alpha).toHaveBeenCalledWith(ALPHA);
+        restartForceLayout(FORCE.SIMULATION.ALPHA);
+        expect(networkManager.forceLayout.alpha).toHaveBeenCalledWith(
+            FORCE.SIMULATION.ALPHA,
+        );
         expect(networkManager.forceLayout.restart).toHaveBeenCalled();
     });
 
@@ -276,7 +205,7 @@ describe("Force Layout Display and Control", () => {
     it("should handle force layout when not initialized", () => {
         networkManager.forceLayout = null;
         const consoleSpy = vi.spyOn(console, "error");
-        restartForceLayout(ALPHA);
+        restartForceLayout(FORCE.SIMULATION.ALPHA);
         expect(consoleSpy).toHaveBeenCalledWith(
             "Force layout is not initialized",
         );
@@ -329,15 +258,6 @@ describe("Node and Link Processing", () => {
 });
 
 describe("Error Handling", () => {
-    it("should handle missing DOM elements gracefully", () => {
-        document.body.innerHTML = ""; // Remove all elements
-        const consoleSpy = vi.spyOn(console, "error");
-        initForceSliders();
-        expect(consoleSpy).toHaveBeenCalledWith(
-            "Could not find one or more slider elements",
-        );
-    });
-
     it("should handle force layout operations when not initialized", () => {
         networkManager.forceLayout = null;
         const consoleSpy = vi.spyOn(console, "error");
@@ -345,7 +265,7 @@ describe("Error Handling", () => {
         stopForceLayout();
         expect(consoleSpy).not.toHaveBeenCalled(); // stopForceLayout should handle null case silently
 
-        restartForceLayout(ALPHA);
+        restartForceLayout(FORCE.SIMULATION.ALPHA);
         expect(consoleSpy).toHaveBeenCalledWith(
             "Force layout is not initialized",
         );

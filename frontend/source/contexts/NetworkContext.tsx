@@ -1,30 +1,33 @@
 /** @jsxImportSource react */
-import React, { createContext, useContext, useReducer, useEffect } from "react";
+import React, {
+    createContext,
+    useContext,
+    useReducer,
+    useEffect,
+    useCallback,
+    useMemo,
+} from "react";
 import type { ReactNode } from "react";
 import { networkManager, discographManager } from "../core";
 import type { SimNode, SimLink } from "../network/data";
 import { FORCE } from "../constants";
 import * as d3 from "d3";
+import { clamp } from "../utils";
 
 // Define the state interface
 interface NetworkState {
-    isSimulationRunning: boolean;
     nodeStrength: number;
     linkStrength: number;
     gravityStrength: number;
     selectedNode: string | null;
-    isInitialized: boolean;
 }
 
 // Define the actions that can be dispatched
 type NetworkAction =
-    | { type: "START_SIMULATION" }
-    | { type: "STOP_SIMULATION" }
     | { type: "SET_NODE_STRENGTH"; value: number }
     | { type: "SET_LINK_STRENGTH"; value: number }
     | { type: "SET_GRAVITY_STRENGTH"; value: number }
-    | { type: "SELECT_NODE"; nodeId: string | null }
-    | { type: "SET_INITIALIZED"; value: boolean };
+    | { type: "SELECT_NODE"; nodeId: string | null };
 
 // Context interface
 interface NetworkContextProps {
@@ -33,17 +36,14 @@ interface NetworkContextProps {
     setupChargeForce: (nodeStrength: number) => void;
     setupLinkForce: (linkStrength: number) => void;
     setupGravityForce: (gravityStrength: number) => void;
-    restartForceLayout: (alpha: number) => void;
 }
 
 // Initial state
 const initialState: NetworkState = {
-    isSimulationRunning: false,
-    nodeStrength: 30,
-    linkStrength: 30,
-    gravityStrength: 30,
+    nodeStrength: 12,
+    linkStrength: 40,
+    gravityStrength: 10,
     selectedNode: null,
-    isInitialized: false,
 };
 
 // Create the context
@@ -57,10 +57,6 @@ function networkReducer(
     action: NetworkAction,
 ): NetworkState {
     switch (action.type) {
-        case "START_SIMULATION":
-            return { ...state, isSimulationRunning: true };
-        case "STOP_SIMULATION":
-            return { ...state, isSimulationRunning: false };
         case "SET_NODE_STRENGTH":
             return { ...state, nodeStrength: action.value };
         case "SET_LINK_STRENGTH":
@@ -69,8 +65,6 @@ function networkReducer(
             return { ...state, gravityStrength: action.value };
         case "SELECT_NODE":
             return { ...state, selectedNode: action.nodeId };
-        case "SET_INITIALIZED":
-            return { ...state, isInitialized: action.value };
         default:
             return state;
     }
@@ -86,25 +80,13 @@ export const NetworkProvider: React.FC<NetworkProviderProps> = ({
 }) => {
     const [state, dispatch] = useReducer(networkReducer, initialState);
 
-    // Synchronize React state with NetworkManager when needed
-    useEffect(() => {
-        if (state.isSimulationRunning !== networkManager.isRunningLayout) {
-            networkManager.isRunningLayout = state.isSimulationRunning;
-
-            if (state.isSimulationRunning && networkManager.forceLayout) {
-                networkManager.forceLayout
-                    .alpha(FORCE.SIMULATION.ALPHA)
-                    .alphaDecay(FORCE.SIMULATION.ALPHA_DECAY)
-                    .restart();
-            } else if (networkManager.forceLayout) {
-                networkManager.forceLayout.stop();
-            }
+    // Helper functions for force layout manipulation, memoized with useCallback
+    const setupChargeForce = useCallback((nodeStrength: number): void => {
+        if (!networkManager.forceLayout) {
+            console.error("forceLayout not setup yet");
+            return;
         }
-    }, [state.isSimulationRunning]);
-
-    // Helper functions for force layout manipulation
-    const setupChargeForce = (nodeStrength: number): void => {
-        if (!networkManager.forceLayout) return;
+        console.log("setupChargeForce:", nodeStrength);
 
         const nodeStrengthMultiplier =
             nodeStrength / FORCE.MULTIPLIER.NODE_STRENGTH_SCALE +
@@ -129,10 +111,11 @@ export const NetworkProvider: React.FC<NetworkProviderProps> = ({
 
             return baseStrength * nodeStrengthMultiplier;
         }
-    };
+    }, []);
 
-    const setupLinkForce = (linkStrength: number): void => {
+    const setupLinkForce = useCallback((linkStrength: number): void => {
         if (!networkManager.forceLayout) return;
+        console.log("setupLinkForce:", linkStrength);
 
         const linkStrengthMultiplier =
             linkStrength / FORCE.MULTIPLIER.LINK_STRENGTH_SCALE;
@@ -164,10 +147,11 @@ export const NetworkProvider: React.FC<NetworkProviderProps> = ({
 
             return distance * linkStrengthMultiplier;
         }
-    };
+    }, []);
 
-    const setupGravityForce = (gravityStrength: number): void => {
+    const setupGravityForce = useCallback((gravityStrength: number): void => {
         if (!networkManager.forceLayout) return;
+        console.log("setupGravityForce:", gravityStrength);
 
         const gravStrengthMultiplier =
             gravityStrength / FORCE.MULTIPLIER.GRAVITY_STRENGTH_SCALE;
@@ -187,28 +171,91 @@ export const NetworkProvider: React.FC<NetworkProviderProps> = ({
             );
 
         // Helper function for gravity strength calculation
-        function calculateGravityStrength(_d: SimNode): number {
-            return gravStrengthMultiplier * 0.02;
+        function calculateGravityStrength(d: SimNode): number {
+            var dist = d.distance ? 4 - clamp(d.distance, 0, 3) : 1.0;
+            var maxDimension = Math.max(
+                discographManager.svgDimensions[0],
+                discographManager.svgDimensions[1],
+            );
+            var scaling = dist / 10.0;
+            var radialDistance =
+                (maxDimension -
+                    Math.max(
+                        d.x - discographManager.svgDimensions[0] / 2,
+                        d.y - discographManager.svgDimensions[1] / 2,
+                    )) /
+                maxDimension;
+            return radialDistance * scaling * gravStrengthMultiplier;
         }
-    };
+    }, []);
 
-    const restartForceLayout = (alpha: number): void => {
-        if (networkManager.forceLayout && state.isSimulationRunning) {
-            networkManager.forceLayout.alpha(alpha).restart();
+    // Initialize forces when component mounts or when the force layout changes
+    useEffect(() => {
+        // Check if forceLayout exists before trying to set up forces
+        if (networkManager.forceLayout) {
+            console.log("Initializing network forces from React context");
+
+            // Set up initial force values from state
+            setupChargeForce(state.nodeStrength);
+            setupLinkForce(state.linkStrength);
+            setupGravityForce(state.gravityStrength);
+        } else {
+            console.error("Force layout not initialized yet in useEffect() #1");
         }
-    };
+    }, [
+        setupChargeForce,
+        setupLinkForce,
+        setupGravityForce,
+        state.nodeStrength,
+        state.linkStrength,
+        state.gravityStrength,
+    ]);
+
+    // Add a separate effect that runs when the network manager changes
+    //     useEffect(() => {
+    //         // Set up a listener for force layout initialization
+    //         const checkForceLayout = setInterval(() => {
+    //             if (networkManager.forceLayout) {
+    //                 console.log("Force layout detected, initializing forces");
+    //
+    //                 // Set up initial force values from state
+    //                 setupChargeForce(state.nodeStrength);
+    //                 setupLinkForce(state.linkStrength);
+    //                 setupGravityForce(state.gravityStrength);
+    //
+    //                 clearInterval(checkForceLayout);
+    //             } else {
+    //                 console.error(
+    //                     "Force layout not initialized yet in useEffect() #2",
+    //                 );
+    //             }
+    //         }, 100);
+    //
+    //         // Clean up interval on unmount
+    //         return (): void => clearInterval(checkForceLayout);
+    //     }, [
+    //         setupChargeForce,
+    //         setupLinkForce,
+    //         setupGravityForce,
+    //         state.nodeStrength,
+    //         state.linkStrength,
+    //         state.gravityStrength,
+    //     ]);
+
+    // Memoize the context value to prevent unnecessary re-renders of consumers
+    const contextValue = useMemo(
+        () => ({
+            state,
+            dispatch,
+            setupChargeForce,
+            setupLinkForce,
+            setupGravityForce,
+        }),
+        [state, dispatch, setupChargeForce, setupLinkForce, setupGravityForce],
+    );
 
     return (
-        <NetworkContext.Provider
-            value={{
-                state,
-                dispatch,
-                setupChargeForce,
-                setupLinkForce,
-                setupGravityForce,
-                restartForceLayout,
-            }}
-        >
+        <NetworkContext.Provider value={contextValue}>
             {children}
         </NetworkContext.Provider>
     );

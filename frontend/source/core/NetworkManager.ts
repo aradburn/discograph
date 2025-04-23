@@ -37,8 +37,6 @@ export interface NetworkManagerConfig {
 export class NetworkManager {
     /** Force layout simulation */
     private _forceLayout: d3.Simulation<SimNode, SimLink>;
-    /** Flag indicating if the network is currently being updated */
-    private _isUpdating: boolean;
     /** Flag indicating if the force layout is currently running */
     private _isRunningLayout: boolean;
     /** Counter for animation/simulation ticks */
@@ -64,7 +62,6 @@ export class NetworkManager {
      */
     constructor(config: NetworkManagerConfig = {}) {
         this._forceLayout = null;
-        this._isUpdating = false;
         this._isRunningLayout = false;
         this._tick = 0;
         this._newNodeCoords = [0, 0];
@@ -105,22 +102,6 @@ export class NetworkManager {
      */
     set forceLayout(layout: d3.Simulation<SimNode, SimLink>) {
         this._forceLayout = layout;
-    }
-
-    /**
-     * Gets whether the network is updating
-     * @returns {boolean} Whether the network is updating
-     */
-    get isUpdating(): boolean {
-        return this._isUpdating;
-    }
-
-    /**
-     * Sets whether the network is updating
-     * @param {boolean} value - The new updating state
-     */
-    set isUpdating(value: boolean) {
-        this._isUpdating = value;
     }
 
     /**
@@ -233,7 +214,6 @@ export class NetworkManager {
      */
     setupNetwork(networkData: NetworkData): void {
         this._data = convertNetworkDataToSimData(networkData);
-        this._isUpdating = false;
 
         // Initialize or update force layout with new data
         this._setupForceLayout();
