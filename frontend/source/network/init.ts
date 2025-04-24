@@ -68,7 +68,7 @@ export const resetNetworkTransform = (): void => {
             discographManager.svgDimensions[1] /
                 discographManager.dimensions[1],
         ) * SVG.SCALING_MULTIPLIER;
-    console.log("scale: ", scale);
+    //     console.log("scale: ", scale);
 
     const svgElement = d3.select(DOM_IDS.SVG_ID);
     const initialTransform = d3.zoomIdentity
@@ -115,7 +115,7 @@ export const resetNetworkTransform = (): void => {
         discographManager.svgDimensions[0] / 2,
         discographManager.svgDimensions[1] / 2,
     ];
-    console.log("svg newNodeCoords: ", svgCenter);
+    //     console.log("svg newNodeCoords: ", svgCenter);
     networkManager.newNodeCoords = svgCenter;
 };
 

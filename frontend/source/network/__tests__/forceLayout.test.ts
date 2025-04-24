@@ -3,7 +3,7 @@ import * as d3 from "d3";
 import {
     initForceLayout,
     displayForceLayout,
-    startForceLayout,
+    setForceLayoutNodes,
     restartForceLayout,
     stopForceLayout,
 } from "../forceLayout";
@@ -181,7 +181,7 @@ describe("Force Layout Display and Control", () => {
         ];
         // Initialize force layout first
         networkManager.forceLayout = d3.forceSimulation();
-        startForceLayout(mockNodes);
+        setForceLayoutNodes(mockNodes);
         expect(networkManager.forceLayout.nodes).toHaveBeenCalledWith(
             mockNodes,
         );

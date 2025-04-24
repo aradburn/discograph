@@ -366,12 +366,15 @@ export const convertNetworkDataToSimData = (
             newLinkMap.set(simLink.key, simLink);
         }
     });
-    //     console.log("convertNetworkDataToSimData output: ", newSimData);
+    console.log(
+        "convertNetworkDataToSimData output after adding intermediate nodes: ",
+        newSimData,
+    );
     return newSimData;
 };
 
 export const updateGlobalData = (simData: SimData): void => {
-    //     console.log("updateGlobalData input:", simData);
+    console.log("updateGlobalData input:", simData);
 
     networkManager.data.nodeMap = simData.nodeMap;
     networkManager.data.linkMap = simData.linkMap;
@@ -379,8 +382,8 @@ export const updateGlobalData = (simData: SimData): void => {
     networkManager.data.center = simData.center;
 };
 
-export const setupSimData = (networkData: NetworkData): SimData => {
-    const simData = convertNetworkDataToSimData(networkData);
-    updateGlobalData(simData);
-    return simData;
-};
+// export const setupSimData = (networkData: NetworkData): SimData => {
+//     const simData = convertNetworkDataToSimData(networkData);
+//     updateGlobalData(simData);
+//     return simData;
+// };

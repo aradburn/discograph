@@ -9,7 +9,8 @@ import {
     restartForceLayout,
     stopForceLayout,
     displayForceLayout,
-    startForceLayout,
+    setForceLayoutNodes,
+    setNetworkForces,
 } from "../network/forceLayout";
 import type { NodeKey, NetworkCenter, NetworkData } from "../network/data";
 import {
@@ -385,7 +386,7 @@ export class DiscographFSM extends AbstractFSM implements Actions {
      * Display the network view
      */
     showNetwork(networkData: NetworkData, pushHistory: boolean): void {
-        console.log("showNetwork networkData: ", networkData);
+        console.log("FSM showNetwork networkData: ", networkData);
 
         this.transition("state-viewing-network");
 
@@ -407,18 +408,20 @@ export class DiscographFSM extends AbstractFSM implements Actions {
             this.pushState(networkData.center.key, params);
         }
 
-        console.log("received-network convertNetworkDataToSimData");
+        console.log("FSM received-network convertNetworkDataToSimData");
         const simData = convertNetworkDataToSimData(networkData);
 
         const prunedSimData = pruneSimData(simData);
 
         updateGlobalData(prunedSimData);
 
-        console.log("received-network resetNetworkTransform");
+        console.log("FSM received-network resetNetworkTransform");
         resetNetworkTransform();
 
-        console.log("received-network startForceLayout");
-        startForceLayout(Array.from(prunedSimData.nodeMap.values()));
+        console.log("FSM received-network startForceLayout");
+        setForceLayoutNodes(Array.from(prunedSimData.nodeMap.values()));
+
+        setNetworkForces();
 
         displayForceLayout();
 
@@ -534,7 +537,7 @@ export class DiscographFSM extends AbstractFSM implements Actions {
      * Select an entity in the network
      */
     selectEntity(entityKey: NodeKey | null, fixed: boolean): void {
-        console.log("selectEntity", entityKey, fixed);
+        console.log("FSM selectEntity", entityKey, fixed);
         discographManager.selectedNodeKey = entityKey;
         let nodeOn: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown>;
         let nodeOff: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown>;
@@ -576,7 +579,7 @@ export class DiscographFSM extends AbstractFSM implements Actions {
                 return;
             }
 
-            console.log("nodeData: ", nodeData);
+            //             console.log("nodeData: ", nodeData);
             const linkKeys = nodeData.links.map((l) => l.key);
             const linkSelection = linkLayer.selectAll<SVGGElement, SimLink>(
                 "g.link",
@@ -594,7 +597,7 @@ export class DiscographFSM extends AbstractFSM implements Actions {
                 console.log("node not found");
                 return;
             }
-            console.log("new selected node: ", node);
+            //             console.log("new selected node: ", node);
 
             const [, id] = node.key.split("-");
             const url = `http://discogs.com/${node.type}/${id}`;
@@ -610,7 +613,7 @@ export class DiscographFSM extends AbstractFSM implements Actions {
 
             nodeOn.raise();
             nodeOn.classed("selected", true);
-            console.log("nodeOn: ", nodeOn);
+            //             console.log("nodeOn: ", nodeOn);
 
             if (fixed) {
                 //nodeOn.each(function(d) { d.fixed = true; });
@@ -623,11 +626,11 @@ export class DiscographFSM extends AbstractFSM implements Actions {
         }
 
         if (nodeOff) {
-            console.log("nodeOff: ", nodeOff);
+            //             console.log("nodeOff: ", nodeOff);
             nodeOff.classed("selected", false).each((d) => (d.fixed = false));
         }
         if (linkOff) {
-            console.log("linkOff: ", linkOff);
+            //             console.log("linkOff: ", linkOff);
             linkOff.classed("selected", false);
         }
     }

@@ -3,6 +3,7 @@ import { initRoles } from "./roles";
 import type { TreeConfig } from "./roles";
 import { initFSM } from "./fsm/index";
 import { DOM_IDS } from "./constants";
+import { resetNetworkForces } from "./network/forceLayout";
 
 declare global {
     interface Window {
@@ -42,6 +43,8 @@ export const initApp = (): void => {
 
         // Initialize the Discograph Finite State Machine
         initFSM();
+
+        resetNetworkForces();
 
         console.log("discograph initialized.");
     };

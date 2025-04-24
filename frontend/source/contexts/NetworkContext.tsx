@@ -27,7 +27,9 @@ type NetworkAction =
     | { type: "SET_NODE_STRENGTH"; value: number }
     | { type: "SET_LINK_STRENGTH"; value: number }
     | { type: "SET_GRAVITY_STRENGTH"; value: number }
-    | { type: "SELECT_NODE"; nodeId: string | null };
+    | { type: "SELECT_NODE"; nodeId: string | null }
+    | { type: "SET_FORCES" }
+    | { type: "RESET_FORCES" };
 
 // Context interface
 interface NetworkContextProps {
@@ -36,6 +38,8 @@ interface NetworkContextProps {
     setupChargeForce: (nodeStrength: number) => void;
     setupLinkForce: (linkStrength: number) => void;
     setupGravityForce: (gravityStrength: number) => void;
+    setForces: () => void;
+    resetForces: () => void;
 }
 
 // Initial state
@@ -65,6 +69,10 @@ function networkReducer(
             return { ...state, gravityStrength: action.value };
         case "SELECT_NODE":
             return { ...state, selectedNode: action.nodeId };
+        case "SET_FORCES":
+            return { ...state };
+        case "RESET_FORCES":
+            return { ...initialState };
         default:
             return state;
     }
@@ -211,36 +219,39 @@ export const NetworkProvider: React.FC<NetworkProviderProps> = ({
         state.gravityStrength,
     ]);
 
-    // Add a separate effect that runs when the network manager changes
-    //     useEffect(() => {
-    //         // Set up a listener for force layout initialization
-    //         const checkForceLayout = setInterval(() => {
-    //             if (networkManager.forceLayout) {
-    //                 console.log("Force layout detected, initializing forces");
-    //
-    //                 // Set up initial force values from state
-    //                 setupChargeForce(state.nodeStrength);
-    //                 setupLinkForce(state.linkStrength);
-    //                 setupGravityForce(state.gravityStrength);
-    //
-    //                 clearInterval(checkForceLayout);
-    //             } else {
-    //                 console.error(
-    //                     "Force layout not initialized yet in useEffect() #2",
-    //                 );
-    //             }
-    //         }, 100);
-    //
-    //         // Clean up interval on unmount
-    //         return (): void => clearInterval(checkForceLayout);
-    //     }, [
-    //         setupChargeForce,
-    //         setupLinkForce,
-    //         setupGravityForce,
-    //         state.nodeStrength,
-    //         state.linkStrength,
-    //         state.gravityStrength,
-    //     ]);
+    // Setup event listener for reset forces event
+    useEffect(() => {
+        const handleSetForces = (): void => {
+            console.log("Received set forces event");
+            dispatch({ type: "SET_FORCES" });
+            setupChargeForce(state.nodeStrength);
+            setupLinkForce(state.linkStrength);
+            setupGravityForce(state.gravityStrength);
+        };
+
+        window.addEventListener("discograph:set-forces", handleSetForces);
+
+        const handleResetForces = (): void => {
+            console.log("Received reset forces event");
+            dispatch({ type: "RESET_FORCES" });
+            setupChargeForce(initialState.nodeStrength);
+            setupLinkForce(initialState.linkStrength);
+            setupGravityForce(initialState.gravityStrength);
+        };
+
+        window.addEventListener("discograph:reset-forces", handleResetForces);
+
+        return (): void => {
+            window.removeEventListener(
+                "discograph:set-forces",
+                handleSetForces,
+            );
+            window.removeEventListener(
+                "discograph:reset-forces",
+                handleResetForces,
+            );
+        };
+    }, [setupChargeForce, setupLinkForce, setupGravityForce]);
 
     // Memoize the context value to prevent unnecessary re-renders of consumers
     const contextValue = useMemo(
@@ -250,6 +261,18 @@ export const NetworkProvider: React.FC<NetworkProviderProps> = ({
             setupChargeForce,
             setupLinkForce,
             setupGravityForce,
+            setForces: (): void => {
+                dispatch({ type: "SET_FORCES" });
+                setupChargeForce(state.nodeStrength);
+                setupLinkForce(state.linkStrength);
+                setupGravityForce(state.gravityStrength);
+            },
+            resetForces: (): void => {
+                dispatch({ type: "RESET_FORCES" });
+                setupChargeForce(initialState.nodeStrength);
+                setupLinkForce(initialState.linkStrength);
+                setupGravityForce(initialState.gravityStrength);
+            },
         }),
         [state, dispatch, setupChargeForce, setupLinkForce, setupGravityForce],
     );

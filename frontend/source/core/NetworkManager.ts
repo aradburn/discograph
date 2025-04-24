@@ -1,13 +1,11 @@
-import * as d3 from "d3";
+import type * as d3 from "d3";
 import type {
     NodeKey,
     LinkKey,
     SimData,
     SimNode,
     SimLink,
-    NetworkData,
 } from "../network/data";
-import { convertNetworkDataToSimData } from "../network/data";
 import { RequestNetworkEvent } from "../network/events";
 
 /**
@@ -27,8 +25,6 @@ interface NetworkLayers {
 export interface NetworkManagerConfig {
     /** Initial network data */
     initialData?: SimData;
-    /** Skip event listener setup (mainly for testing) */
-    skipEventSetup?: boolean;
 }
 
 /**
@@ -51,8 +47,6 @@ export class NetworkManager {
     private _layers: NetworkLayers;
     /** Bound event handler for request network events */
     private _boundRequestNetworkHandler: (this: Window, ev: Event) => void;
-    /** Skip event setup flag (for testing) */
-    private _skipEventSetup: boolean;
     /** Currently selected node key */
     private _selectedNodeKey: NodeKey | undefined;
 
@@ -74,18 +68,12 @@ export class NetworkManager {
             node: null,
             link: null,
         };
-        this._skipEventSetup = config.skipEventSetup || false;
         this._selectedNodeKey = undefined;
 
         // Bind event handlers to this instance
-        this._boundRequestNetworkHandler = this._handleRequestNetwork.bind(
-            this,
-        ) as (this: Window, ev: Event) => void;
-
-        // Set up event listeners
-        if (!this._skipEventSetup) {
-            this._setupEventListeners();
-        }
+        // this._boundRequestNetworkHandler = this._handleRequestNetwork.bind(
+        //     this,
+        // ) as (this: Window, ev: Event) => void;
     }
 
     /**
@@ -212,75 +200,75 @@ export class NetworkManager {
      * Sets up a new network visualization
      * @param {NetworkData} networkData - The network data to visualize
      */
-    setupNetwork(networkData: NetworkData): void {
-        this._data = convertNetworkDataToSimData(networkData);
-
-        // Initialize or update force layout with new data
-        this._setupForceLayout();
-    }
+    //     setupNetwork(networkData: NetworkData): void {
+    //         this._data = convertNetworkDataToSimData(networkData);
+    //
+    //         // Initialize or update force layout with new data
+    //         this._setupForceLayout();
+    //     }
 
     /**
      * Initializes or updates the force layout simulation
      */
-    private _setupForceLayout(): void {
-        // This would contain the force layout initialization code
-        // Placeholder for the actual implementation
-        if (this._forceLayout) {
-            this._forceLayout.stop();
-        }
-
-        // Create a new force simulation
-        this._forceLayout = d3
-            .forceSimulation<SimNode, SimLink>()
-            .nodes(Array.from(this._data.nodeMap.values()));
-
-        // Additional force layout configuration would go here
-    }
+    //     private _setupForceLayout(): void {
+    //         // This would contain the force layout initialization code
+    //         // Placeholder for the actual implementation
+    //         if (this._forceLayout) {
+    //             this._forceLayout.stop();
+    //         }
+    //
+    //         // Create a new force simulation
+    //         this._forceLayout = d3
+    //             .forceSimulation<SimNode, SimLink>()
+    //             .nodes(Array.from(this._data.nodeMap.values()));
+    //
+    //         // Additional force layout configuration would go here
+    //     }
 
     /**
      * Updates the network visualization
      */
-    updateVisualization(): void {
-        if (!this._layers.root) {
-            console.warn("Cannot update visualization: layers not initialized");
-            return;
-        }
-
-        // This would update the network visualization based on the current data
-        // Placeholder for the actual implementation
-    }
+    //     updateVisualization(): void {
+    //         if (!this._layers.root) {
+    //             console.warn("Cannot update visualization: layers not initialized");
+    //             return;
+    //         }
+    //
+    //         // This would update the network visualization based on the current data
+    //         // Placeholder for the actual implementation
+    //     }
 
     /**
      * Sets up event listeners for network-related events
      */
-    private _setupEventListeners(): void {
-        try {
-            // Adding a try-catch to handle tests where RequestNetworkEvent might not be properly mocked
-            const eventName =
-                RequestNetworkEvent && RequestNetworkEvent.EVENT_NAME
-                    ? RequestNetworkEvent.EVENT_NAME
-                    : "discograph:request-network";
-
-            window.addEventListener(
-                eventName,
-                this._boundRequestNetworkHandler,
-            );
-        } catch (error) {
-            console.warn("Failed to set up network event listeners:", error);
-        }
-    }
+    //     private _setupEventListeners(): void {
+    //         try {
+    //             // Adding a try-catch to handle tests where RequestNetworkEvent might not be properly mocked
+    //             const eventName =
+    //                 RequestNetworkEvent && RequestNetworkEvent.EVENT_NAME
+    //                     ? RequestNetworkEvent.EVENT_NAME
+    //                     : "discograph:request-network";
+    //
+    //             window.addEventListener(
+    //                 eventName,
+    //                 this._boundRequestNetworkHandler,
+    //             );
+    //         } catch (error) {
+    //             console.warn("Failed to set up network event listeners:", error);
+    //         }
+    //     }
 
     /**
      * Handles the request network event
      * @param {RequestNetworkEvent} event - The request network event
      */
-    private _handleRequestNetwork(event: RequestNetworkEvent): void {
-        // This would handle a request to load and display a network
-        console.log(
-            `Request to load network for entity: ${event.detail.entityKey}`,
-        );
-        // Actual implementation would fetch data and call setupNetwork
-    }
+    //     private _handleRequestNetwork(event: RequestNetworkEvent): void {
+    //         // This would handle a request to load and display a network
+    //         console.log(
+    //             `Request to load network for entity: ${event.detail.entityKey}`,
+    //         );
+    //         // Actual implementation would fetch data and call setupNetwork
+    //     }
 
     /**
      * Creates empty network data

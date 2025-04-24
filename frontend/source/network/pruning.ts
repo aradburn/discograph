@@ -17,33 +17,19 @@ export const pruneSimData = (simData: SimData): SimData => {
         }
     });
     simData.maxDistance = Math.max(...distances);
-    console.log("maxDistance: ", simData.maxDistance);
-    console.log("distance_counts: ", distance_counts);
-    console.log("initial node size: ", simData.nodeMap.size);
-    console.log("initial link size: ", simData.linkMap.size);
+    //     console.log("maxDistance: ", simData.maxDistance);
+    //     console.log("distance_counts: ", distance_counts);
+    console.log("pruning initial node size: ", simData.nodeMap.size);
+    console.log("pruning initial link size: ", simData.linkMap.size);
 
-    // Prune dist==3
-    //     prune(simData, 3, 1);
-    //     prune(simData, 3, 2);
-    //     prune(simData, 3, 3);
-    //     prune(simData, 3, 4);
-    //     prune(simData, 3, 5);
-    //     prune(simData, 3, 10);
-    //     prune(simData, 3, 100);
-    //     prune(simData, 3, 1000000);
-    //     prune(simData, 2, 1);
-    //     prune(simData, 2, 2);
-    //     prune(simData, 2, 3);
-    //     prune(simData, 2, 4);
-    //     prune(simData, 2, 5);
-    //     prune(simData, 2, 10);
-    //     prune(simData, 2, 100);
-    //     prune(simData, 2, 100000);
     for (var maxDist of [3, 2, 1]) {
         for (var minLinks of [1, 2, 3, 4, 5, 10, 100, 1000000]) {
             simData = prune(simData, maxDist, minLinks);
         }
     }
+
+    console.log("pruning final node size  : ", simData.nodeMap.size);
+    console.log("pruning final link size  : ", simData.linkMap.size);
 
     //     console.log("processNetworkData output nodes:", simData.nodeMap);
     //     console.log("processNetworkData output links:", simData.linkMap);
@@ -79,7 +65,7 @@ const prune = (
         nodeKeysToPrune.forEach((key) => {
             simData.nodeMap.delete(key);
         });
-        console.log("pruned nodes: ", nodeKeysToPrune.length);
+        //         console.log("pruned nodes: ", nodeKeysToPrune.length);
 
         const linkKeysToPrune: LinkKey[] = [];
         const intermediateNodesToPrune: NodeKey[] = [];
@@ -102,15 +88,15 @@ const prune = (
             intermediateNodesToPrune.push(key);
             simData.linkMap.delete(key);
         });
-        console.log("pruned links: ", linkKeysToPrune.length);
+        //         console.log("pruned links: ", linkKeysToPrune.length);
 
         intermediateNodesToPrune.forEach((key) => {
             simData.nodeMap.delete(key);
         });
-        console.log(
-            "pruned intermediate nodes: ",
-            intermediateNodesToPrune.length,
-        );
+        //         console.log(
+        //             "pruned intermediate nodes: ",
+        //             intermediateNodesToPrune.length,
+        //         );
 
         Array.from(simData.linkMap.values()).forEach((link) => {
             if (
@@ -130,19 +116,19 @@ const prune = (
         intermediateLinksToPrune.forEach((key) => {
             simData.linkMap.delete(key);
         });
-        console.log(
-            "pruned intermediate links: ",
-            intermediateLinksToPrune.length,
-        );
+        //         console.log(
+        //             "pruned intermediate links: ",
+        //             intermediateLinksToPrune.length,
+        //         );
 
-        console.log(
-            `node size after pruning (maxDist: ${maxDist}, minLinks: ${minLinks}): `,
-            simData.nodeMap.size,
-        );
-        console.log(
-            `link size after pruning (maxDist: ${maxDist}, minLinks: ${minLinks}): `,
-            simData.linkMap.size,
-        );
+        //         console.log(
+        //             `node size after pruning (maxDist: ${maxDist}, minLinks: ${minLinks}): `,
+        //             simData.nodeMap.size,
+        //         );
+        //         console.log(
+        //             `link size after pruning (maxDist: ${maxDist}, minLinks: ${minLinks}): `,
+        //             simData.linkMap.size,
+        //         );
     }
     return simData;
 };

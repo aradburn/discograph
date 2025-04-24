@@ -12,80 +12,19 @@ import { onNodeEnter, onNodeUpdate, onNodeExit } from "./node";
 import { onTextEnter, onTextUpdate, onTextExit } from "./text";
 import { onLinkEnter, onLinkUpdate, onLinkExit } from "./link";
 import { onTick } from "./tick";
-import { onNetworkStart, onNetworkEnd } from "./events";
+import {
+    onNetworkStart,
+    onNetworkEnd,
+    ResetForcesEvent,
+    SetForcesEvent,
+} from "./events";
 import { discographManager, networkManager } from "../core";
 import { FORCE } from "../constants";
 
-// function linkDistance(d: SimLink): number {
-//     if (d.role === FORCE.LINK.ROLES.ALIAS) return FORCE.DISTANCE.LINK_ALIAS;
-//     if (d.role === FORCE.LINK.ROLES.RELEASED_ON)
-//         return FORCE.DISTANCE.LINK_RELEASED_ON;
-//     if (d.isSpline) {
-//         return d.distance < 1
-//             ? FORCE.DISTANCE.LINK / 5
-//             : FORCE.DISTANCE.LINK / 10;
-//     } else {
-//         return FORCE.DISTANCE.LINK;
-//     }
-// }
-
-// function nodeStrength(d: SimNode): number {
-//     if (d.isIntermediate) return FORCE.NODE.STRENGTH_INTERMEDIATE;
-//     if (d.cluster) return FORCE.NODE.STRENGTH_CLUSTER;
-//     if (d.distance) {
-//         return (4 - clamp(d.distance, 0, 3)) * FORCE.NODE.STRENGTH;
-//     } else {
-//         return FORCE.NODE.STRENGTH;
-//     }
-// }
-
-// function gravityStrength(d: SimNode): number {
-//     var dist = d.distance ? 4 - clamp(d.distance, 0, 3) : 1.0;
-//     var maxDimension = Math.max(
-//         discographManager.svgDimensions[0],
-//         discographManager.svgDimensions[1],
-//     );
-//     var scaling = dist / 10.0;
-//     var radialDistance =
-//         (maxDimension -
-//             Math.max(
-//                 d.x - discographManager.svgDimensions[0] / 2,
-//                 d.y - discographManager.svgDimensions[1] / 2,
-//             )) /
-//         maxDimension;
-//     var g = radialDistance * scaling;
-//     return g;
-// }
-
-/**
- * Determines the distance between linked nodes based on their relationship type
- * @param {SimLink} d - The link object
- * @returns {number} The desired distance between nodes
- */
-// function calculateLinkDistance(d: SimLink): number {
-//     return linkDistance(d) * linkStrengthMultiplier;
-// }
-
-/**
- * Calculates the repulsion strength for each node
- * @param {SimNode} d - The node object
- * @returns {number} The repulsion strength
- */
-// function calculateNodeStrength(d: SimNode): number {
-//     return nodeStrength(d) * nodeStrengthMultiplier;
-// }
-
-/**
- * Calculates the gravity strength for each node based on its position and distance
- * @param {SimNode} d - The node object
- * @returns {number} The gravity strength
- */
-// function calculateGravityStrength(d: SimNode): number {
-//     return gravityStrength(d) * gravStrengthMultiplier;
-// }
-
 /**
  * Sets up the initial force simulation with basic forces
+ * and event listeners for tick and end events.
+ * More forces are added in NetworkContext.
  */
 export const initForceLayout = (): void => {
     console.log("initForceLayout");
@@ -101,14 +40,6 @@ export const initForceLayout = (): void => {
                 .radius((d) => (d.radius ?? 0) + FORCE.COLLIDE.BUFFER)
                 .iterations(FORCE.COLLIDE.ITERATIONS),
         )
-        // .force(
-        //     "charge",
-        //     d3
-        //         .forceManyBody<SimNode>()
-        //         .strength(calculateNodeStrength)
-        //         .distanceMax(FORCE.DISTANCE.MAX)
-        //         .theta(FORCE.SIMULATION.THETA),
-        // )
         .force("bbox", bboxForce)
         .on("tick", function (this: d3.Simulation<SimNode, SimLink>) {
             onTick(this);
@@ -117,11 +48,6 @@ export const initForceLayout = (): void => {
             onNetworkEnd(this);
         })
         .stop();
-
-    console.log(
-        "init networkManager.forceLayout: ",
-        networkManager.forceLayout,
-    );
 };
 
 /**
@@ -129,7 +55,7 @@ export const initForceLayout = (): void => {
  * Updates node and link selections and applies forces
  */
 export const displayForceLayout = (): void => {
-    console.log("displayForceLayout");
+    console.log("displayForceLayout() update network layers");
 
     const keyFunc = (d: SimNode | SimLink): string => d.key;
 
@@ -141,12 +67,8 @@ export const displayForceLayout = (): void => {
         (d) => !d.isSpline,
     );
 
-    // Debug nodes and links
-    //     const nodeData = Array.from(networkStore.data.nodeMap.values());
-    //     const linkData = Array.from(networkStore.data.linkMap.values());
-
-    console.log("nodeData: ", nodeData);
-    console.log("linkData: ", linkData);
+    console.log("nodeData (without intermediate): ", nodeData);
+    console.log("linkData (without splines)     : ", linkData);
 
     networkManager.layers.halo
         .selectAll<SVGGElement, SimNode>(".node")
@@ -237,14 +159,12 @@ export const displayForceLayout = (): void => {
 };
 
 /**
- * Initializes and starts the force layout simulation
- * Updates node and link selections and applies forces
+ * Initializes the force layout simulation nodes
  */
-export const startForceLayout = (nodes: SimNode[]): void => {
-    console.log("Start D3 layout nodes:", nodes);
+export const setForceLayoutNodes = (nodes: SimNode[]): void => {
+    console.log("setForceLayoutNodes:", nodes);
 
-    // Restart simulation
-    console.log("Updating forceLayout");
+    // Set simulation nodes
     networkManager.forceLayout.nodes(nodes);
 };
 
@@ -253,7 +173,7 @@ export const startForceLayout = (nodes: SimNode[]): void => {
  * @param {number} alpha - The new alpha value for the simulation
  */
 export const restartForceLayout = (alpha: number): void => {
-    console.log("restartForceLayout:", alpha);
+    console.log("restartForceLayout alpha:", alpha);
 
     if (networkManager.forceLayout) {
         onNetworkStart();
@@ -267,9 +187,28 @@ export const restartForceLayout = (alpha: number): void => {
  * Stops the force layout simulation
  */
 export const stopForceLayout = (): void => {
+    console.log("stopForceLayout");
     if (networkManager.forceLayout) {
         networkManager.forceLayout.stop();
     }
+};
+
+/**
+ * Sets network forces to their current values
+ * This dispatches a custom event that the React context will listen for
+ */
+export const setNetworkForces = (): void => {
+    console.log("Setting network forces to current values");
+    window.dispatchEvent(new SetForcesEvent());
+};
+
+/**
+ * Resets network forces to their initial values
+ * This dispatches a custom event that the React context will listen for
+ */
+export const resetNetworkForces = (): void => {
+    console.log("Resetting network forces to initial values");
+    window.dispatchEvent(new ResetForcesEvent());
 };
 
 /**

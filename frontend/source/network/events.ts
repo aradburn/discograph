@@ -178,11 +178,45 @@ export class ResizeEvent extends CustomEvent<Record<string, never>> {
     }
 }
 
+/**
+ * Custom event for setting network forces
+ * @extends CustomEvent
+ */
+export class SetForcesEvent extends CustomEvent<Record<string, never>> {
+    /**
+     * Creates a new SetForcesEvent
+     */
+    constructor() {
+        super("discograph:set-forces", {
+            bubbles: true,
+            detail: {},
+        });
+    }
+}
+
+/**
+ * Custom event for resetting network forces
+ * @extends CustomEvent
+ */
+export class ResetForcesEvent extends CustomEvent<Record<string, never>> {
+    /**
+     * Creates a new ResetForcesEvent
+     */
+    constructor() {
+        super("discograph:reset-forces", {
+            bubbles: true,
+            detail: {},
+        });
+    }
+}
+
 // Add type declarations for custom events
 declare global {
     interface WindowEventMap {
         "discograph:request-network": RequestNetworkEvent;
         "discograph:select-entity": SelectEntityEvent;
         "discograph:resize": ResizeEvent;
+        "discograph:set-forces": SetForcesEvent;
+        "discograph:reset-forces": ResetForcesEvent;
     }
 }

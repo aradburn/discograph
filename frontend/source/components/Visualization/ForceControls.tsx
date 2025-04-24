@@ -3,12 +3,7 @@ import React, { useCallback } from "react";
 import { Form } from "react-bootstrap";
 import { FORCE } from "../../constants";
 import { useNetwork } from "../../contexts/NetworkContext";
-import {
-    restartForceLayout,
-    startForceLayout,
-    stopForceLayout,
-} from "../../network/forceLayout";
-import { networkManager } from "../../core";
+import { restartForceLayout, stopForceLayout } from "../../network/forceLayout";
 
 interface ForceControlsProps {
     className?: string;
@@ -71,9 +66,6 @@ export const ForceControls: React.FC<ForceControlsProps> = ({
 
     // Create new handlers to directly use startForceLayout and stopForceLayout
     const handleStartLayout = useCallback((): void => {
-        // Get nodes from networkManager instead of state
-        const nodes = Array.from(networkManager.data.nodeMap.values());
-        startForceLayout(nodes);
         restartForceLayout(FORCE.SIMULATION.ALPHA / 10.0);
     }, []);
 
