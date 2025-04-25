@@ -1,25 +1,7 @@
 /** @jsxImportSource react */
-import React, {
-    createContext,
-    useContext,
-    useState,
-    useCallback,
-    useEffect,
-} from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import type { ReactNode } from "react";
-
-// Define the context interface
-interface LoadingContextProps {
-    isLoading: boolean;
-    showLoading: () => void;
-    hideLoading: () => void;
-    toggleLoading: (status: boolean) => void;
-}
-
-// Create the context
-const LoadingContext = createContext<LoadingContextProps | undefined>(
-    undefined,
-);
+import { LoadingContext } from "./loadingContextInstance";
 
 // Provider component
 interface LoadingProviderProps {
@@ -76,17 +58,4 @@ export const LoadingProvider: React.FC<LoadingProviderProps> = ({
             {children}
         </LoadingContext.Provider>
     );
-};
-
-/**
- * Custom hook to use the loading context
- * @returns LoadingContextProps
- * @throws Error if used outside of LoadingProvider
- */
-export const useLoading = (): LoadingContextProps => {
-    const context = useContext(LoadingContext);
-    if (context === undefined) {
-        throw new Error("useLoading must be used within a LoadingProvider");
-    }
-    return context;
 };

@@ -3,7 +3,7 @@ import React, { useRef, useEffect, memo } from "react";
 import { initNetwork } from "../../network/init";
 import { initSvg } from "../../svg";
 import { networkManager } from "../../core";
-import { useNetwork } from "../../contexts/NetworkContext";
+import { useNetwork } from "../../contexts/useNetwork";
 import { DOM_IDS } from "../../constants";
 
 /**

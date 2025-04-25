@@ -2,7 +2,7 @@
 import React, { useCallback } from "react";
 import { Form } from "react-bootstrap";
 import { FORCE } from "../../constants";
-import { useNetwork } from "../../contexts/NetworkContext";
+import { useNetwork } from "../../contexts/useNetwork";
 import { restartForceLayout, stopForceLayout } from "../../network/forceLayout";
 
 interface ForceControlsProps {

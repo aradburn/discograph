@@ -92,7 +92,7 @@ import * as roles from "../roles";
 import * as forceLayout from "../network/forceLayout";
 import * as fsm from "../fsm";
 import * as relations from "../relations";
-import { useLoading } from "../contexts/LoadingContext";
+import { useLoading } from "../contexts/useLoading";
 
 // Create a simple event stub that mimics just enough of DOM events
 class EventStub {

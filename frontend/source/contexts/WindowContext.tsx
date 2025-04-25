@@ -1,5 +1,5 @@
 /** @jsxImportSource react */
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { debounce } from "../utils";
 import { INIT, SVG } from "../constants";
@@ -114,11 +114,5 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
     );
 };
 
-// Custom hook to use the window context
-export const useWindow = (): WindowContextProps => {
-    const context = useContext(WindowContext);
-    if (context === undefined) {
-        throw new Error("useWindow must be used within a WindowProvider");
-    }
-    return context;
-};
+// Make context available for useWindow hook
+export { WindowContext };

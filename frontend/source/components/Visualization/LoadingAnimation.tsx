@@ -1,7 +1,7 @@
 /** @jsxImportSource react */
 import { useRef, useEffect } from "react";
 import * as d3 from "d3";
-import { useLoading } from "../../contexts/LoadingContext";
+import { useLoading } from "../../contexts/useLoading";
 import { LOADING, TIMING, SVG_IDS, DOM_IDS } from "../../constants";
 import { discographManager } from "../../core";
 

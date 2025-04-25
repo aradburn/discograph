@@ -1,7 +1,5 @@
 /** @jsxImportSource react */
 import React, {
-    createContext,
-    useContext,
     useReducer,
     useEffect,
     useCallback,
@@ -14,34 +12,8 @@ import type { SimNode, SimLink } from "../network/data";
 import { FORCE } from "../constants";
 import * as d3 from "d3";
 import { clamp } from "../utils";
-
-// Define the state interface
-interface NetworkState {
-    nodeStrength: number;
-    linkStrength: number;
-    gravityStrength: number;
-    selectedNode: string | null;
-}
-
-// Define the actions that can be dispatched
-type NetworkAction =
-    | { type: "SET_NODE_STRENGTH"; value: number }
-    | { type: "SET_LINK_STRENGTH"; value: number }
-    | { type: "SET_GRAVITY_STRENGTH"; value: number }
-    | { type: "SELECT_NODE"; nodeId: string | null }
-    | { type: "SET_FORCES" }
-    | { type: "RESET_FORCES" };
-
-// Context interface
-interface NetworkContextProps {
-    state: NetworkState;
-    dispatch: React.Dispatch<NetworkAction>;
-    setupChargeForce: (nodeStrength: number) => void;
-    setupLinkForce: (linkStrength: number) => void;
-    setupGravityForce: (gravityStrength: number) => void;
-    setForces: () => void;
-    resetForces: () => void;
-}
+import { NetworkContext } from "./networkContextInstance";
+import type { NetworkState, NetworkAction } from "./networkContextInstance";
 
 // Initial state
 const initialState: NetworkState = {
@@ -50,11 +22,6 @@ const initialState: NetworkState = {
     gravityStrength: 10,
     selectedNode: null,
 };
-
-// Create the context
-const NetworkContext = createContext<NetworkContextProps | undefined>(
-    undefined,
-);
 
 // Reducer function
 function networkReducer(
@@ -84,9 +51,9 @@ interface NetworkProviderProps {
     children: ReactNode;
 }
 
-export const NetworkProvider: React.FC<NetworkProviderProps> = ({
+export const NetworkProvider = ({
     children,
-}) => {
+}: NetworkProviderProps): React.ReactElement => {
     const [state, dispatch] = useReducer(networkReducer, initialState);
 
     // Create a ref to always track the latest state
@@ -190,19 +157,48 @@ export const NetworkProvider: React.FC<NetworkProviderProps> = ({
         // Helper function for gravity strength calculation
         function calculateGravityStrength(d: SimNode): number {
             var dist = d.distance ? 4 - clamp(d.distance, 0, 3) : 1.0;
+            var scaling = dist / 10.0;
+            var minDimension = Math.min(
+                discographManager.svgDimensions[0],
+                discographManager.svgDimensions[1],
+            );
             var maxDimension = Math.max(
                 discographManager.svgDimensions[0],
                 discographManager.svgDimensions[1],
             );
-            var scaling = dist / 10.0;
+            var xyScale = minDimension / maxDimension;
+            var maxDist = Math.hypot(
+                discographManager.svgDimensions[0] / 2.0,
+                discographManager.svgDimensions[1] / 2.0,
+            );
             var radialDistance =
-                (maxDimension -
-                    Math.max(
-                        d.x - discographManager.svgDimensions[0] / 2,
-                        d.y - discographManager.svgDimensions[1] / 2,
-                    )) /
-                maxDimension;
-            return radialDistance * scaling * gravStrengthMultiplier;
+                discographManager.svgDimensions[0] >=
+                discographManager.svgDimensions[1]
+                    ? Math.hypot(
+                          d.x - discographManager.svgDimensions[0] / 2.0,
+                          (d.y - discographManager.svgDimensions[1] / 2.0) *
+                              xyScale *
+                              xyScale,
+                      )
+                    : Math.hypot(
+                          (d.x - discographManager.svgDimensions[0] / 2.0) *
+                              xyScale *
+                              xyScale,
+                          d.y - discographManager.svgDimensions[1] / 2.0,
+                      );
+            var scaledRadialDistance = (maxDist - radialDistance) / maxDist;
+            //             var radialDistance =
+            //                 (maxDimension -
+            //                     Math.max(
+            //                         Math.abs(d.x - discographManager.svgDimensions[0] / 2.0),
+            //                         Math.abs(d.y - discographManager.svgDimensions[1] / 2.0),
+            //                     )) /
+            //                 maxDimension;
+            var result =
+                scaledRadialDistance * scaling * gravStrengthMultiplier;
+            // console.log(d.x, d.y);
+            // console.log(result);
+            return result;
         }
     }, []);
 
@@ -302,13 +298,4 @@ export const NetworkProvider: React.FC<NetworkProviderProps> = ({
             {children}
         </NetworkContext.Provider>
     );
-};
-
-// Custom hook to use the network context
-export const useNetwork = (): NetworkContextProps => {
-    const context = useContext(NetworkContext);
-    if (context === undefined) {
-        throw new Error("useNetwork must be used within a NetworkProvider");
-    }
-    return context;
 };
