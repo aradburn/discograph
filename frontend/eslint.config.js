@@ -5,6 +5,7 @@ import prettierPlugin from "eslint-plugin-prettier";
 import prettierConfig from "eslint-config-prettier";
 import globals from "globals";
 import testingLibrary from "eslint-plugin-testing-library";
+import reactRefresh from "eslint-plugin-react-refresh";
 
 export default [
     // Base ESLint configuration
@@ -59,6 +60,7 @@ export default [
         },
         plugins: {
             "@typescript-eslint": tseslint,
+            "react-refresh": reactRefresh,
             prettier: prettierPlugin,
         },
         rules: {
@@ -81,6 +83,7 @@ export default [
                 },
             ],
             "prefer-const": "error",
+            "react-refresh/only-export-components": "error",
             "prettier/prettier": "error",
         },
     },
