@@ -69,7 +69,7 @@ describe("SearchInput", () => {
         const searchInput = screen.getByPlaceholderText("Search");
         await userEvent.type(searchInput, "artist");
 
-        // Wait for results to be visible
+        // Wait for results to be visible (using waitFor instead of act)
         await waitFor(() => {
             expect(screen.getByText("Artist 1")).toBeInTheDocument();
             expect(screen.getByText("Artist 2")).toBeInTheDocument();
@@ -95,9 +95,13 @@ describe("SearchInput", () => {
         const searchInput = screen.getByPlaceholderText("Search");
         await userEvent.type(searchInput, "artist");
 
+        // Wait for the results to be visible
+        await waitFor(() => {
+            expect(screen.getByText("Artist 1")).toBeInTheDocument();
+        });
+
         // Click on a result
-        const resultItem = await screen.findByText("Artist 1");
-        fireEvent.click(resultItem);
+        await userEvent.click(screen.getByText("Artist 1"));
 
         // Verify the event was dispatched
         expect(mockDispatchEvent).toHaveBeenCalled();
@@ -120,13 +124,20 @@ describe("SearchInput", () => {
         const searchInput = screen.getByPlaceholderText("Search");
         await userEvent.type(searchInput, "artist");
 
+        // Wait for input to have the value
+        await waitFor(() => {
+            expect(searchInput).toHaveValue("artist");
+        });
+
         // Click the clear button
         const clearButton = screen.getByRole("button", {
             name: /clear search/i,
         });
-        fireEvent.click(clearButton);
+        await userEvent.click(clearButton);
 
         // Verify input was cleared
-        expect(searchInput).toHaveValue("");
+        await waitFor(() => {
+            expect(searchInput).toHaveValue("");
+        });
     });
 });

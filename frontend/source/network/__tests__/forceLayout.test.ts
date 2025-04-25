@@ -6,6 +6,8 @@ import {
     setForceLayoutNodes,
     restartForceLayout,
     stopForceLayout,
+    setNetworkForces,
+    resetNetworkForces,
 } from "../forceLayout";
 import type { SimNode, SimLink } from "../data";
 import { NodeType } from "../data";
@@ -65,6 +67,7 @@ vi.mock("../../core", () => {
         data: vi.fn().mockReturnValue({
             join: vi.fn(),
         }),
+        classed: vi.fn().mockReturnThis(),
     });
 
     return {
@@ -84,9 +87,16 @@ vi.mock("../../core", () => {
                 link: { selectAll: innerMockSelectAll },
             },
             forceLayout: null,
+            isRunningLayout: false,
+            tick: 0,
         },
     };
 });
+
+// Mock window event dispatching
+const dispatchEventSpy = vi
+    .spyOn(window, "dispatchEvent")
+    .mockImplementation(() => true);
 
 // Create mock nodes and links for testing
 const createMockNode = (
@@ -272,12 +282,38 @@ describe("Error Handling", () => {
     });
 });
 
-describe("Force Layout", () => {
-    it("updates charge force", () => {
-        networkManager.forceLayout = d3.forceSimulation();
-        networkManager.forceLayout = d3.forceSimulation();
-        stopForceLayout();
+describe("Network Forces Control", () => {
+    it("should dispatch set forces event", () => {
+        setNetworkForces();
+        expect(dispatchEventSpy).toHaveBeenCalled();
+        const lastCall = dispatchEventSpy.mock.calls[0][0];
+        expect(lastCall.type).toBe("discograph:set-forces");
+    });
 
-        expect(networkManager.forceLayout.stop).toHaveBeenCalled();
+    it("should dispatch reset forces event", () => {
+        resetNetworkForces();
+        expect(dispatchEventSpy).toHaveBeenCalled();
+        const lastCall = dispatchEventSpy.mock.calls[0][0];
+        expect(lastCall.type).toBe("discograph:reset-forces");
+    });
+});
+
+describe("Hull Processing", () => {
+    it("should process hull data for clustered nodes", () => {
+        const mockNodes = [
+            createMockNode("1", { cluster: 1 }),
+            createMockNode("2", { cluster: 1 }),
+            createMockNode("3", { cluster: 2 }),
+        ];
+        networkManager.data.nodeMap = new Map(
+            mockNodes.map((node) => [node.key, node]),
+        );
+
+        displayForceLayout();
+
+        // Verify that the hull layer was updated
+        expect(networkManager.layers.halo.selectAll).toHaveBeenCalledWith(
+            ".hull",
+        );
     });
 });

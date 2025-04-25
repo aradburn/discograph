@@ -14,6 +14,14 @@ import { fetchAPINetwork, fetchAPIRandom, fetchAPIRadial } from "../../api";
 import type { State } from "../State";
 import { AbstractFSM } from "../AbstractFSM";
 import type { AbstractFSM as _AbstractFSM } from "../AbstractFSM";
+import {
+    restartForceLayout,
+    stopForceLayout,
+    displayForceLayout,
+    setForceLayoutNodes,
+    setNetworkForces,
+} from "../../network/forceLayout";
+import { discographManager, networkManager } from "../../core";
 
 // Create a type for private methods we need to spy on
 type DiscographFSMPrivate = {
@@ -131,6 +139,8 @@ vi.mock("../../network/forceLayout", () => ({
     displayForceLayout: vi.fn(),
     setupForceSliders: vi.fn(),
     startForceLayout: vi.fn(),
+    setForceLayoutNodes: vi.fn(),
+    setNetworkForces: vi.fn(),
     ALPHA: 1,
 }));
 
@@ -428,7 +438,7 @@ describe("DiscographFSM", () => {
         });
 
         describe("requestNetwork", () => {
-            it("should fetch network data for an entity", () => {
+            it("should fetch network data for an entity", async () => {
                 const fetchAPINetworkSpy = vi.mocked(fetchAPINetwork);
                 const transitionSpy = vi.spyOn(
                     fsm as unknown as DiscographFSMPrivate,
@@ -445,7 +455,7 @@ describe("DiscographFSM", () => {
         });
 
         describe("requestRadial", () => {
-            it("should fetch radial data for an entity", () => {
+            it("should fetch radial data for an entity", async () => {
                 const fetchAPIRadialSpy = vi.mocked(fetchAPIRadial);
                 const transitionSpy = vi.spyOn(
                     fsm as unknown as DiscographFSMPrivate,
@@ -462,7 +472,7 @@ describe("DiscographFSM", () => {
         });
 
         describe("requestRandom", () => {
-            it("should fetch a random entity", () => {
+            it("should fetch a random entity", async () => {
                 const fetchAPIRandomSpy = vi.mocked(fetchAPIRandom);
                 const transitionSpy = vi.spyOn(
                     fsm as unknown as DiscographFSMPrivate,
@@ -514,12 +524,20 @@ describe("DiscographFSM", () => {
                     "transition",
                 );
                 const handleSpy = vi.spyOn(fsm, "handle");
+                const setForceLayoutNodesSpy = vi.mocked(setForceLayoutNodes);
+                const setNetworkForcesSpy = vi.mocked(setNetworkForces);
+                const displayForceLayoutSpy = vi.mocked(displayForceLayout);
+                const restartForceLayoutSpy = vi.mocked(restartForceLayout);
 
                 fsm.showNetwork(networkData, true);
 
                 expect(transitionSpy).toHaveBeenCalledWith(
                     "state-viewing-network",
                 );
+                expect(setForceLayoutNodesSpy).toHaveBeenCalled();
+                expect(setNetworkForcesSpy).toHaveBeenCalled();
+                expect(displayForceLayoutSpy).toHaveBeenCalled();
+                expect(restartForceLayoutSpy).toHaveBeenCalled();
                 expect(handleSpy).toHaveBeenCalledWith(
                     "select-entity",
                     "artist-123",
@@ -572,7 +590,9 @@ describe("DiscographFSM", () => {
             });
 
             it("should hide network when disabled", () => {
+                const stopForceLayoutSpy = vi.mocked(stopForceLayout);
                 fsm.toggleNetwork(false);
+                expect(stopForceLayoutSpy).toHaveBeenCalled();
                 // We can't easily test d3 DOM manipulations without a more complex setup
             });
         });
@@ -613,13 +633,15 @@ describe("DiscographFSM", () => {
         describe("selectEntity", () => {
             it("should select an entity in the network", () => {
                 fsm.selectEntity("artist-123", true);
-                // We need to test that discographManager.selectedNodeKey is updated
-                // and that DOM elements are manipulated, but this is complex to test
+                // Test that discographManager.selectedNodeKey is updated
+                expect(vi.mocked(discographManager).selectedNodeKey).toBe(
+                    "artist-123",
+                );
             });
 
             it("should deselect all entities when null is passed", () => {
                 fsm.selectEntity(null, false);
-                // Similarly complex to test fully
+                expect(vi.mocked(discographManager).selectedNodeKey).toBe(null);
             });
         });
     });

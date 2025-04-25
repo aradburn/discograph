@@ -6,7 +6,7 @@ import type * as initModule from "../init";
 import { initApp } from "../init";
 import { ResizeEvent } from "../network/events";
 import type { TreeConfig } from "../roles";
-import { SVG } from "../constants";
+import { SVG, DOM_IDS } from "../constants";
 
 // Define CustomEvent type for mocking
 interface CustomEventInit {
@@ -29,8 +29,8 @@ vi.mock("bootstrap", () => ({
     })),
 }));
 
-// Mock loading context instead of the old loading module
-vi.mock("../contexts/LoadingContext", () => ({
+// Mock the loading context
+vi.mock("../contexts/useLoading", () => ({
     useLoading: vi.fn().mockReturnValue({
         showLoading: vi.fn(),
         hideLoading: vi.fn(),
@@ -51,6 +51,7 @@ vi.mock("../network/init", () => ({
 vi.mock("../network/forceLayout", () => ({
     restartForceLayout: vi.fn(),
     stopForceLayout: vi.fn(),
+    resetNetworkForces: vi.fn(),
 }));
 
 vi.mock("../roles", () => ({
@@ -77,8 +78,7 @@ vi.mock("../utils", () => ({
     debounce: vi.fn().mockImplementation((fn: AnyFunction) => fn),
 }));
 
-// Import for the window calculation functions
-import { useContext as mockUseContext } from "react";
+// Mock React context
 vi.mock("react", () => ({
     ...vi.importActual("react"),
     useContext: vi.fn(),
@@ -143,6 +143,7 @@ interface MockedFsm {
 interface MockedForceLayout {
     restartForceLayout: typeof forceLayout.restartForceLayout;
     stopForceLayout: typeof forceLayout.stopForceLayout;
+    resetNetworkForces: typeof forceLayout.resetNetworkForces;
 }
 
 describe("Init Module", () => {
@@ -168,7 +169,7 @@ describe("Init Module", () => {
         const mockGetElementById = vi
             .fn()
             .mockImplementation((id: string): MockElement | null => {
-                if (id === "svg-container-fluid") {
+                if (id === DOM_IDS.SVG_CONTAINER) {
                     return {
                         clientWidth: 1000,
                         clientHeight: 800,
@@ -200,7 +201,8 @@ describe("Init Module", () => {
             <!DOCTYPE html>
             <html>
                 <body>
-                    <div id="svg-container-fluid" style="width: 1000px; height: 800px;"></div>
+                    <div id="${DOM_IDS.SVG_CONTAINER}" style="width: 1000px; height: 800px;"></div>
+                    <div id="react-app-root" data-mounted="true" style="display: none;"></div>
                     <button id="request-random">Random</button>
                     <button id="start-layout">Start Layout</button>
                     <button id="stop-layout">Stop Layout</button>
@@ -222,6 +224,7 @@ describe("Init Module", () => {
             } as TreeConfig,
             // We'll mock addEventListener to capture and track handlers
             addEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
         }) as unknown as Window & typeof globalThis;
 
         global.document = dom.window.document;
@@ -296,12 +299,14 @@ describe("Init Module", () => {
     describe("initApp", () => {
         it("should initialize all components", () => {
             // Create spies for each function
-            const spyInitSvg = vi.spyOn(svg, "initSvg");
-            const spyInitNetwork = vi.spyOn(networkInit, "initNetwork");
             const spyInitRelations = vi.spyOn(relations, "initRelations");
             const spyInitRoles = vi.spyOn(roles, "initRoles");
             const mockLoading = useLoading as Mock;
             const spyInitFSM = vi.spyOn(fsm, "initFSM");
+            const spyResetNetworkForces = vi.spyOn(
+                forceLayout,
+                "resetNetworkForces",
+            );
 
             // Ensure window.dgRoles is defined
             window.dgRoles = {
@@ -316,59 +321,46 @@ describe("Init Module", () => {
             expect(spyInitRelations).toHaveBeenCalled();
             expect(spyInitRoles).toHaveBeenCalled();
             expect(spyInitFSM).toHaveBeenCalled();
+            expect(spyResetNetworkForces).toHaveBeenCalled();
 
             // Restore all spies
             vi.restoreAllMocks();
         });
 
-        it("should set up event listeners for UI controls", () => {
-            // Mock querySelector to return actual buttons
-            const buttons = {
-                requestRandom: document.createElement("button"),
-                startLayout: document.createElement("button"),
-                stopLayout: document.createElement("button"),
-                print: document.createElement("button"),
-            };
+        it("should check for SVG container before initializing", () => {
+            // Mock the setTimout function
+            const originalSetTimeout = global.setTimeout;
+            global.setTimeout = vi.fn() as unknown as typeof setTimeout;
 
-            // Set IDs for the buttons
-            buttons.requestRandom.id = "request-random";
-            buttons.startLayout.id = "start-layout";
-            buttons.stopLayout.id = "stop-layout";
-            buttons.print.id = "print";
+            // Mock document.getElementById to initially return null, then the container
+            const originalGetElementById = document.getElementById;
+            let containerExists = false;
 
-            // Mock button event listeners
-            buttons.requestRandom.addEventListener = vi.fn();
-            buttons.startLayout.addEventListener = vi.fn();
-            buttons.stopLayout.addEventListener = vi.fn();
-            buttons.print.addEventListener = vi.fn();
-
-            // Mock document.querySelector
-            const originalQuerySelector = document.querySelector;
-            document.querySelector = vi
+            document.getElementById = vi
                 .fn()
-                .mockImplementation((selector: string) => {
-                    if (selector === "#request-random")
-                        return buttons.requestRandom;
-                    if (selector === "#start-layout")
-                        return buttons.startLayout;
-                    if (selector === "#stop-layout") return buttons.stopLayout;
-                    if (selector === "#print") return buttons.print;
-                    return originalQuerySelector.call(
-                        document,
-                        selector,
-                    ) as Element | null;
+                .mockImplementation((id: string) => {
+                    if (id === DOM_IDS.SVG_CONTAINER) {
+                        if (!containerExists) {
+                            containerExists = true;
+                            return null;
+                        }
+                        return {
+                            clientWidth: 1000,
+                            clientHeight: 800,
+                        };
+                    }
+                    return originalGetElementById.call(document, id);
                 });
 
             // Act
             initApp();
 
-            // Since the React refactoring likely changes how UI controls are set up,
-            // we're not asserting specific event listeners but rather that the function
-            // completes without errors
-            expect(true).toBe(true);
+            // Verify setTimeout was called
+            expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), 100);
 
-            // Restore original querySelector
-            document.querySelector = originalQuerySelector;
+            // Restore original functions
+            global.setTimeout = originalSetTimeout;
+            document.getElementById = originalGetElementById;
         });
 
         it("should initialize the FSM", () => {
