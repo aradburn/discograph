@@ -316,4 +316,136 @@ describe("Hull Processing", () => {
             ".hull",
         );
     });
+
+    // New test for the case where no hull groups have more than one node
+    it("should handle case when no hull groups have more than one node", () => {
+        const mockNodes = [
+            createMockNode("1", { cluster: 1 }),
+            createMockNode("2", { cluster: 3 }),
+            createMockNode("3", { cluster: 2 }),
+        ];
+        networkManager.data.nodeMap = new Map(
+            mockNodes.map((node) => [node.key, node]),
+        );
+
+        displayForceLayout();
+
+        // Verify that the hull layer was still called, but with empty data
+        expect(networkManager.layers.halo.selectAll).toHaveBeenCalledWith(
+            ".hull",
+        );
+    });
+});
+
+// New test suite for bboxForce functionality
+describe("Boundary Force (bboxForce)", () => {
+    it("should adjust node positions to keep them within SVG boundaries", () => {
+        // Setup: Create force layout with nodes outside boundaries
+        const outsideNodes: SimNode[] = [
+            createMockNode("outside-right", { x: 1000, y: 300, radius: 10 }), // outside right
+            createMockNode("outside-bottom", { x: 400, y: 1000, radius: 10 }), // outside bottom
+            createMockNode("outside-left", { x: -100, y: 300, radius: 10 }), // outside left
+            createMockNode("outside-top", { x: 400, y: -100, radius: 10 }), // outside top
+            createMockNode("inside", { x: 400, y: 300, radius: 10 }), // inside boundaries
+        ];
+
+        // Initialize force layout and expose bboxForce
+        initForceLayout();
+
+        // We need to capture the bboxForce when it's added
+        const forceFunction = (
+            networkManager.forceLayout.force as any
+        ).mock.calls.find((call: any[]) => call[0] === "bbox")[1];
+
+        // Override the nodes in the simulation
+        (networkManager.forceLayout as any).nodes = vi.fn(() => outsideNodes);
+
+        // Call the bboxForce function directly
+        forceFunction();
+
+        // Assertions: Check that node positions were adjusted to boundaries
+        // Right edge
+        expect(outsideNodes[0].x).toBeLessThanOrEqual(
+            discographManager.svgDimensions[0] -
+                (outsideNodes[0].radius + FORCE.COLLIDE.BUFFER * 2),
+        );
+
+        // Bottom edge
+        expect(outsideNodes[1].y).toBeLessThanOrEqual(
+            discographManager.svgDimensions[1] -
+                (outsideNodes[1].radius + FORCE.COLLIDE.BUFFER * 2),
+        );
+
+        // Left edge
+        expect(outsideNodes[2].x).toBeGreaterThanOrEqual(
+            outsideNodes[2].radius + FORCE.COLLIDE.BUFFER * 2,
+        );
+
+        // Top edge
+        expect(outsideNodes[3].y).toBeGreaterThanOrEqual(
+            outsideNodes[3].radius + FORCE.COLLIDE.BUFFER * 2,
+        );
+
+        // Inside node should not be changed
+        expect(outsideNodes[4].x).toBe(400);
+        expect(outsideNodes[4].y).toBe(300);
+    });
+
+    it("should handle nodes with undefined radius", () => {
+        // Setup: Create force layout with a node that has undefined radius
+        const noRadiusNode: SimNode[] = [
+            createMockNode("no-radius", { x: 1000, y: 300, radius: undefined }),
+        ];
+
+        // Initialize force layout and expose bboxForce
+        initForceLayout();
+
+        // We need to capture the bboxForce when it's added
+        const forceFunction = (
+            networkManager.forceLayout.force as any
+        ).mock.calls.find((call: any[]) => call[0] === "bbox")[1];
+
+        // Override the nodes in the simulation
+        (networkManager.forceLayout as any).nodes = vi.fn(() => noRadiusNode);
+
+        // Call the bboxForce callback (should not throw error)
+        expect(() => forceFunction()).not.toThrow();
+    });
+
+    it("should handle case when forceLayout.nodes returns undefined", () => {
+        // Initialize force layout and expose bboxForce
+        initForceLayout();
+
+        // We need to capture the bboxForce when it's added
+        const forceFunction = (
+            networkManager.forceLayout.force as any
+        ).mock.calls.find((call: any[]) => call[0] === "bbox")[1];
+
+        // Override the nodes in the simulation to return undefined
+        (networkManager.forceLayout as any).nodes = vi.fn(() => undefined);
+
+        // Call the bboxForce callback
+        expect(() => forceFunction()).not.toThrow();
+    });
+});
+
+// Test the behavior of displayForceLayout in more detail
+describe("ForceLayout Display Detailed Behavior", () => {
+    it("should reset fixed flag for all nodes", () => {
+        // Create nodes with fixed=true
+        const mockNodes = [
+            createMockNode("1", { fixed: true }),
+            createMockNode("2", { fixed: true }),
+        ];
+        networkManager.data.nodeMap = new Map(
+            mockNodes.map((node) => [node.key, node]),
+        );
+
+        displayForceLayout();
+
+        // Verify that all nodes have fixed=false after displayForceLayout
+        Array.from(networkManager.data.nodeMap.values()).forEach((node) => {
+            expect(node.fixed).toBe(false);
+        });
+    });
 });

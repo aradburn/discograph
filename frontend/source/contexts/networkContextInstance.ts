@@ -17,6 +17,37 @@ export type NetworkAction =
     | { type: "SET_FORCES" }
     | { type: "RESET_FORCES" };
 
+// Initial state
+export const initialState: NetworkState = {
+    nodeStrength: 12,
+    linkStrength: 40,
+    gravityStrength: 10,
+    selectedNode: null,
+};
+
+// Reducer function
+export function networkReducer(
+    state: NetworkState,
+    action: NetworkAction,
+): NetworkState {
+    switch (action.type) {
+        case "SET_NODE_STRENGTH":
+            return { ...state, nodeStrength: action.value };
+        case "SET_LINK_STRENGTH":
+            return { ...state, linkStrength: action.value };
+        case "SET_GRAVITY_STRENGTH":
+            return { ...state, gravityStrength: action.value };
+        case "SELECT_NODE":
+            return { ...state, selectedNode: action.nodeId };
+        case "SET_FORCES":
+            return { ...state };
+        case "RESET_FORCES":
+            return { ...initialState };
+        default:
+            return state;
+    }
+}
+
 // Context interface
 export interface NetworkContextProps {
     state: NetworkState;

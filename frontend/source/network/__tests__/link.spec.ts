@@ -7,8 +7,8 @@ import {
     afterEach,
     type Mock,
 } from "vitest";
-import type * as d3 from "d3";
-import { onLinkEnter, onLinkExit, onLinkUpdate } from "../link";
+import * as d3 from "d3";
+import { onLinkEnter, onLinkExit, onLinkUpdate, onLinkMouseOut } from "../link";
 import type { SimLink } from "../data";
 import { NodeType } from "../data";
 
@@ -27,17 +27,27 @@ vi.mock("../../color", () => ({
 // Mock d3 functions we need
 vi.mock("d3", async (importOriginal) => {
     const originalModule = await importOriginal();
+    const mockClassed = vi.fn().mockReturnValue({
+        transition: vi.fn().mockReturnValue({
+            duration: vi.fn(),
+        }),
+    });
+
     return {
         ...(originalModule as object),
         select: vi.fn().mockReturnValue({
-            classed: vi.fn().mockReturnValue({
-                transition: vi.fn().mockReturnValue({
-                    duration: vi.fn(),
-                }),
+            classed: mockClassed,
+            transition: vi.fn().mockReturnValue({
+                duration: vi.fn(),
             }),
         }),
     };
 });
+
+// Mock for utils debounce
+vi.mock("../../utils", () => ({
+    debounce: (fn: Function) => fn,
+}));
 
 describe("Network Link Functions", () => {
     // Type definitions for mock selections
@@ -265,9 +275,6 @@ describe("Network Link Functions", () => {
         });
 
         it("should bind mouse events with tooltip handling", () => {
-            // Import handleLinkTooltip directly for test - modify the import and don't try to mock it
-            // Instead, we'll test the outcome by verifying the tooltip behaviors
-
             onLinkEnter(mockLinkEnterSelection);
 
             // Verify event bindings
@@ -304,6 +311,36 @@ describe("Network Link Functions", () => {
             expect(mouseoutHandler).toBeDefined();
             expect(typeof mouseoutHandler).toBe("function");
         });
+
+        it("should correctly extract role from complex key", () => {
+            // Test with a more complex key having a multi-part role
+            const complexLink: SimLink = {
+                ...mockLink,
+                key: "source-target-complex-role-name-1-2",
+                role: "Complex Role Name",
+            };
+
+            mockLinkEnterSelection = {
+                append: vi.fn().mockReturnValue(mockAppendedGroup),
+            } as unknown as LinkEnterSelection;
+
+            onLinkEnter(mockLinkEnterSelection);
+
+            // Test class attribute with the complex key
+            const idCalls = (mockAppendedGroup.attr as Mock).mock.calls;
+            let classCall: unknown[] | undefined;
+            for (const call of idCalls) {
+                if (call[0] === "class") {
+                    classCall = call;
+                    break;
+                }
+            }
+            expect(classCall).toBeTruthy();
+            const classFunc = classCall?.[1] as (d: SimLink) => string;
+            expect(classFunc(complexLink)).toBe(
+                "link complex-role-name LinkGreenPalette",
+            );
+        });
     });
 
     describe("onLinkExit", () => {
@@ -333,6 +370,41 @@ describe("Network Link Functions", () => {
             >;
             const result = onLinkUpdate(mockSelection);
             expect(result).toBe(mockSelection);
+        });
+    });
+
+    describe("onLinkMouseOut", () => {
+        it("should remove 'selected' class and call transition", () => {
+            // Mock DOM element and event
+            const mockEvent = {
+                target: document.createElement("div"),
+            } as unknown as MouseEvent;
+
+            // Mock d3.select for this test
+            const mockTransitionDuration = vi.fn();
+            const mockTransition = vi.fn().mockReturnValue({
+                duration: mockTransitionDuration,
+            });
+            const mockClassed = vi.fn().mockReturnValue({
+                transition: mockTransition,
+            });
+
+            const d3SelectSpy = vi.spyOn(d3, "select").mockReturnValue({
+                classed: mockClassed,
+            } as any);
+
+            // Call the function
+            onLinkMouseOut(mockEvent, mockLink);
+
+            // Verify d3.select was called with the target
+            expect(d3SelectSpy).toHaveBeenCalledWith(mockEvent.target);
+
+            // Verify classed was called to remove 'selected'
+            expect(mockClassed).toHaveBeenCalledWith("selected", false);
+
+            // Verify transition and duration were called
+            expect(mockTransition).toHaveBeenCalled();
+            expect(mockTransitionDuration).toHaveBeenCalled();
         });
     });
 });

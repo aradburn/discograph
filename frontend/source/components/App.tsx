@@ -5,7 +5,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 import { Header } from "./Layout/Header.tsx";
 import { Sidebar } from "./Layout/Sidebar";
-import { HelpModal, WelcomeModal, WhoModal } from "./Modals";
+import { HelpModal, WelcomeModal, WhoModal } from "./Modals/index";
 import { NetworkView } from "./Visualization/NetworkView";
 import { LoadingAnimation } from "./Visualization";
 import { NetworkProvider } from "../contexts/NetworkContext";

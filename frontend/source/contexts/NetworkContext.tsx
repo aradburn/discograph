@@ -12,39 +12,11 @@ import type { SimNode, SimLink } from "../network/data";
 import { FORCE } from "../constants";
 import * as d3 from "d3";
 import { clamp } from "../utils";
-import { NetworkContext } from "./networkContextInstance";
-import type { NetworkState, NetworkAction } from "./networkContextInstance";
-
-// Initial state
-const initialState: NetworkState = {
-    nodeStrength: 12,
-    linkStrength: 40,
-    gravityStrength: 10,
-    selectedNode: null,
-};
-
-// Reducer function
-function networkReducer(
-    state: NetworkState,
-    action: NetworkAction,
-): NetworkState {
-    switch (action.type) {
-        case "SET_NODE_STRENGTH":
-            return { ...state, nodeStrength: action.value };
-        case "SET_LINK_STRENGTH":
-            return { ...state, linkStrength: action.value };
-        case "SET_GRAVITY_STRENGTH":
-            return { ...state, gravityStrength: action.value };
-        case "SELECT_NODE":
-            return { ...state, selectedNode: action.nodeId };
-        case "SET_FORCES":
-            return { ...state };
-        case "RESET_FORCES":
-            return { ...initialState };
-        default:
-            return state;
-    }
-}
+import {
+    NetworkContext,
+    initialState,
+    networkReducer,
+} from "./networkContextInstance";
 
 // Provider component
 interface NetworkProviderProps {

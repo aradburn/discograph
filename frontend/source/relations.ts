@@ -95,6 +95,12 @@ export function setRelationsData(data: RelationsData): void {
 export function createRadialChart(): void {
     console.log("createRadialChart()");
 
+    // Check if dimensions are available
+    if (!discographManager.dimensions) {
+        console.error("Error: dimensions not available for radial chart");
+        return;
+    }
+
     const textAnchor = (_d: RelationsArcData, i: number): "start" | "end" => {
         const angle = (i + 0.5) / numBars;
         return angle < 0.5 ? "start" : "end";
@@ -107,8 +113,20 @@ export function createRadialChart(): void {
     const data = relationsManager.byRole;
     console.log("createRadialChart() data: ", data);
 
+    // Check if data is empty
+    if (!data || data.size === 0) {
+        console.warn("No data available for radial chart");
+        return;
+    }
+
     const extent = d3.extent(Array.from(data.values()));
     console.log("createRadialChart() extent: ", extent);
+
+    // Ensure extent has valid values
+    if (!extent || extent.length < 2 || extent.some((v) => v === undefined)) {
+        console.error("Invalid data extent for radial chart");
+        return;
+    }
 
     const barScale = d3
         .scaleSqrt()
@@ -235,5 +253,5 @@ export function handleZoom({
  * Removes the relations layer element from the SVG
  */
 export function clearRelationsLayer(): void {
-    d3.select("#relationsLayer").remove();
+    d3.select(`#${SVG_IDS.RELATIONS_LAYER}`).remove();
 }

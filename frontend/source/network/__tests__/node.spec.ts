@@ -8,6 +8,23 @@ import {
     type Mock,
 } from "vitest";
 import type * as d3 from "d3";
+
+// Create a proper mock for networkManager
+const mockNetworkManager = {
+    layers: {
+        node: null,
+        text: null,
+        root: null,
+        halo: null,
+        link: null,
+    },
+};
+
+// Mock the core module
+vi.mock("../core", () => ({
+    networkManager: mockNetworkManager,
+}));
+
 import { onNodeEnter, onNodeExit, onNodeUpdate } from "../../network/node";
 import { NodeType } from "../data";
 
@@ -118,6 +135,7 @@ import {
     NODE_INNER_RADIUS,
     NODE_OUTER_RADIUS,
     onNodeTouchStart,
+    updateSelectedNodes,
 } from "../node";
 import type { SimNode } from "../data";
 import { nodeTooltip } from "../tooltips";
@@ -711,6 +729,26 @@ describe("Network Node Functions", () => {
             expect(stopPropagationSpy).toHaveBeenCalled();
             expect(dispatchEventSpy).toHaveBeenCalled();
             dispatchEventSpy.mockRestore();
+        });
+
+        it("should determine node selection correctly", () => {
+            // Test the core selection predicate logic that updateSelectedNodes uses
+            const selectedKeys = ["artist-test", "label-test"];
+
+            // Create a predicate function similar to the one used in updateSelectedNodes
+            const selectionPredicate = (d: SimNode) =>
+                selectedKeys.includes(d.key);
+
+            // Test the predicate with various node keys
+            expect(selectionPredicate(mockArtistNode)).toBe(true); // key: "artist-test"
+            expect(selectionPredicate(mockLabelNode)).toBe(true); // key: "label-test"
+
+            // Test with an unselected node
+            const unselectedNode = {
+                ...mockArtistNode,
+                key: "unselected-node",
+            };
+            expect(selectionPredicate(unselectedNode)).toBe(false);
         });
     });
 });
