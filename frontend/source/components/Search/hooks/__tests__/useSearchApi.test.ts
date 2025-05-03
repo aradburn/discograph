@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { useSearchApi, type SearchResult } from "../useSearchApi";
 
 // Mock constants used by the hook
@@ -61,7 +61,7 @@ describe("useSearchApi", () => {
     });
 
     // Test for successful API response
-    it.skip("should fetch and return results for valid query", async () => {
+    it("should fetch and return results for valid query", async () => {
         const mockResults: SearchResult[] = [
             { name: "Result 1", key: "r1" },
             { name: "Result 2", key: "r2" },
@@ -73,77 +73,65 @@ describe("useSearchApi", () => {
                 createFetchResponse({ results: mockResults }),
             );
 
-        let hook;
+        const { result } = renderHook(() => useSearchApi("test query"));
 
-        await act(async () => {
-            hook = renderHook(() => useSearchApi("test query"));
-
-            // Initial state should show loading
-            expect(hook.result.current.loading).toBe(true);
-        });
+        // Initial state should show loading
+        expect(result.current.loading).toBe(true);
 
         // Fast-forward timers to trigger the debounced function
-        await act(async () => {
-            vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
-            // Allow the hook's useEffect promises to resolve
-            await Promise.resolve();
-        });
+        vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
+        await Promise.resolve();
+        await Promise.resolve();
 
-        // Fetch should have been called with the expected URL
-        expect(fetchSpy).toHaveBeenCalledWith("/api/search/test%20query");
-        expect(hook.result.current.results).toEqual(mockResults);
-        expect(hook.result.current.loading).toBe(false);
-        expect(hook.result.current.error).toBeNull();
+        // Wait for the hook to update with the fetched results
+        await waitFor(() => {
+            expect(fetchSpy).toHaveBeenCalledWith("/api/search/test%20query");
+            expect(result.current.results).toEqual(mockResults);
+            expect(result.current.loading).toBe(false);
+            expect(result.current.error).toBeNull();
+        });
     });
 
     // Test for API error
-    it.skip("should handle API errors", async () => {
+    it("should handle API errors", async () => {
         vi.spyOn(global, "fetch").mockResolvedValueOnce(
             createFetchResponse({}, { status: 500 }),
         );
 
-        let hook;
+        const { result } = renderHook(() => useSearchApi("error test"));
 
-        await act(async () => {
-            hook = renderHook(() => useSearchApi("error test"));
+        vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
+        await Promise.resolve();
+        await Promise.resolve();
+
+        await waitFor(() => {
+            expect(result.current.results).toEqual([]);
+            expect(result.current.loading).toBe(false);
+            expect(result.current.error).toBe("API error: 500");
         });
-
-        // Fast-forward timers
-        await act(async () => {
-            vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
-            await Promise.resolve();
-        });
-
-        expect(hook.result.current.results).toEqual([]);
-        expect(hook.result.current.loading).toBe(false);
-        expect(hook.result.current.error).toBe("API error: 500");
     });
 
     // Test for network error
-    it.skip("should handle network errors", async () => {
+    it("should handle network errors", async () => {
         const networkError = new Error("Network error");
 
         vi.spyOn(global, "fetch").mockRejectedValueOnce(networkError);
 
-        let hook;
+        const { result } = renderHook(() => useSearchApi("network test"));
 
-        await act(async () => {
-            hook = renderHook(() => useSearchApi("network test"));
+        vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
+        await Promise.resolve();
+        await Promise.resolve();
+
+        await waitFor(() => {
+            expect(result.current.results).toEqual([]);
+            expect(result.current.loading).toBe(false);
+            expect(result.current.error).toBe("Network error");
         });
-
-        // Fast-forward timers
-        await act(async () => {
-            vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
-            await Promise.resolve();
-        });
-
-        expect(hook.result.current.results).toEqual([]);
-        expect(hook.result.current.loading).toBe(false);
-        expect(hook.result.current.error).toBe("Network error");
     });
 
     // Test for debouncing
-    it.skip("should debounce API calls", async () => {
+    it("should debounce API calls", async () => {
         const fetchSpy = vi
             .spyOn(global, "fetch")
             .mockResolvedValue(createFetchResponse({ results: [] }));
@@ -159,18 +147,18 @@ describe("useSearchApi", () => {
 
         // Advance time by less than debounce time - no fetch should happen yet
         vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE - 50);
-
         expect(fetchSpy).not.toHaveBeenCalled();
 
         // Advance time to trigger the debounced function
         vi.advanceTimersByTime(100); // This should exceed the debounce time
-
-        // Make sure the fetch promise resolves
+        await Promise.resolve();
         await Promise.resolve();
 
         // Should only be called once with the latest query
-        expect(fetchSpy).toHaveBeenCalledTimes(1);
-        expect(fetchSpy).toHaveBeenCalledWith("/api/search/test3");
+        await waitFor(() => {
+            expect(fetchSpy).toHaveBeenCalledTimes(1);
+            expect(fetchSpy).toHaveBeenCalledWith("/api/search/test3");
+        });
     });
 
     // Test custom debounce time
