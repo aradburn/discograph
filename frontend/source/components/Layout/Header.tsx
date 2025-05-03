@@ -53,7 +53,7 @@ export const Header: React.FC<HeaderProps> = ({ onShowHelp, onShowWho }) => {
                             </h3>
                         </OverlayTrigger>
                         <h6 className="text-body mb-0 collapse navbar-collapse">
-                            &nbsp;v2 React
+                            &nbsp;v2.0
                         </h6>
                     </div>
                 </div>
