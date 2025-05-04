@@ -35,6 +35,13 @@ interface NodeData {
     isLeaf?: boolean;
 }
 
+// Enum for checkbox states (none, some, all)
+enum CheckboxState {
+    None = 0,
+    Some = 1,
+    All = 2,
+}
+
 export const RolesOverlay: React.FC<RolesOverlayProps> = ({
     roles,
     show,
@@ -57,6 +64,55 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
         ref: containerRef,
         box: "border-box",
     });
+
+    // Function to recursively get all descendant node IDs
+    const getAllDescendantIds = (node: NodeData): (string | number)[] => {
+        const ids: (string | number)[] = [];
+        if (node.id) {
+            ids.push(node.id);
+        }
+
+        if (node.children) {
+            for (const child of node.children) {
+                ids.push(...getAllDescendantIds(child));
+            }
+        }
+
+        return ids;
+    };
+
+    // Function to check if node is parent
+    const isParentNode = (node: NodeData): boolean => {
+        return !!node.children && node.children.length > 0;
+    };
+
+    // Function to get the checkbox state for a node
+    const getNodeCheckboxState = (node: NodeData): CheckboxState => {
+        if (!isParentNode(node)) {
+            // Leaf node - simple selected or not
+            return selectedIds.has(node.id)
+                ? CheckboxState.All
+                : CheckboxState.None;
+        }
+
+        // For parent nodes, check all descendants
+        const descendantIds = getAllDescendantIds(node).filter(
+            (id) => id !== node.id,
+        );
+        if (descendantIds.length === 0) return CheckboxState.None;
+
+        const selectedDescendants = descendantIds.filter((id) =>
+            selectedIds.has(id),
+        );
+
+        if (selectedDescendants.length === 0) {
+            return CheckboxState.None;
+        } else if (selectedDescendants.length === descendantIds.length) {
+            return CheckboxState.All;
+        } else {
+            return CheckboxState.Some;
+        }
+    };
 
     // Effect to convert roles data to arborist format
     useEffect(() => {
@@ -136,6 +192,116 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
         return (): void => clearTimeout(timer);
     }, [selectedIds, show]);
 
+    // Function to handle node selection with parent-child relationship
+    const handleNodeSelection = (
+        nodeId: string | number,
+        checked: boolean,
+        nodeData: NodeData,
+    ): void => {
+        // Create a new set with current selections
+        const newSelectedIds = new Set(selectedIds);
+
+        // Helper to find direct parent of a node
+        const findDirectParent = (
+            childId: string | number,
+            nodes: NodeData[],
+        ): NodeData | null => {
+            // Flat array to track the search path
+            const flatSearch = (
+                nodesArray: NodeData[],
+                targetId: string | number,
+            ): NodeData | null => {
+                // First check if any node in this level is a direct parent
+                for (const node of nodesArray) {
+                    if (
+                        node.children &&
+                        node.children.some((child) => child.id === targetId)
+                    ) {
+                        return node; // Direct parent found
+                    }
+                }
+
+                // If not found at this level, check all children recursively
+                for (const node of nodesArray) {
+                    if (node.children && node.children.length > 0) {
+                        const found = flatSearch(node.children, targetId);
+                        if (found) {
+                            return found;
+                        }
+                    }
+                }
+
+                return null; // Not found
+            };
+
+            return flatSearch(nodes, childId);
+        };
+
+        // Process selection/deselection of current node and its descendants
+        if (checked) {
+            // Add this node to selection
+            newSelectedIds.add(nodeId);
+
+            // If node has children, select all descendants
+            if (isParentNode(nodeData)) {
+                getAllDescendantIds(nodeData)
+                    .filter((id) => id !== nodeId)
+                    .forEach((id) => newSelectedIds.add(id));
+            }
+        } else {
+            // Remove this node from selection
+            newSelectedIds.delete(nodeId);
+
+            // If node has children, deselect all descendants
+            if (isParentNode(nodeData)) {
+                getAllDescendantIds(nodeData)
+                    .filter((id) => id !== nodeId)
+                    .forEach((id) => newSelectedIds.delete(id));
+            }
+        }
+
+        // Function to update all parents in the hierarchy
+        const updateAllParents = (startId: string | number): void => {
+            let currentId = startId;
+            let parent = findDirectParent(currentId, arboristData);
+
+            // Continue until we've processed all parents up to the root
+            while (parent) {
+                // Find all direct children of this parent
+                const childrenIds =
+                    parent.children?.map((child) => child.id) || [];
+
+                // Check if all children are selected
+                const allChildrenSelected = childrenIds.every((id) =>
+                    newSelectedIds.has(id),
+                );
+                // Check if some children are selected
+                const someChildrenSelected = childrenIds.some((id) =>
+                    newSelectedIds.has(id),
+                );
+
+                // Update parent selection state based on children
+                if (allChildrenSelected) {
+                    newSelectedIds.add(parent.id);
+                } else if (!someChildrenSelected) {
+                    newSelectedIds.delete(parent.id);
+                }
+
+                // Move up to next parent
+                currentId = parent.id;
+                parent = findDirectParent(currentId, arboristData);
+            }
+        };
+
+        // Update all parent nodes in the hierarchy
+        updateAllParents(nodeId);
+
+        // Update our state
+        setSelectedIds(newSelectedIds);
+        // Update global state
+        updateSelectedRoleIds(Array.from(newSelectedIds));
+    };
+
     // If roles is undefined, we might not want to render anything
     if (!roles) {
         return <></>; // Empty fragment
@@ -151,6 +317,77 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
     const offcanvasStyle = {
         top: `${navbarHeight}px`,
         height: `calc(100% - ${navbarHeight}px)`,
+    };
+
+    // Helper to render the checkbox component based on state
+    const renderCheckbox = (node: NodeData): React.ReactNode => {
+        const checkboxState = getNodeCheckboxState(node);
+        const isSelected = selectedIds.has(node.id);
+
+        // Use a completely custom approach for indeterminate state
+        if (checkboxState === CheckboxState.Some) {
+            return (
+                <div
+                    style={{
+                        position: "relative",
+                        marginRight: "8px",
+                        width: "18px",
+                        height: "18px",
+                        display: "inline-block",
+                        backgroundColor: "#0d6efd", // Blue background
+                        border: "1px solid #0d6efd",
+                        borderRadius: "3px",
+                        cursor: "pointer",
+                    }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        // Toggle to checked state when clicked
+                        handleNodeSelection(node.id, true, node);
+                    }}
+                >
+                    <div
+                        style={{
+                            position: "absolute",
+                            top: "50%",
+                            left: "4px",
+                            right: "4px",
+                            height: "2px",
+                            backgroundColor: "white",
+                            transform: "translateY(-50%)",
+                        }}
+                    />
+                </div>
+            );
+        }
+
+        // Regular checkbox for selected/unselected states
+        return (
+            <div
+                style={{
+                    position: "relative",
+                    marginRight: "8px",
+                    width: "18px",
+                    height: "18px",
+                    display: "inline-block",
+                }}
+            >
+                <input
+                    type="checkbox"
+                    style={{
+                        margin: 0,
+                        width: "100%",
+                        height: "100%",
+                        cursor: "pointer",
+                    }}
+                    checked={isSelected || checkboxState === CheckboxState.All}
+                    onChange={(e) => {
+                        e.stopPropagation();
+                        handleNodeSelection(node.id, e.target.checked, node);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                />
+            </div>
+        );
     };
 
     return (
@@ -189,8 +426,10 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                         initialOpenState={initialOpenState}
                     >
                         {({ node, style, dragHandle }) => {
-                            // Check if this node should be selected based on our selection state only
-                            const isNodeSelected = selectedIds.has(node.id);
+                            // Get node checkbox state (Selected, Partial, None)
+                            const _checkboxState = getNodeCheckboxState(
+                                node.data,
+                            );
 
                             return (
                                 <div
@@ -207,7 +446,9 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                                             display: "flex",
                                             alignItems: "center",
                                             cursor: "pointer",
-                                            backgroundColor: isNodeSelected
+                                            backgroundColor: selectedIds.has(
+                                                node.id,
+                                            )
                                                 ? "#e0e0e0"
                                                 : "transparent",
                                             padding: "4px 8px",
@@ -243,34 +484,10 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                                                 {node.isOpen ? "−" : "+"}
                                             </div>
                                         )}
-                                        <input
-                                            type="checkbox"
-                                            style={{ marginRight: "8px" }}
-                                            checked={isNodeSelected}
-                                            onChange={(e) => {
-                                                e.stopPropagation();
-                                                // Use our controlled selection state
-                                                const newSelectedIds = new Set(
-                                                    selectedIds,
-                                                );
 
-                                                if (e.target.checked) {
-                                                    newSelectedIds.add(node.id);
-                                                } else {
-                                                    newSelectedIds.delete(
-                                                        node.id,
-                                                    );
-                                                }
+                                        {/* Use the custom checkbox rendering function */}
+                                        {renderCheckbox(node.data)}
 
-                                                // Update our state
-                                                setSelectedIds(newSelectedIds);
-                                                // Update global state
-                                                updateSelectedRoleIds(
-                                                    Array.from(newSelectedIds),
-                                                );
-                                            }}
-                                            onClick={(e) => e.stopPropagation()}
-                                        />
                                         <span
                                             onClick={(e) => {
                                                 e.stopPropagation();
