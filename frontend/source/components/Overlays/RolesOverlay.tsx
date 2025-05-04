@@ -471,17 +471,54 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                                                     alignItems: "center",
                                                     marginRight: "8px",
                                                     cursor: "pointer",
-                                                    borderRadius: "2px",
-                                                    border: "1px solid #ccc",
-                                                    fontSize: "12px",
-                                                    lineHeight: 1,
+                                                    fontSize: "10px",
+                                                    color: "#555",
+                                                    backgroundColor: "white",
                                                 }}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     node.toggle();
                                                 }}
                                             >
-                                                {node.isOpen ? "−" : "+"}
+                                                <span
+                                                    style={{
+                                                        display: "inline-block",
+                                                        backgroundColor:
+                                                            "white",
+                                                        width: "100%",
+                                                        height: "100%",
+                                                        textAlign: "center",
+                                                        lineHeight: "16px",
+                                                    }}
+                                                >
+                                                    {node.isOpen ? (
+                                                        <svg
+                                                            width="10"
+                                                            height="10"
+                                                            viewBox="0 0 10 10"
+                                                        >
+                                                            <path
+                                                                d="M1 4L5 8L9 4"
+                                                                fill="none"
+                                                                stroke="#555"
+                                                                strokeWidth="1.5"
+                                                            />
+                                                        </svg>
+                                                    ) : (
+                                                        <svg
+                                                            width="10"
+                                                            height="10"
+                                                            viewBox="0 0 10 10"
+                                                        >
+                                                            <path
+                                                                d="M4 1L8 5L4 9"
+                                                                fill="none"
+                                                                stroke="#555"
+                                                                strokeWidth="1.5"
+                                                            />
+                                                        </svg>
+                                                    )}
+                                                </span>
                                             </div>
                                         )}
 
