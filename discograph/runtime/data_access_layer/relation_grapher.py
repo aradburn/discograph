@@ -478,7 +478,7 @@ class RelationGrapher(ABC):
             query_string = "&".join(parts)
             key = f"{key}?{query_string}"
         # key = f"discograph:{key}"
-        log.debug(f"  cache key: {key}")
+        # log.debug(f"  cache key: {key}")
         return key
 
     # PUBLIC PROPERTIES

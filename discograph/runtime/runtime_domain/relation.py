@@ -31,11 +31,13 @@ __all__ = [
 ]
 
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Self
 
 from discograph import utils
+from discograph.exceptions import NotFoundError
 from discograph.library.cache.role_cache import RoleCache
 from discograph.library.domain.base import InternalDomainObject
+from discograph.library.fields.entity_id import to_entity_external_id
 from discograph.library.fields.entity_type import EntityType
 
 log = logging.getLogger(__name__)
@@ -107,30 +109,6 @@ class RuntimeRelationDB(_RuntimeRelationBase):
         role_name = RoleCache.role_id_to_role_name_lookup[role_id]
         relation_db_dict.update(role=role_name)
         return RuntimeRelationInternal.model_validate(relation_db_dict)
-
-
-class RuntimeRelationInternal(_RuntimeRelationBase):
-    """
-    Represents a relation internally, after retrieval from the database.
-
-    This class is used for internal representations of relations. It
-    includes subject, role, and object IDs.
-
-    Attributes:
-        id (int): The unique identifier for the relation.
-        subject (int): The ID of the subject entity.
-        role (str): The role of the relation.
-        object (int): The ID of the object entity.
-    """
-
-    id: int
-    """The unique identifier for the relation."""
-    subject: int
-    """The ID of the subject entity."""
-    role: str
-    """The role of the relation."""
-    object: int
-    """The ID of the object entity."""
 
 
 class RuntimeRelation(_RuntimeRelationBase):
@@ -278,3 +256,72 @@ class RuntimeRelationResult(RuntimeRelation):
         if hasattr(self, "distance") and self.distance is not None:
             data["distance"] = str(self.distance)
         return data
+
+
+class RuntimeRelationInternal(_RuntimeRelationBase):
+    """
+    Represents a relation internally, after retrieval from the database.
+
+    This class is used for internal representations of relations. It
+    includes subject, role, and object IDs.
+
+    Attributes:
+        id (int): The unique identifier for the relation.
+        subject (int): The ID of the subject entity.
+        role (str): The role of the relation.
+        object (int): The ID of the object entity.
+    """
+
+    id: int
+    """The unique identifier for the relation."""
+    subject: int
+    """The ID of the subject entity."""
+    role: str
+    """The role of the relation."""
+    object: int
+    """The ID of the object entity."""
+
+    def to_relation(self) -> RuntimeRelation | None:
+        """
+        Converts the RelationInternal instance to a Relation instance.
+
+        Returns:
+            Relation | None: The public facing representation of the relation,
+                or None if not found.
+        """
+        try:
+            entity_one_id, entity_one_type = to_entity_external_id(self.subject)
+            entity_two_id, entity_two_type = to_entity_external_id(self.object)
+            return RuntimeRelation(
+                id=self.id,
+                entity_one_id=entity_one_id,
+                entity_one_type=entity_one_type,
+                entity_two_id=entity_two_id,
+                entity_two_type=entity_two_type,
+                role=self.role,
+            )
+        except NotFoundError:
+            return None
+
+    @classmethod
+    def to_relations(
+        cls,
+        relation_internals: list[Self],
+    ) -> list[RuntimeRelation]:
+        """
+        Converts a list of RelationInternal instances to a list of Relation
+        instances.
+
+        Args:
+            relation_internals (list[Self]): A list of RelationInternal
+                instances.
+
+        Returns:
+            list[Relation]: A list of public facing Relation instances.
+        """
+        relations = []
+        for relation_internal in relation_internals:
+            relation = relation_internal.to_relation()
+            if relation:
+                relations.append(relation)
+        return relations

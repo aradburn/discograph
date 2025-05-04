@@ -129,6 +129,8 @@ export const getSelectedRoles = (): string[] => {
 
     // Map IDs to names using the mapping, fall back to ID string if not found
     return selectedIds.map((id) => {
-        return roleIdToNameMap.get(id) || String(id);
+        const text = roleIdToNameMap.get(id) || String(id);
+        const escapedText = text.replace(/,/g, "\\,");
+        return escapedText;
     });
 };

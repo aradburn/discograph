@@ -94,17 +94,20 @@ def parse_request_args(args) -> tuple[list[str], int | tuple[int, int]] | None:
                 log.debug("Invalid year input")
             log.debug(f"Requested year: {year}")
         elif ARG_ROLES_REGEX.match(key):
-            value = args.getlist(key)
-            for role in value:
-                log.debug(f"Requested role: {role}")
-                if role in RoleCache.role_category_to_role_name_lookup.keys():
-                    log.debug(f"Requested role found: {role}")
-                    for role_entry in RoleCache.role_category_to_role_name_lookup[role]:
-                        log.debug(f"Requested role_entry: {role_entry}")
-                        if role_entry in RoleCache.role_name_to_role_id_lookup.keys():
-                            roles.add(role_entry)
-                elif role in RoleCache.role_name_to_role_id_lookup.keys():
-                    roles.add(role)
+            values = args.getlist(key)
+            for value in values:
+                unescaped_value = value.replace("\\,", "|")
+                for role_escaped in unescaped_value.split(','):
+                    role = role_escaped.replace("|", ",")
+                    log.debug(f"Requested role: {role}")
+                    if role in RoleCache.role_category_to_role_name_lookup.keys():
+                        log.debug(f"Requested role found: {role}")
+                        for role_entry in RoleCache.role_category_to_role_name_lookup[role]:
+                            log.debug(f"Requested role_entry: {role_entry}")
+                            if role_entry in RoleCache.role_name_to_role_id_lookup.keys():
+                                roles.add(role_entry)
+                    elif role in RoleCache.role_name_to_role_id_lookup.keys():
+                        roles.add(role)
 
     if len(roles) == 0:
         roles = UI_DEFAULT_ROLES

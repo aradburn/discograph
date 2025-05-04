@@ -335,10 +335,11 @@ class RuntimeDatabaseHelper(ABC):
             roles=roles,
         )
         # cache_key = cache_key.format(entity_type, entity_id)
-        log.debug(f"  get cache_key: {cache_key}")
-        data = cache.get(cache_key)
-        if data is not None:
-            return data
+        if cache_key is not None and len(cache_key) < 200:
+            log.debug(f"  get cache_key: {cache_key}")
+            data = cache.get(cache_key)
+            if data is not None:
+                return data
 
         try:
             entity = entity_repository.get_by_entity_id_and_entity_type(
@@ -364,7 +365,8 @@ class RuntimeDatabaseHelper(ABC):
         data = relation_grapher.get_relation_graph(
             entity_repository, relation_repository
         )
-        cache.set(cache_key, data)
+        if cache_key is not None and len(cache_key) < 200:
+            cache.set(cache_key, data)
         return data
 
     @staticmethod
