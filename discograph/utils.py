@@ -74,19 +74,25 @@ class SkipFilter:
 def parse_request_args(args) -> tuple[list[str], int | tuple[int, int]] | None:
     from discograph.library.cache.role_cache import RoleCache
 
-    year = None
+    year: tuple[int, int] | int | None = None
     roles = set()
     for key in args:
         if key == "year":
-            year = args[key]
+            year_arg = args[key]
             try:
                 if "-" in year:
-                    start, _, stop = year.partition("-")
-                    year = tuple(sorted((int(start), int(stop))))
+                    start, _, stop = year_arg.partition("-")
+                    start_year = int(start)
+                    stop_year = int(stop)
+                    if start_year <= stop_year:
+                        year = (start_year, stop_year)
+                    else:
+                        year = (stop_year, start_year)
                 else:
-                    year = int(year)
-            finally:
-                pass
+                    year = int(year_arg)
+            except ValueError:
+                log.debug("Invalid year input")
+            log.debug(f"Requested year: {year}")
         elif ARG_ROLES_REGEX.match(key):
             value = args.getlist(key)
             for role in value:
