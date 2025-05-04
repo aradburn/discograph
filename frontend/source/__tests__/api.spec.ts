@@ -30,14 +30,15 @@ describe("API Functions", () => {
                 nodes: [],
                 links: [],
             };
-            vi.mocked(getSelectedRoles).mockReturnValue([]);
+            const emptyRoles: string[] = [];
+            vi.mocked(getSelectedRoles).mockReturnValue(emptyRoles);
             mockFetch.mockResolvedValueOnce({
                 ok: true,
                 json: () => Promise.resolve(mockResponse),
             });
 
             // Act
-            const result = await fetchAPINetwork("artist-1");
+            const result = await fetchAPINetwork("artist-1", emptyRoles);
 
             // Assert
             expect(mockFetch).toHaveBeenCalledWith("/api/artist/network/1");
@@ -51,14 +52,15 @@ describe("API Functions", () => {
                 nodes: [],
                 links: [],
             };
-            vi.mocked(getSelectedRoles).mockReturnValue(["producer", "writer"]);
+            const selectedRoles = ["producer", "writer"];
+            vi.mocked(getSelectedRoles).mockReturnValue(selectedRoles);
             mockFetch.mockResolvedValueOnce({
                 ok: true,
                 json: () => Promise.resolve(mockResponse),
             });
 
             // Act
-            const result = await fetchAPINetwork("artist-1");
+            const result = await fetchAPINetwork("artist-1", selectedRoles);
 
             // Assert
             expect(mockFetch).toHaveBeenCalledWith(
@@ -69,16 +71,17 @@ describe("API Functions", () => {
 
         it("should throw error when fetch fails", async () => {
             // Arrange
-            vi.mocked(getSelectedRoles).mockReturnValue([]);
+            const emptyRoles: string[] = [];
+            vi.mocked(getSelectedRoles).mockReturnValue(emptyRoles);
             mockFetch.mockResolvedValueOnce({
                 ok: false,
                 statusText: "Not Found",
             });
 
             // Act & Assert
-            await expect(fetchAPINetwork("artist-1")).rejects.toThrow(
-                "Not Found",
-            );
+            await expect(
+                fetchAPINetwork("artist-1", emptyRoles),
+            ).rejects.toThrow("Not Found");
         });
     });
 
@@ -86,14 +89,15 @@ describe("API Functions", () => {
         it("should fetch random entity with correct URL when no roles selected", async () => {
             // Arrange
             const mockResponse = { key: "artist-1", name: "Random Artist" };
-            vi.mocked(getSelectedRoles).mockReturnValue([]);
+            const emptyRoles: string[] = [];
+            vi.mocked(getSelectedRoles).mockReturnValue(emptyRoles);
             mockFetch.mockResolvedValueOnce({
                 ok: true,
                 json: () => Promise.resolve(mockResponse),
             });
 
             // Act
-            const result = await fetchAPIRandom();
+            const result = await fetchAPIRandom(emptyRoles);
 
             // Assert
             expect(mockFetch.mock.calls[0][0]).toMatch(
@@ -105,14 +109,15 @@ describe("API Functions", () => {
         it("should fetch random entity with roles when roles are selected", async () => {
             // Arrange
             const mockResponse = { key: "artist-1", name: "Random Artist" };
-            vi.mocked(getSelectedRoles).mockReturnValue(["producer"]);
+            const selectedRoles = ["producer"];
+            vi.mocked(getSelectedRoles).mockReturnValue(selectedRoles);
             mockFetch.mockResolvedValueOnce({
                 ok: true,
                 json: () => Promise.resolve(mockResponse),
             });
 
             // Act
-            const result = await fetchAPIRandom();
+            const result = await fetchAPIRandom(selectedRoles);
 
             // Assert
             expect(mockFetch.mock.calls[0][0]).toMatch(
@@ -123,14 +128,17 @@ describe("API Functions", () => {
 
         it("should throw error when fetch fails", async () => {
             // Arrange
-            vi.mocked(getSelectedRoles).mockReturnValue([]);
+            const emptyRoles: string[] = [];
+            vi.mocked(getSelectedRoles).mockReturnValue(emptyRoles);
             mockFetch.mockResolvedValueOnce({
                 ok: false,
                 statusText: "Server Error",
             });
 
             // Act & Assert
-            await expect(fetchAPIRandom()).rejects.toThrow("Server Error");
+            await expect(fetchAPIRandom(emptyRoles)).rejects.toThrow(
+                "Server Error",
+            );
         });
     });
 

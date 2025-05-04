@@ -80,7 +80,9 @@ describe("Sidebar Component", () => {
         const dispatchedEvent = vi.mocked(window.dispatchEvent).mock
             .calls[0][0];
         expect(dispatchedEvent).toBeInstanceOf(CustomEvent);
-        expect(dispatchedEvent.type).toBe("discograph:show-details-panel");
+        expect(dispatchedEvent.type).toBe(
+            "discograph:show-entity-details-overlay",
+        );
     });
 
     it("dispatches custom event when Roles button is clicked", async () => {
@@ -97,7 +99,7 @@ describe("Sidebar Component", () => {
         const dispatchedEvent = vi.mocked(window.dispatchEvent).mock
             .calls[0][0];
         expect(dispatchedEvent).toBeInstanceOf(CustomEvent);
-        expect(dispatchedEvent.type).toBe("discograph:show-roles-panel");
+        expect(dispatchedEvent.type).toBe("discograph:show-roles-overlay");
     });
 
     it("calls printSvg function when Print button is clicked", async () => {

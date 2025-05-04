@@ -63,7 +63,7 @@ describe("Header Component", () => {
 
         // Check brand section
         expect(screen.getByText("DISCOGRAPH")).toBeInTheDocument();
-        expect(screen.getByText("v2 React")).toBeInTheDocument();
+        expect(screen.getByText("v2.0")).toBeInTheDocument();
 
         // Check search section
         expect(screen.getByTestId("mock-search-input")).toBeInTheDocument();

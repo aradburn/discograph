@@ -450,7 +450,10 @@ describe("DiscographFSM", () => {
                 expect(transitionSpy).toHaveBeenCalledWith(
                     "state-requesting-network",
                 );
-                expect(fetchAPINetworkSpy).toHaveBeenCalledWith("artist-123");
+                expect(fetchAPINetworkSpy).toHaveBeenCalledWith(
+                    "artist-123",
+                    [],
+                );
             });
         });
 

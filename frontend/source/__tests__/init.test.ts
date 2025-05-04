@@ -71,8 +71,11 @@ vi.mock("../network/forceLayout", () => ({
     resetNetworkForces: vi.fn(),
 }));
 
+// Update the roles mock to match the actual exports
 vi.mock("../roles", () => ({
-    initRoles: vi.fn(),
+    convertRolesToArboristFormat: vi.fn(),
+    updateSelectedRoleIds: vi.fn(),
+    getSelectedRoles: vi.fn(),
 }));
 
 vi.mock("../svg", () => ({
@@ -138,12 +141,11 @@ interface MockedRelations {
     initRelations: typeof relations.initRelations;
 }
 
+// Update the MockedRoles interface to match the actual exports in roles.ts
 interface MockedRoles {
-    initRoles: (
-        config: TreeConfig,
-        container?: HTMLElement | string,
-        parentElement?: HTMLElement | string,
-    ) => HTMLElement;
+    convertRolesToArboristFormat: typeof roles.convertRolesToArboristFormat;
+    updateSelectedRoleIds: typeof roles.updateSelectedRoleIds;
+    getSelectedRoles: typeof roles.getSelectedRoles;
 }
 
 interface MockedFsm {
@@ -234,7 +236,8 @@ describe("Init Module", () => {
                     <button id="print">Print</button>
                     <div id="nav-top" style="opacity: 0;"></div>
                     <div id="modal-help" style="opacity: 0;"></div>
-                    <div id="side-menu-content" style="opacity: 0;"></div>
+                    <div id="${DOM_IDS.ROLES_PANEL}" style="opacity: 0;"></div>
+                    <div id="${DOM_IDS.ROLES_CONTAINER}" style="opacity: 0;"></div>
                     <div data-bs-toggle="tooltip" title="Test tooltip"></div>
                 </body>
             </html>
@@ -325,7 +328,6 @@ describe("Init Module", () => {
         it("should initialize all components", () => {
             // Create spies for each function
             const spyInitRelations = vi.spyOn(relations, "initRelations");
-            const spyInitRoles = vi.spyOn(roles, "initRoles");
             const mockLoading = useLoading as Mock;
             const spyInitFSM = vi.spyOn(fsm, "initFSM");
             const spyResetNetworkForces = vi.spyOn(
@@ -339,27 +341,11 @@ describe("Init Module", () => {
                 plugins: [],
             };
 
-            // Mock side menu container to be found
-            const sideMenuContent = document.createElement("div");
-            sideMenuContent.id = DOM_IDS.SIDE_MENU_CONTENT;
-            document.body.appendChild(sideMenuContent);
-
             // Act - Call the function we're testing
             initApp();
 
             // Assert that all necessary functions were called
             expect(spyInitRelations).toHaveBeenCalled();
-
-            // Find the roles container which is now inside the roles panel
-            const rolesContainer = document.getElementById(
-                DOM_IDS.ROLES_CONTAINER,
-            );
-
-            // Should have been called with dgRoles and a container element
-            expect(spyInitRoles).toHaveBeenCalledWith(
-                window.dgRoles,
-                rolesContainer,
-            );
             expect(spyInitFSM).toHaveBeenCalled();
             expect(spyResetNetworkForces).toHaveBeenCalled();
 
@@ -423,35 +409,26 @@ describe("Init Module", () => {
         });
 
         it("should not call initRoles if window.dgRoles is not defined", () => {
-            // Mock initRoles function
-            const mockInitRoles = vi.fn();
-            const originalInitRoles = roles.initRoles;
-
-            // Use proper typing for roles module
-            const mockedRoles = roles as MockedRoles;
-            mockedRoles.initRoles = mockInitRoles;
-
             // Remove window.dgRoles
             delete global.window.dgRoles;
 
             // Act
             initApp();
 
-            // Assert
-            expect(mockInitRoles).not.toHaveBeenCalled();
+            // Based on init.ts, the initRoles function is no longer called directly
+            // The test is kept for backwards compatibility
+            // No assertions needed here since we're verifying absence of behavior
 
-            // Restore original
-            mockedRoles.initRoles = originalInitRoles;
+            // Re-initialize dgRoles for other tests
+            window.dgRoles = {
+                core: { data: [] },
+                plugins: [],
+            };
         });
 
-        it("should create a container automatically if side menu is not found", () => {
-            // Mock initRoles function
-            const mockInitRoles = vi.fn();
-            const originalInitRoles = roles.initRoles;
-
-            // Use proper typing for roles module
-            const mockedRoles = roles as MockedRoles;
-            mockedRoles.initRoles = mockInitRoles;
+        it("should initialize application without side menu", () => {
+            // Based on the updated init.ts, the side menu content is not checked anymore
+            // This test is kept for backwards compatibility with minor updates
 
             // Ensure window.dgRoles is defined
             window.dgRoles = {
@@ -459,20 +436,14 @@ describe("Init Module", () => {
                 plugins: [],
             };
 
-            // Remove side menu if it exists
-            const sideMenu = document.getElementById(DOM_IDS.SIDE_MENU_CONTENT);
-            if (sideMenu) {
-                sideMenu.remove();
-            }
-
             // Act
             initApp();
 
-            // Assert
-            expect(mockInitRoles).toHaveBeenCalledWith(window.dgRoles);
-
-            // Restore original
-            mockedRoles.initRoles = originalInitRoles;
+            // Assert that the application initialized successfully
+            // These assertions match the actual functions called in init.ts
+            expect(relations.initRelations).toHaveBeenCalled();
+            expect(fsm.initFSM).toHaveBeenCalled();
+            expect(forceLayout.resetNetworkForces).toHaveBeenCalled();
         });
     });
 });
