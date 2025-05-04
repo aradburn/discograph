@@ -42,6 +42,7 @@ import {
     type TransitionFunction,
 } from "./AbstractFSM";
 import type { APINetworkDataResponse } from "../api";
+import { getSelectedRoles } from "../roles";
 
 // Extend the Window interface to include the dgNetwork property
 declare global {
@@ -380,7 +381,9 @@ export class DiscographFSM extends AbstractFSM implements Actions {
     requestNetwork(entityKey: NodeKey, pushHistory: boolean): void {
         this.transition("state-requesting-network");
 
-        fetchAPINetwork(entityKey)
+        const roles = getSelectedRoles() || [];
+
+        fetchAPINetwork(entityKey, roles)
             .then((apiNetworkDataResponse) => {
                 const networkData = processAPINetworkDataResponse(
                     apiNetworkDataResponse,
@@ -423,7 +426,9 @@ export class DiscographFSM extends AbstractFSM implements Actions {
     requestRandom(): void {
         this.transition("state-requesting-network");
 
-        fetchAPIRandom()
+        const roles = getSelectedRoles() || [];
+
+        fetchAPIRandom(roles)
             .then((networkCenter) => {
                 this.handle("received-random", networkCenter, true, false);
             })
