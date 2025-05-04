@@ -53,6 +53,56 @@ body {
     /* background-color: #1C575A !important;*/
 }
 
+// Side menu content container
+.side-menu-content {
+    background-color: rgba($dg-background-color, 0.95);
+    color: $dg-text-outer-color;
+    overflow-y: auto;
+    transition:
+        transform 0.3s ease-in-out,
+        opacity 0.2s ease-in-out;
+    position: fixed;
+    left: 16.666667%; // Position at right edge of sidebar (sm-2 = 2/12 = 16.666667%)
+    height: 100%; // Full height minus navbar
+    width: min(300px, 25vw); // Responsive width, maximum 300px
+    z-index: 1000;
+    box-shadow: 3px 0 10px rgba(0, 0, 0, 0.2);
+    border-right: 1px solid lighten($dg-background-color, 10%);
+    padding: 1rem;
+    transform: translateX(-100%); // Start off-screen to the left
+    opacity: 0;
+    backdrop-filter: blur(3px);
+
+    // Adjust position for different screen sizes
+    @media (min-width: 1200px) {
+        // xl breakpoint
+        left: 8.333333%; // xl-1 = 1/12 = 8.333333%
+    }
+
+    @media (max-width: 575.98px) {
+        // xs breakpoint (below sm)
+        left: 0; // When sidebar takes full width
+        width: 80vw; // Reduce width on small screens
+        // The top and height are already set correctly with CSS variables
+    }
+
+    #roles-panel {
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
+    }
+
+    #entity-details-panel {
+        a {
+            color: $dg-primary-color;
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+}
+
 input[type="range"] {
     -webkit-appearance: none;
     appearance: none;

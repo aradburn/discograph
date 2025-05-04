@@ -23,10 +23,10 @@ import type { RelationsData } from "../relations";
 import { fetchAPINetwork, fetchAPIRandom, fetchAPIRadial } from "../api";
 import { resetNetworkTransform } from "../network/init";
 import { FORCE } from "../constants";
+import { FSM, INIT } from "../constants";
 import type { SimNode, SimLink } from "../network/data";
 import { RequestNetworkEvent, SelectEntityEvent } from "../network/events";
 import { showMessage } from "../messages";
-import { FSM, INIT } from "../constants";
 import type { Actions } from "./actions/Actions";
 import type { State, StateContext } from "./State";
 import { ViewingNetworkState } from "./states/ViewingNetworkState";
@@ -47,6 +47,18 @@ import type { APINetworkDataResponse } from "../api";
 declare global {
     interface Window {
         dgNetwork?: APINetworkDataResponse;
+        bootstrap?: {
+            Offcanvas: {
+                new (
+                    element: Element,
+                    options?: unknown,
+                ): {
+                    show(): void;
+                    hide(): void;
+                };
+                getInstance(element: Element): { hide(): void } | null;
+            };
+        };
     }
 }
 
@@ -200,6 +212,9 @@ export class DiscographFSM extends AbstractFSM implements Actions {
             this.handle("show-radial", null, false, false);
         });
 
+        // NOTE: Removed overlay event listeners to prevent circular event references
+        // These events are now only dispatched by the FSM and handled by React components
+
         // Handle browser history navigation
         window.onpopstate = (event: PopStateEvent): void => {
             const state = event?.state as { key: string } | null;
@@ -248,6 +263,8 @@ export class DiscographFSM extends AbstractFSM implements Actions {
                 } else if (this.state === "state-viewing-radial") {
                     this.handle("show-network", null, false, false);
                 }
+                this.hideRolesOverlay();
+                this.hideEntityDetailsOverlay();
             });
         }
 
@@ -256,7 +273,42 @@ export class DiscographFSM extends AbstractFSM implements Actions {
         this.toggleRadial(false);
     }
 
-    //
+    /**
+     * Shows the roles panel overlay
+     */
+    showRolesOverlay(): void {
+        // Dispatch the event for React to handle
+        const event = new CustomEvent("discograph:show-roles-overlay");
+        window.dispatchEvent(event);
+    }
+
+    /**
+     * Shows the entity details panel overlay
+     */
+    showEntityDetailsOverlay(): void {
+        // Dispatch the event for React to handle
+        const event = new CustomEvent("discograph:show-entity-details-overlay");
+        window.dispatchEvent(event);
+    }
+
+    /**
+     * Hides the roles panel overlay
+     */
+    hideRolesOverlay(): void {
+        // Dispatch the event for React to handle
+        const event = new CustomEvent("discograph:hide-roles-overlay");
+        window.dispatchEvent(event);
+    }
+
+    /**
+     * Hides the entity details panel overlay
+     */
+    hideEntityDetailsOverlay(): void {
+        // Dispatch the event for React to handle
+        const event = new CustomEvent("discograph:hide-entity-details-overlay");
+        window.dispatchEvent(event);
+    }
+
     // Action implementations (from Actions interface)
     //
 
@@ -602,6 +654,19 @@ export class DiscographFSM extends AbstractFSM implements Actions {
             const [, id] = node.key.split("-");
             const url = `http://discogs.com/${node.type}/${id}`;
 
+            // Dispatch custom event with entity data for React components
+            const entitySelectedEvent = new CustomEvent(
+                "discograph:entity-selected",
+                {
+                    detail: {
+                        name: node.name,
+                        url: url,
+                    },
+                },
+            );
+            window.dispatchEvent(entitySelectedEvent);
+
+            // Keep the original D3 code for backward compatibility
             d3.select("#entity-name").text(node.name);
             d3.select("#entity-link").attr("href", url);
 

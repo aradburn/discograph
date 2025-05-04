@@ -8,9 +8,14 @@ import { Sidebar } from "./Layout/Sidebar";
 import { HelpModal, WelcomeModal, WhoModal } from "./Modals/index";
 import { NetworkView } from "./Visualization/NetworkView";
 import { LoadingAnimation } from "./Visualization";
+import { RolesOverlay, EntityDetailsOverlay } from "./Overlays";
 import { NetworkProvider } from "../contexts/NetworkContext";
 import { WindowProvider } from "../contexts/WindowContext";
 import { LoadingProvider } from "../contexts/LoadingContext";
+import type { TreeConfig } from "../roles";
+
+// Extending the Window interface is handled in init.ts already
+// We're just importing the TreeConfig type for our internal usage
 
 /**
  * Main App component that serves as the container for the React application.
@@ -20,10 +25,17 @@ const App: React.FC = (): React.ReactElement => {
     const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
     const [showWelcomeModal, setShowWelcomeModal] = useState<boolean>(false);
     const [showWhoModal, setShowWhoModal] = useState<boolean>(false);
+    const [showRolesOverlay, setShowRolesOverlay] = useState<boolean>(false);
+    const [showEntityDetailsOverlay, setShowEntityDetailsOverlay] =
+        useState<boolean>(false);
     const [isReturnVisitor, setIsReturnVisitor] = useState<boolean>(false);
+    const [rolesConfig, setRolesConfig] = useState<TreeConfig | undefined>(
+        undefined,
+    );
 
-    // Check if this is a return visitor
+    // Check if this is a return visitor and load roles data
     useEffect(() => {
+        // Check for return visitor status
         const hasVisitedBefore = localStorage.getItem("hasVisitedBefore");
         if (!hasVisitedBefore) {
             // First time visitor - show welcome modal
@@ -32,6 +44,79 @@ const App: React.FC = (): React.ReactElement => {
         } else {
             setIsReturnVisitor(true);
         }
+
+        // Get roles data from global variable
+        if (window.dgRoles) {
+            setRolesConfig(window.dgRoles);
+        }
+
+        // Event listeners for showing/hiding overlays
+        const handleShowRoles = (): void => setShowRolesOverlay(true);
+        const handleHideRoles = (): void => setShowRolesOverlay(false);
+        const handleShowEntityDetails = (): void =>
+            setShowEntityDetailsOverlay(true);
+        const handleHideEntityDetails = (): void =>
+            setShowEntityDetailsOverlay(false);
+
+        window.addEventListener(
+            "discograph:show-roles-overlay",
+            handleShowRoles,
+        );
+        window.addEventListener(
+            "discograph:hide-roles-overlay",
+            handleHideRoles,
+        );
+        window.addEventListener(
+            "discograph:show-entity-details-overlay",
+            handleShowEntityDetails,
+        );
+        window.addEventListener(
+            "discograph:hide-entity-details-overlay",
+            handleHideEntityDetails,
+        );
+
+        return (): void => {
+            window.removeEventListener(
+                "discograph:show-roles-overlay",
+                handleShowRoles,
+            );
+            window.removeEventListener(
+                "discograph:hide-roles-overlay",
+                handleHideRoles,
+            );
+            window.removeEventListener(
+                "discograph:show-entity-details-overlay",
+                handleShowEntityDetails,
+            );
+            window.removeEventListener(
+                "discograph:hide-entity-details-overlay",
+                handleHideEntityDetails,
+            );
+        };
+    }, []);
+
+    // Add this new effect for updating CSS variable with navbar height
+    useEffect(() => {
+        const updateNavbarHeightVar = (): void => {
+            const navbar = document.querySelector("nav.navbar");
+            if (navbar) {
+                const height = navbar.getBoundingClientRect().height;
+                document.documentElement.style.setProperty(
+                    "--navbar-height",
+                    `${height}px`,
+                );
+            }
+        };
+
+        // Initial update
+        updateNavbarHeightVar();
+
+        // Update on resize
+        window.addEventListener("resize", updateNavbarHeightVar);
+
+        return (): void => {
+            window.removeEventListener("resize", updateNavbarHeightVar);
+        };
     }, []);
 
     const handleShowHelp = (): void => {
@@ -67,9 +152,15 @@ const App: React.FC = (): React.ReactElement => {
                         </Row>
 
                         <Row className="flex-grow-1" style={{ minHeight: 0 }}>
-                            <Col xs={12} sm={2} xl={1} className="h-100 p-0">
+                            <Col
+                                xs={12}
+                                sm={2}
+                                xl={1}
+                                className="h-100 p-0 d-flex flex-column"
+                            >
                                 <Sidebar />
                             </Col>
+
                             <Col
                                 xs={12}
                                 sm={10}
@@ -79,6 +170,19 @@ const App: React.FC = (): React.ReactElement => {
                                 <NetworkView />
                                 <LoadingAnimation />
                             </Col>
+
+                            {/* Use the React components for overlays */}
+                            <RolesOverlay
+                                roles={rolesConfig}
+                                show={showRolesOverlay}
+                                onHide={(): void => setShowRolesOverlay(false)}
+                            />
+                            <EntityDetailsOverlay
+                                show={showEntityDetailsOverlay}
+                                onHide={(): void =>
+                                    setShowEntityDetailsOverlay(false)
+                                }
+                            />
                         </Row>
 
                         <HelpModal

@@ -10,7 +10,12 @@ export const DOM_IDS = {
     PRINT: "print",
     NAV_TOP: "nav-top",
     MODAL_HELP: "modal-help",
-    SIDE_MENU_CONTENT: "side-menu-content",
+    ROLES_OVERLAY: "roles-overlay",
+    ROLES_PANEL: "roles-panel",
+    ROLES_CONTAINER: "roles-container",
+    ENTITY_DETAILS_OVERLAY: "entity-details-overlay",
+    ENTITY_DETAILS_PANEL: "entity-details-panel",
+    ENTITY_DETAILS: "entity-details",
 };
 
 // SVG Element IDs

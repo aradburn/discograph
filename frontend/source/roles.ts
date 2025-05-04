@@ -1,13 +1,12 @@
 /**
  * Role management functionality for Discograph
- * This file handles the initialization and management of role selection using vanilla JavaScript
+ * This file handles role selection using the react-arborist library
  */
-
-import { TREE } from "./constants";
 
 /**
  * Interface for tree node state
  */
+// TODO - Add more properties as needed, simplify server side
 export interface TreeNodeState {
     selected?: boolean;
 }
@@ -34,238 +33,102 @@ export interface TreeConfig {
 }
 
 /**
- * Interface for selected node details
+ * Interface for react-arborist node data
  */
-interface SelectedNodeDetails {
+export interface ArboristNode {
     id: string | number;
-    text: string;
-    children: (string | number)[];
+    name: string;
+    children?: ArboristNode[];
+    isLeaf?: boolean;
+    selected?: boolean;
 }
 
-/**
- * Utility function to check if a value is numeric
- * @param {unknown} obj - The value to check
- * @returns {boolean} - True if the value is numeric, false otherwise
- */
-const isNumeric = (obj: unknown): boolean => {
-    if (typeof obj === "number") return true;
-    if (typeof obj !== "string") return false;
-    return (
-        !Array.isArray(obj) && !isNaN(Number(obj)) && !isNaN(parseFloat(obj))
-    );
-};
+// Keep track of the selected role IDs when using react-arborist
+let selectedRoleIds: Set<string | number> = new Set();
 
-class TreeComponent {
-    private container: HTMLElement;
-    private config: TreeConfig;
-    private selectedNodes: Set<string | number>;
-
-    constructor(container: HTMLElement, config: TreeConfig) {
-        this.container = container;
-        this.config = config;
-        this.selectedNodes = new Set();
-        this.init();
-    }
-
-    private init(): void {
-        // Clear existing content
-        this.container.innerHTML = "";
-
-        // Create tree structure
-        const treeRoot = document.createElement("ul");
-        treeRoot.className = TREE.CLASS_NAMES.ROOT;
-
-        // Add nodes from config
-        if (this.config?.core?.data) {
-            this.buildTreeNodes(treeRoot, this.config.core.data);
-        }
-
-        this.container.appendChild(treeRoot);
-
-        // Add styles if not already present
-        if (!document.getElementById(TREE.TREE_STYLES)) {
-            const styles = document.createElement("style");
-            styles.id = TREE.TREE_STYLES;
-            styles.textContent = `
-                .${TREE.CLASS_NAMES.ROOT} {
-                    list-style: none;
-                    padding-left: ${TREE.PADDING_LEFT}px;
-                }
-                .${TREE.CLASS_NAMES.NODE} {
-                    margin: ${TREE.MARGIN}px 0;
-                }
-                .${TREE.CLASS_NAMES.CONTENT} {
-                    display: flex;
-                    align-items: center;
-                    gap: ${TREE.MARGIN}px;
-                }
-                .${TREE.CLASS_NAMES.CHECKBOX} {
-                    margin: 0;
-                }
-                .${TREE.CLASS_NAMES.ICON} {
-                    width: ${TREE.ICON_SIZE}px;
-                    height: ${TREE.ICON_SIZE}px;
-                }
-                .${TREE.CLASS_NAMES.CHILDREN} {
-                    list-style: none;
-                    padding-left: ${TREE.PADDING_LEFT}px;
-                }
-            `;
-            document.head.appendChild(styles);
-        }
-    }
-
-    private buildTreeNodes(
-        parentElement: HTMLElement,
-        nodes: TreeNode[],
-    ): void {
-        nodes.forEach((node) => {
-            const li = document.createElement("li");
-            li.className = TREE.CLASS_NAMES.NODE;
-            li.dataset.id = String(node.id);
-
-            const content = document.createElement("div");
-            content.className = TREE.CLASS_NAMES.CONTENT;
-
-            // Add checkbox if enabled in config
-            if (this.config.plugins?.includes("checkbox")) {
-                const checkbox = document.createElement("input");
-                checkbox.type = "checkbox";
-                checkbox.className = TREE.CLASS_NAMES.CHECKBOX;
-                checkbox.checked = node.state?.selected || false;
-                checkbox.addEventListener("change", () =>
-                    this.handleNodeSelection(node.id, checkbox.checked),
-                );
-                content.appendChild(checkbox);
-            }
-
-            // Add icon if present
-            if (node.icon) {
-                const icon = document.createElement("span");
-                icon.className = TREE.CLASS_NAMES.ICON;
-                icon.textContent = node.icon;
-                content.appendChild(icon);
-            }
-
-            // Add text
-            const text = document.createElement("span");
-            text.className = TREE.CLASS_NAMES.TEXT;
-            text.textContent = node.text;
-            content.appendChild(text);
-
-            li.appendChild(content);
-
-            // Add child nodes if any exist
-            const childNodes = nodes.filter((n) => n.parent === node.id);
-            if (childNodes.length > 0) {
-                const childrenContainer = document.createElement("ul");
-                childrenContainer.className = TREE.CLASS_NAMES.CHILDREN;
-                this.buildTreeNodes(childrenContainer, childNodes);
-                li.appendChild(childrenContainer);
-            }
-
-            parentElement.appendChild(li);
-        });
-    }
-
-    private handleNodeSelection(
-        nodeId: string | number,
-        selected: boolean,
-    ): void {
-        if (selected) {
-            this.selectedNodes.add(nodeId);
-        } else {
-            this.selectedNodes.delete(nodeId);
-        }
-    }
-
-    get_selected(
-        withDetails = false,
-    ): (string | number)[] | SelectedNodeDetails[] {
-        if (!withDetails) {
-            return Array.from(this.selectedNodes);
-        }
-
-        return Array.from(this.selectedNodes).map((id) => {
-            const node = this.findNodeById(id);
-            if (!node) {
-                throw new Error(`Node with id ${id} not found`);
-            }
-            return {
-                id: node.id,
-                text: node.text,
-                children: this.getChildrenIds(node.id),
-            };
-        });
-    }
-
-    private findNodeById(id: string | number): TreeNode | undefined {
-        return this.config.core.data.find((node) => node.id === id);
-    }
-
-    private getChildrenIds(parentId: string | number): (string | number)[] {
-        return this.config.core.data
-            .filter((node) => node.parent === parentId)
-            .map((node) => node.id);
-    }
-}
-
-let treeInstance: TreeComponent | null = null;
+// Map of role IDs to their names for looking up text values
+const roleIdToNameMap: Map<string | number, string> = new Map();
 
 /**
- * Initializes the role selection tree
+ * Converts TreeConfig data to the format expected by react-arborist
  * @param {TreeConfig} config - The tree configuration object
+ * @returns {ArboristNode[]} Array of root nodes in react-arborist format
  */
-export const initRoles = (config: TreeConfig): void => {
-    if (!config) return;
+export const convertRolesToArboristFormat = (
+    config?: TreeConfig,
+): ArboristNode[] => {
+    if (!config?.core?.data) return [];
 
-    const treeContainer = document.getElementById("jstree_div");
-    if (!treeContainer) {
-        console.warn("Tree container not found");
-        return;
-    }
+    const rootNodes: ArboristNode[] = [];
+    const nodeMap = new Map<string | number, ArboristNode>();
 
-    treeInstance = new TreeComponent(treeContainer, config);
+    // Clear and rebuild the ID to name mapping
+    roleIdToNameMap.clear();
+
+    // First, create a map of all nodes
+    config.core.data.forEach((node: TreeNode) => {
+        // Store the mapping of ID to text
+        roleIdToNameMap.set(node.id, node.text);
+
+        const arboristNode: ArboristNode = {
+            id: node.id,
+            name: node.text,
+            selected: node.state?.selected,
+            children: [],
+        };
+
+        // Initialize selected nodes set based on the initial config
+        if (node.state?.selected) {
+            selectedRoleIds.add(node.id);
+        }
+
+        nodeMap.set(node.id, arboristNode);
+    });
+
+    // Then, build the hierarchy
+    config.core.data.forEach((node: TreeNode) => {
+        const arboristNode = nodeMap.get(node.id);
+        if (!arboristNode) return;
+
+        if (node.parent !== undefined && nodeMap.has(node.parent)) {
+            const parentNode = nodeMap.get(node.parent);
+            if (!parentNode.children) parentNode.children = [];
+            parentNode.children.push(arboristNode);
+        } else {
+            // No parent, this is a root node
+            rootNodes.push(arboristNode);
+        }
+    });
+
+    // Mark leaf nodes
+    nodeMap.forEach((node) => {
+        if (!node.children || node.children.length === 0) {
+            node.isLeaf = true;
+            delete node.children;
+        }
+    });
+
+    return rootNodes;
 };
 
 /**
- * Gets the currently selected roles from the tree
- * This function:
- * 1. Retrieves all selected nodes from the tree
- * 2. Removes child roles when a parent role is selected (pruning)
- * 3. Returns an array of role names (text) after pruning
- *
- * @returns {string[]} Array of selected role names after pruning parent/child relationships
+ * Updates the set of selected role IDs
+ * @param {string | number[]} ids - Array of selected role IDs
+ */
+export const updateSelectedRoleIds = (ids: (string | number)[]): void => {
+    selectedRoleIds = new Set(ids);
+};
+
+/**
+ * Gets the selected role names from the selection state
+ * @returns {string[]} Array of selected role names, falling back to ID strings if name is not found
  */
 export const getSelectedRoles = (): string[] => {
-    if (!treeInstance) {
-        console.warn("Roles tree not initialized");
-        return [];
-    }
+    // Get all the role IDs from the selectedRoleIds Set
+    const selectedIds = Array.from(selectedRoleIds);
 
-    const selectedRoles = treeInstance.get_selected(
-        true,
-    ) as SelectedNodeDetails[];
-    console.log("Selected roles:", selectedRoles);
-
-    // Identify child roles that need to be removed when their parent is selected
-    const keysToRemove = selectedRoles.reduce<(string | number)[]>(
-        (acc, roleEntry) => {
-            if (!isNumeric(roleEntry.id)) {
-                acc.push(...roleEntry.children);
-            }
-            return acc;
-        },
-        [],
-    );
-
-    console.log("keysToRemove:", keysToRemove);
-
-    // Create final list of roles, excluding children of selected parents
-    const prunedRoles = selectedRoles
-        .filter((roleEntry) => !keysToRemove.includes(roleEntry.id))
-        .map((roleEntry) => roleEntry.text);
-
-    console.log("Pruned roles:", prunedRoles);
-    return prunedRoles;
+    // Map IDs to names using the mapping, fall back to ID string if not found
+    return selectedIds.map((id) => {
+        return roleIdToNameMap.get(id) || String(id);
+    });
 };

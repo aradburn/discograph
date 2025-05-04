@@ -30,11 +30,15 @@ describe("roles.ts", () => {
 
         // Reset any module state by calling initRoles with undefined
         // This ensures treeInstance is set to null
-        initRoles(undefined as unknown as TreeConfig);
+        try {
+            initRoles(undefined as unknown as TreeConfig);
+        } catch (e) {
+            // Ignore error from throwing on undefined config
+        }
     });
 
     describe("initRoles", () => {
-        it("should initialize the role selection tree", () => {
+        it("should initialize the role selection tree with provided container", () => {
             // Mock the config
             const config: TreeConfig = {
                 core: {
@@ -46,45 +50,95 @@ describe("roles.ts", () => {
                 plugins: ["checkbox"],
             };
 
-            // Initialize the roles
-            initRoles(config);
+            // Initialize the roles with the existing container
+            const container = initRoles(config, treeContainer);
 
             // Check if the tree container has been populated
+            expect(container).toBe(treeContainer);
             expect(treeContainer.innerHTML).not.toBe("");
             expect(treeContainer.querySelector(".tree-root")).not.toBeNull();
             expect(treeContainer.querySelectorAll(".tree-node").length).toBe(3);
         });
 
-        it("should handle empty config", () => {
-            // Call initRoles with undefined
-            initRoles(undefined as unknown as TreeConfig);
+        it("should create a new container if none provided", () => {
+            // Mock the config
+            const config: TreeConfig = {
+                core: {
+                    data: [
+                        { id: "1", text: "Role 1" },
+                        { id: "2", text: "Role 2", parent: "1" },
+                    ],
+                },
+                plugins: ["checkbox"],
+            };
 
-            // Tree container should remain empty
-            expect(treeContainer.innerHTML).toBe("");
-        });
-
-        it("should handle missing tree container", () => {
-            // Remove the tree container
+            // Remove existing container
             document.body.removeChild(treeContainer);
 
-            // Initialize the roles
-            initRoles({
+            // Initialize the roles without a container
+            const container = initRoles(config);
+
+            // Check if a new container was created
+            expect(container).not.toBe(treeContainer);
+            expect(container.id).toBe("jstree_container");
+            expect(container.className).toBe("jstree-container");
+            expect(container.innerHTML).not.toBe("");
+            expect(container.querySelector(".tree-root")).not.toBeNull();
+        });
+
+        it("should throw error on undefined config", () => {
+            // Expect an error when config is undefined
+            expect(() => {
+                initRoles(undefined as unknown as TreeConfig);
+            }).toThrow("Tree configuration is required");
+        });
+
+        it("should handle container specified by selector", () => {
+            // Create a uniquely identifiable container
+            const uniqueContainer = document.createElement("div");
+            uniqueContainer.id = "unique-container";
+            document.body.appendChild(uniqueContainer);
+
+            // Mock the config
+            const config: TreeConfig = {
                 core: {
                     data: [{ id: "1", text: "Role 1" }],
                 },
-            });
+            };
 
-            // Check if warning was logged
-            expect(console.warn).toHaveBeenCalledWith(
-                "Tree container not found",
-            );
+            // Initialize with selector
+            const container = initRoles(config, "#unique-container");
+
+            // Should find and use our unique container
+            expect(container).toBe(uniqueContainer);
+            expect(uniqueContainer.innerHTML).not.toBe("");
+        });
+
+        it("should create a new container if selector doesn't match", () => {
+            // Mock the config
+            const config: TreeConfig = {
+                core: {
+                    data: [{ id: "1", text: "Role 1" }],
+                },
+            };
+
+            // Initialize with non-existent selector
+            const container = initRoles(config, "#non-existent");
+
+            // Should create a new container
+            expect(container.id).toBe("jstree_container");
+            expect(console.warn).toHaveBeenCalled();
         });
     });
 
     describe("getSelectedRoles", () => {
         it("should return an empty array if tree is not initialized", () => {
             // Make sure tree instance is null
-            initRoles(undefined as unknown as TreeConfig);
+            try {
+                initRoles(undefined as unknown as TreeConfig);
+            } catch (e) {
+                // Ignore error from throwing on undefined config
+            }
 
             // Get selected roles without initializing tree
             const roles = getSelectedRoles();
@@ -92,8 +146,10 @@ describe("roles.ts", () => {
             // Check result - should be empty array
             expect(roles).toEqual([]);
 
-            // Instead of checking warning was called (which seems problematic to test),
-            // we'll verify the behavior directly - the function should return an empty array
+            // Verify warning was logged
+            expect(console.warn).toHaveBeenCalledWith(
+                "Roles tree not initialized",
+            );
         });
 
         it("should return selected roles", () => {
@@ -119,11 +175,11 @@ describe("roles.ts", () => {
                 plugins: ["checkbox"],
             };
 
-            // Initialize the roles
-            initRoles(config);
+            // Initialize the roles with the test container
+            const container = initRoles(config, treeContainer);
 
             // Simulate clicking on checkboxes
-            const checkboxes = treeContainer.querySelectorAll<HTMLInputElement>(
+            const checkboxes = container.querySelectorAll<HTMLInputElement>(
                 "input[type='checkbox']",
             );
             checkboxes.forEach((checkbox) => {
@@ -157,11 +213,11 @@ describe("roles.ts", () => {
                 plugins: ["checkbox"],
             };
 
-            // Initialize the roles
-            initRoles(config);
+            // Initialize the roles with the test container
+            const container = initRoles(config, treeContainer);
 
             // Simulate selecting group1 and role3
-            const nodes = treeContainer.querySelectorAll(".tree-node");
+            const nodes = container.querySelectorAll(".tree-node");
 
             // Find the checkboxes for group1 and role3
             const group1Node = Array.from(nodes).find(
@@ -214,11 +270,11 @@ describe("roles.ts", () => {
                 plugins: ["checkbox"],
             };
 
-            // Initialize the roles
-            initRoles(config);
+            // Initialize the roles with the test container
+            const container = initRoles(config, treeContainer);
 
             // Simulate selecting role 1 and role 3
-            const nodes = treeContainer.querySelectorAll(".tree-node");
+            const nodes = container.querySelectorAll(".tree-node");
 
             // Find checkboxes for roles 1 and 3
             const role1Node = Array.from(nodes).find(
@@ -248,7 +304,7 @@ describe("roles.ts", () => {
                     // Get selected roles
                     const roles = getSelectedRoles();
 
-                    // Should handle both numeric and string IDs correctly
+                    // Should include both Role 1 and Role 3, but not Role 2
                     expect(roles).toContain("Role 1");
                     expect(roles).not.toContain("Role 2"); // Pruned
                     expect(roles).toContain("Role 3");

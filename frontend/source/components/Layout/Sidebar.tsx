@@ -10,11 +10,13 @@ import ForceControls from "../Visualization/ForceControls";
  */
 export const Sidebar: React.FC = () => {
     const handleShowDetails = (): void => {
-        window.dispatchEvent(new CustomEvent("discograph:show-details-panel"));
+        window.dispatchEvent(
+            new CustomEvent("discograph:show-entity-details-overlay"),
+        );
     };
 
     const handleShowRoles = (): void => {
-        window.dispatchEvent(new CustomEvent("discograph:show-roles-panel"));
+        window.dispatchEvent(new CustomEvent("discograph:show-roles-overlay"));
     };
 
     const handlePrint = (): void => {

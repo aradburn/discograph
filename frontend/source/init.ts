@@ -1,6 +1,4 @@
 import { initRelations } from "./relations";
-import { initRoles } from "./roles";
-import type { TreeConfig } from "./roles";
 import { initFSM } from "./fsm/index";
 import { DOM_IDS } from "./constants";
 import { resetNetworkForces } from "./network/forceLayout";
@@ -10,6 +8,9 @@ declare global {
         dgRoles: TreeConfig;
     }
 }
+
+// We still need the TreeConfig type for the global interface
+import type { TreeConfig } from "./roles";
 
 /**
  * Initialize the application
@@ -31,15 +32,6 @@ export const initApp = (): void => {
 
         // Initialize all required components
         initRelations();
-        if (window.dgRoles) {
-            initRoles(window.dgRoles);
-        }
-
-        // const svgDimensions: [number, number] = [
-        //     discographManager.svgDimensions[0],
-        //     discographManager.svgDimensions[1],
-        // ];
-        // loading.init(svgDimensions);
 
         // Initialize the Discograph Finite State Machine
         initFSM();
