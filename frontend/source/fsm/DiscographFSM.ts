@@ -188,9 +188,24 @@ export class DiscographFSM extends AbstractFSM implements Actions {
     protected initialize(): void {
         // Event handlers
         window.addEventListener(FSM.EVENTS.REQUEST_NETWORK, (event: Event) => {
-            if (event instanceof RequestNetworkEvent && event.detail) {
+            if (event instanceof RequestNetworkEvent) {
                 const { entityKey, pushHistory } = event.detail;
-                this.requestNetwork(entityKey, pushHistory);
+                if (entityKey) {
+                    this.requestNetwork(entityKey, pushHistory);
+                } else {
+                    // Request with updated roles
+                    if (discographManager.selectedNodeKey) {
+                        this.requestNetwork(
+                            discographManager.selectedNodeKey,
+                            true,
+                        );
+                    } else {
+                        this.requestNetwork(
+                            networkManager.data.center.key,
+                            true,
+                        );
+                    }
+                }
             }
         });
 

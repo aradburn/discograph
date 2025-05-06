@@ -231,5 +231,64 @@ describe("roles.ts", () => {
             // Should have 3 root nodes
             expect(arboristNodes.length).toBe(3);
         });
+
+        it("should return only parent roles when fully selected, not their children", () => {
+            // Create a tree with parent-child relationships
+            const config: TreeConfig = {
+                core: {
+                    data: [
+                        { id: "parent1", text: "Parent 1" },
+                        { id: "child1", text: "Child 1", parent: "parent1" },
+                        { id: "child2", text: "Child 2", parent: "parent1" },
+                        { id: "parent2", text: "Parent 2" },
+                        { id: "child3", text: "Child 3", parent: "parent2" },
+                        { id: "child4", text: "Child 4", parent: "parent2" },
+                    ],
+                },
+                plugins: ["checkbox"],
+            };
+
+            // Initialize roles data
+            convertRolesToArboristFormat(config);
+
+            // Scenario 1: Select all children of parent1 and the parent itself
+            updateSelectedRoleIds(["parent1", "child1", "child2"]);
+
+            // Should only return the parent since it's fully selected
+            const roles1 = getSelectedRoles();
+            expect(roles1).toContain("Parent 1");
+            expect(roles1).not.toContain("Child 1");
+            expect(roles1).not.toContain("Child 2");
+            expect(roles1.length).toBe(1);
+
+            // Scenario 2: Select parent2 and only one of its children
+            updateSelectedRoleIds(["parent2", "child3"]);
+
+            // Should return both the parent and the selected child (not fully selected)
+            const roles2 = getSelectedRoles();
+            expect(roles2).toContain("Parent 2");
+            expect(roles2).toContain("Child 3");
+            expect(roles2).not.toContain("Child 4");
+            expect(roles2.length).toBe(2);
+
+            // Scenario 3: Mix of fully and partially selected parents
+            updateSelectedRoleIds([
+                "parent1",
+                "child1",
+                "child2",
+                "parent2",
+                "child3",
+            ]);
+
+            // Should return the fully selected parent1 (without children) and parent2 with child3
+            const roles3 = getSelectedRoles();
+            expect(roles3).toContain("Parent 1");
+            expect(roles3).not.toContain("Child 1");
+            expect(roles3).not.toContain("Child 2");
+            expect(roles3).toContain("Parent 2");
+            expect(roles3).toContain("Child 3");
+            expect(roles3).not.toContain("Child 4");
+            expect(roles3.length).toBe(3);
+        });
     });
 });

@@ -19,6 +19,7 @@ import type { TreeApi } from "react-arborist";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type { NodeApi } from "react-arborist";
 import { useResizeObserver } from "../../hooks/useResizeObserver";
+import { RequestNetworkEvent } from "../../network/events";
 
 interface RolesOverlayProps {
     roles?: TreeConfig;
@@ -310,6 +311,10 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
     const handleClose = (): void => {
         const event = new CustomEvent("discograph:hide-roles-overlay");
         window.dispatchEvent(event);
+
+        // Dispatch a REQUEST_NETWORK event with empty detail
+        window.dispatchEvent(new RequestNetworkEvent("", true));
+
         onHide();
     };
 
