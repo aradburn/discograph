@@ -11,8 +11,7 @@ interface HeaderProps {
 }
 
 /**
- * Header component that will replace the top navigation.
- * This component matches the structure of the original nav-top.html template.
+ * Header UI component.
  */
 export const Header: React.FC<HeaderProps> = ({ onShowHelp, onShowWho }) => {
     const handleRandom = (e: React.MouseEvent<HTMLDivElement>): void => {
