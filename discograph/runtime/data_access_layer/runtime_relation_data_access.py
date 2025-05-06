@@ -34,17 +34,17 @@ class RuntimeRelationDataAccess:
             # entity = entity_repository.get_by_entity_id_and_entity_type(
             #     entity_id, entity_type
             # )
-            log.debug(f"find_by_entity_and_roles: {_id} {role_ids}")
+            # log.debug(f"find_by_entity_and_roles: {_id} {role_ids}")
             entity_relations = relation_repository.find_by_entity_and_roles(
                 _id, role_ids
             )
-            log.debug(f"    found entity_relations: {entity_relations}")
+            # log.debug(f"    found entity_relations: {entity_relations}")
             relation_internals.extend(entity_relations)
 
         relations = [
             relation_internal.to_relation() for relation_internal in relation_internals
         ]
-        log.debug(f"    -> relations: {relations}")
+        # log.debug(f"    -> relations: {relations}")
         return relations
 
     # def search_bimulti(

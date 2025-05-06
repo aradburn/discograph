@@ -99,11 +99,11 @@ def parse_request_args(args) -> tuple[list[str], int | tuple[int, int]] | None:
                 unescaped_value = value.replace("\\,", "|")
                 for role_escaped in unescaped_value.split(','):
                     role = role_escaped.replace("|", ",")
-                    log.debug(f"Requested role: {role}")
+                    # log.debug(f"Requested role: {role}")
                     if role in RoleCache.role_category_to_role_name_lookup.keys():
-                        log.debug(f"Requested role found: {role}")
+                        # log.debug(f"Requested role found: {role}")
                         for role_entry in RoleCache.role_category_to_role_name_lookup[role]:
-                            log.debug(f"Requested role_entry: {role_entry}")
+                            # log.debug(f"Requested role_entry: {role_entry}")
                             if role_entry in RoleCache.role_name_to_role_id_lookup.keys():
                                 roles.add(role_entry)
                     elif role in RoleCache.role_name_to_role_id_lookup.keys():
@@ -112,7 +112,7 @@ def parse_request_args(args) -> tuple[list[str], int | tuple[int, int]] | None:
     if len(roles) == 0:
         roles = UI_DEFAULT_ROLES
     roles = list(sorted(roles))
-    log.debug(f"Requested roles: {roles}")
+    # log.debug(f"Requested roles: {roles}")
     return roles, year
 
 
