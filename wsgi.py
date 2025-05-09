@@ -1,8 +1,8 @@
-from werkzeug.middleware.proxy_fix import ProxyFix
+import uvicorn
 
-from discograph.app.prod_app import create_production_app
+from discograph.app.fastapi_prod_app import app
 
 if __name__ == "__main__":
-    app = create_production_app()
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
-    app.run(host="0.0.0.0", port=5000)
+    # Run the application using uvicorn
+    # For running behind a proxy, use the --root-path parameter as needed
+    uvicorn.run(app, host="0.0.0.0", port=8000, workers=4)

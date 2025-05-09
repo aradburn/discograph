@@ -1,8 +1,8 @@
 """
-This module defines the user interface (UI) routes for the Discograph application.
+This module defines the user interface (UI) routes for the Discograph application using FastAPI.
 
 It handles requests for the main index page, entity-specific pages, and
-static files like favicons. It uses Flask's `Blueprint` to organize the routes
+static files like favicons. It uses FastAPI's `APIRouter` to organize the routes
 and interact with the Discograph backend.
 
 Key functionalities include:
@@ -10,7 +10,6 @@ Key functionalities include:
       and roles.
     - Serving entity-specific pages, displaying the network graph for a given
       entity.
-    - Serving favicons and other static files.
     - Handling request argument parsing for roles and year.
     - Integrating with `RoleCache` for role data and `RuntimeDatabaseManager`
       for network data.
@@ -26,26 +25,15 @@ for role caching. It interacts with `discograph.runtime` for database operations
 
 import json
 import logging
-import os
+from typing import List, Optional
 
-from flask import Blueprint, send_from_directory
-from flask import current_app as app
-from flask import make_response
-from flask import render_template
-from flask import request
-from flask import url_for
+from fastapi import APIRouter, Query, Request
+from fastapi.responses import HTMLResponse
 
 import discograph.utils
 from discograph.exceptions import BadRequestError, NotFoundError
-from discograph.library.cache.role_cache import RoleCache
 from discograph.library.fields.entity_type import EntityType
-from discograph.runtime.data_access_layer.role_entry import RoleEntry
-from discograph.runtime.runtime_database.runtime_entity_repository import (
-    RuntimeEntityRepository,
-)
-from discograph.runtime.runtime_database.runtime_relation_repository import (
-    RuntimeRelationRepository,
-)
+
 from discograph.runtime.runtime_database.runtime_transaction import runtime_transaction
 
 log = logging.getLogger(__name__)
@@ -53,33 +41,30 @@ log = logging.getLogger(__name__)
 The logger for the UI module.
 """
 
-blueprint = Blueprint(
-    "ui",
-    __name__,
-    static_url_path="/public/",
-    static_folder="../../frontend/public",
-    template_folder="../../frontend/templates",
-)
+router = APIRouter()
 """
-The Flask blueprint for the UI routes.
+The FastAPI router for the UI routes.
 
-This blueprint is used to organize the UI routes and their related functionality.
+This router is used to organize the UI routes and their related functionality.
 """
 
-
-UI_DEFAULT_ROLES = (
+UI_DEFAULT_ROLES = [
     "Alias",
     "Member Of",
     # 'Sublabel Of',
     # 'Released On',
-)
+]
 """
 Default roles to display if none are specified in the request.
 """
 
 
-@blueprint.route("/")
-def route__index():
+@router.get("/", response_class=HTMLResponse)
+async def route__index(
+    request: Request,
+    roles: Optional[List[str]] = Query(None),
+    year: Optional[int] = Query(None),
+) -> HTMLResponse:
     """
     Serves the main index page.
 
@@ -87,9 +72,18 @@ def route__index():
     initial data for the network graph and roles, renders the index
     template, and returns the response.
 
+    Args:
+        request: The FastAPI request object.
+        roles: Optional list of roles to filter the network by.
+        year: Optional year to filter the network by.
+
     Returns:
-        flask.Response: The rendered index page.
+        HTMLResponse: The rendered index page.
     """
+    from discograph.library.cache.role_cache import RoleCache
+    from discograph.runtime.data_access_layer.role_entry import RoleEntry
+    from discograph.app.fastapi_app import templates
+
     network_js = "var dgNetwork = null;\n"
     """Initial JavaScript for the network graph, set to null."""
     log.debug(f"network_js: {network_js}")
@@ -104,38 +98,59 @@ def route__index():
     """Combine the network and roles JavaScript variables."""
     # log.debug(f"initial_js: {initial_js}")
 
-    parsed_args = discograph.utils.parse_request_args(request.args)
+    # Convert query parameters to the format expected by the existing code
+    query_params = {}
+    if roles:
+        query_params["roles"] = roles
+    if year is not None:
+        query_params["year"] = year
+
+    parsed_args = discograph.utils.parse_request_args(query_params)
     """Parse the request arguments for roles and year."""
-    original_roles, original_year = parsed_args
+    original_roles, original_year = parsed_args if parsed_args else (None, None)
     if not original_roles:
-        original_roles = UI_DEFAULT_ROLES
+        original_roles = UI_DEFAULT_ROLES.copy()
     """Use default roles if none are specified in the request."""
     multiselect_mapping = RoleEntry.get_multiselect_mapping()
     """Get the multiselect mapping for roles."""
-    url = url_for(
-        request.endpoint,
-        roles=original_roles,
-    )
+
+    # Get the application root from the request
+    application_url = str(request.base_url).rstrip("/")
+
+    # Build URL with query parameters
+    url = "/"
+    if original_roles:
+        url += f"?roles={','.join(original_roles)}"
+        if original_year:
+            url += f"&year={original_year}"
+    elif original_year:
+        url += f"?year={original_year}"
+
     """Generate the URL for the current request with the selected roles."""
-    rendered_template = render_template(
+    return templates.TemplateResponse(
         "index.html",
-        application_url=app.config["APPLICATION_ROOT"],
-        initial_json=initial_js,
-        multiselect_mapping=multiselect_mapping,
-        og_title="Discograph",
-        og_url=url,
-        original_roles=original_roles,
-        original_year=original_year,
-        title="Discograph",
+        {
+            "request": request,
+            "application_url": application_url,
+            "initial_json": initial_js,
+            "multiselect_mapping": multiselect_mapping,
+            "og_title": "Discograph",
+            "og_url": url,
+            "original_roles": original_roles,
+            "original_year": original_year,
+            "title": "Discograph",
+        },
     )
-    """Render the index template with the prepared data."""
-    response = make_response(rendered_template)
-    """Create a Flask response object."""
-    return response
 
 
-@blueprint.route("/<entity_type_str>/<entity_id>")
-def route__entity_type__entity_id(entity_type_str, entity_id):
+@router.get("/{entity_type_str}/{entity_id}", response_class=HTMLResponse)
+async def route__entity_type__entity_id(
+    request: Request,
+    entity_type_str: str,
+    entity_id: str,
+    roles: Optional[List[str]] = Query(None),
+    year: Optional[int] = Query(None),
+) -> HTMLResponse:
     """
     Serves the entity-specific page.
 
@@ -144,23 +159,43 @@ def route__entity_type__entity_id(entity_type_str, entity_id):
     the initial data, renders the index template, and returns the response.
 
     Args:
-        entity_type_str (str): The type of the entity (e.g., "artist", "label").
-        entity_id (str): The ID of the entity.
+        request: The FastAPI request object.
+        entity_type_str: The type of the entity (e.g., "artist", "label").
+        entity_id: The ID of the entity.
+        roles: Optional list of roles to filter the network by.
+        year: Optional year to filter the network by.
 
     Returns:
-        flask.Response: The rendered entity-specific page.
+        HTMLResponse: The rendered entity-specific page.
 
     Raises:
         BadRequestError: If the entity type or entity ID is invalid.
         NotFoundError: If no network data is found for the given entity.
     """
-    from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
+    from discograph.library.cache.role_cache import RoleCache
+    from discograph.runtime.data_access_layer.role_entry import RoleEntry
 
-    parsed_args = discograph.utils.parse_request_args(request.args)
+    from discograph.runtime.runtime_database.runtime_entity_repository import (
+        RuntimeEntityRepository,
+    )
+    from discograph.runtime.runtime_database.runtime_relation_repository import (
+        RuntimeRelationRepository,
+    )
+    from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
+    from discograph.app.fastapi_app import templates
+
+    # Convert query parameters to the format expected by the existing code
+    query_params = {}
+    if roles:
+        query_params["roles"] = roles
+    if year is not None:
+        query_params["year"] = year
+
+    parsed_args = discograph.utils.parse_request_args(query_params)
     """Parse the request arguments for roles and year."""
-    requested_roles, requested_year = parsed_args
+    requested_roles, requested_year = parsed_args if parsed_args else (None, None)
     if not requested_roles:
-        requested_roles = UI_DEFAULT_ROLES
+        requested_roles = UI_DEFAULT_ROLES.copy()
     """Use default roles if none are specified in the request."""
     try:
         entity_type = EntityType.from_str(entity_type_str.upper())
@@ -170,7 +205,7 @@ def route__entity_type__entity_id(entity_type_str, entity_id):
     if not entity_id.isnumeric():
         raise BadRequestError(message="Bad Entity Id")
     """Validate the entity ID."""
-    entity_id = int(entity_id)
+    entity_id_int = int(entity_id)
 
     with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
@@ -178,7 +213,7 @@ def route__entity_type__entity_id(entity_type_str, entity_id):
         network_data = RuntimeDatabaseManager.runtime_database_helper.get_network(
             entity_repository,
             relation_repository,
-            entity_id,
+            entity_id_int,
             entity_type,
             on_mobile=False,
             roles=requested_roles,
@@ -213,72 +248,37 @@ def route__entity_type__entity_id(entity_type_str, entity_id):
     """Extract the entity name from the network data."""
     key = f"{entity_type.name.lower()}-{entity_id}"
     """Create a unique key for the entity."""
-    # url = '/{}/{}'.format(entity_type, entity_id)
-    url = url_for(
-        request.endpoint,
-        entity_type_str=entity_type.name.lower(),
-        entity_id=entity_id,
-        roles=requested_roles,
-    )
+
+    # Get the application root from the request
+    application_url = str(request.base_url).rstrip("/")
+
+    # Build URL with query parameters
+    url = f"/{entity_type.name.lower()}/{entity_id}"
+    if requested_roles:
+        url += f"?roles={','.join(requested_roles)}"
+        if requested_year:
+            url += f"&year={requested_year}"
+    elif requested_year:
+        url += f"?year={requested_year}"
+
     """Generate the URL for the current entity."""
     title = f"Discograph: {entity_name}"
     """Set the page title."""
     multiselect_mapping = RoleEntry.get_multiselect_mapping()
     """Get the multiselect mapping for roles."""
-    rendered_template = render_template(
+
+    return templates.TemplateResponse(
         "index.html",
-        application_url=app.config["APPLICATION_ROOT"],
-        initial_json=initial_js,
-        key=key,
-        multiselect_mapping=multiselect_mapping,
-        og_title=f'Discograph: The "{entity_name}" network',
-        og_url=url,
-        original_roles=requested_roles,
-        original_year=requested_year,
-        title=title,
+        {
+            "request": request,
+            "application_url": application_url,
+            "initial_json": initial_js,
+            "key": key,
+            "multiselect_mapping": multiselect_mapping,
+            "og_title": f'Discograph: The "{entity_name}" network',
+            "og_url": url,
+            "original_roles": requested_roles,
+            "original_year": requested_year,
+            "title": title,
+        },
     )
-    """Render the index template with the prepared data."""
-    response = make_response(rendered_template)
-    """Create a Flask response object."""
-    return response
-
-
-# @blueprint.route("/favicon.ico")
-# def favicon():
-#     """
-#     Serves the favicon.ico file.
-#
-#     Returns:
-#         flask.Response: The favicon.ico file.
-#     """
-#     return send_from_directory(
-#         os.path.join(app.root_path, "static"),
-#         path="favicon.ico",
-#         mimetype="image/vnd.microsoft.icon",
-#     )
-#
-#
-# @blueprint.route("/favicon-32x32.png")
-# def favicon32():
-#     """
-#     Serves the favicon-32x32.png file.
-#
-#     Returns:
-#         flask.Response: The favicon-32x32.png file.
-#     """
-#     return send_from_directory(
-#         os.path.join(app.root_path, "static"), path="favicon-32x32.png"
-#     )
-#
-#
-# @blueprint.route("/apple-touch-icon.png")
-# def favicon_apple():
-#     """
-#     Serves the apple-touch-icon.png file.
-#
-#     Returns:
-#         flask.Response: The apple-touch-icon.png file.
-#     """
-#     return send_from_directory(
-#         os.path.join(app.root_path, "static"), path="apple-touch-icon.png"
-#     )

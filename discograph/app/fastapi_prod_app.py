@@ -1,47 +1,47 @@
 """
-This module defines a production entry point for the Discograph application.
+This module defines a production entry point for the Discograph application using FastAPI.
 
 It provides a function, `create_production_app`, to create and configure a
-Flask application instance suitable for a production environment. This setup
+FastAPI application instance suitable for a production environment. This setup
 uses the `SqliteProductionConfiguration` for configuration settings, ensuring
 that the application is properly configured for deployment.
 
 Key functionalities include:
-    - Creating a Flask application instance with production settings.
+    - Creating a FastAPI application instance with production settings.
     - Loading initial data into the database tables.
-    - Returning the configured Flask application instance.
+    - Returning the configured FastAPI application instance.
 
 The application configuration is defined in `discograph.config`, and the
 database management is handled by `discograph.runtime.runtime_database_manager`.
 
-The `create_app` function from `discograph.app.app` is used to create the
-Flask application instance. The `load_tables` method in
+The `create_app` function from `discograph.app.fastapi_app` is used to create the
+FastAPI application instance. The `load_tables` method in
 `RuntimeDatabaseManager.runtime_database_helper` is used to populate the
 database with initial data.
 
 This module is intended to be used as the main entry point for running the
 Discograph application in a production environment. It sets up the necessary
-components and returns a ready-to-use Flask application.
+components and returns a ready-to-use FastAPI application.
 """
 
-from flask import Flask
+from fastapi import FastAPI
 
-from discograph.app.app import create_app
+from discograph.app.fastapi_app import create_app
 from discograph.config import SqliteProductionConfiguration
 from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
 
 
-def create_production_app() -> Flask:
+def create_production_app() -> FastAPI:
     """
-    Creates and configures a Flask application for production.
+    Creates and configures a FastAPI application for production.
 
-    This function sets up a Flask application instance using the
+    This function sets up a FastAPI application instance using the
     `SqliteProductionConfiguration` to ensure it is configured for a
     production environment. It also loads initial data into the database
     tables.
 
     Returns:
-        Flask: A configured Flask application instance ready for production.
+        FastAPI: A configured FastAPI application instance ready for production.
     """
     runtime_config = SqliteProductionConfiguration()
     """
@@ -50,11 +50,11 @@ def create_production_app() -> Flask:
     Sets up the configuration for the runtime environment using SQLite,
     suitable for production use.
     """
-    app = create_app(runtime_config)
+    _app = create_app(runtime_config)
     """
-    Flask application instance.
+    FastAPI application instance.
 
-    Creates a new Flask application instance using the specified runtime
+    Creates a new FastAPI application instance using the specified runtime
     configuration, including settings for the database, cache, and logging.
     """
 
@@ -67,4 +67,14 @@ def create_production_app() -> Flask:
     such as roles, from the pre-configured data sources.
     """
 
-    return app
+    return _app
+
+
+# FastAPI instance for ASGI servers like Uvicorn
+app = create_production_app()
+"""
+The main FastAPI application instance for production.
+
+This is the FastAPI application instance that should be used by ASGI servers
+like Uvicorn when running the application in production.
+"""
