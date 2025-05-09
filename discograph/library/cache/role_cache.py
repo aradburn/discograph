@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Set
+from typing import Dict, Set, Any
 
 from discograph.library.fields.role_type import RoleType
 from discograph.runtime.runtime_domain.role import (
@@ -39,7 +39,7 @@ class RoleCache:
     # role_categories: Set[str] = set()
 
     @staticmethod
-    def get_all_roles() -> dict:
+    def get_all_roles() -> Dict[str, Any]:
         """
         Retrieves all roles with their IDs, names, and categories.
 
