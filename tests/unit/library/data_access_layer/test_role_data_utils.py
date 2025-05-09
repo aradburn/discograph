@@ -248,9 +248,9 @@ class TestRoleDataUtils(unittest.TestCase):
                     expected_5_str = None
                 if expected_5_str is not None:
                     expected_5_str = expected_5_str.replace('\\"', '"')
-                # print(
-                #     f"input: {input_str}, expected_1: {expected_1_str}, expected_2: {expected_2_str}"
-                # )
+                print(
+                    f"input: {input_str}, expected_1: {expected_1_str}, expected_2: {expected_2_str}"
+                )
                 normalised_role_name_list = RoleDataUtils.normalise_role_names(
                     input_str
                 )
@@ -260,7 +260,7 @@ class TestRoleDataUtils(unittest.TestCase):
                     and len(normalised_role_name_list[0]) > 0
                     else None
                 )
-                # print(f"      actual_1: {actual_1_str}")
+                print(f"      actual_1: {actual_1_str}")
                 actual_2_str = (
                     normalised_role_name_list[1]
                     if len(normalised_role_name_list) > 1
@@ -285,7 +285,7 @@ class TestRoleDataUtils(unittest.TestCase):
                     and len(normalised_role_name_list[4]) > 0
                     else None
                 )
-                # print(f"      actual_2: {actual_2_str}")
+                print(f"      actual_2: {actual_2_str}")
                 self.assertEqual(expected_1_str, actual_1_str)
                 self.assertEqual(expected_2_str, actual_2_str)
                 self.assertEqual(expected_3_str, actual_3_str)
