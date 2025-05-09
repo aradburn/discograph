@@ -41,7 +41,7 @@ The module utilizes
   and `frozenset`, `set`, `dict`, `hash`, `int` for data structure.
 """
 
-from typing import Set
+from typing import Set, Dict, Any
 
 from discograph.library.fields.entity_type import EntityType
 from discograph.runtime.runtime_domain.entity import RuntimeEntity
@@ -133,14 +133,14 @@ class TrellisNode:
 
     # PUBLIC METHODS
 
-    def as_json(self) -> dict:
+    def as_json(self) -> Dict[str, Any]:
         """
         Converts the TrellisNode to a JSON-compatible dictionary.
 
         Returns:
             dict: A JSON-compatible dictionary representing the node.
         """
-        data = {
+        data: Dict[str, Any] = {
             "distance": self.distance,
             "id": self.entity.entity_id,
             "key": self.entity.json_entity_key,

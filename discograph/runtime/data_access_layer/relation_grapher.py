@@ -52,10 +52,6 @@ class RelationGrapher(ABC):
 
     entities_to_prune = [
         "Various",
-        "Various Artists",
-        "Various Artists (2)",
-        "Various Artists (3)",
-        "Various Artists (4)",
         "Not On Label",
         "Self Released",
         "Self-Released",
@@ -143,7 +139,11 @@ class RelationGrapher(ABC):
             log.debug(f"        Search found {len(entities)} entities")
             relations: Dict[str, RuntimeRelationResult] = {}
             self.process_entities(distance, entities)
-            if not self.entity_keys_to_visit or self.should_break_loop or len(entities) > self.max_nodes:
+            if (
+                not self.entity_keys_to_visit
+                or self.should_break_loop
+                or len(entities) > self.max_nodes
+            ):
                 break
             self.test_loop_one(distance)
             self.prune_roles(distance, provisional_role_names)
@@ -374,7 +374,10 @@ class RelationGrapher(ABC):
             if not all([entity.entity_id, entity.entity_name]):
                 self.entity_keys_to_visit.remove(entity.entity_key)
                 continue
-            if entity.entity_name in  self.enities_to_prune:
+            if entity.entity_name in self.entities_to_prune:
+                self.entity_keys_to_visit.remove(entity.entity_key)
+                continue
+            if entity.entity_name.startswith("Various Artists"):
                 self.entity_keys_to_visit.remove(entity.entity_key)
                 continue
             entity_key = entity.entity_key

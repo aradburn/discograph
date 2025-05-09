@@ -21,7 +21,7 @@ operations and inherits common functionality from `RuntimeBaseRepository`.
 """
 
 import logging
-from typing import Generator, Any, cast, List, Iterator
+from typing import Generator, Any, List, Iterator
 
 from sqlalchemy import Result, select, update, Select, delete, func
 
@@ -437,25 +437,18 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         if artist_ids and label_ids:
             where_clause = (
                 (RuntimeEntityTable.entity_type == EntityType.ARTIST)
-                & cast(
-                    "ColumnElement[bool]",
-                    (RuntimeEntityTable.entity_id.in_(artist_ids)),
-                )
+                & (RuntimeEntityTable.entity_id.in_(artist_ids))
             ) | (
                 (RuntimeEntityTable.entity_type == EntityType.LABEL)
-                & cast(
-                    "ColumnElement[bool]", (RuntimeEntityTable.entity_id.in_(label_ids))
-                )
+                & (RuntimeEntityTable.entity_id.in_(label_ids))
             )
         elif artist_ids:
             where_clause = (RuntimeEntityTable.entity_type == EntityType.ARTIST) & (
-                cast(
-                    "ColumnElement[bool]", RuntimeEntityTable.entity_id.in_(artist_ids)
-                )
+                RuntimeEntityTable.entity_id.in_(artist_ids)
             )
         else:
             where_clause = (RuntimeEntityTable.entity_type == EntityType.LABEL) & (
-                cast("ColumnElement[bool]", RuntimeEntityTable.entity_id.in_(label_ids))
+                RuntimeEntityTable.entity_id.in_(label_ids)
             )
         query = select(RuntimeEntityTable).where(where_clause)
         return self._get_all_by_query(query)

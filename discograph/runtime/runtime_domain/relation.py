@@ -247,14 +247,14 @@ class RuntimeRelationResult(RuntimeRelation):
         Returns:
             Dict[str, Any]: The JSON representation of the relation result.
         """
-        data = {
+        data: Dict[str, Any] = {
             "key": self.link_key,
             "role": self.role,
             "source": self.json_entity_one_key,
             "target": self.json_entity_two_key,
         }
         if hasattr(self, "distance") and self.distance is not None:
-            data["distance"] = str(self.distance)
+            data["distance"] = int(self.distance)
         return data
 
 

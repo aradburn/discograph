@@ -189,8 +189,8 @@ class RuntimeEntityDataAccess:
             # read pickle dump information from that file
             entity_details_index: EntityDetailsIndex = pickle.load(file)
             # log.debug(f"Countries:")
-            for country in sorted(entity_details_index.countries_list):
-                print(f"{country}")
+            # for country in sorted(entity_details_index.countries_list):
+            #     print(f"{country}")
         log.debug(
             f"loaded {len(entity_details_index.entity_countries)} entity countries"
         )

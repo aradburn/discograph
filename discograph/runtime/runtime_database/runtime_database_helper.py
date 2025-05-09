@@ -69,7 +69,6 @@ class RuntimeDatabaseHelper(ABC):
         runtime_engine (Engine | None): The SQLAlchemy engine for the runtime database.
         runtime_session_factory (sessionmaker | None): The SQLAlchemy session factory
             for creating database sessions.
-        flask_db_session (scoped_session | None): A scoped session for Flask database operations.
         idx_entity_one_id (Index | None): An index for entity one ID.
         idx_entity_two_id (Index | None): An index for entity two ID.
         text_search_index (TextSearchIndex | None): An index for text-based searches.
@@ -86,8 +85,6 @@ class RuntimeDatabaseHelper(ABC):
     """The SQLAlchemy engine for the runtime database."""
     runtime_session_factory: sessionmaker
     """The SQLAlchemy session factory for creating database sessions."""
-    flask_db_session: scoped_session
-    """A scoped session for Flask database operations."""
 
     idx_entity_one_id: Index
     """An index for entity one ID."""
@@ -438,7 +435,10 @@ class RuntimeDatabaseHelper(ABC):
                 and (
                     "Member Of" in relation_counts
                     or "Alias" in relation_counts
-                    or ("members" in entities and len(list(entities.get("members", []))) > 0)
+                    or (
+                        "members" in entities
+                        and len(list(entities.get("members", []))) > 0
+                    )
                     or ("groups" in entities and len(entities["groups"]) > 0)
                 )
                 and entity.entity_type == EntityType.ARTIST
