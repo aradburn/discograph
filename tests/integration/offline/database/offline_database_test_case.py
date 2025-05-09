@@ -68,9 +68,9 @@ class OfflineDatabaseTestCase(unittest.TestCase):
                 OfflineDatabaseManager.offline_database_helper.load_tables(
                     TEST_DATA_DIR, "testinsert", is_bulk_inserts=True
                 )
-                OfflineDatabaseManager.offline_database_helper.text_search_index = (
-                    TextSearchIndex.load_text_search_index_from_file(TEXT_SEARCH_PATH)
-                )
+                # OfflineDatabaseManager.offline_database_helper.text_search_index = (
+                #     TextSearchIndex.load_text_search_index_from_file(TEXT_SEARCH_PATH)
+                # )
         print("Done DatabaseTestCase setup")
 
     @classmethod

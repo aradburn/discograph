@@ -1,6 +1,6 @@
 import logging
 
-from discograph.app.app import create_app
+from discograph.app.fastapi_app import create_app
 from discograph.config import (
     ALL_RUNTIME_DATABASE_TABLE_NAMES,
     PostgresOfflineTestConfiguration,
@@ -26,11 +26,11 @@ class AppTestCase(OfflineDatabaseTestCase):
 
         _runtime_config = SqliteRuntimeTestConfiguration()
         _app = create_app(_runtime_config)
-        _app.config.update(
-            {
-                "TESTING": True,
-            }
-        )
+        # _app.config.update(
+        #     {
+        #         "TESTING": True,
+        #     }
+        # )
 
         # For testing, drop and recreate all tables
         RuntimeDatabaseManager.runtime_database_helper.drop_tables(
@@ -43,7 +43,7 @@ class AppTestCase(OfflineDatabaseTestCase):
         TransferManager.transfer_all()
         RuntimeDatabaseManager.runtime_database_helper.load_tables()
 
-        cls.client = _app.test_client()
+        # cls.client = _app.test_client()
 
     @classmethod
     def tearDownClass(cls):
