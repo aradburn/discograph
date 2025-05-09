@@ -13,14 +13,13 @@ from collections.abc import Mapping
 from datetime import datetime, date
 from functools import wraps
 from random import random
-from typing import List, Any, Sequence, Iterator, TypeVar
+from typing import List, Any, Sequence, Iterator, TypeVar, Dict
 
 import requests
 from dateutil.relativedelta import relativedelta
 from toolz import count
 from unidecode import unidecode
 
-from discograph.app.ui import UI_DEFAULT_ROLES
 from discograph.config import (
     DISCOGS_BASE_URL,
     DISCOGS_PATH,
@@ -73,6 +72,7 @@ class SkipFilter:
 
 def parse_request_args(args) -> tuple[list[str], int | tuple[int, int]] | None:
     from discograph.library.cache.role_cache import RoleCache
+    from discograph.app.fastapi_ui import UI_DEFAULT_ROLES
 
     year: tuple[int, int] | int | None = None
     roles = set()
@@ -97,14 +97,19 @@ def parse_request_args(args) -> tuple[list[str], int | tuple[int, int]] | None:
             values = args.getlist(key)
             for value in values:
                 unescaped_value = value.replace("\\,", "|")
-                for role_escaped in unescaped_value.split(','):
+                for role_escaped in unescaped_value.split(","):
                     role = role_escaped.replace("|", ",")
                     # log.debug(f"Requested role: {role}")
                     if role in RoleCache.role_category_to_role_name_lookup.keys():
                         # log.debug(f"Requested role found: {role}")
-                        for role_entry in RoleCache.role_category_to_role_name_lookup[role]:
+                        for role_entry in RoleCache.role_category_to_role_name_lookup[
+                            role
+                        ]:
                             # log.debug(f"Requested role_entry: {role_entry}")
-                            if role_entry in RoleCache.role_name_to_role_id_lookup.keys():
+                            if (
+                                role_entry
+                                in RoleCache.role_name_to_role_id_lookup.keys()
+                            ):
                                 roles.add(role_entry)
                     elif role in RoleCache.role_name_to_role_id_lookup.keys():
                         roles.add(role)
@@ -222,7 +227,7 @@ def normalize_dict(obj: Any, skip_keys=None) -> str:
     return s
 
 
-def normalize_dict_list(list_obj: list[dict[str:Any]]) -> str:
+def normalize_dict_list(list_obj: List[Dict[str, Any]]) -> str:
     def sorted_itemgetter(*items):
         if len(items) == 1:
             item = items[0]
