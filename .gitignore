@@ -250,3 +250,4 @@ fabric.properties
 /tests/data_text_search/text_search.data
 /tests/data_roles/test_data_roles_output.tsv
 /tests/data_roles/test_data_roles_output*.tsv
+/profiling/
