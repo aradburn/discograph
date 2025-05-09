@@ -1,14 +1,14 @@
 import logging
-from typing import Generator, Any, cast, List, Sequence, Iterator
+from typing import Generator, Any, List, Sequence, Iterator
 
 from sqlalchemy import Result, select, update, Select, delete, func
 
 from discograph import utils
 from discograph.exceptions import NotFoundError, DatabaseError, UnprocessableError
+from discograph.library.fields.entity_type import EntityType
 from discograph.offline.database.base_repository import BaseRepository
 from discograph.offline.database.entity_table import EntityTable
 from discograph.offline.domain.entity import Entity
-from discograph.library.fields.entity_type import EntityType
 
 log = logging.getLogger(__name__)
 
@@ -407,18 +407,18 @@ class EntityRepository(BaseRepository[EntityTable]):
         if artist_ids and label_ids:
             where_clause = (
                 (EntityTable.entity_type == EntityType.ARTIST)
-                & cast("ColumnElement[bool]", (EntityTable.entity_id.in_(artist_ids)))
+                & (EntityTable.entity_id.in_(artist_ids))
             ) | (
                 (EntityTable.entity_type == EntityType.LABEL)
-                & cast("ColumnElement[bool]", (EntityTable.entity_id.in_(label_ids)))
+                & (EntityTable.entity_id.in_(label_ids))
             )
         elif artist_ids:
             where_clause = (EntityTable.entity_type == EntityType.ARTIST) & (
-                cast("ColumnElement[bool]", EntityTable.entity_id.in_(artist_ids))
+                EntityTable.entity_id.in_(artist_ids)
             )
         else:
             where_clause = (EntityTable.entity_type == EntityType.LABEL) & (
-                cast("ColumnElement[bool]", EntityTable.entity_id.in_(label_ids))
+                EntityTable.entity_id.in_(label_ids)
             )
         query = select(EntityTable).where(where_clause)
         return self._get_all_by_query(query)

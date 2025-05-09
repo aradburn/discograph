@@ -12,7 +12,7 @@ class RoleDataUtils:
     SPLIT_CHARACTERS = re.compile(r" & |&|＆| and | And |/|; |\+| - |・| Und | Et ")
     A_N_R = re.compile(r"\b[aA] ?(&|and|And|\+) ?[rR]\b")
     BRACKETS = re.compile(r"[({\[［].*[)}\]］]")
-    QUOTES = re.compile(r"\".*\"| '.*' | '.*'$")
+    QUOTES = re.compile(r"\".*\"|\s+'.*'\s+|\s*'.*'$")
     PARENTHESIS = re.compile(r"\([^)]*$")
     DIGITS_AND_SPECIAL_CHARACTERS = re.compile(r"^\d+[-.)]*$|^[-*+.?/!`—•]+$")
 
@@ -80,17 +80,25 @@ class RoleDataUtils:
         # Split into multiple names if needed
         input_names = re.split(RoleDataUtils.SPLIT_CHARACTERS, input_name)
 
+        # noinspection PyTypeChecker
         input_names = [
             RoleDataUtils.normalise_role_name(name)
             for name in input_names
             if name is not None and name != ""
         ]
+        # noinspection PyTypeChecker
         input_names_list = [
             re.split(r"\. ", name)
             for name in input_names
             if name is not None and name != ""
         ]
-        input_names = [name for name_list in input_names_list for name in name_list]
+        input_names = [
+            name
+            for name_list in input_names_list
+            for name in name_list
+            if name is not None and name != ""
+        ]
+        # noinspection PyTypeChecker
         input_names = [
             RoleDataUtils.normalise_role_name(name)
             for name in input_names

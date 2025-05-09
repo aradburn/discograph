@@ -95,8 +95,8 @@ class EntityDataAccess:
         if not entity.entities:
             return False
 
-        changed = False
         if entity.entity_type == EntityType.ARTIST:
+            is_resolved = False
             for section in ("aliases", "groups", "members"):
                 if section not in entity.entities:
                     continue
@@ -106,8 +106,10 @@ class EntityDataAccess:
                     )
                     if id_:
                         entity.entities[section][entity_name] = id_
-                        changed = True
+                        is_resolved = True
+            return is_resolved
         elif entity.entity_type == EntityType.LABEL:
+            is_resolved = False
             for section in ("parent_label", "sublabels"):
                 if section not in entity.entities:
                     continue
@@ -117,10 +119,10 @@ class EntityDataAccess:
                     )
                     if id_:
                         entity.entities[section][entity_name] = id_
-                        changed = True
+                        is_resolved = True
+            return is_resolved
         else:
             raise ValueError("Bad entity_type")
-        return changed
 
     @staticmethod
     def resolve_release_references(
@@ -295,4 +297,5 @@ class EntityDataAccess:
             count += 1
             if count % (LoaderBase.BULK_REPORTING_SIZE * 100) == 0:
                 log.debug(f"Indexed {count} entities")
-        # index.print_sizes()
+        index.reduce_list_to_set()
+        index.print_sizes()

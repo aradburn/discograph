@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Generic, Type, Generator, cast
+from typing import Any, Generic, Type, Generator
 
 from sqlalchemy import asc, delete, desc, func, select, update, text
 from sqlalchemy.engine import Result
@@ -62,13 +62,10 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
         """
 
         try:
+            # noinspection PyTypeChecker
             query = (
                 update(self.schema_class)
-                .where(
-                    cast(
-                        "ColumnElement[bool]", getattr(self.schema_class, key) == value
-                    )
-                )
+                .where(getattr(self.schema_class, key) == value)
                 .values(payload)
                 .returning(self.schema_class)
             )
@@ -96,8 +93,9 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
             NotFoundError: If no matching record is found.
         """
 
+        # noinspection PyTypeChecker
         query = select(self.schema_class).where(
-            cast("ColumnElement[bool]", getattr(self.schema_class, key) == value)
+            getattr(self.schema_class, key) == value
         )
         result: Result = self.execute(query)
 
@@ -235,11 +233,8 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
         Args:
             id_: The ID of the record to delete.
         """
-        self.execute(
-            delete(self.schema_class).where(
-                cast("ColumnElement[bool]", self.schema_class.id == id_)
-            )
-        )
+        # noinspection PyTypeChecker
+        self.execute(delete(self.schema_class).where(self.schema_class.id == id_))
         self._session.flush()
 
     def commit(self) -> None:
