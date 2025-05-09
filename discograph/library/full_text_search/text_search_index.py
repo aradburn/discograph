@@ -4,7 +4,7 @@ import pickle
 import random
 from collections import Counter
 from pathlib import Path
-from typing import Self
+from typing import Self, Dict, List
 
 from discograph.library.full_text_search.text_search_utils import (
     normalise_search_content,
@@ -50,11 +50,11 @@ class TextSearchIndex:
         """
         Initializes an empty TextSearchIndex.
         """
-        self.index: dict[str, set[int]] = {}
+        self.index: Dict[str, List[int]] = {}
         """The inverted index mapping tokens to sets of document IDs."""
-        self.documents: dict[int, str] = {}
+        self.documents: Dict[int, str] = {}
         """A mapping of document IDs to their original text content."""
-        self.keys: list[int] = []
+        self.keys: List[int] = []
         """A list of all document IDs in the index."""
 
     def index_entry(self, id_: int, text: str) -> None:
@@ -78,8 +78,8 @@ class TextSearchIndex:
             if token in TextSearchIndex.STOP_WORDS:
                 continue
             if token not in self.index:
-                self.index[token] = set[int]()
-            self.index[token].add(id_)
+                self.index[token] = list[int]()
+            self.index[token].append(id_)
             # log.debug(f"search add: {token}: {self.index[token]}")
 
         # Handle cases like hyphens in surnames
@@ -87,8 +87,8 @@ class TextSearchIndex:
             normalised_text = normalised_text.replace("-", " ")
             for token in normalised_text.split():
                 if token not in self.index:
-                    self.index[token] = set[int]()
-                self.index[token].add(id_)
+                    self.index[token] = list[int]()
+                self.index[token].append(id_)
                 # log.debug(f"search add: {token}: {self.index[token]}")
 
     def document_frequency(self, token: str) -> int:
@@ -103,7 +103,7 @@ class TextSearchIndex:
         Returns:
             int: The document frequency of the token.
         """
-        return len(self.index.get(token, set[int]()))
+        return len(self.index.get(token, list[int]()))
 
     def inverse_document_frequency(self, token: str) -> float:
         """
@@ -124,7 +124,7 @@ class TextSearchIndex:
         # https://nlp.stanford.edu/IR-book/html/htmledition/inverse-document-frequency-1.html
         return math.log10(len(self.documents) / self.document_frequency(token))
 
-    def _results(self, analyzed_query: list[str]) -> list[set[int]]:
+    def _results(self, analyzed_query: List[str]) -> List[List[int]]:
         """
         Retrieves the sets of document IDs for each token in a query.
 
@@ -135,9 +135,9 @@ class TextSearchIndex:
             list[set[int]]: A list of sets, where each set contains the document IDs
                 for a token in the query.
         """
-        return [self.index.get(token, set()) for token in analyzed_query]
+        return [self.index.get(token, list[int]()) for token in analyzed_query]
 
-    def search(self, query: str) -> list[tuple[int, str]]:
+    def search(self, query: str) -> List[tuple[int, str]]:
         """
         Searches the index for documents matching the query.
 
@@ -198,6 +198,15 @@ class TextSearchIndex:
             results.append((document, score))
         ranked = sorted(results, key=lambda doc: doc[1], reverse=True)
         return [ranked_item[0] for ranked_item in ranked]
+
+    def reduce_list_to_set(self):
+        for key, words in self.index.items():
+            reduced_set = set(words)
+            self.index[key] = list(reduced_set)
+            old_size = len(words)
+            new_size = len(reduced_set)
+            if old_size != new_size:
+                print(f"{key}: {old_size} -> {new_size}")
 
     def list_stop_words(self) -> list[str]:
         """
