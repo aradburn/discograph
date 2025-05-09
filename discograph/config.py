@@ -13,6 +13,8 @@ log = logging.getLogger(__name__)
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(APP_DIR, ".."))
+FRONTEND_DIR = os.path.abspath(os.path.join(ROOT_DIR, "frontend"))
+TEMPLATES_DIR = os.path.abspath(os.path.join(FRONTEND_DIR, "templates"))
 DATA_DIR = os.path.join(ROOT_DIR, "discograph", "data")
 DATABASE_DIR = os.path.join(ROOT_DIR, "discograph", "database")
 ROLE_DIR = os.path.join(ROOT_DIR, "discograph", "data_role")
