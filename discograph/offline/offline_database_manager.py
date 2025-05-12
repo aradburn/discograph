@@ -9,7 +9,8 @@ from sqlalchemy.orm import sessionmaker, close_all_sessions
 from discograph.config import (
     DatabaseType,
     ThreadingModel,
-    ALL_OFFLINE_DATABASE_TABLE_NAMES,
+    THREADING_MODEL_KEY,
+    DATABASE_KEY,
 )
 from discograph.logging_config import LOGGING_TRACE
 from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
@@ -32,19 +33,17 @@ class OfflineDatabaseManager:
 
     @classmethod
     def setup_database(cls, config) -> None:
-        from discograph.offline.loader.loader_role import LoaderRole
-
-        OfflineDatabaseManager._threading_model = config["THREADING_MODEL"]
+        OfflineDatabaseManager._threading_model = config[THREADING_MODEL_KEY]
 
         # Based on configuration, use a different database.
-        if config["DATABASE"] == DatabaseType.POSTGRES:
+        if config[DATABASE_KEY] == DatabaseType.POSTGRES:
             from discograph.offline.postgres.postgres_helper import (
                 OfflinePostgresHelper,
             )
 
             OfflineDatabaseManager.offline_database_helper = OfflinePostgresHelper()
 
-        elif config["DATABASE"] == DatabaseType.SQLITE:
+        elif config[DATABASE_KEY] == DatabaseType.SQLITE:
             from discograph.offline.sqlite.sqlite_helper import OfflineSqliteHelper
 
             OfflineDatabaseManager.offline_database_helper = OfflineSqliteHelper()
@@ -95,12 +94,12 @@ class OfflineDatabaseManager:
         # Check database connection
         OfflineDatabaseManager.offline_database_helper.check_connection(config, engine)
 
-        # Create tables
-        OfflineDatabaseManager.offline_database_helper.create_tables(
-            ALL_OFFLINE_DATABASE_TABLE_NAMES
-        )
-
-        LoaderRole.load_roles_into_database()
+        # TODO remove - was Create tables
+        # OfflineDatabaseManager.offline_database_helper.create_tables(
+        #     ALL_OFFLINE_DATABASE_TABLE_NAMES
+        # )
+        #
+        # LoaderRole.load_roles_into_database()
 
     @classmethod
     def shutdown_database(cls) -> None:

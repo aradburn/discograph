@@ -114,7 +114,7 @@ class LoaderRelease(LoaderBase):
     @classmethod
     @timeit
     def loader_release_pass_one(
-        cls, data_directory: str, date: str, is_bulk_inserts=False
+        cls, discogs_data_directory: Path, date: str, is_bulk_inserts=False
     ) -> int:
         """
         Performs the first pass of loading release data.
@@ -125,7 +125,7 @@ class LoaderRelease(LoaderBase):
         required fields.
 
         Args:
-            data_directory (str): The directory containing the XML files.
+            discogs_data_directory (Path): The directory containing the XML files.
             date (str): The date of the data dump being processed.
             is_bulk_inserts (bool): Whether to perform bulk inserts or updates.
 
@@ -142,7 +142,7 @@ class LoaderRelease(LoaderBase):
             releases_loaded = cls.loader_pass_one_manager(
                 repository=release_repository,
                 parser=release_parser,
-                data_directory=data_directory,
+                discogs_data_directory=discogs_data_directory,
                 date=date,
                 xml_tag="release",
                 id_attr=ReleaseTable.release_id.name,

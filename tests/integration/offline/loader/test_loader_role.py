@@ -1,3 +1,4 @@
+from discograph.config import INSTRUMENTS_DATA, ROLES_DATA, DATA_DIR_KEY
 from discograph.library.cache.role_cache import RoleCache
 from discograph.offline.data_access_layer.role_data_access import RoleDataAccess
 from discograph.offline.loader.loader_role import LoaderRole
@@ -14,9 +15,13 @@ class TestLoaderRole(OfflineRepositoryTestCase):
 
     def test_load_wikipedia_instruments(self):
         # GIVEN
-
+        instruments_directory = (
+            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / INSTRUMENTS_DATA
+        )
         # WHEN
-        wikipedia_instruments = LoaderRole.load_wikipedia_instruments()
+        wikipedia_instruments = LoaderRole.load_wikipedia_instruments(
+            instruments_directory
+        )
 
         # THEN
         expected = 2186
@@ -25,9 +30,14 @@ class TestLoaderRole(OfflineRepositoryTestCase):
 
     def test_load_hornbostel_sachs_instruments(self):
         # GIVEN
+        instruments_directory = (
+            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / INSTRUMENTS_DATA
+        )
 
         # WHEN
-        hornbostel_sachs_instruments = LoaderRole.load_hornbostel_sachs_instruments()
+        hornbostel_sachs_instruments = LoaderRole.load_hornbostel_sachs_instruments(
+            instruments_directory
+        )
 
         # THEN
         expected = 1865
@@ -36,9 +46,12 @@ class TestLoaderRole(OfflineRepositoryTestCase):
 
     def test_load_roles_from_files(self):
         # GIVEN
+        roles_directory = (
+            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / ROLES_DATA
+        )
 
         # WHEN
-        roles_from_files = LoaderRole.load_roles_from_files()
+        roles_from_files = LoaderRole.load_roles_from_files(roles_directory)
 
         # THEN
         expected = 992
@@ -47,7 +60,10 @@ class TestLoaderRole(OfflineRepositoryTestCase):
 
     def test_load_roles_from_files_from_database(self):
         # GIVEN
-        roles_from_files = LoaderRole.load_roles_from_files()
+        roles_directory = (
+            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / ROLES_DATA
+        )
+        roles_from_files = LoaderRole.load_roles_from_files(roles_directory)
 
         # WHEN
         LoaderRole.save_roles(roles_from_files)
@@ -65,7 +81,12 @@ class TestLoaderRole(OfflineRepositoryTestCase):
 
     def test_load_hornbostel_sachs_instruments_from_database(self):
         # GIVEN
-        hornbostel_sachs_roles = LoaderRole.load_hornbostel_sachs_instruments()
+        instruments_directory = (
+            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / INSTRUMENTS_DATA
+        )
+        hornbostel_sachs_roles = LoaderRole.load_hornbostel_sachs_instruments(
+            instruments_directory
+        )
 
         # WHEN
         LoaderRole.save_roles(hornbostel_sachs_roles)
@@ -83,7 +104,12 @@ class TestLoaderRole(OfflineRepositoryTestCase):
 
     def test_load_wikipedia_instruments_from_database(self):
         # GIVEN
-        wikipedia_instruments = LoaderRole.load_wikipedia_instruments()
+        instruments_directory = (
+            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / INSTRUMENTS_DATA
+        )
+        wikipedia_instruments = LoaderRole.load_wikipedia_instruments(
+            instruments_directory
+        )
 
         # WHEN
         LoaderRole.save_roles(wikipedia_instruments)

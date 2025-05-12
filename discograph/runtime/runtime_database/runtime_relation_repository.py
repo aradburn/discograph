@@ -1,5 +1,6 @@
 import logging
-from typing import Generator, List
+from collections.abc import Iterator
+from typing import List
 
 from sqlalchemy import Result, select, Select, delete
 
@@ -86,12 +87,12 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         relations = [relation_db.to_domain() for relation_db in relation_dbs]
         return relations
 
-    def all(self) -> Generator[RuntimeRelationInternal, None, None]:
+    def all(self) -> Iterator[RuntimeRelationInternal]:
         """
         Retrieves all relations from the runtime database.
 
         Yields:
-            Generator[RuntimeRelationInternal, None, None]: A generator yielding
+            Iterator[RuntimeRelationInternal]: An iterator yielding
                 each relation.
         """
         for instance in self._all():

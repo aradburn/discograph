@@ -1,5 +1,5 @@
 import logging
-from typing import Generator
+from collections.abc import Iterator
 
 from sqlalchemy import Result, select
 
@@ -32,12 +32,12 @@ class RoleRepository(BaseRepository[RoleTable]):
     schema_class = RoleTable
     """The SQLAlchemy table class for roles."""
 
-    def all(self) -> Generator[Role, None, None]:
+    def all(self) -> Iterator[Role]:
         """
         Retrieves all roles from the database.
 
         Yields:
-            Generator[Role, None, None]: A generator yielding each role.
+            Iterator[Role]: An iterator yielding each role.
         """
         for instance in self._all():
             # async for instance in self._all():

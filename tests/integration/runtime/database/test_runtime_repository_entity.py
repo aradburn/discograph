@@ -1,6 +1,6 @@
 import pydantic
 
-from discograph.config import TEST_DATA_DIR
+from discograph.config import DISCOGS_DATA, DATA_DIR_KEY
 from discograph.library.fields.entity_type import EntityType
 from discograph.offline.loader.loader_utils import LoaderUtils
 from discograph.offline.loader.parser_entity import ParserEntity
@@ -17,7 +17,12 @@ from tests.integration.runtime.database.runtime_repository_test_case import (
 class TestRuntimeRepositoryEntity(RuntimeRepositoryTestCase):
     def test_create_01(self):
         # GIVEN
-        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "artist", "testinsert")
+        discogs_data_directory = (
+            RuntimeRepositoryTestCase.runtime_config[DATA_DIR_KEY] / DISCOGS_DATA
+        )
+        iterator = LoaderUtils.get_iterator(
+            discogs_data_directory, "artist", "testinsert"
+        )
         entity_element = next(iterator)
         entity = ParserEntity().from_element(entity_element)
         print(f"entity: {entity}")
@@ -42,7 +47,12 @@ class TestRuntimeRepositoryEntity(RuntimeRepositoryTestCase):
 
     def test_get_01(self):
         # GIVEN
-        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "label", "testinsert")
+        discogs_data_directory = (
+            RuntimeRepositoryTestCase.runtime_config[DATA_DIR_KEY] / DISCOGS_DATA
+        )
+        iterator = LoaderUtils.get_iterator(
+            discogs_data_directory, "label", "testinsert"
+        )
         entity_element = next(iterator)
         entity = ParserEntity().from_element(entity_element)
         print(f"entity: {entity}")
@@ -73,7 +83,12 @@ class TestRuntimeRepositoryEntity(RuntimeRepositoryTestCase):
 
     def test_create_02(self):
         # GIVEN
-        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "artist", "testinsert")
+        discogs_data_directory = (
+            RuntimeRepositoryTestCase.runtime_config[DATA_DIR_KEY] / DISCOGS_DATA
+        )
+        iterator = LoaderUtils.get_iterator(
+            discogs_data_directory, "artist", "testinsert"
+        )
         next(iterator)
         next(iterator)
         next(iterator)

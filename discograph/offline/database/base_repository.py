@@ -1,5 +1,6 @@
 import logging
-from typing import Any, Generic, Type, Generator
+from collections.abc import Iterator
+from typing import Any, Generic, Type
 
 from sqlalchemy import asc, delete, desc, func, select, update, text
 from sqlalchemy.engine import Result
@@ -212,12 +213,12 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
         except self._ERRORS:
             raise DatabaseError
 
-    def _all(self) -> Generator[ConcreteTable, None, None]:
+    def _all(self) -> Iterator[ConcreteTable]:
         """
         Retrieves all records from the table.
 
         Yields:
-            Generator[ConcreteTable, None, None]: A generator that yields each
+            Iterator[ConcreteTable]: A iterator that yields each
                 database row as an object.
         """
         result: Result = self.execute(select(self.schema_class))

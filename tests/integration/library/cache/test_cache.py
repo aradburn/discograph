@@ -1,7 +1,7 @@
 import unittest
 
 from discograph.config import (
-    SqliteOfflineTestConfiguration,
+    SqliteTestConfiguration,
     SqliteDevelopmentConfiguration,
     PostgresDevelopmentConfiguration,
 )
@@ -19,7 +19,7 @@ class TestCache(unittest.TestCase):
     #     shutdown_logging()
 
     def test_01(self):
-        CacheManager.setup_cache(SqliteOfflineTestConfiguration())
+        CacheManager.setup_cache(SqliteTestConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -30,7 +30,7 @@ class TestCache(unittest.TestCase):
 
     def test_02(self):
         cache_key = "test_key"
-        CacheManager.setup_cache(SqliteOfflineTestConfiguration())
+        CacheManager.setup_cache(SqliteTestConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -48,7 +48,7 @@ class TestCache(unittest.TestCase):
 
     def test_03(self):
         cache_key = "test_key"
-        CacheManager.setup_cache(SqliteOfflineTestConfiguration())
+        CacheManager.setup_cache(SqliteTestConfiguration())
 
         cache = CacheManager.get_cache()
 

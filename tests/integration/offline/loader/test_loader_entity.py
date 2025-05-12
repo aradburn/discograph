@@ -1,7 +1,7 @@
 import unittest
 
 from discograph import utils
-from discograph.config import TEST_DATA_DIR
+from discograph.config import SqliteTestConfiguration, DISCOGS_DATA, DATA_DIR_KEY
 from discograph.offline.domain.entity import Entity
 from discograph.offline.loader.loader_utils import LoaderUtils
 from discograph.offline.loader.parser_entity import ParserEntity
@@ -9,7 +9,12 @@ from discograph.offline.loader.parser_entity import ParserEntity
 
 class TestLoaderEntity(unittest.TestCase):
     def test_from_element_01(self):
-        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "artist", "testinsert")
+        offline_config = SqliteTestConfiguration()
+        discogs_data_directory = offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+
+        iterator = LoaderUtils.get_iterator(
+            discogs_data_directory, "artist", "testinsert"
+        )
         element = next(iterator)
         entity = ParserEntity().from_element(element)
         actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
@@ -72,7 +77,12 @@ class TestLoaderEntity(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_from_element_02(self):
-        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "artist", "testinsert")
+        offline_config = SqliteTestConfiguration()
+        discogs_data_directory = offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+
+        iterator = LoaderUtils.get_iterator(
+            discogs_data_directory, "artist", "testinsert"
+        )
         element = next(iterator)
         while element.find("name").text != "Seefeel":
             element = next(iterator)
@@ -111,7 +121,12 @@ class TestLoaderEntity(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_from_element_03(self):
-        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "label", "testinsert")
+        offline_config = SqliteTestConfiguration()
+        discogs_data_directory = offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+
+        iterator = LoaderUtils.get_iterator(
+            discogs_data_directory, "label", "testinsert"
+        )
         element = next(iterator)
         entity = ParserEntity().from_element(element)
         actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
@@ -137,10 +152,13 @@ class TestLoaderEntity(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_load_artists_from_xml_file(self):
+        offline_config = SqliteTestConfiguration()
+        discogs_data_directory = offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+
         date = "testinsert"
         entity_generator = ParserEntity().load_from_xml(
             domain_class=Entity,
-            data_directory=TEST_DATA_DIR,
+            discogs_data_directory=discogs_data_directory,
             date=date,
             xml_tag="artist",
             id_attr="entity_id",
@@ -150,10 +168,13 @@ class TestLoaderEntity(unittest.TestCase):
         self.assertEqual(5560, count)
 
     def test_load_labels_from_xml_file(self):
+        offline_config = SqliteTestConfiguration()
+        discogs_data_directory = offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+
         date = "testinsert"
         entity_generator = ParserEntity().load_from_xml(
             domain_class=Entity,
-            data_directory=TEST_DATA_DIR,
+            discogs_data_directory=discogs_data_directory,
             date=date,
             xml_tag="label",
             id_attr="entity_id",

@@ -1,6 +1,7 @@
 import datetime
 import io
 import logging
+from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree
 
@@ -89,7 +90,7 @@ class TestParserBase:
         records = list(
             self.DummyParser.load_from_xml(
                 self.DummyDomainClass,
-                "dummy_dir",
+                Path("dummy_dir"),
                 "dummy_date",
                 "record",
                 "id",
@@ -101,7 +102,7 @@ class TestParserBase:
         records_skip = list(
             self.DummyParser.load_from_xml(
                 self.DummyDomainClass,
-                "dummy_dir",
+                Path("dummy_dir"),
                 "dummy_date",
                 "record",
                 "id",

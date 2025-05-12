@@ -2,9 +2,8 @@ import logging
 
 from discograph.config import (
     ALL_RUNTIME_DATABASE_TABLE_NAMES,
-    SqliteRuntimeTestConfiguration,
+    SqliteTestConfiguration,
     Configuration,
-    SqliteOfflineTestConfiguration,
 )
 from discograph.exceptions import DatabaseError
 from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
@@ -16,20 +15,20 @@ log = logging.getLogger(__name__)
 
 
 class TransferTestCase(OfflineDatabaseTestCase):
-    _runtime_config: Configuration = None
+    runtime_config: Configuration = None
 
     @classmethod
     def setUpClass(cls):
         log.debug("TransferTestCase setUpClass")
 
-        OfflineDatabaseTestCase._offline_config = SqliteOfflineTestConfiguration()
+        OfflineDatabaseTestCase.offline_config = SqliteTestConfiguration()
         super().setUpClass()
 
-        TransferTestCase._runtime_config = SqliteRuntimeTestConfiguration()
+        TransferTestCase.runtime_config = SqliteTestConfiguration()
 
-        if TransferTestCase._runtime_config is not None:
+        if TransferTestCase.runtime_config is not None:
             try:
-                RuntimeDatabaseManager.setup_database(TransferTestCase._runtime_config)
+                RuntimeDatabaseManager.setup_database(TransferTestCase.runtime_config)
             except DatabaseError:
                 log.error("Error in runtime database setup")
 
@@ -43,6 +42,6 @@ class TransferTestCase(OfflineDatabaseTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        if TransferTestCase._runtime_config is not None:
+        if TransferTestCase.runtime_config is not None:
             RuntimeDatabaseManager.shutdown_database()
         super().tearDownClass()

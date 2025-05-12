@@ -49,9 +49,9 @@ import glob
 import gzip
 import logging
 import os
+from pathlib import Path
 from typing import List
 
-from discograph.config import ROLE_DIR
 from discograph.offline.loader.parser_utils import ParserUtils
 
 log = logging.getLogger(__name__)
@@ -72,7 +72,7 @@ class LoaderUtils:
     # PUBLIC STATIC METHODS
 
     @staticmethod
-    def get_xml_path(data_directory: str, tag: str, date: str = "") -> str:
+    def get_xml_path(discogs_data_directory: Path, tag: str, date: str = "") -> str:
         """
         Constructs the full path to a Discogs XML dump file.
 
@@ -82,7 +82,7 @@ class LoaderUtils:
         file matching the pattern.
 
         Args:
-            data_directory (str): The directory containing the XML files.
+            discogs_data_directory (str): The directory containing the XML files.
             tag (str): The XML tag representing the dump type (e.g., "artist", "release").
             date (str, optional): The date of the dump in YYYYMMDD format.
                 Defaults to "".
@@ -92,22 +92,22 @@ class LoaderUtils:
         """
         glob_pattern = f"discogs_{date}_{tag}s.xml.gz"
         """Create the glob pattern for matching the file."""
-        log.debug(f"data_directory: {data_directory}")
+        log.debug(f"discogs_data_directory: {discogs_data_directory}")
         """Log the data directory."""
         log.debug(f"glob_pattern: {glob_pattern}")
         """Log the glob pattern."""
-        files = sorted(glob.glob(glob_pattern, root_dir=data_directory))
+        files = sorted(glob.glob(glob_pattern, root_dir=discogs_data_directory))
         """Find all matching files using glob and sort them."""
         log.debug(f"files: {files}")
         """Log the found files."""
-        full_path_files = os.path.join(data_directory, files[-1])
+        full_path_files = os.path.join(discogs_data_directory, files[-1])
         """Construct the full path to the most recent file."""
         log.debug(f"full_path_files: {full_path_files}")
         """Log the full path."""
         return full_path_files
 
     @staticmethod
-    def get_role_paths() -> List[str]:
+    def get_role_paths(roles_directory: Path) -> List[str]:
         """
         Gets a list of paths to role CSV files.
 
@@ -117,26 +117,24 @@ class LoaderUtils:
         Returns:
             List[str]: A list of full paths to role CSV files.
         """
-        data_directory = ROLE_DIR
-        """Set the data directory to ROLE_DIR."""
         glob_pattern = "*.csv"
         """Set the glob pattern to match CSV files."""
-        log.debug(f"data_directory: {data_directory}")
+        log.debug(f"roles_directory: {roles_directory}")
         """Log the data directory."""
         log.debug(f"glob_pattern: {glob_pattern}")
         """Log the glob pattern."""
-        files = sorted(glob.glob(glob_pattern, root_dir=data_directory))
+        files = sorted(glob.glob(glob_pattern, root_dir=roles_directory))
         """Find all matching files using glob and sort them."""
         log.debug(f"files: {files}")
         """Log the found files."""
-        full_path_files = [os.path.join(data_directory, file) for file in files]
+        full_path_files = [os.path.join(roles_directory, file) for file in files]
         """Construct the full paths to each file."""
         log.debug(f"full_path_files: {full_path_files}")
         """Log the full paths."""
         return full_path_files
 
     @staticmethod
-    def get_iterator(data_directory: str, tag: str, date: str):
+    def get_iterator(discogs_data_directory: Path, tag: str, date: str):
         """
         Creates an iterator for parsing a Discogs XML dump file.
 
@@ -144,14 +142,14 @@ class LoaderUtils:
         a Discogs XML dump file.
 
         Args:
-            data_directory (str): The directory containing the XML files.
+            discogs_data_directory (Path): The directory containing the XML files.
             tag (str): The XML tag representing the dump type (e.g., "artist", "release").
             date (str): The date of the dump in YYYYMMDD format.
 
         Returns:
             iterator: An iterator over the cleaned XML elements.
         """
-        file_path = LoaderUtils.get_xml_path(data_directory, tag, date)
+        file_path = LoaderUtils.get_xml_path(discogs_data_directory, tag, date)
         """Get the full path to the XML file."""
         file_pointer = gzip.GzipFile(file_path, "r")
         """Open the XML file using gzip to read compressed files."""

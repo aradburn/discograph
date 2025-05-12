@@ -1,10 +1,12 @@
 import csv
 import unittest
 
-from discograph.config import (
-    TEST_DATA_ROLES_PATH,
-)
+from discograph.config import ROOT_DIR
 from discograph.offline.data_access_layer.role_data_utils import RoleDataUtils
+
+TEST_DATA_ROLES_DIR = ROOT_DIR / "tests" / "data_roles"
+TEST_DATA_ROLES_FILENAME = "test_data_roles.tsv"
+TEST_DATA_ROLES_PATH = TEST_DATA_ROLES_DIR / TEST_DATA_ROLES_FILENAME
 
 
 class TestRoleDataUtils(unittest.TestCase):

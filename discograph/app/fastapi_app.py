@@ -110,7 +110,7 @@ def create_app(config: Configuration) -> FastAPI:
     )
 
     # Create assets router
-    assets_router, _ = create_assets_router(config)
+    assets_router, assets_templates = create_assets_router(config)
 
     # Include routers
     app.include_router(api_router, prefix="/api")
@@ -133,8 +133,9 @@ def create_app(config: Configuration) -> FastAPI:
         else:
             # For non-API routes, return an HTML response
             return templates.TemplateResponse(
-                "error.html",
-                {"request": request, "error": exc},
+                request=request,
+                name="error.html",
+                context={"error": exc},
                 status_code=exc.status_code,
             )
 
@@ -143,8 +144,9 @@ def create_app(config: Configuration) -> FastAPI:
     async def not_found_handler(request: Request, exc: Any) -> Response:
         error = NotFoundError(message="Not Found")
         return templates.TemplateResponse(
-            "error.html",
-            {"request": request, "error": error},
+            request=request,
+            name="error.html",
+            context={"error": error},
             status_code=error.status_code,
         )
 
@@ -153,8 +155,9 @@ def create_app(config: Configuration) -> FastAPI:
     async def server_error_handler(request: Request, exc: Any) -> Response:
         error = BaseError(message="Server Error")
         return templates.TemplateResponse(
-            "error.html",
-            {"request": request, "error": error},
+            request=request,
+            name="error.html",
+            context={"error": error},
             status_code=error.status_code,
         )
 

@@ -7,8 +7,8 @@ success or failure of the operations.
 """
 
 import logging
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Generator
 
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.orm import Session
@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 
 
 @contextmanager
-def offline_transaction() -> Generator[Session, None, None]:
+def offline_transaction() -> Iterator[Session]:
     """
     Provides a context manager for performing database transactions in the offline environment.
 
@@ -42,7 +42,7 @@ def offline_transaction() -> Generator[Session, None, None]:
         6. Finally, closes the session, regardless of whether an error occurred.
 
     Yields:
-        Generator[Session, None, None]: A generator that yields the database session.
+        Iterator[Session]: A iterator that yields the database session.
 
     Raises:
         DatabaseError: If any error occurs during the transaction, including

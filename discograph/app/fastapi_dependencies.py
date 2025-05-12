@@ -122,6 +122,7 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
 
         if remaining > 0:
             # Increment the request count
+            # noinspection PyAsyncCall
             redis_client.incr(key, 1)
             log.debug(f"key: {key}, remaining: {remaining}, ttl: {ttl_value}")
         else:

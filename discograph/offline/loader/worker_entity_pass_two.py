@@ -147,9 +147,7 @@ class WorkerEntityPassTwo(multiprocessing.Process):
                         entity = entity_repository.get_by_id(id_)
                         """Retrieve the entity."""
                         self.worker_pass_two_single(
-                            entity_repository=entity_repository,
-                            entity=entity,
-                            annotation=proc_name,
+                            entity_repository, entity, proc_name
                         )
                         """Process the entity."""
                     except NotFoundError:
@@ -194,10 +192,7 @@ class WorkerEntityPassTwo(multiprocessing.Process):
 
     @staticmethod
     def worker_pass_two_single(
-        *,
-        entity_repository: EntityRepository,
-        entity: Entity,
-        annotation="",
+        entity_repository: EntityRepository, entity: Entity, proc_name: str
     ):
         """
         Processes a single entity record in the second pass.
@@ -208,7 +203,7 @@ class WorkerEntityPassTwo(multiprocessing.Process):
         Args:
             entity_repository (EntityRepository): The repository for entity operations.
             entity (Entity): The entity to process.
-            annotation (str, optional): An annotation for logging purposes. Defaults to "".
+            proc_name (str): An annotation for logging purposes.
         """
         if LOGGING_TRACE:
             log.debug(f"id: {entity.entity_id}-{entity.entity_type}")
@@ -219,7 +214,7 @@ class WorkerEntityPassTwo(multiprocessing.Process):
             """If any changes were made to the entity."""
             if LOGGING_TRACE:
                 log.debug(
-                    f"Entity (Pass 2) [{annotation}]\t"
+                    f"Entity (Pass 2) [{proc_name}]\t"
                     + f"          (id: {entity.entity_id}-{entity.entity_type}): {entity.entity_name}"
                 )
             entity_repository.update(

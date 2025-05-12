@@ -23,7 +23,6 @@ import uvicorn
 
 from discograph.app.fastapi_app import create_app
 from discograph.config import SqliteDevelopmentConfiguration
-from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
 
 if __name__ == "__main__":
     # Create SQLite development configuration
@@ -44,7 +43,7 @@ if __name__ == "__main__":
     """
 
     # Load data from tables
-    RuntimeDatabaseManager.runtime_database_helper.load_tables()
+    # RuntimeDatabaseManager.runtime_database_helper.load_tables()
     """
     Loads initial data into the runtime database.
 

@@ -1,4 +1,5 @@
-from discograph.config import TEST_DATA_DIR
+from pathlib import Path
+
 from discograph.library.fields.entity_type import EntityType
 from discograph.offline.domain.entity import Entity
 from discograph.offline.domain.release import Release
@@ -7,9 +8,11 @@ from discograph.offline.loader.parser_entity import ParserEntity
 from discograph.offline.loader.parser_release import ParserRelease
 
 
-def get_test_entity_by_id(entity_id: int, entity_type: EntityType) -> Entity:
+def get_test_entity_by_id(
+    discogs_data_directory: Path, entity_id: int, entity_type: EntityType
+) -> Entity:
     iterator = LoaderUtils.get_iterator(
-        TEST_DATA_DIR, entity_type.name.lower(), "testinsert"
+        discogs_data_directory, entity_type.name.lower(), "testinsert"
     )
 
     while True:
@@ -20,8 +23,8 @@ def get_test_entity_by_id(entity_id: int, entity_type: EntityType) -> Entity:
     return entity
 
 
-def get_test_release_by_id(release_id: int) -> Release:
-    iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "release", "testinsert")
+def get_test_release_by_id(discogs_data_directory: Path, release_id: int) -> Release:
+    iterator = LoaderUtils.get_iterator(discogs_data_directory, "release", "testinsert")
 
     while True:
         element = next(iterator)

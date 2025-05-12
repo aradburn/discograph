@@ -5,25 +5,21 @@ import logging
 import math
 import re
 import shutil
+import string
 import sys
 import textwrap
 import time
 import unicodedata
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence, Iterator
 from datetime import datetime, date
 from functools import wraps
-from random import random
-from typing import List, Any, Sequence, Iterator, TypeVar, Dict
+import random
+from typing import List, Any, TypeVar, Dict
 
 import requests
 from dateutil.relativedelta import relativedelta
 from toolz import count
 from unidecode import unidecode
-
-from discograph.config import (
-    DISCOGS_BASE_URL,
-    DISCOGS_PATH,
-)
 
 log = logging.getLogger(__name__)
 
@@ -154,30 +150,30 @@ def split_list(num_chunks: int, seq: Sequence[T]) -> Iterator[T]:
 
 
 def normalize(argument: str, indent: int | str | None = None) -> str:
-    string = argument.replace("\t", "    ")
-    lines = string.split("\n")
+    _string = argument.replace("\t", "    ")
+    lines = _string.split("\n")
     while lines and (not lines[0] or lines[0].isspace()):
         lines.pop(0)
     while lines and (not lines[-1] or lines[-1].isspace()):
         lines.pop()
     for i, line in enumerate(lines):
         lines[i] = line.rstrip()
-    string = "\n".join(lines)
-    string = textwrap.dedent(string)
+    _string = "\n".join(lines)
+    _string = textwrap.dedent(_string)
     if indent:
         if isinstance(indent, str):
             indent_string = indent
         else:
             assert isinstance(indent, int)
             indent_string = abs(int(indent)) * " "
-        lines = string.split("\n")
+        lines = _string.split("\n")
         for i, line in enumerate(lines):
             if line:
                 lines[i] = f"{indent_string}{line}"
-        string = "\n".join(lines)
-    if not string.endswith("\n"):
-        string += "\n"
-    return string
+        _string = "\n".join(lines)
+    if not _string.endswith("\n"):
+        _string += "\n"
+    return _string
 
 
 # def normalize_dict(obj: Dict) -> str:
@@ -282,20 +278,20 @@ def row2dict(row):
     return {c.name: getattr(row, c.name) for c in row.__table__.columns}
 
 
-def is_latin(string: str) -> bool:
+def is_latin(_string: str) -> bool:
     try:
-        return all(["LATIN" in unicodedata.name(c) for c in string])
+        return all(["LATIN" in unicodedata.name(c) for c in _string])
     except ValueError:
         return False
 
 
-def to_ascii(string: str) -> str:
-    if string is None:
+def to_ascii(_string: str) -> str:
+    if _string is None:
         return ""
     # Transliterate the unicode string into a plain ASCII string
-    if is_latin(string):
-        string = unidecode(string, "preserve")
-    return string
+    if is_latin(_string):
+        _string = unidecode(_string, "preserve")
+    return _string
 
 
 def timeit(func):
@@ -312,7 +308,7 @@ def timeit(func):
 
 
 def sleep_with_backoff(multiplier: int) -> None:
-    time_in_secs = int(multiplier * (1.0 + random()))
+    time_in_secs = int(multiplier * (1.0 + random.random()))
     if time_in_secs > 60:
         time_in_secs = 60
     if time_in_secs < 1:
@@ -330,9 +326,13 @@ def download_file(input_url: str, output_file) -> None:
 
 
 def get_discogs_url(dump_date: date, dump_type: str) -> str:
+    from discograph.config import DISCOGS_BASE_URL, DISCOGS_FILE_TEMPLATE
+
     year = dump_date.year
     base = DISCOGS_BASE_URL.format(year=year)
-    path = DISCOGS_PATH.format(date=dump_date.strftime("%Y%m%d"), type=dump_type)
+    path = DISCOGS_FILE_TEMPLATE.format(
+        date=dump_date.strftime("%Y%m%d"), type=dump_type
+    )
     return base + path
 
 
@@ -368,3 +368,7 @@ def calculate_size(obj):
             if not callable(getattr(obj, attr)) and not attr.startswith("__")
         )
     return size
+
+
+def get_random_string(length: int) -> str:
+    return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))

@@ -1,5 +1,6 @@
 import logging
-from typing import Generator, List
+from collections.abc import Iterator
+from typing import List
 
 from sqlalchemy import Result, select, Select
 
@@ -63,12 +64,12 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
         ]
         return relation_release_years
 
-    def all(self) -> Generator[RelationReleaseYear, None, None]:
+    def all(self) -> Iterator[RelationReleaseYear]:
         """
         Retrieves all relation-release-year pairs from the database.
 
         Yields:
-            Generator[RelationReleaseYear, None, None]: A generator yielding each
+            Iterator[RelationReleaseYear]: An iterator yielding each
                 relation-release-year pair.
         """
         for instance in self._all():

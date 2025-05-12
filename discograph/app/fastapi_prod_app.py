@@ -28,7 +28,6 @@ from fastapi import FastAPI
 
 from discograph.app.fastapi_app import create_app
 from discograph.config import SqliteProductionConfiguration
-from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
 
 
 def create_production_app() -> FastAPI:
@@ -59,7 +58,7 @@ def create_production_app() -> FastAPI:
     """
 
     # Load data from tables
-    RuntimeDatabaseManager.runtime_database_helper.load_tables()
+    # RuntimeDatabaseManager.runtime_database_helper.load_tables()
     """
     Loads initial data into the runtime database.
 

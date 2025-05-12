@@ -1,5 +1,5 @@
 import logging
-from typing import Generator
+from collections.abc import Iterator
 
 from sqlalchemy import Result, select
 
@@ -34,12 +34,12 @@ class RuntimeRoleRepository(RuntimeBaseRepository[RuntimeRoleTable]):
     schema_class = RuntimeRoleTable
     """The SQLAlchemy table class for runtime roles."""
 
-    def all(self) -> Generator[RuntimeRole, None, None]:
+    def all(self) -> Iterator[RuntimeRole]:
         """
         Retrieves all roles from the runtime database.
 
         Yields:
-            Generator[RuntimeRole, None, None]: A generator yielding each role.
+            Iterator[RuntimeRole]: An iterator yielding each role.
         """
         for instance in self._all():
             # async for instance in self._all():

@@ -67,22 +67,19 @@ operations, `urllib.parse` for URL parsing and `discograph` library.
 
 import datetime
 import logging
-import os
+from pathlib import Path
 from urllib.parse import urlparse
 
 import luigi
 from luigi.contrib.simulate import RunAnywayTarget
 
 from discograph.config import (
-    ROOT_DIR,
     DISCOGS_ARTISTS_TYPE,
     DISCOGS_RELEASES_TYPE,
     DISCOGS_LABELS_TYPE,
     DISCOGS_MASTERS_TYPE,
-    DATA_DIR,
 )
 from discograph.offline.loader.loader_target import LoaderTarget
-from discograph.offline.offline_database_manager import OfflineDatabaseManager
 from discograph.utils import (
     get_discogs_dump_dates,
     download_file,
@@ -102,6 +99,8 @@ class LoaderSetupTask(luigi.Task):
     This task configures Luigi's logging to use the same handlers as the
     Discograph logging system, ensuring consistent log output.
     """
+
+    data_directory: str = luigi.Parameter()
 
     start_date: datetime.date = luigi.DateParameter()
     """The start date for the data loading process."""
@@ -138,7 +137,11 @@ class LoaderSetupTask(luigi.Task):
         logging.getLogger("luigi-interface").setLevel(logging.WARNING)
         self.output().done()
 
-        yield LoaderTask(start_date=self.start_date, end_date=self.end_date)
+        yield LoaderTask(
+            data_directory=self.data_directory,
+            start_date=self.start_date,
+            end_date=self.end_date,
+        )
 
 
 class LoaderTask(luigi.WrapperTask):
@@ -148,6 +151,8 @@ class LoaderTask(luigi.WrapperTask):
     This task manages the overall data loading process for a range of dates,
     including downloading and loading data.
     """
+
+    data_directory: str = luigi.Parameter()
 
     start_date: datetime.date = luigi.DateParameter()
     """The start date for the data loading process."""
@@ -165,11 +170,17 @@ class LoaderTask(luigi.WrapperTask):
         Yields:
             luigi.Task: The dependency tasks.
         """
-        yield LoaderSetupTask(start_date=self.start_date, end_date=self.end_date)
+        yield LoaderSetupTask(
+            data_directory=self.data_directory,
+            start_date=self.start_date,
+            end_date=self.end_date,
+        )
         dates = get_discogs_dump_dates(self.start_date, self.end_date)
         for date in dates:
-            yield DiscogsDownloaderTaskForDate(dump_date=date)
-            yield LoaderTaskForDate(dump_date=date)
+            yield DiscogsDownloaderTaskForDate(
+                data_directory=self.data_directory, dump_date=date
+            )
+            yield LoaderTaskForDate(data_directory=self.data_directory, dump_date=date)
 
 
 class DiscogsDownloaderTaskForDate(luigi.WrapperTask):
@@ -179,6 +190,8 @@ class DiscogsDownloaderTaskForDate(luigi.WrapperTask):
     This task ensures that all required dump types (artists, releases, labels,
     masters) are downloaded for a given date.
     """
+
+    data_directory: str = luigi.Parameter()
 
     dump_date: datetime.date = luigi.DateParameter()
     """The date for which to download the Discogs dumps."""
@@ -218,16 +231,24 @@ class DiscogsDownloaderTaskForDate(luigi.WrapperTask):
             luigi.Task: The dependency tasks.
         """
         yield DiscogsDownloaderTask(
-            dump_date=self.dump_date, dump_type=DISCOGS_ARTISTS_TYPE
+            data_directory=self.data_directory,
+            dump_date=self.dump_date,
+            dump_type=DISCOGS_ARTISTS_TYPE,
         )
         yield DiscogsDownloaderTask(
-            dump_date=self.dump_date, dump_type=DISCOGS_RELEASES_TYPE
+            data_directory=self.data_directory,
+            dump_date=self.dump_date,
+            dump_type=DISCOGS_RELEASES_TYPE,
         )
         yield DiscogsDownloaderTask(
-            dump_date=self.dump_date, dump_type=DISCOGS_LABELS_TYPE
+            data_directory=self.data_directory,
+            dump_date=self.dump_date,
+            dump_type=DISCOGS_LABELS_TYPE,
         )
         yield DiscogsDownloaderTask(
-            dump_date=self.dump_date, dump_type=DISCOGS_MASTERS_TYPE
+            data_directory=self.data_directory,
+            dump_date=self.dump_date,
+            dump_type=DISCOGS_MASTERS_TYPE,
         )
 
 
@@ -239,6 +260,8 @@ class LoaderTaskForDate(luigi.WrapperTask):
     ensuring that the required downloads are completed and that the loading
     process is executed through multiple stages.
     """
+
+    data_directory: str = luigi.Parameter()
 
     dump_date: datetime.date = luigi.DateParameter()
     """The date for which to load the data."""
@@ -278,12 +301,22 @@ class LoaderTaskForDate(luigi.WrapperTask):
         Yields:
             luigi.Task: The dependency tasks.
         """
-        yield DiscogsDownloaderTaskForDate(dump_date=self.dump_date)
-        stages = OfflineDatabaseManager.offline_database_helper.get_load_table_stages(
-            DATA_DIR, self.dump_date.strftime("%Y%m%d"), is_bulk_inserts=False
+        yield DiscogsDownloaderTaskForDate(
+            data_directory=self.data_directory, dump_date=self.dump_date
+        )
+        from discograph.loader.loader import get_load_offline_table_stages
+
+        stages = get_load_offline_table_stages(
+            Path(self.data_directory),
+            self.dump_date.strftime("%Y%m%d"),
+            is_bulk_inserts=False,
         )
         for stage in range(0, len(stages)):
-            yield LoaderTaskForDateAndStage(dump_date=self.dump_date, stage=stage)
+            yield LoaderTaskForDateAndStage(
+                data_directory=self.data_directory,
+                dump_date=self.dump_date,
+                stage=stage,
+            )
 
 
 class LoaderTaskForDateAndStage(luigi.Task):
@@ -293,6 +326,8 @@ class LoaderTaskForDateAndStage(luigi.Task):
     This task is responsible for executing a single stage of the data loading
     process for a given date, as defined by the `OfflineDatabaseManager`.
     """
+
+    data_directory: str = luigi.Parameter()
 
     dump_date: datetime.date = luigi.DateParameter()
     """The date for which to load the data."""
@@ -338,7 +373,9 @@ class LoaderTaskForDateAndStage(luigi.Task):
         if self.stage > 0:
             # Require the previous stage (monthly subtasks defined in database_helper) to have been completed
             yield LoaderTaskForDateAndStage(
-                dump_date=self.dump_date, stage=self.stage - 1
+                data_directory=self.data_directory,
+                dump_date=self.dump_date,
+                stage=self.stage - 1,
             )
         else:
             pass
@@ -367,8 +404,13 @@ class LoaderTaskForDateAndStage(luigi.Task):
         log.debug(
             f"Run LoaderTaskForDateAndStage tasks for stage: {self.stage} date: {self.dump_date}"
         )
-        stages = OfflineDatabaseManager.offline_database_helper.get_load_table_stages(
-            DATA_DIR, self.dump_date.strftime("%Y%m%d"), is_bulk_inserts=False
+
+        from discograph.loader.loader import get_load_offline_table_stages
+
+        stages = get_load_offline_table_stages(
+            Path(self.data_directory),
+            self.dump_date.strftime("%Y%m%d"),
+            is_bulk_inserts=False,
         )
         log.debug(f"Run stage: {self.stage}")
         try:
@@ -386,6 +428,8 @@ class DiscogsDownloaderTask(luigi.Task):
     This task handles the downloading of a single Discogs XML dump file for
     a given date and dump type (e.g., artists, releases).
     """
+
+    data_directory: str = luigi.Parameter()
 
     dump_date: datetime.date = luigi.DateParameter()
     """The date for which to download the Discogs dump."""
@@ -425,7 +469,8 @@ class DiscogsDownloaderTask(luigi.Task):
         """
         output_url = urlparse(self.url)
         filename = output_url.path.rsplit("/", 1)[-1]
-        filepath = os.path.join(ROOT_DIR, "discograph", "data", filename)
+        filepath = Path(self.data_directory) / filename
+        # filepath = os.path.join(ROOT_DIR, "discograph", "data", filename)
         log.debug(f"DiscogsDownloaderTask output: {filepath}")
         return luigi.LocalTarget(filepath)
 

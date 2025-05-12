@@ -1,5 +1,6 @@
 import logging
-from typing import Generator, Any, List, Sequence, Iterator
+from collections.abc import Iterator, Sequence
+from typing import Any, List
 
 from sqlalchemy import Result, select, update, Select, delete, func
 
@@ -106,12 +107,12 @@ class EntityRepository(BaseRepository[EntityTable]):
 
         return value
 
-    def all(self) -> Generator[Entity, None, None]:
+    def all(self) -> Iterator[Entity]:
         """
         Retrieves all entities from the database.
 
         Yields:
-            Generator[Entity, None, None]: A generator yielding each entity.
+            Iterator[Entity]: An iterrator yielding each entity.
         """
         query = select(EntityTable)
         with self._session.execute(
@@ -127,7 +128,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         Retrieves all entity IDs and names from the database.
 
         Yields:
-            Generator[tuple[int, str], None, None]: A generator yielding tuples of
+            Iterator[tuple[int, str]]: An iterrator yielding tuples of
                 (entity ID, entity name).
         """
         query = select(EntityTable.id, EntityTable.entity_name)
@@ -137,7 +138,7 @@ class EntityRepository(BaseRepository[EntityTable]):
             for partition in results.partitions():
                 # partition is an iterable that will be at most 1000 items
                 for row in partition:
-                    yield row
+                    yield row[0], row[1]
 
     def get_by_id(self, id_: int) -> Entity:
         """

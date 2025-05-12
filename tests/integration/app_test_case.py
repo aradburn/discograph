@@ -3,12 +3,13 @@ import logging
 from discograph.app.fastapi_app import create_app
 from discograph.config import (
     ALL_RUNTIME_DATABASE_TABLE_NAMES,
-    PostgresOfflineTestConfiguration,
-    SqliteRuntimeTestConfiguration,
+    PostgresTestConfiguration,
+    SqliteTestConfiguration,
+    DATA_DIR_KEY,
 )
+from discograph.loader.loader import load_runtime_test_tables
 from discograph.offline.offline_database_manager import OfflineDatabaseManager
 from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
-from discograph.transfer.transfer_manager import TransferManager
 from tests.integration.offline.database.offline_database_test_case import (
     OfflineDatabaseTestCase,
 )
@@ -21,16 +22,11 @@ class AppTestCase(OfflineDatabaseTestCase):
     def setUpClass(cls):
         log.debug("AppTestCase setUpClass")
 
-        OfflineDatabaseTestCase._offline_config = PostgresOfflineTestConfiguration()
+        OfflineDatabaseTestCase.offline_config = PostgresTestConfiguration()
         super().setUpClass()
 
-        _runtime_config = SqliteRuntimeTestConfiguration()
-        _app = create_app(_runtime_config)
-        # _app.config.update(
-        #     {
-        #         "TESTING": True,
-        #     }
-        # )
+        runtime_config = SqliteTestConfiguration()
+        _app = create_app(runtime_config)
 
         # For testing, drop and recreate all tables
         RuntimeDatabaseManager.runtime_database_helper.drop_tables(
@@ -40,13 +36,15 @@ class AppTestCase(OfflineDatabaseTestCase):
             ALL_RUNTIME_DATABASE_TABLE_NAMES
         )
 
-        TransferManager.transfer_all()
-        RuntimeDatabaseManager.runtime_database_helper.load_tables()
+        data_directory = OfflineDatabaseTestCase.offline_config[DATA_DIR_KEY]
+        load_runtime_test_tables(data_directory)
 
-        # cls.client = _app.test_client()
+        # TODO - was Load the tables
+        # TransferManager.transfer_all()
+        # RuntimeDatabaseManager.runtime_database_helper.load_tables()
 
     @classmethod
     def tearDownClass(cls):
-        if OfflineDatabaseTestCase._offline_config is not None:
+        if OfflineDatabaseTestCase.offline_config is not None:
             OfflineDatabaseManager.shutdown_database()
         # shutdown_application()

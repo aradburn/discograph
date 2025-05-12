@@ -155,10 +155,11 @@ class TextSearchIndex:
         # log.debug(f"search analyzed_query: {analyzed_query}")
 
         results = self._results(analyzed_query)
+        result_sets = [set[int](result) for result in results]
         # all tokens must be in the document
         documents = [
             (doc_id, self.documents[doc_id])
-            for doc_id in set[int].intersection(*results)
+            for doc_id in set[int].intersection(*result_sets)
         ]
         return self.rank(analyzed_query, documents)
 

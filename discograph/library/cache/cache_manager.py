@@ -14,7 +14,7 @@ try:
 except ImportError:
     REDIS_AVAILABLE = False
 
-from discograph.config import CacheType, Configuration
+from discograph.config import CacheType, Configuration, CACHE_TYPE_KEY
 
 log = logging.getLogger(__name__)
 
@@ -271,7 +271,7 @@ class CacheManager:
         cls.cache = None
 
         # Based on configuration, use a different cache setup.
-        match config["CACHE_TYPE"]:
+        match config[CACHE_TYPE_KEY]:
             case CacheType.MEMORY:
                 cls.cache = SimpleCache(threshold=1000000, default_timeout=0)
                 log.info("Using memory cache")

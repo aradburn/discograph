@@ -32,6 +32,7 @@ for loader-specific utilities, and `discograph.logging_config` for logging.
 import gzip
 import logging
 from abc import abstractmethod
+from pathlib import Path
 from typing import List, Any
 
 from sortedcontainers import SortedSet
@@ -86,7 +87,7 @@ class LoaderBase:
         cls,
         repository: BaseRepository,
         parser: ParserBase,
-        data_directory: str,
+        discogs_data_directory: Path,
         date: str,
         xml_tag: str,
         id_attr: str,
@@ -103,7 +104,7 @@ class LoaderBase:
         Args:
             repository (BaseRepository): The repository for database operations.
             parser: Parser to parse the XML data.
-            data_directory (str): The directory containing the XML files.
+            discogs_data_directory (Path): The directory containing the XML files.
             date (str): The date of the XML data dump.
             xml_tag (str): The XML tag representing the records to load.
             id_attr (str): The attribute name for the ID in the data.
@@ -126,7 +127,7 @@ class LoaderBase:
         """The initial count of records in the database."""
 
         processed_count = 0
-        xml_path = LoaderUtils.get_xml_path(data_directory, xml_tag, date)
+        xml_path = LoaderUtils.get_xml_path(discogs_data_directory, xml_tag, date)
         log.info(f"Loading data from {xml_path}")
         with gzip.GzipFile(xml_path, "r") as file_pointer:
             iterator = ParserUtils.iterparse(file_pointer, xml_tag)

@@ -202,11 +202,11 @@ class RuntimeEntityDB(InternalDomainObject):
     """The relation counts of the entity."""
     entity_metadata: dict | list
     """The metadata of the entity."""
-    aliases: dict | list | None = None
+    aliases: dict | list | None
     """The aliases of the entity."""
-    groups: dict | list | None = None
+    groups: dict | list | None
     """The groups associated with the entity."""
-    members: dict | list | None = None
+    members: dict | list | None
     """The members associated with the entity."""
     countries: str | None = None
     """The countries associated with the entity."""

@@ -19,7 +19,8 @@ __all__ = [
 ]
 
 import logging
-from typing import List, Dict, Iterator
+from collections.abc import Iterator
+from typing import List, Dict
 
 from pydantic import ConfigDict, RootModel
 

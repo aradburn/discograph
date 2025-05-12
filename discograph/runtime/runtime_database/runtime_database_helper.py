@@ -26,19 +26,16 @@ from abc import ABC, abstractmethod
 from typing import Type, List, Any
 
 from sqlalchemy import Engine, Index, Table
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.dml import ReturningInsert, Insert
 
-from discograph.config import Configuration, TEXT_SEARCH_PATH
+from discograph.config import Configuration
 from discograph.exceptions import NotFoundError
 from discograph.library.cache.cache_manager import CacheManager
 from discograph.library.fields.entity_id import to_entity_external_id
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.full_text_search.entity_details_index import EntityDetailsIndex
 from discograph.library.full_text_search.text_search_index import TextSearchIndex
-from discograph.runtime.data_access_layer.runtime_role_data_access import (
-    RuntimeRoleDataAccess,
-)
 from discograph.runtime.runtime_database.runtime_base_table import (
     RuntimeBase,
     RuntimeConcreteTable,
@@ -215,17 +212,6 @@ class RuntimeDatabaseHelper(ABC):
                 RuntimeDatabaseManager.runtime_database_helper.runtime_engine,
                 checkfirst=True,
             )
-
-    @classmethod
-    def load_tables(cls) -> None:
-        """Loads tables with initial data."""
-        log.info("Load tables")
-        RuntimeRoleDataAccess.load_all_roles()
-
-        RuntimeDatabaseHelper.text_search_index = (
-            TextSearchIndex.load_text_search_index_from_file(TEXT_SEARCH_PATH)
-        )
-        log.info("Load tables done.")
 
     @staticmethod
     @abstractmethod

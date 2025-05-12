@@ -1,14 +1,12 @@
 import logging
 from abc import ABC, abstractmethod
-from functools import partial
 from typing import Type, List, Any
 
 from sqlalchemy import Engine, Table
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.dml import ReturningInsert, Insert
 
-from discograph.config import Configuration, ENTITY_DETAILS_PATH, TEXT_SEARCH_PATH
-from discograph.offline.data_access_layer.role_data_access import RoleDataAccess
+from discograph.config import Configuration
 from discograph.offline.database.base_table import Base, ConcreteTable
 from discograph.offline.database.relation_release_year_repository import (
     RelationReleaseYearRepository,
@@ -141,132 +139,6 @@ class OfflineDatabaseHelper(ABC):
                 OfflineDatabaseManager.offline_database_helper.offline_engine,
                 checkfirst=True,
             )
-
-    @classmethod
-    def load_tables(cls, data_directory: str, date: str, is_bulk_inserts: bool) -> None:
-        """
-        Loads data into the tables.
-
-        This method orchestrates the loading process by executing a series of stages.
-
-        Args:
-            data_directory: The directory containing the data files.
-            date: The date of the data to load.
-            is_bulk_inserts: Whether to use bulk inserts.
-        """
-        log.info("Load tables")
-        stages = cls.get_load_table_stages(data_directory, date, is_bulk_inserts)
-        for stage in stages:
-            stage()
-        log.info("Load tables done.")
-
-    @classmethod
-    def load_table_stage(
-        cls, data_directory: str, date: str, is_bulk_inserts: bool, stage: int
-    ) -> None:
-        """
-        Loads a specific stage of the data loading process.
-
-        Args:
-            data_directory: The directory containing the data files.
-            date: The date of the data to load.
-            is_bulk_inserts: Whether to use bulk inserts.
-            stage: The index of the stage to execute.
-        """
-        stages = cls.get_load_table_stages(data_directory, date, is_bulk_inserts)
-        log.debug(f"Run stage: {stage}")
-        stages[stage]()
-
-    @classmethod
-    def get_load_table_stages(
-        cls, data_directory: str, date: str, is_bulk_inserts: bool
-    ) -> list[partial]:
-        """
-        Gets the list of stages for loading data into the tables.
-
-        Args:
-            data_directory: The directory containing the data files.
-            date: The date of the data to load.
-            is_bulk_inserts: Whether to use bulk inserts.
-
-        Returns:
-            list[partial]: A list of partial functions representing the loading stages.
-        """
-        from discograph.offline.loader.loader_entity import LoaderEntity
-        from discograph.offline.loader.loader_relation import LoaderRelation
-        from discograph.offline.loader.loader_release import LoaderRelease
-
-        has_tablename = cls.has_vacuum_tablename()
-        is_full = cls.is_vacuum_full()
-        is_analyze = cls.is_vacuum_analyze()
-        stages = [
-            partial(RoleDataAccess.load_all_roles),
-            partial(
-                LoaderEntity().loader_entity_pass_one,
-                data_directory,
-                date,
-                is_bulk_inserts,
-            ),
-            partial(
-                LoaderEntity().loader_entity_vacuum, has_tablename, is_full, is_analyze
-            ),
-            partial(
-                LoaderRelease().loader_release_pass_one,
-                data_directory,
-                date,
-                is_bulk_inserts,
-            ),
-            partial(
-                LoaderRelease().loader_release_vacuum,
-                has_tablename,
-                is_full,
-                is_analyze,
-            ),
-            partial(LoaderEntity().loader_entity_pass_two),
-            partial(LoaderRelease().loader_release_pass_two),
-            partial(LoaderRelation().loader_relation_pass_one, date),
-            # partial(LoaderRelation().loader_relation_pass_two, date),
-            partial(
-                LoaderEntity().loader_entity_vacuum, has_tablename, is_full, is_analyze
-            ),
-            partial(
-                LoaderRelease().loader_release_vacuum,
-                has_tablename,
-                is_full,
-                is_analyze,
-            ),
-            partial(
-                LoaderRelation().loader_relation_vacuum,
-                has_tablename,
-                is_full,
-                is_analyze,
-            ),
-            partial(LoaderEntity().loader_entity_pass_three),
-            partial(
-                LoaderEntity().loader_entity_vacuum, has_tablename, is_full, is_analyze
-            ),
-            partial(
-                LoaderRelease().loader_release_vacuum,
-                has_tablename,
-                is_full,
-                is_analyze,
-            ),
-            partial(
-                LoaderRelation().loader_relation_vacuum,
-                has_tablename,
-                is_full,
-                is_analyze,
-            ),
-            partial(
-                LoaderRelease().loader_create_entity_details_index,
-                ENTITY_DETAILS_PATH,
-            ),
-            partial(
-                LoaderEntity().loader_create_text_search_index,
-                TEXT_SEARCH_PATH,
-            ),
-        ]
-        return stages
 
     @staticmethod
     @abstractmethod

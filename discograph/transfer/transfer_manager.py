@@ -1,6 +1,11 @@
 import logging
+from pathlib import Path
 
-from discograph.config import ALL_RUNTIME_DATABASE_TABLE_NAMES, ENTITY_DETAILS_PATH
+from discograph.config import (
+    ALL_RUNTIME_DATABASE_TABLE_NAMES,
+    ENTITY_DETAILS_DATA,
+    ENTITY_DETAILS_FILENAME,
+)
 from discograph.exceptions import DatabaseError
 from discograph.logging_config import LOGGING_TRACE
 from discograph.offline.database.entity_repository import EntityRepository
@@ -39,12 +44,15 @@ class TransferManager:
     BULK_INSERT_BATCH_SIZE = 100000
 
     @staticmethod
-    def transfer_entity() -> None:
+    def transfer_entity(data_directory: Path) -> None:
         log.debug(f"Running transfer_entity()")
 
+        entity_details_path = (
+            data_directory / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
+        )
         entity_details_index = (
             RuntimeEntityDataAccess.load_entity_details_index_from_file(
-                ENTITY_DETAILS_PATH
+                entity_details_path
             )
         )
 
@@ -228,7 +236,7 @@ class TransferManager:
                 runtime_role_repository.create(runtime_role)
 
     @staticmethod
-    def transfer_all() -> None:
+    def transfer_all(data_directory: Path) -> None:
         log.debug(f"Running transfer_all()")
 
         RuntimeDatabaseManager.runtime_database_helper.drop_tables(
@@ -239,7 +247,7 @@ class TransferManager:
         )
 
         TransferManager.transfer_role()
-        TransferManager.transfer_entity()
+        TransferManager.transfer_entity(data_directory)
         TransferManager.transfer_relation()
 
         log.debug(f"Transfer all done")

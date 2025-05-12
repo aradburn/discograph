@@ -1,7 +1,7 @@
 import logging
 
-from discograph.config import PostgresOfflineTestConfiguration, TEST_DATA_DIR
-from discograph.offline.offline_database_manager import OfflineDatabaseManager
+from discograph.config import PostgresTestConfiguration, DATA_DIR_KEY
+from discograph.loader.loader import load_offline_test_tables
 from tests.integration.offline.database.offline_database_test_case import (
     OfflineDatabaseTestCase,
 )
@@ -12,12 +12,14 @@ log = logging.getLogger(__name__)
 class UpdaterTestCase(OfflineDatabaseTestCase):
     @classmethod
     def setUpClass(cls):
-        OfflineDatabaseTestCase._offline_config = PostgresOfflineTestConfiguration()
+        OfflineDatabaseTestCase.offline_config = PostgresTestConfiguration()
         super().setUpClass()
 
         # Run the test update process
-        OfflineDatabaseManager.offline_database_helper.load_tables(
-            TEST_DATA_DIR, "testupdate", is_bulk_inserts=False
+        load_offline_test_tables(
+            OfflineDatabaseTestCase.offline_config[DATA_DIR_KEY],
+            "testupdate",
+            is_bulk_inserts=False,
         )
 
     @classmethod

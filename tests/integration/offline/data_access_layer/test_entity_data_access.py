@@ -1,3 +1,4 @@
+from discograph.config import DISCOGS_DATA, TEST_DIR, DATA_DIR_KEY
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.full_text_search.text_search_index import TextSearchIndex
 from discograph.offline.data_access_layer.entity_data_access import EntityDataAccess
@@ -37,9 +38,12 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
 
     def test_resolve_entity_references_1(self):
         # GIVEN
+        discogs_data_directory = TEST_DIR / "data" / DISCOGS_DATA
         entity_id = 48
         entity_type = EntityType.ARTIST
-        entity = utils.get_test_entity_by_id(entity_id, entity_type)
+        entity = utils.get_test_entity_by_id(
+            discogs_data_directory, entity_id, entity_type
+        )
 
         # WHEN
         with offline_transaction():
@@ -60,9 +64,12 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
 
     def test_resolve_entity_references_2(self):
         # GIVEN
+        discogs_data_directory = TEST_DIR / "data" / DISCOGS_DATA
         entity_id = 98
         entity_type = EntityType.ARTIST
-        entity = utils.get_test_entity_by_id(entity_id, entity_type)
+        entity = utils.get_test_entity_by_id(
+            discogs_data_directory, entity_id, entity_type
+        )
 
         # WHEN
         with offline_transaction():
@@ -84,9 +91,12 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
         self.assertEqual(expected, result)
 
     def test_resolve_entity_references_3(self):
+        discogs_data_directory = TEST_DIR / "data" / DISCOGS_DATA
         entity_id = 288
         entity_type = EntityType.ARTIST
-        entity = utils.get_test_entity_by_id(entity_id, entity_type)
+        entity = utils.get_test_entity_by_id(
+            discogs_data_directory, entity_id, entity_type
+        )
 
         # WHEN
         with offline_transaction():
@@ -105,9 +115,12 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
 
     def test_resolve_entity_references_4(self):
         # GIVEN
+        discogs_data_directory = TEST_DIR / "data" / DISCOGS_DATA
         entity_id = 61
         entity_type = EntityType.LABEL
-        entity = utils.get_test_entity_by_id(entity_id, entity_type)
+        entity = utils.get_test_entity_by_id(
+            discogs_data_directory, entity_id, entity_type
+        )
 
         # WHEN
         with offline_transaction():
@@ -126,7 +139,11 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
     def test_resolve_release_references_1(self):
         # GIVEN
         release_id = 637
-        release = utils.get_test_release_by_id(release_id)
+        discogs_data_directory = (
+            OfflineDatabaseTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+        )
+
+        release = utils.get_test_release_by_id(discogs_data_directory, release_id)
 
         # WHEN
         with offline_transaction():
@@ -144,7 +161,11 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
     def test_resolve_release_references_2(self):
         # GIVEN
         release_id = 158
-        release = utils.get_test_release_by_id(release_id)
+        discogs_data_directory = (
+            OfflineDatabaseTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+        )
+
+        release = utils.get_test_release_by_id(discogs_data_directory, release_id)
 
         # WHEN
         with offline_transaction():
@@ -190,7 +211,11 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
     def test_resolve_release_references_3(self):
         # GIVEN
         release_id = 1700
-        release = utils.get_test_release_by_id(release_id)
+        discogs_data_directory = (
+            OfflineDatabaseTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+        )
+
+        release = utils.get_test_release_by_id(discogs_data_directory, release_id)
 
         # WHEN
         with offline_transaction():
@@ -205,7 +230,11 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
     def test_resolve_release_references_4(self):
         # GIVEN
         release_id = 1700
-        release = utils.get_test_release_by_id(release_id)
+        discogs_data_directory = (
+            OfflineDatabaseTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+        )
+
+        release = utils.get_test_release_by_id(discogs_data_directory, release_id)
 
         # WHEN
         with offline_transaction():

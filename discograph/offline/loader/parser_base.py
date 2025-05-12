@@ -27,7 +27,9 @@ for generic XML parsing.
 
 import gzip
 import logging
-from typing import Generator, Self, Any
+from collections.abc import Iterator
+from pathlib import Path
+from typing import Self, Any
 
 from discograph.offline.loader.loader_utils import LoaderUtils
 from discograph.offline.loader.parser_utils import ParserUtils
@@ -69,12 +71,12 @@ class ParserBase:
     def load_from_xml(
         cls,
         domain_class,
-        data_directory: str,
+        discogs_data_directory: Path,
         date: str,
         xml_tag: str,
         id_attr: str,
         skip_without: list[str],
-    ) -> Generator[Self, None, None]:
+    ) -> Iterator[Self]:
         """
         Loads data from an XML file.
 
@@ -88,7 +90,7 @@ class ParserBase:
                 This should be a class with a constructor that accepts
                 keyword arguments corresponding to the fields in the
                 tag-to-field mapping.
-            data_directory (str): The directory containing the XML files.
+            discogs_data_directory (Path): The directory containing the XML files.
             date (str): The date of the XML data dump.
             xml_tag (str): The XML tag representing the records to load.
                 For example, "artist", "label", or "release".
@@ -101,7 +103,7 @@ class ParserBase:
         Yields:
             Self: A new instance of the domain class.
         """
-        xml_path = LoaderUtils.get_xml_path(data_directory, xml_tag, date)
+        xml_path = LoaderUtils.get_xml_path(discogs_data_directory, xml_tag, date)
         """Get the full path to the XML file."""
         log.info(f"Loading data from {xml_path}")
         with gzip.GzipFile(xml_path, "r") as file_pointer:

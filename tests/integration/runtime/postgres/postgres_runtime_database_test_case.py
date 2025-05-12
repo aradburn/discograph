@@ -1,9 +1,6 @@
 import logging
 
-from discograph.config import (
-    PostgresOfflineTestConfiguration,
-    PostgresRuntimeTestConfiguration,
-)
+from discograph.config import PostgresTestConfiguration
 from tests.integration.offline.database.offline_database_test_case import (
     OfflineDatabaseTestCase,
 )
@@ -18,8 +15,8 @@ class PostgresRuntimeDatabaseTestCase(RuntimeDatabaseTestCase):
     @classmethod
     def setUpClass(cls):
         print("PostgresRuntimeDatabaseTestCase setUpClass")
-        RuntimeDatabaseTestCase._runtime_config = PostgresRuntimeTestConfiguration()
-        OfflineDatabaseTestCase._offline_config = PostgresOfflineTestConfiguration()
+        OfflineDatabaseTestCase.offline_config = PostgresTestConfiguration()
+        RuntimeDatabaseTestCase.runtime_config = PostgresTestConfiguration()
         super().setUpClass()
 
     @classmethod

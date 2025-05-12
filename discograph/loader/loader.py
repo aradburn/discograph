@@ -18,24 +18,212 @@ import atexit
 import datetime
 import logging
 import sys
+from functools import partial
+from pathlib import Path
 
 import luigi
 
 from discograph.config import (
     PostgresDevelopmentConfiguration,
     SqliteDevelopmentConfiguration,
+    ROLES_DATA,
+    ENTITY_DETAILS_DATA,
+    ENTITY_DETAILS_FILENAME,
+    TEXT_SEARCH_DATA,
+    TEXT_SEARCH_FILENAME,
+    INSTRUMENTS_DATA,
+    DISCOGS_DATA,
+    DATA_DIR_KEY,
 )
 from discograph.library.cache.cache_manager import CacheManager
+from discograph.library.full_text_search.text_search_index import TextSearchIndex
 from discograph.logging_config import setup_logging
+from discograph.offline.data_access_layer.role_data_access import RoleDataAccess
+from discograph.offline.loader.loader_role import LoaderRole
 from discograph.offline.loader.loader_tasks import LoaderSetupTask
 from discograph.offline.offline_database_manager import OfflineDatabaseManager
+from discograph.runtime.data_access_layer.runtime_role_data_access import (
+    RuntimeRoleDataAccess,
+)
+from discograph.runtime.runtime_database.runtime_database_helper import (
+    RuntimeDatabaseHelper,
+)
 from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
+from discograph.transfer.transfer_manager import TransferManager
 from discograph.transfer.transfer_task import TransferTask
 
 log = logging.getLogger(__name__)
 
 
-def loader_main():
+def load_offline_tables(data_directory: Path, date: str, is_bulk_inserts: bool) -> None:
+    """
+    Loads data into the offline tables.
+
+    This method orchestrates the loading process by executing a series of stages.
+
+    Args:
+        data_directory: The directory containing the data files.
+        date: The date of the data to load.
+        is_bulk_inserts: Whether to use bulk inserts.
+    """
+    log.info("Load offline tables")
+    stages = get_load_offline_table_stages(data_directory, date, is_bulk_inserts)
+    for stage in stages:
+        stage()
+    log.info("Load offline tables done.")
+
+
+def load_offline_table_stage(
+    data_directory: Path, date: str, is_bulk_inserts: bool, stage: int
+) -> None:
+    """
+    Loads a specific stage of the data loading process.
+
+    Args:
+        data_directory: The directory containing the data files.
+        date: The date of the data to load.
+        is_bulk_inserts: Whether to use bulk inserts.
+        stage: The index of the stage to execute.
+    """
+    stages = get_load_offline_table_stages(data_directory, date, is_bulk_inserts)
+    log.debug(f"Run stage: {stage}")
+    stages[stage]()
+
+
+def get_load_offline_table_stages(
+    data_directory: Path, date: str, is_bulk_inserts: bool
+) -> list[partial]:
+    """
+    Gets the list of stages for loading data into the tables.
+
+    Args:
+        data_directory: The directory containing the data files.
+        date: The date of the data to load.
+        is_bulk_inserts: Whether to use bulk inserts.
+
+    Returns:
+        list[partial]: A list of partial functions representing the loading stages.
+    """
+    from discograph.offline.loader.loader_entity import LoaderEntity
+    from discograph.offline.loader.loader_relation import LoaderRelation
+    from discograph.offline.loader.loader_release import LoaderRelease
+
+    has_tablename = (
+        OfflineDatabaseManager.offline_database_helper.has_vacuum_tablename()
+    )
+    is_full = OfflineDatabaseManager.offline_database_helper.is_vacuum_full()
+    is_analyze = OfflineDatabaseManager.offline_database_helper.is_vacuum_analyze()
+    discogs_data_directory = data_directory / DISCOGS_DATA
+    entity_details_path = data_directory / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
+    text_search_path = data_directory / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
+    stages = [
+        partial(RoleDataAccess.load_all_roles),
+        partial(
+            LoaderEntity().loader_entity_pass_one,
+            discogs_data_directory,
+            date,
+            is_bulk_inserts,
+        ),
+        partial(
+            LoaderEntity().loader_entity_vacuum, has_tablename, is_full, is_analyze
+        ),
+        partial(
+            LoaderRelease().loader_release_pass_one,
+            discogs_data_directory,
+            date,
+            is_bulk_inserts,
+        ),
+        partial(
+            LoaderRelease().loader_release_vacuum,
+            has_tablename,
+            is_full,
+            is_analyze,
+        ),
+        partial(LoaderEntity().loader_entity_pass_two),
+        partial(LoaderRelease().loader_release_pass_two),
+        partial(LoaderRelation().loader_relation_pass_one, date),
+        # partial(LoaderRelation().loader_relation_pass_two, date),
+        partial(
+            LoaderEntity().loader_entity_vacuum, has_tablename, is_full, is_analyze
+        ),
+        partial(
+            LoaderRelease().loader_release_vacuum,
+            has_tablename,
+            is_full,
+            is_analyze,
+        ),
+        partial(
+            LoaderRelation().loader_relation_vacuum,
+            has_tablename,
+            is_full,
+            is_analyze,
+        ),
+        partial(LoaderEntity().loader_entity_pass_three),
+        partial(
+            LoaderEntity().loader_entity_vacuum, has_tablename, is_full, is_analyze
+        ),
+        partial(
+            LoaderRelease().loader_release_vacuum,
+            has_tablename,
+            is_full,
+            is_analyze,
+        ),
+        partial(
+            LoaderRelation().loader_relation_vacuum,
+            has_tablename,
+            is_full,
+            is_analyze,
+        ),
+        partial(
+            LoaderRelease().loader_create_entity_details_index,
+            entity_details_path,
+        ),
+        partial(
+            LoaderEntity().loader_create_text_search_index,
+            text_search_path,
+        ),
+    ]
+    return stages
+
+
+def load_runtime_tables(data_directory: Path) -> None:
+    """Loads runtime tables with initial data."""
+    log.info("Load tables")
+    RuntimeRoleDataAccess.load_all_roles()
+
+    text_search_path = data_directory / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
+    RuntimeDatabaseHelper.text_search_index = (
+        TextSearchIndex.load_text_search_index_from_file(text_search_path)
+    )
+    log.info("Load tables done.")
+
+
+def load_offline_test_tables(
+    data_directory: Path, date: str, is_bulk_inserts: bool
+) -> None:
+    """
+    Loads test data into the offline tables.
+
+    This method is used for loading test data into the offline database.
+    It is typically called during the setup phase of tests.
+    """
+    roles_directory = data_directory / ROLES_DATA
+    instruments_directory = data_directory / INSTRUMENTS_DATA
+    LoaderRole.load_roles_into_database(roles_directory, instruments_directory)
+    load_offline_tables(data_directory, date, is_bulk_inserts=is_bulk_inserts)
+
+    text_search_path = data_directory / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
+    OfflineDatabaseManager.offline_database_helper.text_search_index = (
+        TextSearchIndex.load_text_search_index_from_file(text_search_path)
+    )
+
+
+def load_runtime_test_tables(data_directory: Path) -> None:
+    TransferManager.transfer_all(data_directory)
+    load_runtime_tables(data_directory)
+
+
+def loader_main() -> None:
     """
     The main function for the Discograph data loader application.
 
@@ -89,9 +277,12 @@ def loader_main():
     # start_date = datetime.date(2023, 10, 1)
     end_date = datetime.date(2024, 11, 1)
     # end_date = datetime.datetime.now()
+    data_directory: str = str(offline_config[DATA_DIR_KEY])
     tasks = [
-        LoaderSetupTask(start_date=start_date, end_date=end_date),
-        TransferTask(),
+        LoaderSetupTask(
+            data_directory=data_directory, start_date=start_date, end_date=end_date
+        ),
+        TransferTask(data_directory=data_directory),
     ]
     luigi_run_result = luigi.build(
         tasks,

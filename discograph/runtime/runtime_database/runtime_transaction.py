@@ -17,8 +17,8 @@ Key functionalities include:
 """
 
 import logging
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Generator
 
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.orm import Session
@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 
 
 @contextmanager
-def runtime_transaction() -> Generator[Session, None, None]:
+def runtime_transaction() -> Iterator[Session]:
     """
     Manages a database transaction within a context.
 
@@ -43,7 +43,7 @@ def runtime_transaction() -> Generator[Session, None, None]:
     coroutine within the codebase.
 
     Yields:
-        Generator[Session, None, None]: A generator that yields the database
+        Iterator[Session]: An iterator that yields the database
             session to be used within the transaction.
 
     Raises:

@@ -9,6 +9,8 @@ from sqlalchemy.orm import sessionmaker, close_all_sessions
 from discograph.config import (
     DatabaseType,
     ThreadingModel,
+    THREADING_MODEL_KEY,
+    DATABASE_KEY,
 )
 from discograph.logging_config import LOGGING_TRACE
 from discograph.runtime.runtime_database.runtime_database_helper import (
@@ -33,17 +35,17 @@ class RuntimeDatabaseManager:
 
     @classmethod
     def setup_database(cls, config) -> None:
-        RuntimeDatabaseManager._threading_model = config["THREADING_MODEL"]
+        RuntimeDatabaseManager._threading_model = config[THREADING_MODEL_KEY]
 
         # Based on configuration, use a different database.
-        if config["DATABASE"] == DatabaseType.POSTGRES:
+        if config[DATABASE_KEY] == DatabaseType.POSTGRES:
             from discograph.runtime.postgres.postgres_helper import (
                 RuntimePostgresHelper,
             )
 
             RuntimeDatabaseManager.runtime_database_helper = RuntimePostgresHelper()
 
-        elif config["DATABASE"] == DatabaseType.SQLITE:
+        elif config[DATABASE_KEY] == DatabaseType.SQLITE:
             from discograph.runtime.sqlite.sqlite_helper import RuntimeSqliteHelper
 
             RuntimeDatabaseManager.runtime_database_helper = RuntimeSqliteHelper()

@@ -1,7 +1,7 @@
-import collections
 import logging
 from abc import ABC
-from typing import List, Dict, Tuple, OrderedDict
+from collections import OrderedDict
+from typing import List, Dict, Tuple
 
 from discograph import utils
 from discograph.library.cache.role_cache import RoleCache
@@ -108,9 +108,7 @@ class RelationGrapher(ABC):
                     self.relational_role_names.append(role_name)
         # self.structural_role_names = tuple(structural_role_names)
         # self.relational_role_names = tuple(relational_role_names)
-        self.nodes: OrderedDict[Tuple[int, EntityType], TrellisNode] = (
-            collections.OrderedDict()
-        )
+        self.nodes: OrderedDict[Tuple[int, EntityType], TrellisNode] = OrderedDict()
         self.links: Dict[str, RuntimeRelationResult] = {}
         self.should_break_loop = False
         self.entity_keys_to_visit = set[tuple[int, EntityType]]()
@@ -281,7 +279,7 @@ class RelationGrapher(ABC):
 
     @staticmethod
     def group_trellis(trellis):
-        trellis_nodes_by_distance = collections.OrderedDict()
+        trellis_nodes_by_distance = OrderedDict()
         for trellis_node in trellis.values():
             if trellis_node.distance not in trellis_nodes_by_distance:
                 trellis_nodes_by_distance[trellis_node.distance] = set()

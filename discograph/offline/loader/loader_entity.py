@@ -29,7 +29,7 @@ class LoaderEntity(LoaderBase):
     @classmethod
     @timeit
     def loader_entity_pass_one(
-        cls, data_directory: str, data_date: str, is_bulk_inserts=False
+        cls, discogs_data_directory: Path, data_date: str, is_bulk_inserts=False
     ) -> int:
         log.debug(f"loader entity pass one - artist - date: {data_date}")
         with offline_transaction():
@@ -38,7 +38,7 @@ class LoaderEntity(LoaderBase):
             artists_loaded = cls.loader_pass_one_manager(
                 repository=entity_repository,
                 parser=entity_parser,
-                data_directory=data_directory,
+                discogs_data_directory=discogs_data_directory,
                 date=data_date,
                 xml_tag="artist",
                 id_attr=EntityTable.id.name,
@@ -52,7 +52,7 @@ class LoaderEntity(LoaderBase):
             labels_loaded = cls.loader_pass_one_manager(
                 repository=entity_repository,
                 parser=entity_parser,
-                data_directory=data_directory,
+                discogs_data_directory=discogs_data_directory,
                 date=data_date,
                 xml_tag="label",
                 id_attr=EntityTable.id.name,

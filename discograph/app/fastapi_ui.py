@@ -128,9 +128,10 @@ async def route__index(
 
     """Generate the URL for the current request with the selected roles."""
     return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
+        request=request,
+        name="index.html",
+        context={
+            # "request": request,
             "application_url": application_url,
             "initial_json": initial_js,
             "multiselect_mapping": multiselect_mapping,

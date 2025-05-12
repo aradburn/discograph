@@ -32,6 +32,7 @@ interacts with `discograph.transfer` for the transfer logic.
 """
 
 import logging
+from pathlib import Path
 
 import luigi
 from luigi.contrib.simulate import RunAnywayTarget
@@ -55,6 +56,8 @@ class TransferTask(luigi.Task):
     Inherits from:
         luigi.Task: The base class for defining Luigi tasks.
     """
+
+    data_directory: str = luigi.Parameter()
 
     def output(self):
         """
@@ -103,7 +106,7 @@ class TransferTask(luigi.Task):
         """
         log.debug(f"Running transfer task: {self.task_id}")
         """Log the start of the task."""
-        TransferManager.transfer_all()
+        TransferManager.transfer_all(self.data_directory)
         """Transfer all data."""
         self.output().done()
         """Mark the task as complete."""

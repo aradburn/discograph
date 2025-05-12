@@ -1,5 +1,6 @@
 import logging
-from typing import Generator, Any, List, Sequence, Iterator
+from collections.abc import Iterator, Sequence
+from typing import Any, List
 
 from sqlalchemy import Result, select, update, Select, delete
 
@@ -71,12 +72,12 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
         releases = [release_db.to_domain() for release_db in release_dbs]
         return releases
 
-    def all(self) -> Generator[Release, None, None]:
+    def all(self) -> Iterator[Release]:
         """
         Retrieves all releases from the database.
 
         Yields:
-            Generator[Release, None, None]: A generator yielding each release.
+            Iterator[Release]: An iterator yielding each release.
         """
         query = select(ReleaseTable)
         with self._session.execute(

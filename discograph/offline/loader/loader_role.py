@@ -1,10 +1,13 @@
 import csv
 import json
 import logging
-import os
+from pathlib import Path
 from typing import List
 
-from discograph.config import INSTRUMENTS_PATH, INSTRUMENTS_DIR, ROLE_FILENAMES
+from discograph.config import (
+    HS_INSTRUMENTS_FILENAME,
+    INSTRUMENTS_DATA_FILENAMES,
+)
 from discograph.exceptions import NotFoundError
 from discograph.library.cache.cache_manager import CacheManager
 from discograph.library.fields.role_type import RoleType
@@ -26,17 +29,21 @@ class LoaderRole(LoaderBase):
     # CLASS METHODS
 
     @classmethod
-    def load_roles_into_database(cls) -> None:
+    def load_roles_into_database(
+        cls, roles_directory: Path, instruments_directory: Path
+    ) -> None:
         log.info(f"Loading initial roles ")
 
         # Read from each source of roles and save into database, deduplicating role names as we go
-        file_roles = cls.load_roles_from_files()
+        file_roles = cls.load_roles_from_files(roles_directory)
         cls.save_roles(file_roles)
 
-        hornbostel_sachs_roles = cls.load_hornbostel_sachs_instruments()
+        hornbostel_sachs_roles = cls.load_hornbostel_sachs_instruments(
+            instruments_directory
+        )
         cls.save_roles(hornbostel_sachs_roles)
 
-        wikipedia_roles = cls.load_wikipedia_instruments()
+        wikipedia_roles = cls.load_wikipedia_instruments(instruments_directory)
         cls.save_roles(wikipedia_roles)
 
         # Load back in all roles from database
@@ -45,22 +52,24 @@ class LoaderRole(LoaderBase):
         log.debug(f"Initial roles loaded OK")
 
     @classmethod
-    def load_wikipedia_instruments(cls) -> List[RoleUncommitted]:
+    def load_wikipedia_instruments(
+        cls, instruments_directory: Path
+    ) -> List[RoleUncommitted]:
         log.info(f"Loading Wikipedia instruments")
 
         roles = []
         loaded_count = 0
 
         # Load wikipedia data
-        for filename in ROLE_FILENAMES:
-            role_path = os.path.join(INSTRUMENTS_DIR, filename)
-            log.debug(f"Loading from: {role_path}")
-            with open(role_path) as csvfile:
+        for filename in INSTRUMENTS_DATA_FILENAMES:
+            instruments_path = instruments_directory / filename
+            log.debug(f"Loading from: {instruments_path}")
+            with open(instruments_path) as csvfile:
                 dialect = csv.Sniffer().sniff(csvfile.read(1024))
                 csvfile.seek(0)
-                aerophones_csv_reader = csv.DictReader(csvfile, dialect=dialect)
+                csv_reader = csv.DictReader(csvfile, dialect=dialect)
 
-                for row in aerophones_csv_reader:
+                for row in csv_reader:
                     row: dict
                     instrument_name = row["Instrument"]
                     instrument_class = row["Classification"]
@@ -89,14 +98,17 @@ class LoaderRole(LoaderBase):
         return roles
 
     @classmethod
-    def load_hornbostel_sachs_instruments(cls) -> List[RoleUncommitted]:
+    def load_hornbostel_sachs_instruments(
+        cls, instruments_directory: Path
+    ) -> List[RoleUncommitted]:
         # Load Hornbostel Sachs instrument data
         log.info(f"Load Hornbostel Sachs instrument data")
 
         roles = []
         loaded_count = 0
 
-        with open(INSTRUMENTS_PATH) as f:
+        hs_filename = instruments_directory / HS_INSTRUMENTS_FILENAME
+        with open(hs_filename) as f:
             json_data = json.load(f)
             instruments_data = HornbostelSachs(**json_data)
 
@@ -130,13 +142,13 @@ class LoaderRole(LoaderBase):
         return roles
 
     @classmethod
-    def load_roles_from_files(cls) -> List[RoleUncommitted]:
+    def load_roles_from_files(cls, roles_directory: Path) -> List[RoleUncommitted]:
         log.info(f"Loading roles from files")
 
         roles = []
         loaded_count = 0
 
-        role_paths = LoaderUtils.get_role_paths()
+        role_paths = LoaderUtils.get_role_paths(roles_directory)
         for role_path in role_paths:
             log.debug(f"Loading from: {role_path}")
             with open(role_path, encoding="utf-8") as csvfile:

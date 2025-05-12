@@ -25,7 +25,8 @@ from fastapi import APIRouter, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from discograph.config import Configuration, TEMPLATES_DIR
+from discograph.app.fastapi_app import templates
+from discograph.config import Configuration
 
 log = logging.getLogger(__name__)
 """The logger for the assets module."""
@@ -73,7 +74,7 @@ def create_assets_router(config: Configuration) -> Tuple[APIRouter, Jinja2Templa
             ) from exception
 
     # Set up templates and add context functions
-    templates = Jinja2Templates(directory=TEMPLATES_DIR)
+    # templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
     @assets_router.get("/context")
     async def get_template_context(request: Request) -> Dict[str, Any]:

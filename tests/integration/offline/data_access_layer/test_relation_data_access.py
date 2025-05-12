@@ -1,3 +1,4 @@
+from discograph.config import DISCOGS_DATA, DATA_DIR_KEY
 from discograph.offline.data_access_layer.entity_data_access import EntityDataAccess
 from discograph.offline.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.offline.database.entity_repository import EntityRepository
@@ -13,7 +14,11 @@ class TestRelationDataAccess(OfflineDatabaseTestCase):
     def test_from_release(self):
         # GIVEN
         release_id = 1700
-        release = utils.get_test_release_by_id(release_id)
+        discogs_data_directory = (
+            OfflineDatabaseTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+        )
+
+        release = utils.get_test_release_by_id(discogs_data_directory, release_id)
         with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess().resolve_release_references(entity_repository, release)
@@ -267,7 +272,11 @@ class TestRelationDataAccess(OfflineDatabaseTestCase):
     def test_get_release_setup(self):
         # GIVEN
         release_id = 1700
-        release = utils.get_test_release_by_id(release_id)
+        discogs_data_directory = (
+            OfflineDatabaseTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+        )
+
+        release = utils.get_test_release_by_id(discogs_data_directory, release_id)
         with offline_transaction():
             entity_repository = EntityRepository()
             EntityDataAccess().resolve_release_references(entity_repository, release)

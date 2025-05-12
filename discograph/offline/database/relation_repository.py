@@ -1,5 +1,6 @@
 import logging
-from typing import Generator, List
+from collections.abc import Iterator
+from typing import List
 
 from sqlalchemy import Result, select, Select, delete
 
@@ -80,12 +81,12 @@ class RelationRepository(BaseRepository[RelationTable]):
         relations = [relation_db.to_domain() for relation_db in relation_dbs]
         return relations
 
-    def all(self) -> Generator[RelationDB, None, None]:
+    def all(self) -> Iterator[RelationDB]:
         """
         Retrieves all relations from the database.
 
         Yields:
-            Generator[RelationDB, None, None]: A generator yielding each relation.
+            Iterator[RelationDB]: A iterrator yielding each relation.
         """
         query = select(RelationTable)
         with self._session.execute(

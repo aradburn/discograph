@@ -1,4 +1,4 @@
-from discograph.config import TEXT_SEARCH_PATH
+from discograph.config import TEXT_SEARCH_DATA, TEXT_SEARCH_FILENAME, DATA_DIR_KEY
 from discograph.library.full_text_search.text_search_index import TextSearchIndex
 from discograph.runtime.data_access_layer.runtime_entity_search import (
     RuntimeEntitySearch,
@@ -12,8 +12,13 @@ from tests.integration.runtime.database.runtime_database_test_case import (
 class TestRuntimeEntitySearch(RuntimeDatabaseTestCase):
 
     def test_text_search_lookup_1(self):
+        text_search_path = (
+            RuntimeDatabaseTestCase.runtime_config[DATA_DIR_KEY]
+            / TEXT_SEARCH_DATA
+            / TEXT_SEARCH_FILENAME
+        )
         RuntimeDatabaseManager.runtime_database_helper.text_search_index = (
-            TextSearchIndex.load_text_search_index_from_file(TEXT_SEARCH_PATH)
+            TextSearchIndex.load_text_search_index_from_file(text_search_path)
         )
         results = RuntimeEntitySearch.search_entities("Wax")
 
@@ -38,8 +43,13 @@ class TestRuntimeEntitySearch(RuntimeDatabaseTestCase):
         self.assertEqual(expected, list(results["results"]))
 
     def test_text_search_lookup_2(self):
+        text_search_path = (
+            RuntimeDatabaseTestCase.runtime_config[DATA_DIR_KEY]
+            / TEXT_SEARCH_DATA
+            / TEXT_SEARCH_FILENAME
+        )
         RuntimeDatabaseManager.runtime_database_helper.text_search_index = (
-            TextSearchIndex.load_text_search_index_from_file(TEXT_SEARCH_PATH)
+            TextSearchIndex.load_text_search_index_from_file(text_search_path)
         )
         results = RuntimeEntitySearch.search_entities("Joker")
 

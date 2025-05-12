@@ -1,7 +1,7 @@
 from xml.etree import ElementTree
 
 from discograph import utils
-from discograph.config import TEST_DATA_DIR
+from discograph.config import DATA_DIR_KEY, DISCOGS_DATA
 from discograph.library.fields.entity_type import EntityType
 from discograph.offline.data_access_layer.entity_data_access import EntityDataAccess
 from discograph.offline.data_access_layer.relation_data_access import RelationDataAccess
@@ -17,7 +17,12 @@ from tests.integration.offline.database.offline_database_test_case import (
 class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
     def test_relation_from_release_01(self):
         # GIVEN
-        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "release", "testinsert")
+        disocogs_data_directory = OfflineDatabaseTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+        iterator = LoaderUtils.get_iterator(
+            disocogs_data_directory,
+            "release",
+            "testinsert",
+        )
         release_element = next(iterator)
         release_document = ParserRelease().from_element(release_element)
 

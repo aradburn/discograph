@@ -1,8 +1,7 @@
-import pytest
 from fastapi.testclient import TestClient
 
 from discograph.app.fastapi_app import create_app
-from discograph.config import SqliteRuntimeTestConfiguration
+from discograph.config import SqliteTestConfiguration
 from tests.integration.app_test_case import AppTestCase
 
 
@@ -12,7 +11,7 @@ class TestFastAPIAPI(AppTestCase):
         super().setUpClass()
 
         # Create a FastAPI app for testing
-        config = SqliteRuntimeTestConfiguration()
+        config = SqliteTestConfiguration()
         app = create_app(config)
         cls.client = TestClient(app)
 
@@ -28,7 +27,6 @@ class TestFastAPIAPI(AppTestCase):
         response = self.client.get("/api/label/network/1")
         self.assertEqual(200, response.status_code)
 
-    @pytest.mark.skip(reason="Skip for profiling")
     def test_search_01(self):
         response = self.client.get("/api/search/Morris")
         print(f"response: {response}")
@@ -52,7 +50,6 @@ class TestFastAPIAPI(AppTestCase):
         self.maxDiff = None
         self.assertCountEqual(expected["results"], actual["results"])
 
-    @pytest.mark.skip(reason="Skip for profiling")
     def test_search_02(self):
         response = self.client.get("/api/search/Chris%20Morris")
         self.assertEqual(200, response.status_code)

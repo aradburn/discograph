@@ -1,5 +1,5 @@
 from discograph import utils
-from discograph.config import TEST_DATA_DIR
+from discograph.config import ROLES_DATA, INSTRUMENTS_DATA, DATA_DIR_KEY, DISCOGS_DATA
 from discograph.library.fields.entity_id import to_entity_internal_id
 from discograph.offline.data_access_layer.role_data_access import RoleDataAccess
 from discograph.offline.database.entity_repository import EntityRepository
@@ -21,9 +21,17 @@ from tests.integration.offline.database.offline_repository_test_case import (
 class TestRepositoryRelation(OfflineRepositoryTestCase):
     def test_01_create(self):
         # GIVEN
-        LoaderRole.load_roles_into_database()
+        LoaderRole.load_roles_into_database(
+            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / ROLES_DATA,
+            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / INSTRUMENTS_DATA,
+        )
         RoleDataAccess.load_all_roles()
-        iterator = LoaderUtils.get_iterator(TEST_DATA_DIR, "artist", "testinsert")
+        disocogs_data_directory = OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+        iterator = LoaderUtils.get_iterator(
+            disocogs_data_directory,
+            "artist",
+            "testinsert",
+        )
         entity_element_1 = next(iterator)
         entity_1 = ParserEntity().from_element(entity_element_1)
         entity_element_2 = next(iterator)

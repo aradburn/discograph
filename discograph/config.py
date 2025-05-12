@@ -2,50 +2,80 @@ import collections
 import enum
 import logging
 import os
-import tempfile
-import uuid
 from copy import deepcopy
 from pathlib import Path
 
 from dotenv import load_dotenv, find_dotenv, dotenv_values
 
+from discograph import utils
+
 log = logging.getLogger(__name__)
 
-APP_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.abspath(os.path.join(APP_DIR, ".."))
-FRONTEND_DIR = os.path.abspath(os.path.join(ROOT_DIR, "frontend"))
-TEMPLATES_DIR = os.path.abspath(os.path.join(FRONTEND_DIR, "templates"))
-DATA_DIR = os.path.join(ROOT_DIR, "discograph", "data")
-DATABASE_DIR = os.path.join(ROOT_DIR, "discograph", "database")
-ROLE_DIR = os.path.join(ROOT_DIR, "discograph", "data_role")
-INSTRUMENTS_DIR = os.path.join(ROOT_DIR, "discograph", "data_instruments")
-INSTRUMENTS_PATH = os.path.join(INSTRUMENTS_DIR, "hornbostelSachs.json")
-TEXT_SEARCH_DIR = os.path.join(ROOT_DIR, "discograph", "data_text_search")
-TEXT_SEARCH_PATH = Path(TEXT_SEARCH_DIR, "text_search.data")
-ENTITY_DETAILS_PATH = Path(TEXT_SEARCH_DIR, "entity_details.data")
+# KEYS
+PRODUCTION_KEY = "PRODUCTION"
+DEBUG_KEY = "DEBUG"
+TESTING_KEY = "TESTING"
+DATA_DIR_KEY = "DATA_DIR"
+DATABASE_KEY = "DATABASE"
+POSTGRES_DATABASE_USERNAME_KEY = "POSTGRES_DATABASE_USERNAME"
+POSTGRES_DATABASE_PASSWORD_KEY = "POSTGRES_DATABASE_PASSWORD"
+POSTGRES_DATABASE_HOST_KEY = "POSTGRES_DATABASE_HOST"
+POSTGRES_DATABASE_PORT_KEY = "POSTGRES_DATABASE_PORT"
+POSTGRES_OFFLINE_DATABASE_NAME_KEY = "POSTGRES_OFFLINE_DATABASE_NAME"
+POSTGRES_RUNTIME_DATABASE_NAME_KEY = "POSTGRES_RUNTIME_DATABASE_NAME"
+POSTGRES_ROOT_KEY = "POSTGRES_ROOT"
+POSTGRES_OFFLINE_DATA_KEY = "POSTGRES_OFFLINE_DATA"
+POSTGRES_RUNTIME_DATA_KEY = "POSTGRES_RUNTIME_DATA"
+APPLICATION_ROOT_KEY = "APPLICATION_ROOT"
+THREADING_MODEL_KEY = "THREADING_MODEL"
+CACHE_TYPE_KEY = "CACHE_TYPE"
+SQLITE_OFFLINE_DATABASE_NAME_KEY = "SQLITE_OFFLINE_DATABASE_NAME"
+SQLITE_RUNTIME_DATABASE_NAME_KEY = "SQLITE_RUNTIME_DATABASE_NAME"
 
-TEST_DATA_DIR = os.path.join(ROOT_DIR, "tests", "data")
-TEST_DATA_ROLES_DIR = os.path.join(ROOT_DIR, "tests", "data_roles")
-TEST_DATA_ROLES_PATH = os.path.join(TEST_DATA_ROLES_DIR, "test_data_roles.tsv")
-TEST_DATA_ROLES_NORMALISED_PATH = os.path.join(
-    TEST_DATA_ROLES_DIR, "test_data_roles_normalised.tsv"
-)
-TEST_DATA_ROLES_OUTPUT_PATH = os.path.join(
-    TEST_DATA_ROLES_DIR, "test_data_roles_output.tsv"
-)
-TEST_TEXT_SEARCH_DIR = os.path.join(ROOT_DIR, "tests", "data_text_search")
-TEST_TEXT_SEARCH_PATH = Path(TEST_TEXT_SEARCH_DIR, "text_search.data")
+APP_DIR = Path(__file__).parent.resolve()
+ROOT_DIR = Path(APP_DIR / "..").resolve()
+FRONTEND_DIR = ROOT_DIR / "frontend"
+TEMPLATES_DIR = FRONTEND_DIR / "templates"
 
-LOGGING_DIR = os.path.join(ROOT_DIR, "logs")
-LOGGING_FILE = os.path.join(LOGGING_DIR, "discograph.log")
-LOGGING_ERROR_FILE = os.path.join(LOGGING_DIR, "error.log")
-LOGGING_DEBUG_FILE = os.path.join(LOGGING_DIR, "debug.log")
+# DATA
+DISCOGS_DATA = "discogs"
+ROLES_DATA = "roles"
+INSTRUMENTS_DATA = "instruments"
+INSTRUMENTS_DATA_FILENAMES = [
+    "aerophones.csv",
+    "chordophones.csv",
+    "electrophones.csv",
+    "idiophones.csv",
+    "membranophones.csv",
+]
+HS_INSTRUMENTS_FILENAME = "hornbostel_sachs.json"
+TEXT_SEARCH_DATA = "text_search"
+TEXT_SEARCH_FILENAME = "text_search.data"
+ENTITY_DETAILS_DATA = "entity_details"
+ENTITY_DETAILS_FILENAME = "entity_details.data"
+
+# DATABASE
+OFFLINE_DATABASE = "offline_database"
+RUNTIME_DATABASE = "runtime_database"
+
+TEST_DIR = ROOT_DIR / "tests"
+
+
+# TEST_TEXT_SEARCH_DIR = os.path.join(ROOT_DIR, "tests", "data_text_search")
+# TEST_TEXT_SEARCH_PATH = Path(TEST_TEXT_SEARCH_DIR, "text_search.data")
+
+LOGGING_DIR = ROOT_DIR / "logs"
+LOGGING_FILE = LOGGING_DIR / "discograph.log"
+LOGGING_ERROR_FILE = LOGGING_DIR / "error.log"
+LOGGING_DEBUG_FILE = LOGGING_DIR / "debug.log"
+
 DISCOGS_BASE_URL = "https://discogs-data-dumps.s3-us-west-2.amazonaws.com/data/{year}/"
-DISCOGS_PATH = "discogs_{date}_{type}.xml.gz"
+DISCOGS_FILE_TEMPLATE = "discogs_{date}_{type}.xml.gz"
 DISCOGS_ARTISTS_TYPE = "artists"
 DISCOGS_RELEASES_TYPE = "releases"
 DISCOGS_LABELS_TYPE = "labels"
 DISCOGS_MASTERS_TYPE = "masters"
+
 ALL_OFFLINE_DATABASE_TABLE_NAMES = [
     "entity",
     "relation",
@@ -69,13 +99,6 @@ OFFLINE_DATABASE_TABLE_NAMES_WITHOUT_ROLE = [
 RUNTIME_DATABASE_TABLE_NAMES_WITHOUT_ROLE = [
     "runtime_relation",
     "runtime_entity",
-]
-ROLE_FILENAMES = [
-    "aerophones.csv",
-    "chordophones.csv",
-    "electrophones.csv",
-    "idiophones.csv",
-    "membranophones.csv",
 ]
 
 env_file = find_dotenv()
@@ -122,12 +145,13 @@ class PostgresProductionConfiguration(Configuration):
     PRODUCTION = True
     DEBUG = True
     TESTING = False
+    DATA_DIR = ROOT_DIR / "discograph" / "data"
     DATABASE = DatabaseType.POSTGRES
     POSTGRES_DATABASE_USERNAME = os.getenv("DISCOGRAPH_DATABASE_USERNAME")
     POSTGRES_DATABASE_PASSWORD = os.getenv("DISCOGRAPH_DATABASE_PASSWORD")
     POSTGRES_DATABASE_HOST = os.getenv("DISCOGRAPH_DATABASE_HOST")
     POSTGRES_DATABASE_PORT = os.getenv("DISCOGRAPH_DATABASE_PORT")
-    POSTGRES_DATABASE_NAME = os.getenv("DISCOGRAPH_DATABASE_NAME")
+    POSTGRES_OFFLINE_DATABASE_NAME = os.getenv("DISCOGRAPH_DATABASE_NAME")
     APPLICATION_ROOT = "https://discograph.azurewebsites.net/"
     THREADING_MODEL = ThreadingModel.PROCESS
     CACHE_TYPE = CacheType.FILESYSTEM
@@ -140,12 +164,13 @@ class PostgresDevelopmentConfiguration(Configuration):
     PRODUCTION = False
     DEBUG = True
     TESTING = False
+    DATA_DIR = ROOT_DIR / "discograph" / "data"
     DATABASE = DatabaseType.POSTGRES
     POSTGRES_DATABASE_USERNAME = "discograph"
     POSTGRES_DATABASE_PASSWORD = "discograph"
     POSTGRES_DATABASE_HOST = "localhost"
     POSTGRES_DATABASE_PORT = 5432
-    POSTGRES_DATABASE_NAME = "discograph_dev"
+    POSTGRES_OFFLINE_DATABASE_NAME = "discograph_dev"
     APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.PROCESS
     CACHE_TYPE = CacheType.REDIS
@@ -154,54 +179,37 @@ class PostgresDevelopmentConfiguration(Configuration):
         super().__init__(vars(PostgresDevelopmentConfiguration))
 
 
-class PostgresOfflineTestConfiguration(Configuration):
+class PostgresTestConfiguration(Configuration):
     PRODUCTION = False
     DEBUG = True
     TESTING = True
+    DATA_DIR = TEST_DIR / "data"
     DATABASE = DatabaseType.POSTGRES
-    POSTGRES_DATABASE_NAME = "test_offline_discograph"
+    POSTGRES_OFFLINE_DATABASE_NAME = "test_offline_discograph"
+    POSTGRES_RUNTIME_DATABASE_NAME = "test_runtime_discograph"
     POSTGRES_ROOT = "/usr/lib/postgresql/17"
-    POSTGRES_DATA = os.path.join(
-        tempfile.gettempdir(),
-        "discograph",
-        "pg_offline_temp",
-        "test_" + str(uuid.uuid4()).replace("-", "")[:4],
-    )
+    POSTGRES_OFFLINE_DATA = TEST_DIR / OFFLINE_DATABASE
+    POSTGRES_RUNTIME_DATA = TEST_DIR / RUNTIME_DATABASE
     APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.PROCESS
     CACHE_TYPE = CacheType.MEMORY
 
     def __init__(self):
-        super().__init__(vars(PostgresOfflineTestConfiguration))
-
-
-class PostgresRuntimeTestConfiguration(Configuration):
-    PRODUCTION = False
-    DEBUG = True
-    TESTING = True
-    DATABASE = DatabaseType.POSTGRES
-    POSTGRES_DATABASE_NAME = "test_runtime_discograph"
-    POSTGRES_ROOT = "/usr/lib/postgresql/17"
-    POSTGRES_DATA = os.path.join(
-        tempfile.gettempdir(),
-        "discograph",
-        "pg_runtime_temp",
-        "test_" + str(uuid.uuid4()).replace("-", "")[:4],
-    )
-    APPLICATION_ROOT = "http://localhost"
-    THREADING_MODEL = ThreadingModel.PROCESS
-    CACHE_TYPE = CacheType.MEMORY
-
-    def __init__(self):
-        super().__init__(vars(PostgresRuntimeTestConfiguration))
+        super().__init__(vars(PostgresTestConfiguration))
 
 
 class SqliteProductionConfiguration(Configuration):
     PRODUCTION = True
     DEBUG = False
     TESTING = False
+    DATA_DIR = ROOT_DIR / "discograph" / "data"
     DATABASE = DatabaseType.SQLITE
-    SQLITE_DATABASE_NAME = os.path.join(DATABASE_DIR, "discograph.db")
+    SQLITE_OFFLINE_DATABASE_NAME = (
+        ROOT_DIR / OFFLINE_DATABASE / "discograph_offline_prod.db"
+    )
+    SQLITE_RUNTIME_DATABASE_NAME = (
+        ROOT_DIR / RUNTIME_DATABASE / "discograph_runtime_prod.db"
+    )
     APPLICATION_ROOT = "http://localhost"
     THREADING_MODEL = ThreadingModel.THREAD
     CACHE_TYPE = CacheType.FILESYSTEM
@@ -214,49 +222,41 @@ class SqliteDevelopmentConfiguration(Configuration):
     PRODUCTION = False
     DEBUG = True
     TESTING = False
+    DATA_DIR = ROOT_DIR / "discograph" / "data"
     DATABASE = DatabaseType.SQLITE
-    SQLITE_DATABASE_NAME = os.path.join(DATABASE_DIR, "discograph.db")
+    SQLITE_OFFLINE_DATABASE_NAME = (
+        ROOT_DIR / OFFLINE_DATABASE / "discograph_offline_dev.db"
+    )
+    SQLITE_RUNTIME_DATABASE_NAME = (
+        ROOT_DIR / RUNTIME_DATABASE / "discograph_runtime_dev.db"
+    )
     APPLICATION_ROOT = "http://localhost"
-    THREADING_MODEL = ThreadingModel.PROCESS
+    THREADING_MODEL = ThreadingModel.THREAD
     CACHE_TYPE = CacheType.FILESYSTEM
 
     def __init__(self):
         super().__init__(vars(SqliteDevelopmentConfiguration))
 
 
-class SqliteOfflineTestConfiguration(Configuration):
+class SqliteTestConfiguration(Configuration):
     PRODUCTION = False
     DEBUG = True
     TESTING = True
+    DATA_DIR = TEST_DIR / "data"
     DATABASE = DatabaseType.SQLITE
-    SQLITE_DATABASE_NAME = os.path.join(
-        tempfile.gettempdir(),
-        "discograph",
-        "pg_offline_temp",
-        "test_" + str(uuid.uuid4()).replace("-", "")[:4] + ".db",
+    SQLITE_OFFLINE_DATABASE_NAME = (
+        TEST_DIR
+        / OFFLINE_DATABASE
+        / ("discograph_offline_" + utils.get_random_string(5) + "_test.db")
+    )
+    SQLITE_RUNTIME_DATABASE_NAME = (
+        TEST_DIR
+        / RUNTIME_DATABASE
+        / ("discograph_runtime_" + utils.get_random_string(5) + "_test.db")
     )
     APPLICATION_ROOT = "http://localhost"
-    THREADING_MODEL = ThreadingModel.PROCESS
+    THREADING_MODEL = ThreadingModel.THREAD
     CACHE_TYPE = CacheType.MEMORY
 
     def __init__(self):
-        super().__init__(vars(SqliteOfflineTestConfiguration))
-
-
-class SqliteRuntimeTestConfiguration(Configuration):
-    PRODUCTION = False
-    DEBUG = True
-    TESTING = True
-    DATABASE = DatabaseType.SQLITE
-    SQLITE_DATABASE_NAME = os.path.join(
-        tempfile.gettempdir(),
-        "discograph",
-        "pg_runtime_temp",
-        "test_" + str(uuid.uuid4()).replace("-", "")[:4] + ".db",
-    )
-    APPLICATION_ROOT = "http://localhost"
-    THREADING_MODEL = ThreadingModel.PROCESS
-    CACHE_TYPE = CacheType.MEMORY
-
-    def __init__(self):
-        super().__init__(vars(SqliteRuntimeTestConfiguration))
+        super().__init__(vars(SqliteTestConfiguration))

@@ -21,7 +21,8 @@ operations and inherits common functionality from `RuntimeBaseRepository`.
 """
 
 import logging
-from typing import Generator, Any, List, Iterator
+from collections.abc import Iterator
+from typing import Any, List
 
 from sqlalchemy import Result, select, update, Select, delete, func
 
@@ -135,7 +136,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
 
         return value
 
-    def all(self) -> Generator[RuntimeEntity, None, None]:
+    def all(self) -> Iterator[RuntimeEntity]:
         """
         Retrieves all entities from the runtime database.
 
@@ -167,7 +168,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
             for partition in results.partitions():
                 # partition is an iterable that will be at most 1000 items
                 for row in partition:
-                    yield row
+                    yield row[0]
 
     def get_by_id(self, id_: int) -> RuntimeEntity:
         """

@@ -2,12 +2,12 @@ import logging
 import pathlib
 from typing import Type, List
 
-from sqlalchemy import Engine, create_engine, text
+from sqlalchemy import Engine, create_engine, text, StaticPool
 from sqlalchemy.dialects.sqlite import insert, Insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.sql.dml import ReturningInsert
 
-from discograph.config import Configuration
+from discograph.config import Configuration, SQLITE_OFFLINE_DATABASE_NAME_KEY
 from discograph.offline.database.offline_database_helper import (
     OfflineDatabaseHelper,
     ConcreteTable,
@@ -21,7 +21,7 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
     @staticmethod
     def setup_database(config: Configuration) -> Engine:
         log.info("Using Sqlite Offline Database")
-        # if config["TESTING"]:
+        # if config[TESTING_KEY]:
         #     engine = create_engine(
         #         "sqlite://",
         #         connect_args={
@@ -30,17 +30,17 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
         #         poolclass=StaticPool,
         #     )
         # else:
-        target_path = pathlib.Path(config["SQLITE_DATABASE_NAME"])
+        target_path = pathlib.Path(config[SQLITE_OFFLINE_DATABASE_NAME_KEY])
         target_parent = target_path.parent
         target_parent.mkdir(parents=True, exist_ok=True)
         log.info(f"Sqlite Database: {target_path}")
 
         engine = create_engine(
             f"sqlite:///{target_path}",
-            # connect_args={
-            #     "check_same_thread": False,
-            # },
-            # poolclass=StaticPool,
+            connect_args={
+                "check_same_thread": False,
+            },
+            poolclass=StaticPool,
         )
         return engine
 

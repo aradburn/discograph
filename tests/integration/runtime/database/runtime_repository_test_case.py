@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 
 class RuntimeRepositoryTestCase(unittest.TestCase):
-    _runtime_config: Configuration = None
+    runtime_config: Configuration = None
     relation_grapher: Type[RelationGrapher] = None
 
     # noinspection PyPep8Naming
@@ -36,10 +36,10 @@ class RuntimeRepositoryTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         setup_logging(is_testing=True)
-        if cls._runtime_config is not None:
-            CacheManager.setup_cache(cls._runtime_config)
+        if cls.runtime_config is not None:
+            CacheManager.setup_cache(cls.runtime_config)
             try:
-                RuntimeDatabaseManager.setup_database(cls._runtime_config)
+                RuntimeDatabaseManager.setup_database(cls.runtime_config)
             except DatabaseError:
                 log.error("Error in database setup")
                 RuntimeDatabaseManager.runtime_database_helper.drop_tables(
@@ -58,7 +58,7 @@ class RuntimeRepositoryTestCase(unittest.TestCase):
     def tearDownClass(cls):
         log.info(f"RepositoryTestCase tearDownClass: {cls.__name__}")
         # release resources
-        if cls._runtime_config is not None:
+        if cls.runtime_config is not None:
             RuntimeDatabaseManager.shutdown_database()
             CacheManager.shutdown_cache()
             shutdown_logging()
