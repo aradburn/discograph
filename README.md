@@ -10,7 +10,7 @@ discover new music and understand how artists and labels are interconnected.
 
 All of Discograph's data is derived from the [Discogs](http://www.discogs.com) discography database, containing:
 
-- Nearly 9 million artists
+- 9 million artists
 - 2 million labels
 - 17 million releases
 - Over 100 million different relationships
