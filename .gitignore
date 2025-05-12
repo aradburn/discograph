@@ -3,25 +3,29 @@ tmp/
 src/
 logs/
 discograph/logs/
-/discograph/data/discogs/
-/discograph/data/entity_details/
-/discograph/data/text_search/
+discograph/data/discogs/
+discograph/data/entity_details/
+discograph/data/text_search/
 discograph.cfg
 discograph.conf
-/profiling/
-/offline_database/
-/runtime_database/
-/tests/data_text_search/text_search.data
-/tests/data_roles/test_data_roles_output.tsv
-/tests/data_roles/test_data_roles_output*.tsv
-/tests/offline_database/
-/tests/runtime_database/
+profiling/
+
+tests/data_text_search/text_search.data
+tests/data_roles/test_data_roles_output.tsv
+tests/data_roles/test_data_roles_output*.tsv
+tests/offline_database/
+tests/runtime_database/
+
 data_text_search/text_search.data
 data_text_search/entity_details.data
+
 database/discograph.db
-node_modules/
-coverage/
-dist/
+offline_database/
+runtime_database/
+
+frontend/node_modules/
+frontend/coverage/
+frontend/dist/
 
 # Python
 
