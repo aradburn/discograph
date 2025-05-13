@@ -59,6 +59,7 @@ from typing import Any
 from deepdiff import DeepDiff
 
 from discograph.exceptions import DatabaseError, NotFoundError
+from discograph.library.fields.entity_id import to_entity_label_internal_id
 from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
 from discograph.offline.database.release_repository import ReleaseRepository
 from discograph.offline.database.release_table import ReleaseTable
@@ -130,6 +131,18 @@ class WorkerReleaseUpdater(multiprocessing.Process):
                 release_repository = ReleaseRepository()
                 """Instance of ReleaseRepository for database operations on releases."""
                 updated_release = Release(**data)
+
+                # If it has got an id, change it for an internal id
+                for entry in updated_release.labels:
+                    if "id" in entry:
+                        id_ = entry["id"]
+                        entry["id"] = to_entity_label_internal_id(id_)
+
+                for entry in updated_release.companies:
+                    if "id" in entry:
+                        id_ = entry["id"]
+                        entry["id"] = to_entity_label_internal_id(id_)
+
                 """Create a new Release object from the data."""
                 try:
                     """Attempt to update the release."""
@@ -140,41 +153,24 @@ class WorkerReleaseUpdater(multiprocessing.Process):
                         db_release,
                         updated_release,
                         exclude_paths=[
-                            "id",
+                            # "id",
                             "dirty_fields",
                             "_dirty",
-                            "root.labels[0]['id']",
-                            "root.labels[1]['id']",
-                            "root.labels[2]['id']",
-                            "root.labels[3]['id']",
-                            "root.labels[4]['id']",
-                            "root.labels[5]['id']",
-                            "root.labels[6]['id']",
-                            "root.labels[7]['id']",
-                            "root.labels[8]['id']",
-                            "root.labels[9]['id']",
-                            "root.labels[10]['id']",
-                            "root.labels[11]['id']",
-                            "root.labels[12]['id']",
-                            "root.labels[13]['id']",
-                            "root.labels[14]['id']",
-                            "root.labels[15]['id']",
-                            "root.labels[16]['id']",
-                            "root.labels[17]['id']",
-                            "root.labels[18]['id']",
-                            "root.labels[19]['id']",
-                            "root.labels[20]['id']",
                         ],
-                        ignore_numeric_type_changes=True,
+                        exclude_regex_paths=[
+                            r"root.companies\[\d+\]\['id'\]",
+                            r"root.labels\[\d+\]\['id'\]",
+                        ],
+                        # ignore_numeric_type_changes=True,
                     )
                     """Compare the release data."""
                     diff = pprint.pformat(differences)
                     """Format the diff for logging."""
                     if diff != "{}":
                         """If there are any differences."""
-                        if LOGGING_TRACE:
-                            """Log the differences if trace logging is enabled."""
-                            log.debug(f"diff: {diff}")
+                        # if LOGGING_TRACE:
+                        """Log the differences if trace logging is enabled."""
+                        log.debug(f"release diff: {diff}")
 
                         # Update release
                         release_repository.update(

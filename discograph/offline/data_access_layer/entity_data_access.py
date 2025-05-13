@@ -197,27 +197,34 @@ class EntityDataAccess:
 
         for entry in release.labels:
             if "id" in entry:
-                id_ = entry["id"]
+                old_id = entry["id"]
+                entry["id"] = to_entity_label_internal_id(old_id)
+                if old_id != entry["id"]:
+                    changed = True
             else:
+                # Look up label name to get the id
                 entity_type = EntityType.LABEL
                 entity_name = entry["name"]
                 id_ = entity_repository.get_entity_id_by_entity_type_and_entity_name(
                     entity_type, entity_name
                 )
-            entry["id"] = to_entity_label_internal_id(id_)
-            changed = True
+                entry["id"] = to_entity_label_internal_id(id_)
+                changed = True
 
         for entry in release.companies:
             if "id" in entry:
-                id_ = entry["id"]
+                old_id = entry["id"]
+                entry["id"] = to_entity_label_internal_id(old_id)
+                if old_id != entry["id"]:
+                    changed = True
             else:
                 entity_type = EntityType.LABEL
                 entity_name = entry["name"]
                 id_ = entity_repository.get_entity_id_by_entity_type_and_entity_name(
                     entity_type, entity_name
                 )
-            entry["id"] = to_entity_label_internal_id(id_)
-            changed = True
+                entry["id"] = to_entity_label_internal_id(id_)
+                changed = True
 
         return changed
 
