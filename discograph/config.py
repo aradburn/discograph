@@ -36,6 +36,7 @@ APP_DIR = Path(__file__).parent.resolve()
 ROOT_DIR = Path(APP_DIR / "..").resolve()
 FRONTEND_DIR = ROOT_DIR / "frontend"
 TEMPLATES_DIR = FRONTEND_DIR / "templates"
+PUBLIC_DIR = FRONTEND_DIR / "public"
 
 # DATA
 DISCOGS_DATA = "discogs"
