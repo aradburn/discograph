@@ -24,7 +24,7 @@ from unidecode import unidecode
 log = logging.getLogger(__name__)
 
 URLIFY_REGEX = re.compile(r"\s+", re.MULTILINE)
-ARG_ROLES_REGEX = re.compile(r"^roles(\[\d*\])?$")
+# ARG_ROLES_REGEX = re.compile(r"^roles(\[\d*\])?$")
 STRIP_PATTERN = re.compile(r"\(\d+\)|not on label|self[ -]released|[()&\".,]")
 # STRIP_PATTERN = re.compile(r"(\(\d+\)|[^(\w\s)]+)")
 # REMOVE_PUNCTUATION = re.compile(r"[^\w\s]")
@@ -89,10 +89,11 @@ def parse_request_args(args) -> tuple[list[str], int | tuple[int, int]] | None:
             except ValueError:
                 log.debug("Invalid year input")
             log.debug(f"Requested year: {year}")
-        elif ARG_ROLES_REGEX.match(key):
-            values = args.getlist(key)
-            for value in values:
-                unescaped_value = value.replace("\\,", "|")
+        elif key == "roles":
+            roles_arg = args[key]
+            for role_arg in roles_arg:
+                # List is comma-separated, roles that contain commas are escaped by a \
+                unescaped_value = role_arg.replace("\\,", "|")
                 for role_escaped in unescaped_value.split(","):
                     role = role_escaped.replace("|", ",")
                     # log.debug(f"Requested role: {role}")
@@ -101,7 +102,7 @@ def parse_request_args(args) -> tuple[list[str], int | tuple[int, int]] | None:
                         for role_entry in RoleCache.role_category_to_role_name_lookup[
                             role
                         ]:
-                            # log.debug(f"Requested role_entry: {role_entry}")
+                            log.debug(f"Requested role_entry: {role_entry}")
                             if (
                                 role_entry
                                 in RoleCache.role_name_to_role_id_lookup.keys()
