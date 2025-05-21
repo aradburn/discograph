@@ -2,9 +2,7 @@ import logging
 
 from sqlalchemy.exc import DatabaseError
 
-from discograph.config import (
-    ALL_OFFLINE_DATABASE_TABLE_NAMES,
-)
+from discograph.constants import ALL_OFFLINE_DATABASE_TABLE_NAMES
 from discograph.offline.offline_database_manager import OfflineDatabaseManager
 from tests.integration.offline.database.offline_database_test_case import (
     OfflineDatabaseTestCase,

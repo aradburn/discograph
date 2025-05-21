@@ -7,11 +7,10 @@ from sqlalchemy.event import listen
 from sqlalchemy.orm import sessionmaker, close_all_sessions
 
 from discograph.config import (
-    DatabaseType,
-    ThreadingModel,
     THREADING_MODEL_KEY,
     DATABASE_KEY,
 )
+from discograph.constants import DatabaseType, ThreadingModel
 from discograph.logging_config import LOGGING_TRACE
 from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
 

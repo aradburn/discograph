@@ -1,6 +1,6 @@
 import os
 
-from discograph.config import ROOT_DIR
+from discograph.constants import ROOT_DIR
 from tests.integration.offline.database.offline_database_test_case import (
     OfflineDatabaseTestCase,
 )

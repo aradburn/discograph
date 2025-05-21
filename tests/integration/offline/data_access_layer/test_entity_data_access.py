@@ -1,4 +1,5 @@
-from discograph.config import DISCOGS_DATA, TEST_DIR, DATA_DIR_KEY
+from discograph.config import DATA_DIR_KEY
+from discograph.constants import DISCOGS_DATA, TEST_DIR
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.full_text_search.text_search_index import TextSearchIndex
 from discograph.offline.data_access_layer.entity_data_access import EntityDataAccess

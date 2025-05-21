@@ -1,10 +1,10 @@
 import logging
 from pathlib import Path
 
-from discograph.config import (
-    ALL_RUNTIME_DATABASE_TABLE_NAMES,
+from discograph.constants import (
     ENTITY_DETAILS_DATA,
     ENTITY_DETAILS_FILENAME,
+    ALL_RUNTIME_DATABASE_TABLE_NAMES,
 )
 from discograph.exceptions import DatabaseError
 from discograph.logging_config import LOGGING_TRACE

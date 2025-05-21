@@ -2,7 +2,7 @@ import datetime
 import unittest
 
 from discograph import utils
-from discograph.config import (
+from discograph.constants import (
     DISCOGS_ARTISTS_TYPE,
     DISCOGS_RELEASES_TYPE,
     DISCOGS_LABELS_TYPE,

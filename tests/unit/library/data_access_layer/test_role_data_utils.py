@@ -1,7 +1,7 @@
 import csv
 import unittest
 
-from discograph.config import ROOT_DIR
+from discograph.constants import ROOT_DIR
 from discograph.offline.data_access_layer.role_data_utils import RoleDataUtils
 
 TEST_DATA_ROLES_DIR = ROOT_DIR / "tests" / "data_roles"

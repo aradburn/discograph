@@ -26,14 +26,16 @@ import luigi
 from discograph.config import (
     PostgresDevelopmentConfiguration,
     SqliteDevelopmentConfiguration,
+    DATA_DIR_KEY,
+)
+from discograph.constants import (
+    DISCOGS_DATA,
     ROLES_DATA,
-    ENTITY_DETAILS_DATA,
-    ENTITY_DETAILS_FILENAME,
+    INSTRUMENTS_DATA,
     TEXT_SEARCH_DATA,
     TEXT_SEARCH_FILENAME,
-    INSTRUMENTS_DATA,
-    DISCOGS_DATA,
-    DATA_DIR_KEY,
+    ENTITY_DETAILS_DATA,
+    ENTITY_DETAILS_FILENAME,
 )
 from discograph.library.cache.cache_manager import CacheManager
 from discograph.library.full_text_search.text_search_index import TextSearchIndex

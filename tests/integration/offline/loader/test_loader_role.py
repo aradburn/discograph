@@ -1,4 +1,5 @@
-from discograph.config import INSTRUMENTS_DATA, ROLES_DATA, DATA_DIR_KEY
+from discograph.config import DATA_DIR_KEY
+from discograph.constants import ROLES_DATA, INSTRUMENTS_DATA
 from discograph.library.cache.role_cache import RoleCache
 from discograph.offline.data_access_layer.role_data_access import RoleDataAccess
 from discograph.offline.loader.loader_role import LoaderRole

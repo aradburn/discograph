@@ -1,10 +1,10 @@
 import logging
 
 from discograph.config import (
-    ALL_RUNTIME_DATABASE_TABLE_NAMES,
     SqliteTestConfiguration,
     Configuration,
 )
+from discograph.constants import ALL_RUNTIME_DATABASE_TABLE_NAMES
 from discograph.exceptions import DatabaseError
 from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
 from tests.integration.offline.database.offline_database_test_case import (

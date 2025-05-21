@@ -73,12 +73,12 @@ from urllib.parse import urlparse
 import luigi
 from luigi.contrib.simulate import RunAnywayTarget
 
-from discograph.config import (
+from discograph.constants import (
+    DISCOGS_DATA,
     DISCOGS_ARTISTS_TYPE,
     DISCOGS_RELEASES_TYPE,
     DISCOGS_LABELS_TYPE,
     DISCOGS_MASTERS_TYPE,
-    DISCOGS_DATA,
 )
 from discograph.offline.loader.loader_target import LoaderTarget
 from discograph.utils import (

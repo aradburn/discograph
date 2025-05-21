@@ -2,7 +2,8 @@ import unittest
 from xml.etree import ElementTree
 
 from discograph import utils
-from discograph.config import SqliteTestConfiguration, DISCOGS_DATA, DATA_DIR_KEY
+from discograph.config import SqliteTestConfiguration, DATA_DIR_KEY
+from discograph.constants import DISCOGS_DATA
 from discograph.offline.loader.loader_utils import LoaderUtils
 from discograph.offline.loader.parser_release import ParserRelease
 

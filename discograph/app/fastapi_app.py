@@ -37,7 +37,8 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 
-from discograph.config import Configuration, TEMPLATES_DIR, PUBLIC_DIR, DATA_DIR_KEY
+from discograph.config import Configuration, DATA_DIR_KEY
+from discograph.constants import TEMPLATES_DIR, PUBLIC_DIR
 from discograph.exceptions import (
     BaseError,
     NotFoundError,

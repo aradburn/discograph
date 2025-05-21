@@ -5,9 +5,11 @@ from sqlalchemy.exc import DatabaseError
 
 from discograph.config import (
     Configuration,
+    DATA_DIR_KEY,
+)
+from discograph.constants import (
     ALL_OFFLINE_DATABASE_TABLE_NAMES,
     OFFLINE_DATABASE_TABLE_NAMES_WITHOUT_ROLE,
-    DATA_DIR_KEY,
 )
 from discograph.library.cache.cache_manager import CacheManager
 from discograph.loader.loader import load_offline_test_tables

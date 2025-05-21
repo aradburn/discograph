@@ -1,5 +1,6 @@
 from discograph import utils
-from discograph.config import ROLES_DATA, INSTRUMENTS_DATA, DATA_DIR_KEY, DISCOGS_DATA
+from discograph.config import DATA_DIR_KEY
+from discograph.constants import DISCOGS_DATA, ROLES_DATA, INSTRUMENTS_DATA
 from discograph.library.fields.entity_id import to_entity_internal_id
 from discograph.offline.data_access_layer.role_data_access import RoleDataAccess
 from discograph.offline.database.entity_repository import EntityRepository
@@ -26,7 +27,9 @@ class TestRepositoryRelation(OfflineRepositoryTestCase):
             OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / INSTRUMENTS_DATA,
         )
         RoleDataAccess.load_all_roles()
-        disocogs_data_directory = OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+        disocogs_data_directory = (
+            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+        )
         iterator = LoaderUtils.get_iterator(
             disocogs_data_directory,
             "artist",

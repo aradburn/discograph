@@ -4,10 +4,7 @@ import logging
 from pathlib import Path
 from typing import List
 
-from discograph.config import (
-    HS_INSTRUMENTS_FILENAME,
-    INSTRUMENTS_DATA_FILENAMES,
-)
+from discograph.constants import INSTRUMENTS_DATA_FILENAMES, HS_INSTRUMENTS_FILENAME
 from discograph.exceptions import NotFoundError
 from discograph.library.cache.cache_manager import CacheManager
 from discograph.library.fields.role_type import RoleType

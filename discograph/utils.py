@@ -327,7 +327,8 @@ def download_file(input_url: str, output_file) -> None:
 
 
 def get_discogs_url(dump_date: date, dump_type: str) -> str:
-    from discograph.config import DISCOGS_BASE_URL, DISCOGS_FILE_TEMPLATE
+    from discograph.constants import DISCOGS_FILE_TEMPLATE
+    from discograph.constants import DISCOGS_BASE_URL
 
     year = dump_date.year
     base = DISCOGS_BASE_URL.format(year=year)

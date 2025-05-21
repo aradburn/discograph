@@ -6,6 +6,8 @@ from sqlalchemy.exc import DatabaseError
 
 from discograph.config import (
     Configuration,
+)
+from discograph.constants import (
     ALL_RUNTIME_DATABASE_TABLE_NAMES,
     RUNTIME_DATABASE_TABLE_NAMES_WITHOUT_ROLE,
 )

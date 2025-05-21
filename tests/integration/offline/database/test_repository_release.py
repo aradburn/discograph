@@ -1,4 +1,5 @@
-from discograph.config import DISCOGS_DATA, DATA_DIR_KEY
+from discograph.config import DATA_DIR_KEY
+from discograph.constants import DISCOGS_DATA
 from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.offline.database.release_repository import ReleaseRepository
 from discograph.offline.loader.loader_utils import LoaderUtils

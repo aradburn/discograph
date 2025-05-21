@@ -2,11 +2,11 @@ import logging
 
 from discograph.app.fastapi_app import create_app
 from discograph.config import (
-    ALL_RUNTIME_DATABASE_TABLE_NAMES,
     PostgresTestConfiguration,
     SqliteTestConfiguration,
     DATA_DIR_KEY,
 )
+from discograph.constants import ALL_RUNTIME_DATABASE_TABLE_NAMES
 from discograph.loader.loader import load_runtime_test_tables
 from discograph.offline.offline_database_manager import OfflineDatabaseManager
 from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager

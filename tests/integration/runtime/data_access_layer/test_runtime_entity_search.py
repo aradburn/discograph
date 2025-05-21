@@ -1,4 +1,5 @@
-from discograph.config import TEXT_SEARCH_DATA, TEXT_SEARCH_FILENAME, DATA_DIR_KEY
+from discograph.config import DATA_DIR_KEY
+from discograph.constants import TEXT_SEARCH_DATA, TEXT_SEARCH_FILENAME
 from discograph.library.full_text_search.text_search_index import TextSearchIndex
 from discograph.runtime.data_access_layer.runtime_entity_search import (
     RuntimeEntitySearch,

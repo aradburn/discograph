@@ -1,6 +1,7 @@
 import pydantic
 
-from discograph.config import DISCOGS_DATA, DATA_DIR_KEY
+from discograph.config import DATA_DIR_KEY
+from discograph.constants import DISCOGS_DATA
 from discograph.library.fields.entity_type import EntityType
 from discograph.offline.loader.loader_utils import LoaderUtils
 from discograph.offline.loader.parser_entity import ParserEntity

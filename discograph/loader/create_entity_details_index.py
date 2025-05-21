@@ -4,11 +4,10 @@ import sys
 
 from discograph.config import (
     PostgresDevelopmentConfiguration,
-    ENTITY_DETAILS_FILENAME,
     Configuration,
-    ENTITY_DETAILS_DATA,
     DATA_DIR_KEY,
 )
+from discograph.constants import ENTITY_DETAILS_DATA, ENTITY_DETAILS_FILENAME
 from discograph.library.cache.cache_manager import CacheManager
 from discograph.logging_config import setup_logging
 from discograph.offline.loader.loader_release import LoaderRelease

@@ -1,4 +1,5 @@
-from discograph.config import DISCOGS_DATA, DATA_DIR_KEY
+from discograph.config import DATA_DIR_KEY
+from discograph.constants import DISCOGS_DATA
 from discograph.offline.data_access_layer.entity_data_access import EntityDataAccess
 from discograph.offline.data_access_layer.relation_data_access import RelationDataAccess
 from discograph.offline.database.entity_repository import EntityRepository

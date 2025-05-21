@@ -2,12 +2,12 @@ import unittest
 
 from discograph.config import (
     SqliteTestConfiguration,
-    DatabaseType,
     PostgresTestConfiguration,
     PostgresProductionConfiguration,
     TESTING_KEY,
     DATABASE_KEY,
 )
+from discograph.constants import DatabaseType
 
 
 class TestConfiguration(unittest.TestCase):

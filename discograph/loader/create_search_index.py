@@ -5,10 +5,9 @@ import sys
 from discograph.config import (
     PostgresDevelopmentConfiguration,
     Configuration,
-    TEXT_SEARCH_DATA,
-    TEXT_SEARCH_FILENAME,
     DATA_DIR_KEY,
 )
+from discograph.constants import TEXT_SEARCH_DATA, TEXT_SEARCH_FILENAME
 from discograph.library.cache.cache_manager import CacheManager
 from discograph.logging_config import setup_logging
 from discograph.offline.loader.loader_entity import LoaderEntity

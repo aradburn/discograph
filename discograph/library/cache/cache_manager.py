@@ -8,13 +8,16 @@ from typing import Any, Dict, Optional
 try:
     # noinspection PyUnresolvedReferences
     import redis
+
     # noinspection PyUnresolvedReferences
     import fakeredis
+
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
 
-from discograph.config import CacheType, Configuration, CACHE_TYPE_KEY
+from discograph.config import Configuration, CACHE_TYPE_KEY
+from discograph.constants import CacheType
 
 log = logging.getLogger(__name__)
 
@@ -25,19 +28,19 @@ __all__ = [
 
 class BaseCache:
     """Base cache class that defines the interface for all cache implementations."""
-    
+
     def get(self, key: str) -> Any:
         """Get value from cache for the given key."""
         raise NotImplementedError
-        
+
     def set(self, key: str, value: Any, timeout: Optional[int] = None) -> None:
         """Set value in cache for the given key with optional timeout."""
         raise NotImplementedError
-        
+
     def delete(self, key: str) -> None:
         """Delete key from cache."""
         raise NotImplementedError
-        
+
     def clear(self) -> None:
         """Clear all cache entries."""
         raise NotImplementedError
@@ -45,27 +48,27 @@ class BaseCache:
 
 class SimpleCache(BaseCache):
     """Simple in-memory cache implementation."""
-    
+
     def __init__(self, threshold: int = 1000000, default_timeout: int = 0):
         self.cache: Dict[str, Any] = {}
         self.threshold = threshold
         self.default_timeout = default_timeout
-        
+
     def get(self, key: str) -> Any:
         """Get value from cache for the given key."""
         return self.cache.get(key)
-        
+
     def set(self, key: str, value: Any, timeout: Optional[int] = None) -> None:
         """Set value in cache for the given key with optional timeout."""
         # In this simple implementation, we ignore timeout
         self.cache[key] = value
         # If cache exceeds threshold, clear oldest entries (not implemented)
-        
+
     def delete(self, key: str) -> None:
         """Delete key from cache."""
         if key in self.cache:
             del self.cache[key]
-        
+
     def clear(self) -> None:
         """Clear all cache entries."""
         self.cache.clear()
@@ -73,47 +76,50 @@ class SimpleCache(BaseCache):
 
 class FileSystemCache(BaseCache):
     """File system based cache implementation."""
-    
-    def __init__(self, cache_dir: str, threshold: int = 1000000, default_timeout: int = 0):
+
+    def __init__(
+        self, cache_dir: str, threshold: int = 1000000, default_timeout: int = 0
+    ):
         self.cache_dir = cache_dir
         self.threshold = threshold
         self.default_timeout = default_timeout
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
-            
+
     def _get_filename(self, key: str) -> str:
         """Get filename for the given key."""
         import hashlib
+
         hashed_key = hashlib.md5(key.encode()).hexdigest()
         return os.path.join(self.cache_dir, hashed_key)
-        
+
     def get(self, key: str) -> Any:
         """Get value from cache for the given key."""
         filename = self._get_filename(key)
         if os.path.exists(filename):
             try:
-                with open(filename, 'rb') as f:
+                with open(filename, "rb") as f:
                     return pickle.load(f)
             except (IOError, pickle.PickleError):
                 return None
         return None
-        
+
     def set(self, key: str, value: Any, timeout: Optional[int] = None) -> None:
         """Set value in cache for the given key with optional timeout."""
         filename = self._get_filename(key)
         try:
-            with open(filename, 'wb') as f:
+            with open(filename, "wb") as f:
                 # noinspection PyTypeChecker
                 pickle.dump(value, f, pickle.HIGHEST_PROTOCOL)
         except (IOError, pickle.PickleError):
             pass
-        
+
     def delete(self, key: str) -> None:
         """Delete key from cache."""
         filename = self._get_filename(key)
         if os.path.exists(filename):
             os.remove(filename)
-        
+
     def clear(self) -> None:
         """Clear all cache entries."""
         for filename in os.listdir(self.cache_dir):
@@ -124,12 +130,18 @@ class FileSystemCache(BaseCache):
 
 class RedisCache(BaseCache):
     """Redis-based cache implementation."""
-    
-    def __init__(self, host: str = "localhost", port: int = 6379, 
-                 password: Optional[str] = None, db: int = 0,
-                 default_timeout: int = 300, key_prefix: Optional[str] = None):
+
+    def __init__(
+        self,
+        host: str = "localhost",
+        port: int = 6379,
+        password: Optional[str] = None,
+        db: int = 0,
+        default_timeout: int = 300,
+        key_prefix: Optional[str] = None,
+    ):
         """Initialize Redis cache.
-        
+
         Args:
             host: Redis server hostname
             port: Redis server port
@@ -141,12 +153,12 @@ class RedisCache(BaseCache):
         self.default_timeout = default_timeout
         self.key_prefix = key_prefix or ""
         self._client = None
-        
+
         if not REDIS_AVAILABLE:
             log.warning("Redis package not installed. Using FakeRedis instead.")
             self._client = fakeredis.FakeRedis()
             return
-            
+
         try:
             self._client = redis.Redis(
                 host=host,
@@ -159,54 +171,56 @@ class RedisCache(BaseCache):
             self._client.ping()
             log.info("Successfully connected to Redis server")
         except Exception as e:
-            log.warning(f"Failed to connect to Redis server: {e}. Using FakeRedis instead.")
+            log.warning(
+                f"Failed to connect to Redis server: {e}. Using FakeRedis instead."
+            )
             self._client = fakeredis.FakeRedis()
-        
+
     def _get_redis_client(self):
         """Get the Redis client, handles both real Redis and FakeRedis."""
         if self._client is None:
             raise RuntimeError("Redis client not initialized")
         return self._client
-        
+
     def _make_key(self, key: str) -> str:
         """Add prefix to key."""
         return f"{self.key_prefix}{key}"
-        
+
     def get(self, key: str) -> Any:
         """Get value from cache for the given key."""
         redis_client = self._get_redis_client()
         key = self._make_key(key)
-        
+
         try:
             # Get the value from Redis
             value = redis_client.get(key)
-            
+
             # Return None if the key doesn't exist
             if value is None:
                 return None
-                
+
             # Convert to bytes if necessary (handles different Redis client implementations)
             if not isinstance(value, bytes):
                 # This case should not happen but we handle it anyway
                 log.warning(f"Unexpected non-bytes value from Redis for key {key}")
                 return None
-                
+
             # Unpickle the value
             return pickle.loads(value)
         except Exception as e:
             log.exception(f"Error getting key {key} from Redis cache: {e}")
             return None
-        
+
     def set(self, key: str, value: Any, timeout: Optional[int] = None) -> None:
         """Set value in cache for the given key with optional timeout."""
         redis_client = self._get_redis_client()
         key = self._make_key(key)
         timeout = timeout if timeout is not None else self.default_timeout
-        
+
         try:
             # Pickle the value
             value_bytes = pickle.dumps(value, pickle.HIGHEST_PROTOCOL)
-            
+
             # Set in Redis with or without timeout
             if timeout > 0:
                 redis_client.setex(name=key, time=timeout, value=value_bytes)
@@ -214,21 +228,21 @@ class RedisCache(BaseCache):
                 redis_client.set(name=key, value=value_bytes)
         except Exception as e:
             log.exception(f"Error setting key {key} in Redis cache: {e}")
-        
+
     def delete(self, key: str) -> None:
         """Delete key from cache."""
         redis_client = self._get_redis_client()
         key = self._make_key(key)
-        
+
         try:
             redis_client.delete(key)
         except Exception as e:
             log.exception(f"Error deleting key {key} from Redis cache: {e}")
-        
+
     def clear(self) -> None:
         """Clear all cache entries."""
         redis_client = self._get_redis_client()
-        
+
         try:
             # Simply flush the entire database
             # This is the most reliable approach across different Redis client implementations
