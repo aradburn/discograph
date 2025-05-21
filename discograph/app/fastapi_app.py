@@ -35,13 +35,15 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
+from starlette.staticfiles import StaticFiles
 
-from discograph.config import Configuration, TEMPLATES_DIR
+from discograph.config import Configuration, TEMPLATES_DIR, PUBLIC_DIR, DATA_DIR_KEY
 from discograph.exceptions import (
     BaseError,
     NotFoundError,
 )
 from discograph.library.cache.cache_manager import CacheManager
+from discograph.loader.loader import load_runtime_tables
 from discograph.logging_config import setup_logging, shutdown_logging
 from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
 
@@ -116,6 +118,8 @@ def create_app(config: Configuration) -> FastAPI:
     app.include_router(api_router, prefix="/api")
     app.include_router(ui_router)
     app.include_router(assets_router)
+
+    app.mount("/public", StaticFiles(directory=PUBLIC_DIR), name="public")
 
     # Set up exception handlers
     @app.exception_handler(BaseError)
@@ -206,7 +210,7 @@ def init_app(config: Configuration):
     log.info("")
     log.info("")
 
-    log.info(f"Using configuration: {config.__class__.__name__}")
+    log.info(f"Using runtime configuration: {config.__class__.__name__}")
 
     # Setup cache
     CacheManager.setup_cache(config)
@@ -220,6 +224,10 @@ def init_app(config: Configuration):
 
     # Setup Database
     RuntimeDatabaseManager.setup_database(config)
+
+    # Load runtime tables
+    data_directory = config[DATA_DIR_KEY]
+    load_runtime_tables(data_directory)
 
     # Shutdown on app exit
     atexit.register(shutdown_application)
