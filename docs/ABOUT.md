@@ -11,17 +11,16 @@ The Stack
 The front-end:
 
 - [D3](https://d3js.org): handles svg, animation, and force layout of nodes in the graph
-- [Machina-JS](http://machina-js.org/): a finite state machine for simplifying single-page state
-- [JQuery](https://jquery.com): mostly just for event binding
-- [Twitter Typeahead](https://github.com/twitter/typeahead.js/): for looking up entities
-- [Bootstrap](http://getbootstrap.com/): for CSS
+- a custom finite state machine for simplifying single-page state
+- [React](https://reactjs.org/): for the UI
+- [Bootstrap](http://getbootstrap.com/): for CSS and styling
 - [Vite](https://vitejs.dev/): for bundling and serving the front-end
 
 The back-end:
 
 - Python 3
-- [Flask](https://flask.palletsprojects.com/en/3.0.x/): a light-weight Werkzeug-based web framework
-- [SQLAlchemy](https://www.sqlalchemy.org/): a object-relational mapper to access the database
+- [FastAPI](https://fastapi.tiangolo.com/) : web framework
+- [SQLAlchemy](https://www.sqlalchemy.org/): to access the database
 - [Pydantic](https://pydantic-docs.helpmanual.io/): for data validation
 - [PostgreSQL](https://www.postgresql.org/): the primary offline database
 - [SQLite](https://www.sqlite.org/): for a smaller runtime database
@@ -32,115 +31,10 @@ The DB Structure
 
 A classic graph-search problem, with two primary tables:
 
-- *Entities*: all artists and labels
-- *Relations*: any connection drawn between two entities (including the same one)
-- *Roles*: the credit roles for each relation
-- *Releases*: the releases that the relations are drawn on
-
-Relations are extracted from artists, labels and releases:
-
-- aliases
-- band membership
-- sublabel / parent label
-
-Relation-extraction on releases is a little complicated. Relations need to be drawn appropriately between artists,
-labels, companies, release-global extra-artists, track artists, track extra-artists, etc. Who did what role for whom?
-
-The `entities` table looks like this:
-
-- `entity_type` (1 == Artist, 2 == Label)
-- `entity_id` (the Discogs database id)
-- `name`
-- `metadata` (ANV, profile, etc.)
-- `entities` (JSON store of entity IDS for aliases, parent/sublabels, members/groups) (this simplifies many queries)
-- `relation_counts` (precomputed counts of # of relations of each time involving this entity, for optimizing graph
-  search)
-- `search_content` (full-text-search data)
-
-For example:
-
-```
->>> PostgresEntity.get(entity_type=1, entity_id=1)
-PostgresEntity(
-    entities={
-        'aliases': {
-            'Dick Track': 19541,
-            'Faxid': 278760,
-            'Groove Machine': 16055,
-            "Janne Me' Amazonen": 196957,
-            'Jesper Dahlbäck': 239,
-            'Lenk': 25227,
-            'The Pinguin Man': 439150,
-            },
-        },
-    entity_id=1,
-    entity_type=1,
-    metadata={
-        'name_variations': ['Persuader', 'The Presuader'],
-        'profile': None,
-        'real_name': 'Jesper Dahlbäck',
-        },
-    name='The Persuader',
-    random=0.827062,
-    relation_counts={
-        'Artwork': 1,
-        'Compiled By': 23,
-        'Compiled On': 13,
-        'Composed By': 2,
-        'Copyright (c)': 3,
-        'DJ Mix': 30,
-        'Design': 1,
-        'Distributed By': 2,
-        'Drums': 1,
-        'Guitar': 2,
-        'Lacquer Cut At': 2,
-        'Lacquer Cut By': 3,
-        'Manufactured By': 1,
-        'Mastered At': 4,
-        'Mastered By': 4,
-        'Music By': 1,
-        'Percussion': 1,
-        'Phonographic Copyright (p)': 2,
-        'Photography By': 2,
-        'Pressed By': 1,
-        'Produced At': 1,
-        'Producer': 3,
-        'Published By': 1,
-        'Recorded At': 1,
-        'Released On': 5,
-        'Remix': 13,
-        'Written-By': 7,
-        },
-    search_content="'persuad':2"
-    )
-```
-
-The `relations` table looks like this:
-
-- `entity_one_type`
-- `entity_one_id`
-- `entity_two_type`
-- `entity_two_id`
-- `release_id`
-- `role` (the credit role)
-- `year` (currently just aspirational)
-- `random` (random float for efficiently looking up random relations)
-
-For example:
-
-```
->>> PostgresRelation.get()
-PostgresRelation(
-    entity_one_id=370955,
-    entity_one_type=1,
-    entity_two_id=444541,
-    entity_two_type=1,
-    random=0.861758,
-    release_id=3426859,
-    role='Producer',
-    year=2004
-    )
-```
+- *Entities*: all artists and labels (the nodes)
+- *Relations*: any connection (links) drawn between two entities (including the same one)
+- *Roles*: the roles (or credit on the release) for each relation
+- *Releases*: the releases (tracks / albums / CDs etc) that the relations are drawn on
 
 The graph-search algorithm
 --------------------------
@@ -205,6 +99,3 @@ Searching around Morris Day...
     Built trellis: 754 nodes / 1060 links
 Network query time: 0.6372168064117432
 ```
-
-See the JSON for this query
-here: https://discograph.azurewebsites.net/api/artist/network/152882?roles[]=Guitar&roles[]=Alias&roles[]=Member+Of
