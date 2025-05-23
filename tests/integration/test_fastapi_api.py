@@ -1,19 +1,7 @@
-from fastapi.testclient import TestClient
-
-from discograph.app.fastapi_app import create_app
-from discograph.config import SqliteTestConfiguration
 from tests.integration.app_test_case import AppTestCase
 
 
 class TestFastAPIAPI(AppTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-
-        # Create a FastAPI app for testing
-        config = SqliteTestConfiguration()
-        app = create_app(config)
-        cls.client = TestClient(app)
 
     def test_network_01(self):
         response = self.client.get("/api/artist/network/2239")

@@ -1,4 +1,3 @@
-from discograph.config import DATA_DIR_KEY
 from discograph.constants import DISCOGS_DATA
 from discograph.offline.database.offline_transaction import offline_transaction
 from discograph.offline.database.release_repository import ReleaseRepository
@@ -13,7 +12,7 @@ class TestRepositoryRelease(OfflineRepositoryTestCase):
     def test_create_01(self):
         # GIVEN
         discogs_data_directory = (
-            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+            OfflineRepositoryTestCase.offline_config.DATA_DIR / DISCOGS_DATA
         )
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "release", "testinsert"
@@ -32,7 +31,7 @@ class TestRepositoryRelease(OfflineRepositoryTestCase):
     def test_get_01(self):
         # GIVEN
         discogs_data_directory = (
-            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+            OfflineRepositoryTestCase.offline_config.DATA_DIR / DISCOGS_DATA
         )
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "release", "testinsert"

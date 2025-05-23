@@ -1,10 +1,12 @@
 import logging
 
+from fastapi import FastAPI
+from starlette.testclient import TestClient
+
 from discograph.app.fastapi_app import create_app
 from discograph.config import (
     PostgresTestConfiguration,
     SqliteTestConfiguration,
-    DATA_DIR_KEY,
 )
 from discograph.constants import ALL_RUNTIME_DATABASE_TABLE_NAMES
 from discograph.loader.loader import load_runtime_test_tables
@@ -18,6 +20,9 @@ log = logging.getLogger(__name__)
 
 
 class AppTestCase(OfflineDatabaseTestCase):
+    test_app: FastAPI = None
+    client: TestClient = None
+
     @classmethod
     def setUpClass(cls):
         log.debug("AppTestCase setUpClass")
@@ -26,7 +31,7 @@ class AppTestCase(OfflineDatabaseTestCase):
         super().setUpClass()
 
         runtime_config = SqliteTestConfiguration()
-        _app = create_app(runtime_config)
+        AppTestCase.test_app = create_app(runtime_config)
 
         # For testing, drop and recreate all tables
         RuntimeDatabaseManager.runtime_database_helper.drop_tables(
@@ -36,12 +41,16 @@ class AppTestCase(OfflineDatabaseTestCase):
             ALL_RUNTIME_DATABASE_TABLE_NAMES
         )
 
-        data_directory = OfflineDatabaseTestCase.offline_config[DATA_DIR_KEY]
+        data_directory = OfflineDatabaseTestCase.offline_config.DATA_DIR
         load_runtime_test_tables(data_directory)
 
         # TODO - was Load the tables
         # TransferManager.transfer_all()
         # RuntimeDatabaseManager.runtime_database_helper.load_tables()
+
+        # Use the FastAPI TestClient for testing
+        AppTestCase.client = TestClient(AppTestCase.test_app)
+        log.debug("AppTestCase setUpClass done")
 
     @classmethod
     def tearDownClass(cls):

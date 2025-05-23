@@ -59,7 +59,7 @@ from sqlalchemy.dialects.sqlite import insert, Insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.sql.dml import ReturningInsert
 
-from discograph.config import Configuration, SQLITE_RUNTIME_DATABASE_NAME_KEY
+from discograph.config import Configuration
 from discograph.runtime.runtime_database.runtime_database_helper import (
     RuntimeDatabaseHelper,
     RuntimeConcreteTable,
@@ -94,7 +94,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             Engine: The SQLAlchemy engine.
         """
         log.info("Using Sqlite Runtime Database")
-        target_path = pathlib.Path(config[SQLITE_RUNTIME_DATABASE_NAME_KEY])
+        target_path = pathlib.Path(config.SQLITE_RUNTIME_DATABASE_NAME)
         """Get the path to the database file."""
         target_parent = target_path.parent
         """Get the parent folder of the database file."""

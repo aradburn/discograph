@@ -16,7 +16,7 @@ try:
 except ImportError:
     REDIS_AVAILABLE = False
 
-from discograph.config import Configuration, CACHE_TYPE_KEY
+from discograph.config import Configuration
 from discograph.constants import CacheType
 
 log = logging.getLogger(__name__)
@@ -285,44 +285,42 @@ class CacheManager:
         cls.cache = None
 
         # Based on configuration, use a different cache setup.
-        match config[CACHE_TYPE_KEY]:
-            case CacheType.MEMORY:
+        cache_type = config.CACHE_TYPE
+        if cache_type == CacheType.MEMORY:
+            cls.cache = SimpleCache(threshold=1000000, default_timeout=0)
+            log.info("Using memory cache")
+
+        elif cache_type == CacheType.FILESYSTEM:
+            file_cache_path = os.path.join(tempfile.gettempdir(), "discograph", "cache")
+            file_cache_threshold = 1024 * 1024 * 20
+            file_cache_timeout = 60 * 60 * 24 * 7
+            if not os.path.exists(file_cache_path):
+                os.makedirs(file_cache_path)
+            cls.cache = FileSystemCache(
+                file_cache_path,
+                default_timeout=file_cache_timeout,
+                threshold=file_cache_threshold,
+            )
+            log.info("Using filesystem cache")
+
+        elif cache_type == CacheType.REDIS:
+            try:
+                cls.cache = RedisCache(
+                    host="localhost",
+                    port=6379,
+                    password=None,
+                    db=0,
+                    default_timeout=60 * 60 * 24 * 7,
+                    key_prefix="discograph:",
+                )
+                log.info("Using Redis cache")
+            except Exception as e:
+                log.warning(f"Redis error: {e}. Falling back to memory cache")
                 cls.cache = SimpleCache(threshold=1000000, default_timeout=0)
-                log.info("Using memory cache")
+                log.info("Fallback to memory cache")
 
-            case CacheType.FILESYSTEM:
-                file_cache_path = os.path.join(
-                    tempfile.gettempdir(), "discograph", "cache"
-                )
-                file_cache_threshold = 1024 * 1024 * 20
-                file_cache_timeout = 60 * 60 * 24 * 7
-                if not os.path.exists(file_cache_path):
-                    os.makedirs(file_cache_path)
-                cls.cache = FileSystemCache(
-                    file_cache_path,
-                    default_timeout=file_cache_timeout,
-                    threshold=file_cache_threshold,
-                )
-                log.info("Using filesystem cache")
-
-            case CacheType.REDIS:
-                try:
-                    cls.cache = RedisCache(
-                        host="localhost",
-                        port=6379,
-                        password=None,
-                        db=0,
-                        default_timeout=60 * 60 * 24 * 7,
-                        key_prefix="discograph:",
-                    )
-                    log.info("Using Redis cache")
-                except Exception as e:
-                    log.warning(f"Redis error: {e}. Falling back to memory cache")
-                    cls.cache = SimpleCache(threshold=1000000, default_timeout=0)
-                    log.info("Fallback to memory cache")
-
-            case _:
-                raise ValueError("Invalid CACHE_TYPE in configuration")
+        else:
+            raise ValueError("Invalid CACHE_TYPE in configuration")
 
     @classmethod
     def shutdown_cache(cls) -> None:

@@ -1,5 +1,4 @@
 from discograph import utils
-from discograph.config import DATA_DIR_KEY
 from discograph.constants import DISCOGS_DATA, ROLES_DATA, INSTRUMENTS_DATA
 from discograph.library.fields.entity_id import to_entity_internal_id
 from discograph.offline.data_access_layer.role_data_access import RoleDataAccess
@@ -23,12 +22,12 @@ class TestRepositoryRelation(OfflineRepositoryTestCase):
     def test_01_create(self):
         # GIVEN
         LoaderRole.load_roles_into_database(
-            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / ROLES_DATA,
-            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / INSTRUMENTS_DATA,
+            OfflineRepositoryTestCase.offline_config.DATA_DIR / ROLES_DATA,
+            OfflineRepositoryTestCase.offline_config.DATA_DIR / INSTRUMENTS_DATA,
         )
         RoleDataAccess.load_all_roles()
         disocogs_data_directory = (
-            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+            OfflineRepositoryTestCase.offline_config.DATA_DIR / DISCOGS_DATA
         )
         iterator = LoaderUtils.get_iterator(
             disocogs_data_directory,

@@ -1,4 +1,3 @@
-from discograph.config import DATA_DIR_KEY
 from discograph.constants import DISCOGS_DATA
 from discograph.offline.data_access_layer.entity_data_access import EntityDataAccess
 from discograph.offline.data_access_layer.relation_data_access import RelationDataAccess
@@ -16,7 +15,7 @@ class TestRelationDataAccess(OfflineDatabaseTestCase):
         # GIVEN
         release_id = 1700
         discogs_data_directory = (
-            OfflineDatabaseTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+            OfflineDatabaseTestCase.offline_config.DATA_DIR / DISCOGS_DATA
         )
 
         release = utils.get_test_release_by_id(discogs_data_directory, release_id)
@@ -274,7 +273,7 @@ class TestRelationDataAccess(OfflineDatabaseTestCase):
         # GIVEN
         release_id = 1700
         discogs_data_directory = (
-            OfflineDatabaseTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+            OfflineDatabaseTestCase.offline_config.DATA_DIR / DISCOGS_DATA
         )
 
         release = utils.get_test_release_by_id(discogs_data_directory, release_id)

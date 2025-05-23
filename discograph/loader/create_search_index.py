@@ -5,7 +5,6 @@ import sys
 from discograph.config import (
     PostgresDevelopmentConfiguration,
     Configuration,
-    DATA_DIR_KEY,
 )
 from discograph.constants import TEXT_SEARCH_DATA, TEXT_SEARCH_FILENAME
 from discograph.library.cache.cache_manager import CacheManager
@@ -50,7 +49,7 @@ def create_search_index(_config: Configuration):
     atexit.register(CacheManager.shutdown_cache)
     atexit.register(OfflineDatabaseManager.shutdown_database)
 
-    text_search_path = _config[DATA_DIR_KEY] / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
+    text_search_path = _config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
     LoaderEntity().loader_create_text_search_index(text_search_path)
 
 

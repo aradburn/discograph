@@ -2,7 +2,7 @@ import unittest
 from xml.etree import ElementTree
 
 from discograph import utils
-from discograph.config import SqliteTestConfiguration, DATA_DIR_KEY
+from discograph.config import SqliteTestConfiguration
 from discograph.constants import DISCOGS_DATA
 from discograph.offline.loader.loader_utils import LoaderUtils
 from discograph.offline.loader.parser_release import ParserRelease
@@ -172,7 +172,7 @@ class TestLoaderRelease(unittest.TestCase):
     def test_release_from_element_01(self):
         # GIVEN
         offline_config = SqliteTestConfiguration()
-        discogs_data_directory = offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+        discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "release", "testinsert"
@@ -247,7 +247,7 @@ class TestLoaderRelease(unittest.TestCase):
     def test_release_from_element_02(self):
         # GIVEN
         offline_config = SqliteTestConfiguration()
-        discogs_data_directory = offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+        discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "release", "testinsert"

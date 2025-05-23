@@ -5,7 +5,6 @@ import sys
 from discograph.config import (
     PostgresDevelopmentConfiguration,
     Configuration,
-    DATA_DIR_KEY,
 )
 from discograph.constants import ENTITY_DETAILS_DATA, ENTITY_DETAILS_FILENAME
 from discograph.library.cache.cache_manager import CacheManager
@@ -51,7 +50,7 @@ def create_entity_details_index(_config: Configuration):
     atexit.register(OfflineDatabaseManager.shutdown_database)
 
     entity_details_path = (
-        _config[DATA_DIR_KEY] / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
+        _config.DATA_DIR / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
     )
     LoaderRelease().loader_create_entity_details_index(entity_details_path)
 

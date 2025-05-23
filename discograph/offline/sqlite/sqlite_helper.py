@@ -7,7 +7,7 @@ from sqlalchemy.dialects.sqlite import insert, Insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.sql.dml import ReturningInsert
 
-from discograph.config import Configuration, SQLITE_OFFLINE_DATABASE_NAME_KEY
+from discograph.config import Configuration
 from discograph.offline.database.offline_database_helper import (
     OfflineDatabaseHelper,
     ConcreteTable,
@@ -30,7 +30,7 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
         #         poolclass=StaticPool,
         #     )
         # else:
-        target_path = pathlib.Path(config[SQLITE_OFFLINE_DATABASE_NAME_KEY])
+        target_path = pathlib.Path(config.SQLITE_OFFLINE_DATABASE_NAME)
         target_parent = target_path.parent
         target_parent.mkdir(parents=True, exist_ok=True)
         log.info(f"Sqlite Database: {target_path}")

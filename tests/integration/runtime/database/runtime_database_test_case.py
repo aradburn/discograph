@@ -4,7 +4,6 @@ from sqlalchemy.exc import DatabaseError
 
 from discograph.config import (
     Configuration,
-    DATA_DIR_KEY,
 )
 from discograph.loader.loader import load_runtime_test_tables
 from discograph.runtime.runtime_database_manager import RuntimeDatabaseManager
@@ -52,7 +51,7 @@ class RuntimeDatabaseTestCase(OfflineDatabaseTestCase):
             # noinspection PyTypeChecker
             cls.fail(cls, "Error in runtime database test setup")
 
-        data_directory = RuntimeDatabaseTestCase.runtime_config[DATA_DIR_KEY]
+        data_directory = RuntimeDatabaseTestCase.runtime_config.DATA_DIR
         load_runtime_test_tables(data_directory)
 
         # TODO - was Load the tables

@@ -1,7 +1,6 @@
 from xml.etree import ElementTree
 
 from discograph import utils
-from discograph.config import DATA_DIR_KEY
 from discograph.constants import DISCOGS_DATA
 from discograph.library.fields.entity_type import EntityType
 from discograph.offline.data_access_layer.entity_data_access import EntityDataAccess
@@ -19,7 +18,7 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
     def test_relation_from_release_01(self):
         # GIVEN
         disocogs_data_directory = (
-            OfflineDatabaseTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+            OfflineDatabaseTestCase.offline_config.DATA_DIR / DISCOGS_DATA
         )
         iterator = LoaderUtils.get_iterator(
             disocogs_data_directory,

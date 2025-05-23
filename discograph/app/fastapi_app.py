@@ -37,7 +37,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 
-from discograph.config import Configuration, DATA_DIR_KEY
+from discograph.config import Configuration
 from discograph.constants import TEMPLATES_DIR, PUBLIC_DIR
 from discograph.exceptions import (
     BaseError,
@@ -227,8 +227,8 @@ def init_app(config: Configuration):
     RuntimeDatabaseManager.setup_database(config)
 
     # Load runtime tables
-    data_directory = config[DATA_DIR_KEY]
-    load_runtime_tables(data_directory)
+    if not config.TESTING:
+        load_runtime_tables(config.DATA_DIR)
 
     # Shutdown on app exit
     atexit.register(shutdown_application)

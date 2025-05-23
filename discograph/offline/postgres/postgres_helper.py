@@ -10,18 +10,7 @@ from sqlalchemy.dialects.postgresql import insert, Insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.sql.dml import ReturningInsert
 
-from discograph.config import (
-    Configuration,
-    PRODUCTION_KEY,
-    POSTGRES_ROOT_KEY,
-    POSTGRES_OFFLINE_DATABASE_NAME_KEY,
-    TESTING_KEY,
-    POSTGRES_DATABASE_USERNAME_KEY,
-    POSTGRES_DATABASE_PASSWORD_KEY,
-    POSTGRES_DATABASE_HOST_KEY,
-    POSTGRES_DATABASE_PORT_KEY,
-    POSTGRES_OFFLINE_DATA_KEY,
-)
+from discograph.config import Configuration
 from discograph.offline.database.offline_database_helper import (
     OfflineDatabaseHelper,
     ConcreteTable,
@@ -38,7 +27,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
 
     @staticmethod
     def setup_database(config: Configuration) -> Engine:
-        if config[PRODUCTION_KEY]:
+        if config.PRODUCTION:
             log.info("**********************************************")
             log.info("* Using Production Postgres Offline Database *")
             log.info("**********************************************")
@@ -47,11 +36,11 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
             # Create a database engine and pool that will manage connections and execute queries
             url_object = URL.create(
                 "postgresql+psycopg2",
-                username=config[POSTGRES_DATABASE_USERNAME_KEY],
-                password=config[POSTGRES_DATABASE_PASSWORD_KEY],
-                host=config[POSTGRES_DATABASE_HOST_KEY],
-                port=config[POSTGRES_DATABASE_PORT_KEY],
-                database=config[POSTGRES_OFFLINE_DATABASE_NAME_KEY],
+                username=config.POSTGRES_DATABASE_USERNAME,
+                password=config.POSTGRES_DATABASE_PASSWORD,
+                host=config.POSTGRES_DATABASE_HOST,
+                port=config.POSTGRES_DATABASE_PORT,
+                database=config.POSTGRES_OFFLINE_DATABASE_NAME,
             )
             engine = create_engine(
                 url_object, pool_size=40, pool_timeout=300, pool_recycle=300
@@ -63,10 +52,10 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
             # database.execute_sql("CREATE EXTENSION pg_stat_statements;")
 
         else:
-            if config[TESTING_KEY]:
+            if config.TESTING:
                 log.info("Using Postgres Test Offline Database")
 
-                pg_offline_dirname = config[POSTGRES_OFFLINE_DATA_KEY]
+                pg_offline_dirname = config.POSTGRES_OFFLINE_DATA
                 pg_data_dir = os.path.join(pg_offline_dirname, "data")
                 pg_socket_dir = os.path.join(pg_offline_dirname, "socket")
 
@@ -104,11 +93,11 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                 }
                 OfflinePostgresHelper.postgres_test_db = TempDB(
                     verbosity=0,
-                    databases=[config[POSTGRES_OFFLINE_DATABASE_NAME_KEY]],
-                    initdb=config[POSTGRES_ROOT_KEY] + "/bin/initdb",
-                    postgres=config[POSTGRES_ROOT_KEY] + "/bin/postgres",
-                    psql=config[POSTGRES_ROOT_KEY] + "/bin/psql",
-                    createuser=config[POSTGRES_ROOT_KEY] + "/bin/createuser",
+                    databases=[config.POSTGRES_OFFLINE_DATABASE_NAME],
+                    initdb=config.POSTGRES_ROOT + "/bin/initdb",
+                    postgres=config.POSTGRES_ROOT + "/bin/postgres",
+                    psql=config.POSTGRES_ROOT + "/bin/psql",
+                    createuser=config.POSTGRES_ROOT + "/bin/createuser",
                     dirname=pg_offline_dirname,
                     options=options,
                 )
@@ -122,7 +111,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                     # password=config[POSTGRES_DATABASE_PASSWORD_KEY],
                     host=OfflinePostgresHelper.postgres_test_db.pg_socket_dir,
                     # port=config[POSTGRES_DATABASE_PORT_KEY],
-                    database=config[POSTGRES_OFFLINE_DATABASE_NAME_KEY],
+                    database=config.POSTGRES_OFFLINE_DATABASE_NAME,
                 )
                 engine = create_engine(
                     url_object,
@@ -150,11 +139,11 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                 # Create a database engine and pool that will manage connections and execute queries
                 url_object = URL.create(
                     "postgresql+psycopg2",
-                    username=config[POSTGRES_DATABASE_USERNAME_KEY],
-                    password=config[POSTGRES_DATABASE_PASSWORD_KEY],
-                    host=config[POSTGRES_DATABASE_HOST_KEY],
-                    port=config[POSTGRES_DATABASE_PORT_KEY],
-                    database=config[POSTGRES_OFFLINE_DATABASE_NAME_KEY],
+                    username=config.POSTGRES_DATABASE_USERNAME,
+                    password=config.POSTGRES_DATABASE_PASSWORD,
+                    host=config.POSTGRES_DATABASE_HOST,
+                    port=config.POSTGRES_DATABASE_PORT,
+                    database=config.POSTGRES_OFFLINE_DATABASE_NAME,
                 )
                 engine = create_engine(
                     url_object,

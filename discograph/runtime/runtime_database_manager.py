@@ -6,10 +6,7 @@ from sqlalchemy import exc
 from sqlalchemy.event import listen
 from sqlalchemy.orm import sessionmaker, close_all_sessions
 
-from discograph.config import (
-    THREADING_MODEL_KEY,
-    DATABASE_KEY,
-)
+from discograph.config import Configuration
 from discograph.constants import DatabaseType, ThreadingModel
 from discograph.logging_config import LOGGING_TRACE
 from discograph.runtime.runtime_database.runtime_database_helper import (
@@ -33,18 +30,18 @@ class RuntimeDatabaseManager:
             raise NotImplementedError("THREADING_MODEL not configured")
 
     @classmethod
-    def setup_database(cls, config) -> None:
-        RuntimeDatabaseManager._threading_model = config[THREADING_MODEL_KEY]
+    def setup_database(cls, config: Configuration) -> None:
+        RuntimeDatabaseManager._threading_model = config.THREADING_MODEL
 
         # Based on configuration, use a different database.
-        if config[DATABASE_KEY] == DatabaseType.POSTGRES:
+        if config.DATABASE == DatabaseType.POSTGRES:
             from discograph.runtime.postgres.postgres_helper import (
                 RuntimePostgresHelper,
             )
 
             RuntimeDatabaseManager.runtime_database_helper = RuntimePostgresHelper()
 
-        elif config[DATABASE_KEY] == DatabaseType.SQLITE:
+        elif config.DATABASE == DatabaseType.SQLITE:
             from discograph.runtime.sqlite.sqlite_helper import RuntimeSqliteHelper
 
             RuntimeDatabaseManager.runtime_database_helper = RuntimeSqliteHelper()

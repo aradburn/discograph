@@ -1,4 +1,4 @@
-from discograph.config import SqliteTestConfiguration, DATA_DIR_KEY
+from discograph.config import SqliteTestConfiguration
 from discograph.offline.database.entity_repository import EntityRepository
 from discograph.offline.database.relation_repository import RelationRepository
 from discograph.offline.database.role_repository import RoleRepository
@@ -34,7 +34,7 @@ class TestTransfer(TransferTestCase):
     def test_transfer_entities(self):
         # GIVEN
         config = SqliteTestConfiguration()
-        data_directory = config[DATA_DIR_KEY]
+        data_directory = config.DATA_DIR
         offline_entity_repository = EntityRepository()
         runtime_entity_repository = RuntimeEntityRepository()
 

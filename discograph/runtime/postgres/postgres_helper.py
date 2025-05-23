@@ -73,18 +73,7 @@ from sqlalchemy.dialects.postgresql import insert, Insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.sql.dml import ReturningInsert
 
-from discograph.config import (
-    Configuration,
-    PRODUCTION_KEY,
-    TESTING_KEY,
-    POSTGRES_ROOT_KEY,
-    POSTGRES_RUNTIME_DATABASE_NAME_KEY,
-    POSTGRES_DATABASE_HOST_KEY,
-    POSTGRES_DATABASE_PORT_KEY,
-    POSTGRES_DATABASE_USERNAME_KEY,
-    POSTGRES_DATABASE_PASSWORD_KEY,
-    POSTGRES_RUNTIME_DATA_KEY,
-)
+from discograph.config import Configuration
 from discograph.runtime.runtime_database.runtime_base_table import RuntimeConcreteTable
 from discograph.runtime.runtime_database.runtime_database_helper import (
     RuntimeDatabaseHelper,
@@ -130,18 +119,18 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
         Returns:
             Engine: The SQLAlchemy engine.
         """
-        if config[PRODUCTION_KEY]:
+        if config.PRODUCTION:
             """Handle production configuration."""
             log.info("**********************************************")
             log.info("* Using Production Postgres Runtime Database *")
             log.info("**********************************************")
             log.info("")
 
-            host = config[POSTGRES_DATABASE_HOST_KEY]
+            host = config.POSTGRES_DATABASE_HOST
             """Get the host."""
-            port = config[POSTGRES_DATABASE_PORT_KEY]
+            port = config.POSTGRES_DATABASE_PORT
             """Get the port."""
-            name = config[POSTGRES_RUNTIME_DATABASE_NAME_KEY]
+            name = config.POSTGRES_RUNTIME_DATABASE_NAME
             """Get the database name."""
 
             log.info(f"DATABASE_HOST: {host}")
@@ -151,8 +140,8 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
             # Create a database engine and pool that will manage connections and execute queries
             url_object = URL.create(
                 "postgresql+psycopg2",
-                username=config[POSTGRES_DATABASE_USERNAME_KEY],
-                password=config[POSTGRES_DATABASE_PASSWORD_KEY],
+                username=config.POSTGRES_DATABASE_USERNAME,
+                password=config.POSTGRES_DATABASE_PASSWORD,
                 host=host,
                 port=port,
                 database=name,
@@ -165,11 +154,11 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
 
         else:
             """Handle development and testing configuration."""
-            if config[TESTING_KEY]:
+            if config.TESTING:
                 """Handle the testing configuration."""
                 log.info("Using Test Postgres Runtime Database")
 
-                pg_runtime_dirname = config[POSTGRES_RUNTIME_DATA_KEY]
+                pg_runtime_dirname = config.POSTGRES_RUNTIME_DATA
                 """Get the path to the data folder."""
                 pg_data_dir = os.path.join(pg_runtime_dirname, "data")
                 """Create the path to the data folder."""
@@ -207,11 +196,11 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
                 """The option for the db."""
                 RuntimePostgresHelper.postgres_test_db = TempDB(
                     verbosity=0,
-                    databases=[config[POSTGRES_RUNTIME_DATABASE_NAME_KEY]],
-                    initdb=config[POSTGRES_ROOT_KEY] + "/bin/initdb",
-                    postgres=config[POSTGRES_ROOT_KEY] + "/bin/postgres",
-                    psql=config[POSTGRES_ROOT_KEY] + "/bin/psql",
-                    createuser=config[POSTGRES_ROOT_KEY] + "/bin/createuser",
+                    databases=[config.POSTGRES_RUNTIME_DATABASE_NAME],
+                    initdb=config.POSTGRES_ROOT + "/bin/initdb",
+                    postgres=config.POSTGRES_ROOT + "/bin/postgres",
+                    psql=config.POSTGRES_ROOT + "/bin/psql",
+                    createuser=config.POSTGRES_ROOT + "/bin/createuser",
                     dirname=pg_runtime_dirname,
                     options=options,
                 )
@@ -224,7 +213,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
                     "postgresql",
                     username=RuntimePostgresHelper.postgres_test_db.current_user,
                     host=RuntimePostgresHelper.postgres_test_db.pg_socket_dir,
-                    database=config[POSTGRES_RUNTIME_DATABASE_NAME_KEY],
+                    database=config.POSTGRES_RUNTIME_DATABASE_NAME,
                 )
                 """Create the url to connect to the db."""
                 engine = create_engine(
@@ -244,11 +233,11 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
                 # Create a database engine and pool that will manage connections and execute queries
                 url_object = URL.create(
                     "postgresql+psycopg2",
-                    username=config[POSTGRES_DATABASE_USERNAME_KEY],
-                    password=config[POSTGRES_DATABASE_PASSWORD_KEY],
-                    host=config[POSTGRES_DATABASE_HOST_KEY],
-                    port=config[POSTGRES_DATABASE_PORT_KEY],
-                    database=config[POSTGRES_RUNTIME_DATABASE_NAME_KEY],
+                    username=config.POSTGRES_DATABASE_USERNAME,
+                    password=config.POSTGRES_DATABASE_PASSWORD,
+                    host=config.POSTGRES_DATABASE_HOST,
+                    port=config.POSTGRES_DATABASE_PORT,
+                    database=config.POSTGRES_RUNTIME_DATABASE_NAME,
                 )
                 """Create the url to connect to the db."""
                 engine = create_engine(

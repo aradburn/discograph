@@ -26,7 +26,6 @@ import luigi
 from discograph.config import (
     PostgresDevelopmentConfiguration,
     SqliteDevelopmentConfiguration,
-    DATA_DIR_KEY,
 )
 from discograph.constants import (
     DISCOGS_DATA,
@@ -279,7 +278,7 @@ def loader_main() -> None:
     # start_date = datetime.date(2023, 10, 1)
     end_date = datetime.date(2024, 11, 1)
     # end_date = datetime.datetime.now()
-    data_directory: str = str(offline_config[DATA_DIR_KEY])
+    data_directory: str = str(offline_config.DATA_DIR)
     tasks = [
         LoaderSetupTask(
             data_directory=data_directory, start_date=start_date, end_date=end_date

@@ -1,4 +1,3 @@
-from discograph.config import DATA_DIR_KEY
 from discograph.constants import DISCOGS_DATA
 from discograph.library.fields.entity_type import EntityType
 from discograph.offline.database.entity_repository import EntityRepository
@@ -14,7 +13,7 @@ class TestRepositoryEntity(OfflineRepositoryTestCase):
     def test_create_01(self):
         # GIVEN
         discogs_data_directory = (
-            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+            OfflineRepositoryTestCase.offline_config.DATA_DIR / DISCOGS_DATA
         )
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "artist", "testinsert"
@@ -33,7 +32,7 @@ class TestRepositoryEntity(OfflineRepositoryTestCase):
     def test_get_01(self):
         # GIVEN
         discogs_data_directory = (
-            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+            OfflineRepositoryTestCase.offline_config.DATA_DIR / DISCOGS_DATA
         )
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "label", "testinsert"

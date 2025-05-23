@@ -1,4 +1,3 @@
-from discograph.config import DATA_DIR_KEY
 from discograph.constants import DISCOGS_DATA, TEST_DIR
 from discograph.library.fields.entity_type import EntityType
 from discograph.library.full_text_search.text_search_index import TextSearchIndex
@@ -141,7 +140,7 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
         # GIVEN
         release_id = 637
         discogs_data_directory = (
-            OfflineDatabaseTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+            OfflineDatabaseTestCase.offline_config.DATA_DIR / DISCOGS_DATA
         )
 
         release = utils.get_test_release_by_id(discogs_data_directory, release_id)
@@ -163,7 +162,7 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
         # GIVEN
         release_id = 158
         discogs_data_directory = (
-            OfflineDatabaseTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+            OfflineDatabaseTestCase.offline_config.DATA_DIR / DISCOGS_DATA
         )
 
         release = utils.get_test_release_by_id(discogs_data_directory, release_id)
@@ -213,7 +212,7 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
         # GIVEN
         release_id = 1700
         discogs_data_directory = (
-            OfflineDatabaseTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+            OfflineDatabaseTestCase.offline_config.DATA_DIR / DISCOGS_DATA
         )
 
         release = utils.get_test_release_by_id(discogs_data_directory, release_id)
@@ -232,7 +231,7 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
         # GIVEN
         release_id = 1700
         discogs_data_directory = (
-            OfflineDatabaseTestCase.offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+            OfflineDatabaseTestCase.offline_config.DATA_DIR / DISCOGS_DATA
         )
 
         release = utils.get_test_release_by_id(discogs_data_directory, release_id)

@@ -1,7 +1,7 @@
 import unittest
 
 from discograph import utils
-from discograph.config import SqliteTestConfiguration, DATA_DIR_KEY
+from discograph.config import SqliteTestConfiguration
 from discograph.constants import DISCOGS_DATA
 from discograph.offline.domain.entity import Entity
 from discograph.offline.loader.loader_utils import LoaderUtils
@@ -11,7 +11,7 @@ from discograph.offline.loader.parser_entity import ParserEntity
 class TestLoaderEntity(unittest.TestCase):
     def test_from_element_01(self):
         offline_config = SqliteTestConfiguration()
-        discogs_data_directory = offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+        discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "artist", "testinsert"
@@ -79,7 +79,7 @@ class TestLoaderEntity(unittest.TestCase):
 
     def test_from_element_02(self):
         offline_config = SqliteTestConfiguration()
-        discogs_data_directory = offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+        discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "artist", "testinsert"
@@ -123,7 +123,7 @@ class TestLoaderEntity(unittest.TestCase):
 
     def test_from_element_03(self):
         offline_config = SqliteTestConfiguration()
-        discogs_data_directory = offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+        discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "label", "testinsert"
@@ -154,7 +154,7 @@ class TestLoaderEntity(unittest.TestCase):
 
     def test_load_artists_from_xml_file(self):
         offline_config = SqliteTestConfiguration()
-        discogs_data_directory = offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+        discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
         date = "testinsert"
         entity_generator = ParserEntity().load_from_xml(
@@ -170,7 +170,7 @@ class TestLoaderEntity(unittest.TestCase):
 
     def test_load_labels_from_xml_file(self):
         offline_config = SqliteTestConfiguration()
-        discogs_data_directory = offline_config[DATA_DIR_KEY] / DISCOGS_DATA
+        discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
         date = "testinsert"
         entity_generator = ParserEntity().load_from_xml(

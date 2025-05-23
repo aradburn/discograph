@@ -5,7 +5,6 @@ from sqlalchemy.exc import DatabaseError
 
 from discograph.config import (
     Configuration,
-    DATA_DIR_KEY,
 )
 from discograph.constants import (
     ALL_OFFLINE_DATABASE_TABLE_NAMES,
@@ -69,7 +68,7 @@ class OfflineDatabaseTestCase(unittest.TestCase):
         )
 
         load_offline_test_tables(
-            OfflineDatabaseTestCase.offline_config[DATA_DIR_KEY],
+            OfflineDatabaseTestCase.offline_config.DATA_DIR,
             "testinsert",
             is_bulk_inserts=True,
         )

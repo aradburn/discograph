@@ -6,10 +6,6 @@ from sqlalchemy import exc
 from sqlalchemy.event import listen
 from sqlalchemy.orm import sessionmaker, close_all_sessions
 
-from discograph.config import (
-    THREADING_MODEL_KEY,
-    DATABASE_KEY,
-)
 from discograph.constants import DatabaseType, ThreadingModel
 from discograph.logging_config import LOGGING_TRACE
 from discograph.offline.database.offline_database_helper import OfflineDatabaseHelper
@@ -32,17 +28,17 @@ class OfflineDatabaseManager:
 
     @classmethod
     def setup_database(cls, config) -> None:
-        OfflineDatabaseManager._threading_model = config[THREADING_MODEL_KEY]
+        OfflineDatabaseManager._threading_model = config.THREADING_MODEL
 
         # Based on configuration, use a different database.
-        if config[DATABASE_KEY] == DatabaseType.POSTGRES:
+        if config.DATABASE == DatabaseType.POSTGRES:
             from discograph.offline.postgres.postgres_helper import (
                 OfflinePostgresHelper,
             )
 
             OfflineDatabaseManager.offline_database_helper = OfflinePostgresHelper()
 
-        elif config[DATABASE_KEY] == DatabaseType.SQLITE:
+        elif config.DATABASE == DatabaseType.SQLITE:
             from discograph.offline.sqlite.sqlite_helper import OfflineSqliteHelper
 
             OfflineDatabaseManager.offline_database_helper = OfflineSqliteHelper()

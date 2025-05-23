@@ -1,4 +1,3 @@
-from discograph.config import DATA_DIR_KEY
 from discograph.constants import ROLES_DATA, INSTRUMENTS_DATA
 from discograph.library.cache.role_cache import RoleCache
 from discograph.offline.data_access_layer.role_data_access import RoleDataAccess
@@ -17,7 +16,7 @@ class TestLoaderRole(OfflineRepositoryTestCase):
     def test_load_wikipedia_instruments(self):
         # GIVEN
         instruments_directory = (
-            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / INSTRUMENTS_DATA
+            OfflineRepositoryTestCase.offline_config.DATA_DIR / INSTRUMENTS_DATA
         )
         # WHEN
         wikipedia_instruments = LoaderRole.load_wikipedia_instruments(
@@ -32,7 +31,7 @@ class TestLoaderRole(OfflineRepositoryTestCase):
     def test_load_hornbostel_sachs_instruments(self):
         # GIVEN
         instruments_directory = (
-            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / INSTRUMENTS_DATA
+            OfflineRepositoryTestCase.offline_config.DATA_DIR / INSTRUMENTS_DATA
         )
 
         # WHEN
@@ -47,9 +46,7 @@ class TestLoaderRole(OfflineRepositoryTestCase):
 
     def test_load_roles_from_files(self):
         # GIVEN
-        roles_directory = (
-            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / ROLES_DATA
-        )
+        roles_directory = OfflineRepositoryTestCase.offline_config.DATA_DIR / ROLES_DATA
 
         # WHEN
         roles_from_files = LoaderRole.load_roles_from_files(roles_directory)
@@ -61,9 +58,7 @@ class TestLoaderRole(OfflineRepositoryTestCase):
 
     def test_load_roles_from_files_from_database(self):
         # GIVEN
-        roles_directory = (
-            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / ROLES_DATA
-        )
+        roles_directory = OfflineRepositoryTestCase.offline_config.DATA_DIR / ROLES_DATA
         roles_from_files = LoaderRole.load_roles_from_files(roles_directory)
 
         # WHEN
@@ -83,7 +78,7 @@ class TestLoaderRole(OfflineRepositoryTestCase):
     def test_load_hornbostel_sachs_instruments_from_database(self):
         # GIVEN
         instruments_directory = (
-            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / INSTRUMENTS_DATA
+            OfflineRepositoryTestCase.offline_config.DATA_DIR / INSTRUMENTS_DATA
         )
         hornbostel_sachs_roles = LoaderRole.load_hornbostel_sachs_instruments(
             instruments_directory
@@ -106,7 +101,7 @@ class TestLoaderRole(OfflineRepositoryTestCase):
     def test_load_wikipedia_instruments_from_database(self):
         # GIVEN
         instruments_directory = (
-            OfflineRepositoryTestCase.offline_config[DATA_DIR_KEY] / INSTRUMENTS_DATA
+            OfflineRepositoryTestCase.offline_config.DATA_DIR / INSTRUMENTS_DATA
         )
         wikipedia_instruments = LoaderRole.load_wikipedia_instruments(
             instruments_directory

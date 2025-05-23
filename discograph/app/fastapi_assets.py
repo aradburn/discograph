@@ -46,7 +46,7 @@ def create_assets_router(config: Configuration) -> Tuple[APIRouter, Jinja2Templa
     vite_origin = os.getenv("VITE_ORIGIN", "http://localhost:5173")
 
     # Set application constants
-    is_production = config.get("PRODUCTION", False)
+    is_production = config.PRODUCTION
 
     log.info(f"is_production: {is_production}")
 

@@ -1,4 +1,3 @@
-from discograph.config import DATA_DIR_KEY
 from discograph.constants import TEXT_SEARCH_DATA, TEXT_SEARCH_FILENAME
 from discograph.library.full_text_search.text_search_index import TextSearchIndex
 from discograph.runtime.data_access_layer.runtime_entity_search import (
@@ -14,7 +13,7 @@ class TestRuntimeEntitySearch(RuntimeDatabaseTestCase):
 
     def test_text_search_lookup_1(self):
         text_search_path = (
-            RuntimeDatabaseTestCase.runtime_config[DATA_DIR_KEY]
+            RuntimeDatabaseTestCase.runtime_config.DATA_DIR
             / TEXT_SEARCH_DATA
             / TEXT_SEARCH_FILENAME
         )
@@ -45,7 +44,7 @@ class TestRuntimeEntitySearch(RuntimeDatabaseTestCase):
 
     def test_text_search_lookup_2(self):
         text_search_path = (
-            RuntimeDatabaseTestCase.runtime_config[DATA_DIR_KEY]
+            RuntimeDatabaseTestCase.runtime_config.DATA_DIR
             / TEXT_SEARCH_DATA
             / TEXT_SEARCH_FILENAME
         )

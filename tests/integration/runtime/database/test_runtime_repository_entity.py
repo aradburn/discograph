@@ -1,6 +1,5 @@
 import pydantic
 
-from discograph.config import DATA_DIR_KEY
 from discograph.constants import DISCOGS_DATA
 from discograph.library.fields.entity_type import EntityType
 from discograph.offline.loader.loader_utils import LoaderUtils
@@ -19,7 +18,7 @@ class TestRuntimeRepositoryEntity(RuntimeRepositoryTestCase):
     def test_create_01(self):
         # GIVEN
         discogs_data_directory = (
-            RuntimeRepositoryTestCase.runtime_config[DATA_DIR_KEY] / DISCOGS_DATA
+            RuntimeRepositoryTestCase.runtime_config.DATA_DIR / DISCOGS_DATA
         )
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "artist", "testinsert"
@@ -49,7 +48,7 @@ class TestRuntimeRepositoryEntity(RuntimeRepositoryTestCase):
     def test_get_01(self):
         # GIVEN
         discogs_data_directory = (
-            RuntimeRepositoryTestCase.runtime_config[DATA_DIR_KEY] / DISCOGS_DATA
+            RuntimeRepositoryTestCase.runtime_config.DATA_DIR / DISCOGS_DATA
         )
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "label", "testinsert"
@@ -85,7 +84,7 @@ class TestRuntimeRepositoryEntity(RuntimeRepositoryTestCase):
     def test_create_02(self):
         # GIVEN
         discogs_data_directory = (
-            RuntimeRepositoryTestCase.runtime_config[DATA_DIR_KEY] / DISCOGS_DATA
+            RuntimeRepositoryTestCase.runtime_config.DATA_DIR / DISCOGS_DATA
         )
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "artist", "testinsert"
